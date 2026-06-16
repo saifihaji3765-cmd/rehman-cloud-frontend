@@ -1,9 +1,7 @@
+import AppRoutes from "./routes/AppRoutes";
+
 function App() {
-  return (
-    <div>
-      Rehman Cloud Frontend V2
-    </div>
-  );
+  return <AppRoutes />;
 }
 
 export default App;

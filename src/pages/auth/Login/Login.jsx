@@ -1,16 +1,22 @@
+import AuthLayout from "../../../layouts/AuthLayout/AuthLayout.jsx";
+
 function Login() {
   return (
-    <div>
+    <AuthLayout>
 
-      <h2>
-        Login
-      </h2>
+      <div>
 
-      <p>
-        Sign in to continue
-      </p>
+        <h2>
+          Login
+        </h2>
 
-    </div>
+        <p>
+          Sign in to continue
+        </p>
+
+      </div>
+
+    </AuthLayout>
   );
 }
 

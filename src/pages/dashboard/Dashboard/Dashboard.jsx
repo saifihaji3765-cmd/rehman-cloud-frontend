@@ -1,16 +1,22 @@
+import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
+
 function Dashboard() {
   return (
-    <div>
+    <DashboardLayout>
 
-      <h1>
-        Dashboard
-      </h1>
+      <div>
 
-      <p>
-        Welcome to your platform dashboard
-      </p>
+        <h1>
+          Dashboard
+        </h1>
 
-    </div>
+        <p>
+          Welcome to your platform dashboard
+        </p>
+
+      </div>
+
+    </DashboardLayout>
   );
 }
 

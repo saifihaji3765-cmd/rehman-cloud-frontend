@@ -1,16 +1,19 @@
 import { Routes, Route } from "react-router-dom";
 
+import Login from "../pages/auth/Login/Login.jsx";
+
 function AppRoutes() {
   return (
     <Routes>
 
       <Route
         path="/"
-        element={
-          <h1>
-            Rehman Cloud Frontend V2
-          </h1>
-        }
+        element={<Login />}
+      />
+
+      <Route
+        path="/login"
+        element={<Login />}
       />
 
     </Routes>

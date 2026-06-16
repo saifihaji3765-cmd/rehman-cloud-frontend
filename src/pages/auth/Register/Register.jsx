@@ -1,16 +1,22 @@
+import AuthLayout from "../../../layouts/AuthLayout/AuthLayout.jsx";
+
 function Register() {
   return (
-    <div>
+    <AuthLayout>
 
-      <h2>
-        Create Account
-      </h2>
+      <div>
 
-      <p>
-        Start building with the platform
-      </p>
+        <h2>
+          Create Account
+        </h2>
 
-    </div>
+        <p>
+          Start building with the platform
+        </p>
+
+      </div>
+
+    </AuthLayout>
   );
 }
 

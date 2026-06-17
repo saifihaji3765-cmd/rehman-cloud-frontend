@@ -286,3 +286,92 @@
   }
 
 }
+/* =========================
+   FILE EXPLORER
+========================= */
+
+.fileList{
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:10px;
+
+}
+
+.fileItem{
+
+  padding:12px;
+
+  border-radius:10px;
+
+  background:#111827;
+
+  border:1px solid #1f2937;
+
+  color:#cbd5e1;
+
+}
+
+/* =========================
+   DEPLOY BUTTON
+========================= */
+
+.deployButton{
+
+  width:100%;
+
+  height:48px;
+
+  border:none;
+
+  border-radius:12px;
+
+  background:#22c55e;
+
+  color:#ffffff;
+
+  font-weight:700;
+
+  cursor:pointer;
+
+}
+
+.deployButton:hover{
+
+  opacity:0.9;
+
+}
+
+/* =========================
+   LIVE URL
+========================= */
+
+.liveUrl{
+
+  color:#60a5fa;
+
+  word-break:break-all;
+
+}
+
+/* =========================
+   STATUS
+========================= */
+
+.statusReady{
+
+  color:#22c55e;
+
+  font-weight:700;
+
+}
+
+.statusPending{
+
+  color:#f59e0b;
+
+  font-weight:700;
+
+}

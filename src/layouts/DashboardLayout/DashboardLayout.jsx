@@ -1,5 +1,7 @@
 import styles from "./DashboardLayout.module.css";
 
+import Sidebar from "../../components/Sidebar/Sidebar.jsx";
+
 function DashboardLayout({ children }) {
   return (
     <div className={styles.layout}>
@@ -16,29 +18,7 @@ function DashboardLayout({ children }) {
 
         </div>
 
-        <nav className={styles.sidebarMenu}>
-
-          <div className={styles.menuItem}>
-            Dashboard
-          </div>
-
-          <div className={styles.menuItem}>
-            Workspace
-          </div>
-
-          <div className={styles.menuItem}>
-            Deployments
-          </div>
-
-          <div className={styles.menuItem}>
-            Billing
-          </div>
-
-          <div className={styles.menuItem}>
-            Settings
-          </div>
-
-        </nav>
+        <Sidebar />
 
       </aside>
 
@@ -56,7 +36,7 @@ function DashboardLayout({ children }) {
 
         </header>
 
-        {/* PAGE CONTENT */}
+        {/* CONTENT */}
 
         <main className={styles.content}>
 

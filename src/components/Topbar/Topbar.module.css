@@ -22,15 +22,27 @@
 
   align-items:center;
 
+  gap:16px;
+
 }
 
-.title{
+.searchBox{
+
+  width:320px;
+
+  height:42px;
+
+  background:#0f172a;
+
+  border:1px solid #1f2937;
+
+  border-radius:12px;
+
+  padding:0 14px;
 
   color:#ffffff;
 
-  font-size:20px;
-
-  font-weight:700;
+  outline:none;
 
 }
 
@@ -48,7 +60,7 @@
 
   height:40px;
 
-  padding:0 16px;
+  padding:0 14px;
 
   border:none;
 
@@ -60,12 +72,36 @@
 
   cursor:pointer;
 
-  transition:0.3s;
+}
+
+.profile{
+
+  height:40px;
+
+  min-width:40px;
+
+  border-radius:50%;
+
+  background:#6366f1;
+
+  color:#ffffff;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  font-weight:700;
 
 }
 
-.actionButton:hover{
+@media(max-width:768px){
 
-  background:#334155;
+  .searchBox{
+
+    display:none;
+
+  }
 
 }

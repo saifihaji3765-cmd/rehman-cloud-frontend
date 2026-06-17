@@ -1,6 +1,7 @@
 import styles from "./DashboardLayout.module.css";
 
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
+import Topbar from "../../components/Topbar/Topbar.jsx";
 
 function DashboardLayout({ children }) {
   return (
@@ -13,7 +14,7 @@ function DashboardLayout({ children }) {
         <div className={styles.sidebarHeader}>
 
           <h2 className={styles.sidebarTitle}>
-            Cloud Platform
+            Vertex Cloud
           </h2>
 
         </div>
@@ -26,17 +27,7 @@ function DashboardLayout({ children }) {
 
       <div className={styles.mainArea}>
 
-        {/* TOPBAR */}
-
-        <header className={styles.topbar}>
-
-          <h1 className={styles.topbarTitle}>
-            Enterprise Console
-          </h1>
-
-        </header>
-
-        {/* CONTENT */}
+        <Topbar />
 
         <main className={styles.content}>
 

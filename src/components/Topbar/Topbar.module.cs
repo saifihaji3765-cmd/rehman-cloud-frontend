@@ -10,9 +10,9 @@
 
   padding:0 24px;
 
-  border-bottom:1px solid #1f2937;
-
   background:#111827;
+
+  border-bottom:1px solid #1f2937;
 
 }
 
@@ -21,8 +21,6 @@
   display:flex;
 
   align-items:center;
-
-  gap:16px;
 
 }
 
@@ -50,16 +48,24 @@
 
   height:40px;
 
-  padding:0 14px;
+  padding:0 16px;
 
   border:none;
 
   border-radius:10px;
 
-  cursor:pointer;
-
   background:#1e293b;
 
   color:#ffffff;
+
+  cursor:pointer;
+
+  transition:0.3s;
+
+}
+
+.actionButton:hover{
+
+  background:#334155;
 
 }

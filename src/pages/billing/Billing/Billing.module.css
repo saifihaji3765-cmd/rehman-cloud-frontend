@@ -1,0 +1,273 @@
+/* =========================
+   PAGE
+========================= */
+
+.page{
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:24px;
+
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.header{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+}
+
+.title{
+
+  color:#ffffff;
+
+  font-size:32px;
+
+  font-weight:800;
+
+}
+
+.subtitle{
+
+  color:#94a3b8;
+
+  margin-top:6px;
+
+}
+
+/* =========================
+   BUTTON
+========================= */
+
+.upgradeButton{
+
+  height:48px;
+
+  padding:0 20px;
+
+  border:none;
+
+  border-radius:12px;
+
+  cursor:pointer;
+
+  background:#6366f1;
+
+  color:#ffffff;
+
+  font-weight:600;
+
+}
+
+/* =========================
+   PLAN CARD
+========================= */
+
+.planCard{
+
+  background:#111827;
+
+  border:1px solid #1f2937;
+
+  border-radius:18px;
+
+  padding:24px;
+
+}
+
+.planName{
+
+  color:#ffffff;
+
+  font-size:24px;
+
+  font-weight:800;
+
+}
+
+.planPrice{
+
+  color:#6366f1;
+
+  font-size:42px;
+
+  font-weight:900;
+
+  margin-top:12px;
+
+}
+
+.planDescription{
+
+  color:#94a3b8;
+
+  margin-top:12px;
+
+}
+
+/* =========================
+   STATS
+========================= */
+
+.statsGrid{
+
+  display:grid;
+
+  grid-template-columns:
+  repeat(4,1fr);
+
+  gap:20px;
+
+}
+
+.statCard{
+
+  background:#111827;
+
+  border:1px solid #1f2937;
+
+  border-radius:16px;
+
+  padding:20px;
+
+}
+
+.statLabel{
+
+  color:#94a3b8;
+
+  font-size:14px;
+
+}
+
+.statValue{
+
+  color:#ffffff;
+
+  font-size:28px;
+
+  font-weight:800;
+
+  margin-top:10px;
+
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.table{
+
+  background:#111827;
+
+  border:1px solid #1f2937;
+
+  border-radius:16px;
+
+  overflow:hidden;
+
+}
+
+.row{
+
+  display:grid;
+
+  grid-template-columns:
+  1.5fr
+  1fr
+  1fr
+  1fr;
+
+  gap:16px;
+
+  padding:18px 20px;
+
+  border-bottom:1px solid #1f2937;
+
+}
+
+.row:last-child{
+
+  border-bottom:none;
+
+}
+
+.headerRow{
+
+  background:#0f172a;
+
+  color:#ffffff;
+
+  font-weight:700;
+
+}
+
+.cell{
+
+  color:#cbd5e1;
+
+}
+
+/* =========================
+   STATUS
+========================= */
+
+.paid{
+
+  color:#22c55e;
+
+  font-weight:700;
+
+}
+
+.pending{
+
+  color:#f59e0b;
+
+  font-weight:700;
+
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:1200px){
+
+  .statsGrid{
+
+    grid-template-columns:
+    repeat(2,1fr);
+
+  }
+
+}
+
+@media(max-width:768px){
+
+  .statsGrid{
+
+    grid-template-columns:1fr;
+
+  }
+
+  .header{
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    gap:16px;
+
+  }
+
+}

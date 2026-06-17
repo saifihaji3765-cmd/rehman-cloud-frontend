@@ -1,24 +1,70 @@
+import styles from "./DashboardLayout.module.css";
+
 function DashboardLayout({ children }) {
   return (
-    <div>
+    <div className={styles.layout}>
 
       {/* SIDEBAR */}
 
-      <aside>
+      <aside className={styles.sidebar}>
 
-        <h2>
-          Platform
-        </h2>
+        <div className={styles.sidebarHeader}>
+
+          <h2 className={styles.sidebarTitle}>
+            Cloud Platform
+          </h2>
+
+        </div>
+
+        <nav className={styles.sidebarMenu}>
+
+          <div className={styles.menuItem}>
+            Dashboard
+          </div>
+
+          <div className={styles.menuItem}>
+            Workspace
+          </div>
+
+          <div className={styles.menuItem}>
+            Deployments
+          </div>
+
+          <div className={styles.menuItem}>
+            Billing
+          </div>
+
+          <div className={styles.menuItem}>
+            Settings
+          </div>
+
+        </nav>
 
       </aside>
 
-      {/* MAIN */}
+      {/* MAIN AREA */}
 
-      <main>
+      <div className={styles.mainArea}>
 
-        {children}
+        {/* TOPBAR */}
 
-      </main>
+        <header className={styles.topbar}>
+
+          <h1 className={styles.topbarTitle}>
+            Enterprise Console
+          </h1>
+
+        </header>
+
+        {/* PAGE CONTENT */}
+
+        <main className={styles.content}>
+
+          {children}
+
+        </main>
+
+      </div>
 
     </div>
   );

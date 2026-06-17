@@ -15,7 +15,7 @@ function Workspace() {
           <div className={styles.panelHeader}>
 
             <h2 className={styles.panelTitle}>
-              Conversations
+              Projects
             </h2>
 
           </div>
@@ -23,19 +23,19 @@ function Workspace() {
           <div className={styles.history}>
 
             <div className={styles.historyItem}>
-              SaaS Platform Generator
+              Company Analysis Platform
             </div>
 
             <div className={styles.historyItem}>
-              AI CRM Builder
+              AI CRM System
             </div>
 
             <div className={styles.historyItem}>
-              Mobile App Project
+              Marketing Automation Suite
             </div>
 
             <div className={styles.historyItem}>
-              Deployment Assistant
+              Global SaaS Builder
             </div>
 
           </div>
@@ -53,15 +53,33 @@ function Workspace() {
               <div
                 className={`${styles.message} ${styles.ai}`}
               >
-                Welcome to ZyrionOS AI Workspace.
 
-                Describe what you want to build.
-              </div>
+                You are one prompt away from
+                building the next generation
+                software company.
 
-              <div
-                className={`${styles.message} ${styles.user}`}
-              >
-                Build a global AI SaaS platform.
+                <br /><br />
+
+                Describe your SaaS idea,
+                business platform,
+                automation system,
+                AI product or startup vision.
+
+                <br /><br />
+
+                ZyrionOS can transform
+                a simple idea into
+                production-ready architecture,
+                source code,
+                cloud infrastructure,
+                deployment pipelines
+                and scalable digital products.
+
+                <br /><br />
+
+                From concept to deployment.
+                Powered by ZyrionOS.
+
               </div>
 
             </div>
@@ -70,14 +88,18 @@ function Workspace() {
 
               <textarea
                 className={styles.textarea}
-                placeholder="Describe your project..."
+                placeholder="Describe what you want to build..."
               />
 
-              <button
-                className={styles.sendButton}
-              >
-                Generate With AI
-              </button>
+              <div className={styles.actions}>
+
+                <button
+                  className={styles.generateButton}
+                >
+                  Generate Project
+                </button>
+
+              </div>
 
             </div>
 
@@ -92,31 +114,71 @@ function Workspace() {
           <div className={styles.panelHeader}>
 
             <h2 className={styles.panelTitle}>
-              AI Tools
+              Project Overview
             </h2>
 
           </div>
 
-          <div className={styles.tools}>
+          <div className={styles.sidebar}>
 
-            <div className={styles.toolCard}>
-              Full Stack Generator
+            <div className={styles.card}>
+
+              <div className={styles.cardTitle}>
+                Generated Files
+              </div>
+
+              <div className={styles.cardText}>
+                Waiting for generation...
+              </div>
+
             </div>
 
-            <div className={styles.toolCard}>
-              API Builder
+            <div className={styles.card}>
+
+              <div className={styles.cardTitle}>
+                Deployment Status
+              </div>
+
+              <div className={styles.cardText}>
+                Not deployed
+              </div>
+
             </div>
 
-            <div className={styles.toolCard}>
-              Database Designer
+            <div className={styles.card}>
+
+              <div className={styles.cardTitle}>
+                Framework
+              </div>
+
+              <div className={styles.cardText}>
+                Not selected
+              </div>
+
             </div>
 
-            <div className={styles.toolCard}>
-              Deployment Agent
+            <div className={styles.card}>
+
+              <div className={styles.cardTitle}>
+                Live URL
+              </div>
+
+              <div className={styles.cardText}>
+                Available after deployment
+              </div>
+
             </div>
 
-            <div className={styles.toolCard}>
-              Security Scanner
+            <div className={styles.card}>
+
+              <div className={styles.cardTitle}>
+                Subscription Plan
+              </div>
+
+              <div className={styles.cardText}>
+                Connected from backend
+              </div>
+
             </div>
 
           </div>

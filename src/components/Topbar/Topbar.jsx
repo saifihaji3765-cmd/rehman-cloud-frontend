@@ -4,27 +4,32 @@ function Topbar() {
   return (
     <header className={styles.topbar}>
 
-      {/* LEFT */}
-
       <div className={styles.left}>
 
-        <h2 className={styles.title}>
-          Enterprise Console
-        </h2>
+        <input
+          className={styles.searchBox}
+          placeholder="Search projects, deployments, files..."
+        />
 
       </div>
 
-      {/* RIGHT */}
-
       <div className={styles.right}>
 
-        <button className={styles.actionButton}>
+        <button
+          className={styles.actionButton}
+        >
           Notifications
         </button>
 
-        <button className={styles.actionButton}>
-          Profile
+        <button
+          className={styles.actionButton}
+        >
+          Upgrade
         </button>
+
+        <div className={styles.profile}>
+          Z
+        </div>
 
       </div>
 

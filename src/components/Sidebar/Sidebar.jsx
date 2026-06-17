@@ -1,30 +1,71 @@
 import { NavLink } from "react-router-dom";
 
+import styles from "./Sidebar.module.css";
+
 function Sidebar() {
   return (
-    <nav>
+    <aside className={styles.sidebar}>
 
-      <NavLink to="/dashboard">
-        Dashboard
-      </NavLink>
+      <div className={styles.menu}>
 
-      <NavLink to="/workspace">
-        Workspace
-      </NavLink>
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            isActive
+              ? `${styles.link} ${styles.active}`
+              : styles.link
+          }
+        >
+          Dashboard
+        </NavLink>
 
-      <NavLink to="/deployments">
-        Deployments
-      </NavLink>
+        <NavLink
+          to="/workspace"
+          className={({ isActive }) =>
+            isActive
+              ? `${styles.link} ${styles.active}`
+              : styles.link
+          }
+        >
+          Workspace
+        </NavLink>
 
-      <NavLink to="/billing">
-        Billing
-      </NavLink>
+        <NavLink
+          to="/deployments"
+          className={({ isActive }) =>
+            isActive
+              ? `${styles.link} ${styles.active}`
+              : styles.link
+          }
+        >
+          Deployments
+        </NavLink>
 
-      <NavLink to="/settings">
-        Settings
-      </NavLink>
+        <NavLink
+          to="/billing"
+          className={({ isActive }) =>
+            isActive
+              ? `${styles.link} ${styles.active}`
+              : styles.link
+          }
+        >
+          Billing
+        </NavLink>
 
-    </nav>
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            isActive
+              ? `${styles.link} ${styles.active}`
+              : styles.link
+          }
+        >
+          Settings
+        </NavLink>
+
+      </div>
+
+    </aside>
   );
 }
 

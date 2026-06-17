@@ -1,26 +1,38 @@
+import styles from "./AuthLayout.module.css";
+
 function AuthLayout({ children }) {
   return (
-    <div>
+    <div className={styles.layout}>
 
-      {/* LEFT SECTION */}
+      {/* LEFT PANEL */}
 
-      <div>
+      <div className={styles.leftPanel}>
 
-        <h1>
-          Rehman Cloud
-        </h1>
+        <div className={styles.brand}>
 
-        <p>
-          Enterprise AI Cloud Platform
-        </p>
+          <h1 className={styles.brandTitle}>
+            Build AI Products Faster
+          </h1>
+
+          <p className={styles.brandDescription}>
+            Create SaaS applications, AI agents,
+            cloud deployments and enterprise systems
+            from a single platform.
+          </p>
+
+        </div>
 
       </div>
 
-      {/* RIGHT SECTION */}
+      {/* RIGHT PANEL */}
 
-      <div>
+      <div className={styles.rightPanel}>
 
-        {children}
+        <div className={styles.authCard}>
+
+          {children}
+
+        </div>
 
       </div>
 

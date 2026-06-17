@@ -109,86 +109,104 @@ function Workspace() {
 
         {/* RIGHT PANEL */}
 
-        <div className={styles.panel}>
+<div className={styles.panel}>
 
-          <div className={styles.panelHeader}>
+  <div className={styles.panelHeader}>
 
-            <h2 className={styles.panelTitle}>
-              Project Overview
-            </h2>
+    <h2 className={styles.panelTitle}>
+      Project Overview
+    </h2>
 
-          </div>
+  </div>
 
-          <div className={styles.sidebar}>
+  <div className={styles.sidebar}>
 
-            <div className={styles.card}>
+    {/* GENERATED FILES */}
 
-              <div className={styles.cardTitle}>
-                Generated Files
-              </div>
+    <div className={styles.card}>
 
-              <div className={styles.cardText}>
-                Waiting for generation...
-              </div>
+      <div className={styles.cardTitle}>
+        Generated Files
+      </div>
 
-            </div>
+      <div className={styles.fileList}>
 
-            <div className={styles.card}>
+        <div className={styles.fileItem}>
+          App.jsx
+        </div>
 
-              <div className={styles.cardTitle}>
-                Deployment Status
-              </div>
+        <div className={styles.fileItem}>
+          Dashboard.jsx
+        </div>
 
-              <div className={styles.cardText}>
-                Not deployed
-              </div>
+        <div className={styles.fileItem}>
+          Workspace.jsx
+        </div>
 
-            </div>
-
-            <div className={styles.card}>
-
-              <div className={styles.cardTitle}>
-                Framework
-              </div>
-
-              <div className={styles.cardText}>
-                Not selected
-              </div>
-
-            </div>
-
-            <div className={styles.card}>
-
-              <div className={styles.cardTitle}>
-                Live URL
-              </div>
-
-              <div className={styles.cardText}>
-                Available after deployment
-              </div>
-
-            </div>
-
-            <div className={styles.card}>
-
-              <div className={styles.cardTitle}>
-                Subscription Plan
-              </div>
-
-              <div className={styles.cardText}>
-                Connected from backend
-              </div>
-
-            </div>
-
-          </div>
-
+        <div className={styles.fileItem}>
+          api.js
         </div>
 
       </div>
 
-    </DashboardLayout>
-  );
-}
+    </div>
 
-export default Workspace;
+    {/* DEPLOYMENT */}
+
+    <div className={styles.card}>
+
+      <div className={styles.cardTitle}>
+        Deployment Status
+      </div>
+
+      <div
+        className={styles.statusPending}
+      >
+        Waiting For Deployment
+      </div>
+
+    </div>
+
+    {/* FRAMEWORK */}
+
+    <div className={styles.card}>
+
+      <div className={styles.cardTitle}>
+        Framework
+      </div>
+
+      <div className={styles.cardText}>
+        React + Node.js
+      </div>
+
+    </div>
+
+    {/* LIVE URL */}
+
+    <div className={styles.card}>
+
+      <div className={styles.cardTitle}>
+        Live URL
+      </div>
+
+      <div className={styles.liveUrl}>
+        Available After Deployment
+      </div>
+
+    </div>
+
+    {/* DEPLOY */}
+
+    <div className={styles.card}>
+
+      <button
+        className={styles.deployButton}
+      >
+        Deploy Project
+      </button>
+
+    </div>
+
+  </div>
+
+</div>

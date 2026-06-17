@@ -1,22 +1,28 @@
+import styles from "./Topbar.module.css";
+
 function Topbar() {
   return (
-    <header>
+    <header className={styles.topbar}>
 
-      <div>
+      {/* LEFT */}
 
-        <h2>
+      <div className={styles.left}>
+
+        <h2 className={styles.title}>
           Enterprise Console
         </h2>
 
       </div>
 
-      <div>
+      {/* RIGHT */}
 
-        <button>
+      <div className={styles.right}>
+
+        <button className={styles.actionButton}>
           Notifications
         </button>
 
-        <button>
+        <button className={styles.actionButton}>
           Profile
         </button>
 

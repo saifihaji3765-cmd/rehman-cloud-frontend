@@ -1,4 +1,7 @@
+import { Link } from "react-router-dom";
+
 import AuthLayout from "../../../layouts/AuthLayout/AuthLayout.jsx";
+
 import styles from "./Login.module.css";
 
 function Login() {
@@ -7,71 +10,90 @@ function Login() {
 
       <div className={styles.container}>
 
-        {/* HEADER */}
+        {/* LEFT SIDE */}
 
-        <div className={styles.header}>
+        <div className={styles.left}>
 
-          <h1 className={styles.title}>
-            Welcome Back
+          <div className={styles.brand}>
+            ZyrionOS
+          </div>
+
+          <h1 className={styles.heading}>
+            Build, Deploy & Scale
+            Software With AI
           </h1>
 
-          <p className={styles.subtitle}>
-            Sign in to access your cloud workspace,
-            AI agents, deployments and enterprise tools.
+          <p className={styles.description}>
+            Create SaaS platforms, AI products,
+            cloud applications and business
+            systems from a single prompt.
           </p>
 
         </div>
 
-        {/* FORM */}
+        {/* RIGHT SIDE */}
 
-        <form className={styles.form}>
+        <div className={styles.card}>
 
-          <div className={styles.field}>
+          <h2 className={styles.title}>
+            Sign In
+          </h2>
 
-            <label className={styles.label}>
-              Email Address
-            </label>
+          <p className={styles.subtitle}>
+            Access your workspace
+          </p>
 
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className={styles.input}
-            />
+          <input
+            type="email"
+            placeholder="Email Address"
+            className={styles.input}
+          />
 
-          </div>
-
-          <div className={styles.field}>
-
-            <label className={styles.label}>
-              Password
-            </label>
-
-            <input
-              type="password"
-              placeholder="Enter your password"
-              className={styles.input}
-            />
-
-          </div>
+          <input
+            type="password"
+            placeholder="Password"
+            className={styles.input}
+          />
 
           <button
-            type="submit"
-            className={styles.button}
+            className={styles.primaryButton}
           >
             Sign In
           </button>
 
-        </form>
+          <div className={styles.divider}>
+            OR
+          </div>
 
-        {/* FOOTER */}
+          <button
+            className={styles.oauthButton}
+          >
+            Continue with Google
+          </button>
 
-        <div className={styles.footer}>
+          <button
+            className={styles.oauthButton}
+          >
+            Continue with GitHub
+          </button>
 
-          Don't have an account?
+          <div className={styles.footer}>
 
-          <span className={styles.link}>
-            Create Account
-          </span>
+            <Link
+              to="/register"
+              className={styles.link}
+            >
+              Create Account
+            </Link>
+
+            <Link
+              to="/forgot-password"
+              className={styles.link}
+            >
+              Forgot Password
+            </Link>
+
+          </div>
 
         </div>
 

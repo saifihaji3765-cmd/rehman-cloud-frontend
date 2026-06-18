@@ -1,7 +1,3 @@
-/* =========================
-   SIDEBAR
-========================= */
-
 .sidebar{
 
   height:100%;
@@ -10,11 +6,39 @@
 
   flex-direction:column;
 
+  padding:16px;
+
 }
 
-/* =========================
-   MENU
-========================= */
+.brand{
+
+  padding:16px;
+
+  margin-bottom:20px;
+
+  border-bottom:1px solid #1f2937;
+
+}
+
+.logo{
+
+  color:#ffffff;
+
+  font-size:24px;
+
+  font-weight:800;
+
+}
+
+.tagline{
+
+  color:#94a3b8;
+
+  font-size:13px;
+
+  margin-top:6px;
+
+}
 
 .menu{
 
@@ -22,13 +46,9 @@
 
   flex-direction:column;
 
-  gap:8px;
+  gap:10px;
 
 }
-
-/* =========================
-   LINK
-========================= */
 
 .link{
 
@@ -44,10 +64,6 @@
 
   color:#cbd5e1;
 
-  font-size:14px;
-
-  font-weight:500;
-
   transition:0.3s;
 
 }
@@ -56,18 +72,50 @@
 
   background:#1e293b;
 
-  color:#ffffff;
-
 }
-
-/* =========================
-   ACTIVE
-========================= */
 
 .active{
 
   background:#6366f1;
 
   color:#ffffff;
+
+}
+
+.footer{
+
+  margin-top:auto;
+
+  padding-top:20px;
+
+}
+
+.planCard{
+
+  background:#111827;
+
+  border:1px solid #1f2937;
+
+  border-radius:14px;
+
+  padding:16px;
+
+}
+
+.planTitle{
+
+  color:#ffffff;
+
+  font-weight:700;
+
+}
+
+.planText{
+
+  color:#94a3b8;
+
+  font-size:13px;
+
+  margin-top:8px;
 
 }

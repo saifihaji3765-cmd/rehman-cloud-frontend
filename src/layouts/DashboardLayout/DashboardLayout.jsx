@@ -7,32 +7,16 @@ function DashboardLayout({ children }) {
   return (
     <div className={styles.layout}>
 
-      {/* SIDEBAR */}
-
       <aside className={styles.sidebar}>
-
-        <div className={styles.sidebarHeader}>
-
-          <h2 className={styles.sidebarTitle}>
-            Vertex Cloud
-          </h2>
-
-        </div>
-
         <Sidebar />
-
       </aside>
-
-      {/* MAIN AREA */}
 
       <div className={styles.mainArea}>
 
         <Topbar />
 
         <main className={styles.content}>
-
           {children}
-
         </main>
 
       </div>

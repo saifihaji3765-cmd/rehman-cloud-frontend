@@ -83,6 +83,63 @@ function Dashboard() {
 
         </div>
 
+        <div className={styles.highlightCard}>
+
+  <div className={styles.highlightTitle}>
+    ZyrionOS Platform Status
+  </div>
+
+  <div className={styles.highlightValue}>
+    Operational
+  </div>
+
+  <div className={styles.highlightText}>
+    AI infrastructure, deployments,
+    monitoring and cloud services
+    are running normally.
+  </div>
+
+</div>
+
+<div className={styles.healthGrid}>
+
+  <div className={styles.healthCard}>
+
+    <div className={styles.healthTitle}>
+      Infrastructure
+    </div>
+
+    <div className={styles.healthValue}>
+      Healthy
+    </div>
+
+  </div>
+
+  <div className={styles.healthCard}>
+
+    <div className={styles.healthTitle}>
+      Deployments
+    </div>
+
+    <div className={styles.healthValue}>
+      Stable
+    </div>
+
+  </div>
+
+  <div className={styles.healthCard}>
+
+    <div className={styles.healthTitle}>
+      AI Services
+    </div>
+
+    <div className={styles.healthValue}>
+      Active
+    </div>
+
+  </div>
+
+</div>
         <div className={styles.contentGrid}>
 
           <div className={styles.section}>

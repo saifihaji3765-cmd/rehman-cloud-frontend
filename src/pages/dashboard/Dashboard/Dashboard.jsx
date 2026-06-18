@@ -8,19 +8,17 @@ function Dashboard() {
 
       <div className={styles.page}>
 
-        {/* HEADER */}
-
         <div className={styles.header}>
 
           <div>
 
             <h1 className={styles.title}>
-              Dashboard
+              ZyrionOS Control Center
             </h1>
 
             <p className={styles.subtitle}>
-              Monitor infrastructure, AI agents,
-              deployments and workspace activity.
+              Manage projects, deployments,
+              infrastructure and subscriptions.
             </p>
 
           </div>
@@ -33,8 +31,6 @@ function Dashboard() {
 
         </div>
 
-        {/* KPI CARDS */}
-
         <div className={styles.statsGrid}>
 
           <div className={styles.statCard}>
@@ -44,19 +40,7 @@ function Dashboard() {
             </div>
 
             <div className={styles.statValue}>
-              12
-            </div>
-
-          </div>
-
-          <div className={styles.statCard}>
-
-            <div className={styles.statLabel}>
-              AI Agents
-            </div>
-
-            <div className={styles.statValue}>
-              28
+              --
             </div>
 
           </div>
@@ -68,7 +52,7 @@ function Dashboard() {
             </div>
 
             <div className={styles.statValue}>
-              143
+              --
             </div>
 
           </div>
@@ -76,62 +60,74 @@ function Dashboard() {
           <div className={styles.statCard}>
 
             <div className={styles.statLabel}>
-              Team Members
+              Current Plan
             </div>
 
             <div className={styles.statValue}>
-              8
+              --
+            </div>
+
+          </div>
+
+          <div className={styles.statCard}>
+
+            <div className={styles.statLabel}>
+              AI Credits
+            </div>
+
+            <div className={styles.statValue}>
+              --
             </div>
 
           </div>
 
         </div>
 
-        {/* OVERVIEW */}
+        <div className={styles.contentGrid}>
 
-        <div className={styles.section}>
+          <div className={styles.section}>
 
-          <h2 className={styles.sectionTitle}>
-            Workspace Overview
-          </h2>
+            <h2 className={styles.sectionTitle}>
+              Recent Activity
+            </h2>
 
-          <p className={styles.sectionText}>
-            Manage AI applications, cloud deployments,
-            monitoring systems, infrastructure,
-            automation pipelines and enterprise workloads
-            from one unified platform.
-          </p>
+            <div className={styles.activityItem}>
+              Activity will appear here
+            </div>
 
-        </div>
+            <div className={styles.activityItem}>
+              Deployment history
+            </div>
 
-        {/* DEPLOYMENTS */}
+            <div className={styles.activityItem}>
+              Generated projects
+            </div>
 
-        <div className={styles.section}>
+          </div>
 
-          <h2 className={styles.sectionTitle}>
-            Recent Deployments
-          </h2>
+          <div className={styles.section}>
 
-          <p className={styles.sectionText}>
-            Latest production deployments,
-            build history and environment status
-            will appear here.
-          </p>
+            <h2 className={styles.sectionTitle}>
+              Infrastructure
+            </h2>
 
-        </div>
+            <div className={styles.activityItem}>
+              CPU: --
+            </div>
 
-        {/* AI AGENTS */}
+            <div className={styles.activityItem}>
+              RAM: --
+            </div>
 
-        <div className={styles.section}>
+            <div className={styles.activityItem}>
+              Storage: --
+            </div>
 
-          <h2 className={styles.sectionTitle}>
-            AI Agents
-          </h2>
+            <div className={styles.activityItem}>
+              Bandwidth: --
+            </div>
 
-          <p className={styles.sectionText}>
-            Monitor autonomous agents,
-            workflows, automations and AI operations.
-          </p>
+          </div>
 
         </div>
 

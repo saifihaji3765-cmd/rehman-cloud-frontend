@@ -325,3 +325,65 @@
   }
 
 }
+.card{
+
+  background:rgba(17,24,39,0.85);
+
+  backdrop-filter:blur(20px);
+
+  -webkit-backdrop-filter:blur(20px);
+
+  box-shadow:
+  0 20px 60px rgba(0,0,0,0.35);
+
+}
+
+.brand{
+
+  position:relative;
+
+}
+
+.brand::after{
+
+  content:"";
+
+  position:absolute;
+
+  left:0;
+
+  bottom:-8px;
+
+  width:80px;
+
+  height:3px;
+
+  border-radius:999px;
+
+  background:#6366f1;
+
+}
+
+.primaryButton{
+
+  transition:all .25s ease;
+
+}
+
+.primaryButton:hover{
+
+  transform:translateY(-2px);
+
+}
+
+.oauthButton{
+
+  transition:all .25s ease;
+
+}
+
+.oauthButton:hover{
+
+  transform:translateY(-2px);
+
+}

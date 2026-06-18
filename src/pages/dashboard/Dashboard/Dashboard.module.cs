@@ -186,3 +186,105 @@
   }
 
 }
+/* =========================
+   PREMIUM CARDS
+========================= */
+
+.highlightCard{
+
+  background:linear-gradient(
+    135deg,
+    #6366f1,
+    #8b5cf6
+  );
+
+  border-radius:20px;
+
+  padding:28px;
+
+  color:#ffffff;
+
+}
+
+.highlightTitle{
+
+  font-size:16px;
+
+  opacity:0.9;
+
+}
+
+.highlightValue{
+
+  font-size:42px;
+
+  font-weight:900;
+
+  margin-top:12px;
+
+}
+
+.highlightText{
+
+  margin-top:12px;
+
+  opacity:0.9;
+
+}
+
+/* =========================
+   HEALTH
+========================= */
+
+.healthGrid{
+
+  display:grid;
+
+  grid-template-columns:
+  repeat(3,1fr);
+
+  gap:20px;
+
+}
+
+.healthCard{
+
+  background:#111827;
+
+  border:1px solid #1f2937;
+
+  border-radius:16px;
+
+  padding:20px;
+
+}
+
+.healthTitle{
+
+  color:#94a3b8;
+
+  font-size:14px;
+
+}
+
+.healthValue{
+
+  color:#22c55e;
+
+  font-size:24px;
+
+  font-weight:800;
+
+  margin-top:10px;
+
+}
+
+@media(max-width:900px){
+
+  .healthGrid{
+
+    grid-template-columns:1fr;
+
+  }
+
+}

@@ -49,15 +49,34 @@ function Login() {
             className={styles.input}
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className={styles.input}
-          />
+          <div className={styles.passwordWrapper}>
 
-          <button
-            className={styles.primaryButton}
-          >
+  <input
+    type="password"
+    placeholder="Password"
+    className={styles.input}
+  />
+
+  <button
+    type="button"
+    className={styles.eyeButton}
+  >
+    👁
+  </button>
+
+</div>
+
+         <div className={styles.rememberRow}>
+
+  <label className={styles.checkboxLabel}>
+
+    <input type="checkbox" />
+
+    Remember Me
+
+  </label>
+
+</div>
             Sign In
           </button>
 

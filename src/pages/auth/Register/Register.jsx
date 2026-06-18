@@ -1,4 +1,7 @@
+import { Link } from "react-router-dom";
+
 import AuthLayout from "../../../layouts/AuthLayout/AuthLayout.jsx";
+
 import styles from "./Register.module.css";
 
 function Register() {
@@ -7,99 +10,128 @@ function Register() {
 
       <div className={styles.container}>
 
-        {/* HEADER */}
+        {/* LEFT */}
 
-        <div className={styles.header}>
+        <div className={styles.left}>
 
-          <h1 className={styles.title}>
-            Create Account
+          <div className={styles.brand}>
+            ZyrionOS
+          </div>
+
+          <h1 className={styles.heading}>
+            Create Your AI Cloud Workspace
           </h1>
 
-          <p className={styles.subtitle}>
-            Create your workspace and start building
-            AI products, SaaS applications and cloud systems.
+          <p className={styles.description}>
+            Join ZyrionOS and build SaaS products,
+            AI applications, automation systems and
+            cloud infrastructure from a single prompt.
           </p>
 
         </div>
 
-        {/* FORM */}
+        {/* RIGHT */}
 
-        <form className={styles.form}>
+        <div className={styles.card}>
 
-          <div className={styles.field}>
+          <h2 className={styles.title}>
+            Create Account
+          </h2>
 
-            <label className={styles.label}>
-              Full Name
-            </label>
+          <p className={styles.subtitle}>
+            Start building with ZyrionOS
+          </p>
 
-            <input
-              type="text"
-              placeholder="Enter your full name"
-              className={styles.input}
-            />
+          <input
+            type="text"
+            placeholder="Full Name"
+            className={styles.input}
+          />
 
-          </div>
+          <input
+            type="email"
+            placeholder="Email Address"
+            className={styles.input}
+          />
 
-          <div className={styles.field}>
-
-            <label className={styles.label}>
-              Email Address
-            </label>
-
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className={styles.input}
-            />
-
-          </div>
-
-          <div className={styles.field}>
-
-            <label className={styles.label}>
-              Password
-            </label>
+          <div className={styles.passwordWrapper}>
 
             <input
               type="password"
-              placeholder="Create a password"
+              placeholder="Password"
               className={styles.input}
             />
 
+            <button
+              type="button"
+              className={styles.eyeButton}
+            >
+              👁
+            </button>
+
           </div>
 
-          <div className={styles.field}>
-
-            <label className={styles.label}>
-              Confirm Password
-            </label>
+          <div className={styles.passwordWrapper}>
 
             <input
               type="password"
-              placeholder="Confirm your password"
+              placeholder="Confirm Password"
               className={styles.input}
             />
 
+            <button
+              type="button"
+              className={styles.eyeButton}
+            >
+              👁
+            </button>
+
           </div>
+
+          <label className={styles.checkboxLabel}>
+
+            <input type="checkbox" />
+
+            I agree to the Terms and Privacy Policy
+
+          </label>
 
           <button
-            type="submit"
-            className={styles.button}
+            className={styles.primaryButton}
           >
             Create Account
           </button>
 
-        </form>
+          <div className={styles.divider}>
+            OR
+          </div>
 
-        {/* FOOTER */}
+          <button
+            className={styles.oauthButton}
+          >
+            Continue with Google
+          </button>
 
-        <div className={styles.footer}>
+          <button
+            className={styles.oauthButton}
+          >
+            Continue with GitHub
+          </button>
 
-          Already have an account?
+          <div className={styles.footer}>
 
-          <span className={styles.link}>
-            Sign In
-          </span>
+            <span>
+              Already have an account?
+            </span>
+
+            <Link
+              to="/login"
+              className={styles.link}
+            >
+              Sign In
+            </Link>
+
+          </div>
 
         </div>
 

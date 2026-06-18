@@ -4,7 +4,15 @@ function Topbar() {
   return (
     <header className={styles.topbar}>
 
+      {/* LEFT */}
+
       <div className={styles.left}>
+
+        <div
+          className={styles.workspaceSwitcher}
+        >
+          ZyrionOS Workspace
+        </div>
 
         <input
           className={styles.searchBox}
@@ -13,7 +21,27 @@ function Topbar() {
 
       </div>
 
+      {/* RIGHT */}
+
       <div className={styles.right}>
+
+        <div
+          className={styles.systemStatus}
+        >
+
+          <div
+            className={styles.statusDot}
+          />
+
+          All Systems Operational
+
+        </div>
+
+        <div
+          className={styles.creditBadge}
+        >
+          AI Credits
+        </div>
 
         <button
           className={styles.actionButton}
@@ -21,14 +49,22 @@ function Topbar() {
           Notifications
         </button>
 
-        <button
-          className={styles.actionButton}
+        <div
+          className={styles.profileInfo}
         >
-          Upgrade
-        </button>
 
-        <div className={styles.profile}>
-          Z
+          <div
+            className={styles.profile}
+          >
+            Z
+          </div>
+
+          <div
+            className={styles.profileName}
+          >
+            Account
+          </div>
+
         </div>
 
       </div>

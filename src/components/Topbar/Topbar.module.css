@@ -1,107 +1,103 @@
-.topbar{
+/* =========================
+   WORKSPACE SWITCHER
+========================= */
 
-  height:72px;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:space-between;
-
-  padding:0 24px;
-
-  background:#111827;
-
-  border-bottom:1px solid #1f2937;
-
-}
-
-.left{
-
-  display:flex;
-
-  align-items:center;
-
-  gap:16px;
-
-}
-
-.searchBox{
-
-  width:320px;
+.workspaceSwitcher{
 
   height:42px;
 
-  background:#0f172a;
-
-  border:1px solid #1f2937;
-
-  border-radius:12px;
-
   padding:0 14px;
-
-  color:#ffffff;
-
-  outline:none;
-
-}
-
-.right{
 
   display:flex;
 
   align-items:center;
 
-  gap:12px;
-
-}
-
-.actionButton{
-
-  height:40px;
-
-  padding:0 14px;
-
-  border:none;
-
-  border-radius:10px;
+  border-radius:12px;
 
   background:#1e293b;
 
   color:#ffffff;
 
-  cursor:pointer;
+  font-weight:600;
 
 }
 
-.profile{
+/* =========================
+   STATUS
+========================= */
 
-  height:40px;
-
-  min-width:40px;
-
-  border-radius:50%;
-
-  background:#6366f1;
-
-  color:#ffffff;
+.systemStatus{
 
   display:flex;
 
   align-items:center;
 
-  justify-content:center;
+  gap:8px;
 
-  font-weight:700;
+  color:#22c55e;
+
+  font-size:14px;
 
 }
 
-@media(max-width:768px){
+.statusDot{
 
-  .searchBox{
+  width:8px;
 
-    display:none;
+  height:8px;
 
-  }
+  border-radius:50%;
+
+  background:#22c55e;
+
+}
+
+/* =========================
+   CREDIT CARD
+========================= */
+
+.creditBadge{
+
+  height:40px;
+
+  padding:0 14px;
+
+  border-radius:10px;
+
+  background:#0f172a;
+
+  border:1px solid #1f2937;
+
+  display:flex;
+
+  align-items:center;
+
+  color:#ffffff;
+
+  font-size:14px;
+
+}
+
+/* =========================
+   PROFILE
+========================= */
+
+.profileInfo{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:10px;
+
+}
+
+.profileName{
+
+  color:#ffffff;
+
+  font-size:14px;
+
+  font-weight:600;
 
 }

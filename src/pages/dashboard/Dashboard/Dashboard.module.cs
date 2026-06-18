@@ -1,7 +1,3 @@
-/* =========================
-   PAGE
-========================= */
-
 .page{
 
   display:flex;
@@ -11,10 +7,6 @@
   gap:24px;
 
 }
-
-/* =========================
-   HEADER
-========================= */
 
 .header{
 
@@ -30,7 +22,7 @@
 
   color:#ffffff;
 
-  font-size:32px;
+  font-size:34px;
 
   font-weight:800;
 
@@ -44,10 +36,6 @@
 
 }
 
-/* =========================
-   ACTION
-========================= */
-
 .createButton{
 
   height:48px;
@@ -58,19 +46,15 @@
 
   border-radius:12px;
 
-  cursor:pointer;
-
   background:#6366f1;
 
   color:#ffffff;
 
   font-weight:600;
 
-}
+  cursor:pointer;
 
-/* =========================
-   STATS
-========================= */
+}
 
 .statsGrid{
 
@@ -91,7 +75,7 @@
 
   border-radius:16px;
 
-  padding:20px;
+  padding:22px;
 
 }
 
@@ -107,7 +91,7 @@
 
   color:#ffffff;
 
-  font-size:32px;
+  font-size:30px;
 
   font-weight:800;
 
@@ -115,9 +99,16 @@
 
 }
 
-/* =========================
-   SECTION
-========================= */
+.contentGrid{
+
+  display:grid;
+
+  grid-template-columns:
+  2fr 1fr;
+
+  gap:20px;
+
+}
 
 .section{
 
@@ -139,21 +130,25 @@
 
   font-weight:700;
 
-  margin-bottom:12px;
+  margin-bottom:16px;
 
 }
 
-.sectionText{
+.activityItem{
 
-  color:#94a3b8;
+  padding:14px 0;
 
-  line-height:1.7;
+  border-bottom:1px solid #1f2937;
+
+  color:#cbd5e1;
 
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
+.activityItem:last-child{
+
+  border-bottom:none;
+
+}
 
 @media(max-width:1200px){
 
@@ -161,6 +156,12 @@
 
     grid-template-columns:
     repeat(2,1fr);
+
+  }
+
+  .contentGrid{
+
+    grid-template-columns:1fr;
 
   }
 

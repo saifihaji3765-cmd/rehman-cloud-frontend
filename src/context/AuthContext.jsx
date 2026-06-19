@@ -12,8 +12,6 @@ import {
 
 import {
 
-  getCurrentUser,
-
   getStoredUser,
 
   isAuthenticated,
@@ -32,44 +30,37 @@ export function AuthProvider({
 }) {
 
   const [user,setUser] =
-  useState(
-
-    getStoredUser()
-
-  );
+  useState(null);
 
   const [loading,setLoading] =
   useState(true);
 
-  const [authenticated,
-  setAuthenticated] =
+  const [
 
-  useState(
+    authenticated,
 
-    isAuthenticated()
+    setAuthenticated
 
-  );
+  ] = useState(false);
 
   useEffect(()=>{
 
-    async function initialize(){
+    try{
 
-      try{
+      if(
 
-        if(
+        isAuthenticated()
 
-          isAuthenticated()
+      ){
 
-        ){
+        const storedUser =
 
-          const response =
+        getStoredUser();
 
-          await getCurrentUser();
+        if(storedUser){
 
           setUser(
-
-            response.user
-
+            storedUser
           );
 
           setAuthenticated(
@@ -80,37 +71,52 @@ export function AuthProvider({
 
       }
 
-      catch(error){
+    }
 
-        console.error(
-          error
-        );
+    catch(error){
 
-      }
-
-      finally{
-
-        setLoading(
-          false
-        );
-
-      }
+      console.error(
+        "Auth initialization failed:",
+        error
+      );
 
     }
 
-    initialize();
+    finally{
+
+      setLoading(
+        false
+      );
+
+    }
 
   },[]);
 
   async function signOut(){
 
-    await logout();
+    try{
 
-    setUser(null);
+      await logout();
 
-    setAuthenticated(
-      false
-    );
+    }
+
+    catch(error){
+
+      console.error(
+        error
+      );
+
+    }
+
+    finally{
+
+      setUser(null);
+
+      setAuthenticated(
+        false
+      );
+
+    }
 
   }
 
@@ -146,8 +152,22 @@ export function AuthProvider({
 
 export function useAuth(){
 
-  return useContext(
+  const context =
+
+  useContext(
     AuthContext
   );
+
+  if(!context){
+
+    throw new Error(
+
+      "useAuth must be used inside AuthProvider"
+
+    );
+
+  }
+
+  return context;
 
 }

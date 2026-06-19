@@ -1,29 +1,39 @@
 import api from "./api";
 
 /* =========================
-GENERATE PROJECT
+CREATE PROJECT
 ========================= */
 
-export async function generateProject(
-  prompt
+export async function createProject(
+  projectData
 ) {
 
   return api.post(
 
-    "/api/workspace/generate",
+    "/api/projects/create",
 
-    {
-
-      prompt
-
-    }
+    projectData
 
   );
 
 }
 
 /* =========================
-GET PROJECT
+MY PROJECTS
+========================= */
+
+export async function getProjects() {
+
+  return api.get(
+
+    "/api/projects/me"
+
+  );
+
+}
+
+/* =========================
+SINGLE PROJECT
 ========================= */
 
 export async function getProject(
@@ -32,68 +42,26 @@ export async function getProject(
 
   return api.get(
 
-    `/api/workspace/${projectId}`
+    `/api/projects/${projectId}`
 
   );
 
 }
 
 /* =========================
-GET FILES
+UPDATE PROJECT
 ========================= */
 
-export async function getFiles(
-  projectId
-) {
-
-  return api.get(
-
-    `/api/workspace/${projectId}/files`
-
-  );
-
-}
-
-/* =========================
-GET FILE
-========================= */
-
-export async function getFile(
+export async function updateProject(
   projectId,
-  fileId
-) {
-
-  return api.get(
-
-    `/api/workspace/${projectId}/files/${fileId}`
-
-  );
-
-}
-
-/* =========================
-SAVE FILE
-========================= */
-
-export async function saveFile(
-
-  projectId,
-
-  fileId,
-
-  content
-
+  data
 ) {
 
   return api.put(
 
-    `/api/workspace/${projectId}/files/${fileId}`,
+    `/api/projects/update/${projectId}`,
 
-    {
-
-      content
-
-    }
+    data
 
   );
 
@@ -109,7 +77,23 @@ export async function deleteProject(
 
   return api.remove(
 
-    `/api/workspace/${projectId}`
+    `/api/projects/delete/${projectId}`
+
+  );
+
+}
+
+/* =========================
+DEPLOY PROJECT
+========================= */
+
+export async function deployProject(
+  projectId
+) {
+
+  return api.post(
+
+    `/api/projects/deploy/${projectId}`
 
   );
 

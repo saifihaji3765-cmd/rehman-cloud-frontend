@@ -1,7 +1,39 @@
 import styles from "./Topbar.module.css";
 
+import {
+
+  APP_NAME
+
+} from "../../config/constants";
+
+import {
+
+  useAuth
+
+} from "../../context/AuthContext";
+
 function Topbar() {
+
+  const {
+
+    user
+
+  } = useAuth();
+
+  const initials =
+
+    user?.name
+
+      ? user.name
+          .charAt(0)
+          .toUpperCase()
+
+      : APP_NAME
+          .charAt(0)
+          .toUpperCase();
+
   return (
+
     <header className={styles.topbar}>
 
       {/* LEFT */}
@@ -11,7 +43,9 @@ function Topbar() {
         <div
           className={styles.workspaceSwitcher}
         >
-          ZyrionOS Workspace
+
+          {APP_NAME} Workspace
+
         </div>
 
         <input
@@ -40,7 +74,11 @@ function Topbar() {
         <div
           className={styles.creditBadge}
         >
-          AI Credits
+
+          {user?.credits ??
+
+            "AI Credits"}
+
         </div>
 
         <button
@@ -56,13 +94,19 @@ function Topbar() {
           <div
             className={styles.profile}
           >
-            Z
+
+            {initials}
+
           </div>
 
           <div
             className={styles.profileName}
           >
-            Account
+
+            {user?.name ||
+
+              "Account"}
+
           </div>
 
         </div>
@@ -70,7 +114,9 @@ function Topbar() {
       </div>
 
     </header>
+
   );
+
 }
 
 export default Topbar;

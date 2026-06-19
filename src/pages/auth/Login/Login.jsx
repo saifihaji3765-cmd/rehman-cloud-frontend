@@ -1,21 +1,135 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+
+import {
+
+  Link,
+
+  useNavigate
+
+} from "react-router-dom";
 
 import AuthLayout from "../../../layouts/AuthLayout/AuthLayout.jsx";
 
 import styles from "./Login.module.css";
 
+import {
+
+  login,
+
+  saveAuth,
+
+  loginWithGoogle,
+
+  loginWithGithub
+
+} from "../../../services/authService";
+
+import {
+
+  useAuth
+
+} from "../../../context/AuthContext";
+
+import {
+
+  APP_NAME
+
+} from "../../../config/constants";
+
 function Login() {
+
+  const navigate =
+  useNavigate();
+
+  const { setUser } =
+  useAuth();
+
+  const [email,setEmail] =
+  useState("");
+
+  const [password,setPassword] =
+  useState("");
+
+  const [showPassword,
+  setShowPassword] =
+  useState(false);
+
+  const [loading,
+  setLoading] =
+  useState(false);
+
+  const [error,
+  setError] =
+  useState("");
+
+  async function handleLogin(){
+
+    try{
+
+      setLoading(true);
+
+      setError("");
+
+      const response =
+
+      await login(
+
+        email,
+
+        password
+
+      );
+
+      saveAuth(
+
+        response.token,
+
+        response.user
+
+      );
+
+      setUser(
+
+        response.user
+
+      );
+
+      navigate(
+        "/dashboard"
+      );
+
+    }
+
+    catch(error){
+
+      setError(
+
+        error.message ||
+
+        "Login Failed"
+
+      );
+
+    }
+
+    finally{
+
+      setLoading(false);
+
+    }
+
+  }
+
   return (
+
     <AuthLayout>
 
       <div className={styles.container}>
 
-        {/* LEFT SIDE */}
-
         <div className={styles.left}>
 
           <div className={styles.brand}>
-            ZyrionOS
+            {APP_NAME}
           </div>
 
           <h1 className={styles.heading}>
@@ -24,14 +138,14 @@ function Login() {
           </h1>
 
           <p className={styles.description}>
-            Create SaaS platforms, AI products,
-            cloud applications and business
-            systems from a single prompt.
+            Create SaaS platforms,
+            AI products,
+            cloud applications
+            and business systems
+            from a single prompt.
           </p>
 
         </div>
-
-        {/* RIGHT SIDE */}
 
         <div className={styles.card}>
 
@@ -43,73 +157,181 @@ function Login() {
             Access your workspace
           </p>
 
+          {error && (
+
+            <p
+              style={{
+                color:"#ef4444",
+                marginBottom:"12px"
+              }}
+            >
+
+              {error}
+
+            </p>
+
+          )}
+
           <input
             type="email"
             placeholder="Email Address"
             className={styles.input}
+            value={email}
+            onChange={(e)=>
+
+              setEmail(
+                e.target.value
+              )
+
+            }
           />
 
-          <div className={styles.passwordWrapper}>
+          <div
+            className={
+              styles.passwordWrapper
+            }
+          >
 
-  <input
-    type="password"
-    placeholder="Password"
-    className={styles.input}
-  />
+            <input
+              type={
+                showPassword
+                ? "text"
+                : "password"
+              }
+              placeholder="Password"
+              className={styles.input}
+              value={password}
+              onChange={(e)=>
 
-  <button
-    type="button"
-    className={styles.eyeButton}
-  >
-    👁
-  </button>
+                setPassword(
+                  e.target.value
+                )
 
-</div>
+              }
+            />
 
-         <div className={styles.rememberRow}>
+            <button
+              type="button"
+              className={
+                styles.eyeButton
+              }
+              onClick={()=>
 
-  <label className={styles.checkboxLabel}>
+                setShowPassword(
+                  !showPassword
+                )
 
-    <input type="checkbox" />
+              }
+            >
 
-    Remember Me
+              {showPassword
+                ? "🙈"
+                : "👁"}
 
-  </label>
+            </button>
 
-</div>
-            Sign In
-          </button>
+          </div>
 
-          <div className={styles.divider}>
-            OR
+          <div
+            className={
+              styles.rememberRow
+            }
+          >
+
+            <label
+              className={
+                styles.checkboxLabel
+              }
+            >
+
+              <input
+                type="checkbox"
+              />
+
+              Remember Me
+
+            </label>
+
           </div>
 
           <button
-            className={styles.oauthButton}
+            className={
+              styles.primaryButton
+            }
+            onClick={handleLogin}
+            disabled={loading}
           >
+
+            {loading
+
+              ? "Signing In..."
+
+              : "Sign In"}
+
+          </button>
+
+          <div
+            className={
+              styles.divider
+            }
+          >
+
+            OR
+
+          </div>
+
+          <button
+            className={
+              styles.oauthButton
+            }
+            onClick={
+              loginWithGoogle
+            }
+          >
+
             Continue with Google
+
           </button>
 
           <button
-            className={styles.oauthButton}
+            className={
+              styles.oauthButton
+            }
+            onClick={
+              loginWithGithub
+            }
           >
+
             Continue with GitHub
+
           </button>
 
-          <div className={styles.footer}>
+          <div
+            className={
+              styles.footer
+            }
+          >
 
             <Link
               to="/register"
-              className={styles.link}
+              className={
+                styles.link
+              }
             >
+
               Create Account
+
             </Link>
 
             <Link
               to="/forgot-password"
-              className={styles.link}
+              className={
+                styles.link
+              }
             >
+
               Forgot Password
+
             </Link>
 
           </div>
@@ -119,7 +341,9 @@ function Login() {
       </div>
 
     </AuthLayout>
+
   );
+
 }
 
 export default Login;

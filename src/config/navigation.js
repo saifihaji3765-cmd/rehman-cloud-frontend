@@ -1,28 +1,53 @@
 const navigation = [
 
   {
-    name:"Dashboard",
-    path:"/dashboard"
+    id: "dashboard",
+
+    label: "Dashboard",
+
+    path: "/dashboard",
+
+    icon: "dashboard"
   },
 
   {
-    name:"Workspace",
-    path:"/workspace"
+    id: "workspace",
+
+    label: "Workspace",
+
+    path: "/workspace",
+
+    icon: "workspace"
   },
 
   {
-    name:"Deployments",
-    path:"/deployments"
+    id: "deployments",
+
+    label: "Deployments",
+
+    path: "/deployments",
+
+    icon: "deployments"
   },
 
   {
-    name:"Billing",
-    path:"/billing"
+    id: "billing",
+
+    label: "Billing",
+
+    path: "/billing",
+
+    icon: "billing"
   },
 
   {
-    name:"Settings",
-    path:"/settings"
+    id: "settings",
+
+    label: "Settings",
+
+    path: "/settings",
+
+    icon: "settings"
   }
 
 ];

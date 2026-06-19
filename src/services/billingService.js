@@ -1,28 +1,18 @@
 import api from "./api";
 
 /* =========================
-GET BILLING
+CREATE SUBSCRIPTION
 ========================= */
 
-export async function getBilling() {
+export async function createSubscription(
+  plan
+) {
 
-  return api.get(
+  return api.post(
 
-    "/api/billing"
+    "/api/subscription/create",
 
-  );
-
-}
-
-/* =========================
-GET INVOICES
-========================= */
-
-export async function getInvoices() {
-
-  return api.get(
-
-    "/api/billing/invoices"
+    { plan }
 
   );
 
@@ -36,7 +26,7 @@ export async function getSubscription() {
 
   return api.get(
 
-    "/api/subscription"
+    "/api/subscription/me"
 
   );
 
@@ -46,7 +36,7 @@ export async function getSubscription() {
 UPGRADE PLAN
 ========================= */
 
-export async function upgradePlan(
+export async function upgradeSubscription(
   plan
 ) {
 
@@ -55,6 +45,34 @@ export async function upgradePlan(
     "/api/subscription/upgrade",
 
     { plan }
+
+  );
+
+}
+
+/* =========================
+CANCEL SUBSCRIPTION
+========================= */
+
+export async function cancelSubscription() {
+
+  return api.post(
+
+    "/api/subscription/cancel"
+
+  );
+
+}
+
+/* =========================
+USAGE
+========================= */
+
+export async function getUsage() {
+
+  return api.get(
+
+    "/api/subscription/usage"
 
   );
 

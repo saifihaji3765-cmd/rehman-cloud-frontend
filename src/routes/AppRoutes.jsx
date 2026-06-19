@@ -9,52 +9,87 @@ import Deployments from "../pages/deployments/Deployments/Deployments.jsx";
 import Billing from "../pages/billing/Billing/Billing.jsx";
 import Settings from "../pages/settings/Settings/Settings.jsx";
 
+import ProtectedRoute from "./ProtectedRoute.jsx";
+import PublicRoute from "./PublicRoute.jsx";
+
 function AppRoutes() {
   return (
     <Routes>
 
-      {/* AUTH */}
+      {/* PUBLIC */}
 
       <Route
         path="/"
-        element={<Login />}
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
       />
 
       <Route
         path="/login"
-        element={<Login />}
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
       />
 
       <Route
         path="/register"
-        element={<Register />}
+        element={
+          <PublicRoute>
+            <Register />
+          </PublicRoute>
+        }
       />
 
-      {/* APP */}
+      {/* PROTECTED */}
 
       <Route
         path="/dashboard"
-        element={<Dashboard />}
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/workspace"
-        element={<Workspace />}
+        element={
+          <ProtectedRoute>
+            <Workspace />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/deployments"
-        element={<Deployments />}
+        element={
+          <ProtectedRoute>
+            <Deployments />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/billing"
-        element={<Billing />}
+        element={
+          <ProtectedRoute>
+            <Billing />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/settings"
-        element={<Settings />}
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
       />
 
     </Routes>

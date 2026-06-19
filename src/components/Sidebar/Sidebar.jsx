@@ -2,8 +2,20 @@ import { NavLink } from "react-router-dom";
 
 import styles from "./Sidebar.module.css";
 
+import navigation from "../../config/navigation";
+
+import {
+
+  APP_NAME,
+
+  APP_TAGLINE
+
+} from "../../config/constants";
+
 function Sidebar() {
+
   return (
+
     <aside className={styles.sidebar}>
 
       {/* BRAND */}
@@ -11,11 +23,11 @@ function Sidebar() {
       <div className={styles.brand}>
 
         <div className={styles.logo}>
-          ZyrionOS
+          {APP_NAME}
         </div>
 
         <div className={styles.tagline}>
-          AI Cloud Operating System
+          {APP_TAGLINE}
         </div>
 
       </div>
@@ -24,60 +36,31 @@ function Sidebar() {
 
       <div className={styles.menu}>
 
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) =>
-            isActive
-              ? `${styles.link} ${styles.active}`
-              : styles.link
-          }
-        >
-          Dashboard
-        </NavLink>
+        {navigation.map((item)=>(
 
-        <NavLink
-          to="/workspace"
-          className={({ isActive }) =>
-            isActive
-              ? `${styles.link} ${styles.active}`
-              : styles.link
-          }
-        >
-          Workspace
-        </NavLink>
+          <NavLink
 
-        <NavLink
-          to="/deployments"
-          className={({ isActive }) =>
-            isActive
-              ? `${styles.link} ${styles.active}`
-              : styles.link
-          }
-        >
-          Deployments
-        </NavLink>
+            key={item.id}
 
-        <NavLink
-          to="/billing"
-          className={({ isActive }) =>
-            isActive
-              ? `${styles.link} ${styles.active}`
-              : styles.link
-          }
-        >
-          Billing
-        </NavLink>
+            to={item.path}
 
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            isActive
-              ? `${styles.link} ${styles.active}`
-              : styles.link
-          }
-        >
-          Settings
-        </NavLink>
+            className={({ isActive }) =>
+
+              isActive
+
+                ? `${styles.link} ${styles.active}`
+
+                : styles.link
+
+            }
+
+          >
+
+            {item.label}
+
+          </NavLink>
+
+        ))}
 
       </div>
 
@@ -101,7 +84,9 @@ function Sidebar() {
       </div>
 
     </aside>
+
   );
+
 }
 
 export default Sidebar;

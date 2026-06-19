@@ -1,7 +1,7 @@
 import api from "./api";
 
 /* =========================
-CREATE DEPLOYMENT
+DEPLOY PROJECT
 ========================= */
 
 export async function createDeployment(
@@ -10,7 +10,7 @@ export async function createDeployment(
 
   return api.post(
 
-    "/api/deployments",
+    "/api/deploy/deploy",
 
     projectData
 
@@ -19,62 +19,16 @@ export async function createDeployment(
 }
 
 /* =========================
-GET DEPLOYMENTS
+DEPLOYMENT STATUS
 ========================= */
 
-export async function getDeployments() {
-
-  return api.get(
-
-    "/api/deployments"
-
-  );
-
-}
-
-/* =========================
-GET DEPLOYMENT
-========================= */
-
-export async function getDeployment(
+export async function getDeploymentStatus(
   deploymentId
 ) {
 
   return api.get(
 
-    `/api/deployments/${deploymentId}`
-
-  );
-
-}
-
-/* =========================
-DELETE DEPLOYMENT
-========================= */
-
-export async function deleteDeployment(
-  deploymentId
-) {
-
-  return api.remove(
-
-    `/api/deployments/${deploymentId}`
-
-  );
-
-}
-
-/* =========================
-RESTART DEPLOYMENT
-========================= */
-
-export async function restartDeployment(
-  deploymentId
-) {
-
-  return api.post(
-
-    `/api/deployments/${deploymentId}/restart`
+    `/api/deploy/status/${deploymentId}`
 
   );
 
@@ -90,7 +44,39 @@ export async function getDeploymentLogs(
 
   return api.get(
 
-    `/api/deployments/${deploymentId}/logs`
+    `/api/deploy/logs/${deploymentId}`
+
+  );
+
+}
+
+/* =========================
+MONITORING
+========================= */
+
+export async function getDeploymentMonitoring(
+  deploymentId
+) {
+
+  return api.get(
+
+    `/api/deploy/monitoring/${deploymentId}`
+
+  );
+
+}
+
+/* =========================
+SCALING
+========================= */
+
+export async function triggerScaling(
+  deploymentId
+) {
+
+  return api.post(
+
+    `/api/deploy/scale/${deploymentId}`
 
   );
 

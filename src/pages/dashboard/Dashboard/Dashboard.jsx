@@ -1,24 +1,122 @@
+import { useEffect, useState } from "react";
+
 import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
+
+import { useAuth } from "../../../context/AuthContext";
+
+import {
+  getProjects
+} from "../../../services/workspaceService";
+
+import {
+  getSubscription
+} from "../../../services/billingService";
 
 import styles from "./Dashboard.module.css";
 
 function Dashboard() {
+
+  const { user } = useAuth();
+
+  const [projects,setProjects] =
+  useState([]);
+
+  const [subscriptions,
+  setSubscriptions] =
+  useState([]);
+
+  const [loading,
+  setLoading] =
+  useState(true);
+
+  useEffect(()=>{
+
+    async function loadDashboard(){
+
+      try{
+
+        const [
+
+          projectsResponse,
+
+          subscriptionResponse
+
+        ] = await Promise.all([
+
+          getProjects(),
+
+          getSubscription()
+
+        ]);
+
+        setProjects(
+
+          projectsResponse?.data || []
+
+        );
+
+        setSubscriptions(
+
+          subscriptionResponse?.data || []
+
+        );
+
+      }
+
+      catch(error){
+
+        console.error(
+          error
+        );
+
+      }
+
+      finally{
+
+        setLoading(
+          false
+        );
+
+      }
+
+    }
+
+    loadDashboard();
+
+  },[]);
+
+  const currentPlan =
+
+  subscriptions[0]?.planName ||
+
+  user?.subscriptionPlan ||
+
+  "Free";
+
   return (
+
     <DashboardLayout>
 
       <div className={styles.page}>
+
+        {/* HEADER */}
 
         <div className={styles.header}>
 
           <div>
 
             <h1 className={styles.title}>
-              ZyrionOS Control Center
+
+              Welcome Back,
+              {" "}
+              {user?.name || "User"}
+
             </h1>
 
             <p className={styles.subtitle}>
-              Manage projects, deployments,
-              infrastructure and subscriptions.
+
+              {user?.email || "Loading..."}
+
             </p>
 
           </div>
@@ -31,6 +129,8 @@ function Dashboard() {
 
         </div>
 
+        {/* STATS */}
+
         <div className={styles.statsGrid}>
 
           <div className={styles.statCard}>
@@ -40,7 +140,11 @@ function Dashboard() {
             </div>
 
             <div className={styles.statValue}>
-              --
+
+              {loading
+                ? "..."
+                : projects.length}
+
             </div>
 
           </div>
@@ -52,7 +156,9 @@ function Dashboard() {
             </div>
 
             <div className={styles.statValue}>
-              --
+
+              {user?.deploymentsUsed || 0}
+
             </div>
 
           </div>
@@ -64,7 +170,9 @@ function Dashboard() {
             </div>
 
             <div className={styles.statValue}>
-              --
+
+              {currentPlan}
+
             </div>
 
           </div>
@@ -72,116 +180,177 @@ function Dashboard() {
           <div className={styles.statCard}>
 
             <div className={styles.statLabel}>
-              AI Credits
+              Account Role
             </div>
 
             <div className={styles.statValue}>
-              --
+
+              {user?.role || "User"}
+
             </div>
 
           </div>
 
         </div>
 
+        {/* PLATFORM STATUS */}
+
         <div className={styles.highlightCard}>
 
-  <div className={styles.highlightTitle}>
-    ZyrionOS Platform Status
-  </div>
+          <div className={styles.highlightTitle}>
+            ZyrionOS Platform Status
+          </div>
 
-  <div className={styles.highlightValue}>
-    Operational
-  </div>
+          <div className={styles.highlightValue}>
+            Operational
+          </div>
 
-  <div className={styles.highlightText}>
-    AI infrastructure, deployments,
-    monitoring and cloud services
-    are running normally.
-  </div>
+          <div className={styles.highlightText}>
+            AI infrastructure,
+            deployments,
+            monitoring and cloud services
+            are running normally.
+          </div>
 
-</div>
+        </div>
 
-<div className={styles.healthGrid}>
+        {/* HEALTH */}
 
-  <div className={styles.healthCard}>
+        <div className={styles.healthGrid}>
 
-    <div className={styles.healthTitle}>
-      Infrastructure
-    </div>
+          <div className={styles.healthCard}>
 
-    <div className={styles.healthValue}>
-      Healthy
-    </div>
-
-  </div>
-
-  <div className={styles.healthCard}>
-
-    <div className={styles.healthTitle}>
-      Deployments
-    </div>
-
-    <div className={styles.healthValue}>
-      Stable
-    </div>
-
-  </div>
-
-  <div className={styles.healthCard}>
-
-    <div className={styles.healthTitle}>
-      AI Services
-    </div>
-
-    <div className={styles.healthValue}>
-      Active
-    </div>
-
-  </div>
-
-</div>
-        <div className={styles.contentGrid}>
-
-          <div className={styles.section}>
-
-            <h2 className={styles.sectionTitle}>
-              Recent Activity
-            </h2>
-
-            <div className={styles.activityItem}>
-              Activity will appear here
+            <div className={styles.healthTitle}>
+              Infrastructure
             </div>
 
-            <div className={styles.activityItem}>
-              Deployment history
-            </div>
-
-            <div className={styles.activityItem}>
-              Generated projects
+            <div className={styles.healthValue}>
+              Healthy
             </div>
 
           </div>
 
+          <div className={styles.healthCard}>
+
+            <div className={styles.healthTitle}>
+              Deployments
+            </div>
+
+            <div className={styles.healthValue}>
+              Stable
+            </div>
+
+          </div>
+
+          <div className={styles.healthCard}>
+
+            <div className={styles.healthTitle}>
+              AI Services
+            </div>
+
+            <div className={styles.healthValue}>
+              Active
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* CONTENT */}
+
+        <div className={styles.contentGrid}>
+
+          {/* RECENT PROJECTS */}
+
           <div className={styles.section}>
 
             <h2 className={styles.sectionTitle}>
-              Infrastructure
+              Recent Projects
+            </h2>
+
+            {
+
+              loading
+
+              ? (
+
+                <div className={styles.activityItem}>
+                  Loading...
+                </div>
+
+              )
+
+              : projects.length === 0
+
+              ? (
+
+                <div className={styles.activityItem}>
+                  No projects created yet
+                </div>
+
+              )
+
+              : (
+
+                projects
+                .slice(0,5)
+                .map((project)=>(
+
+                  <div
+                    key={project._id}
+                    className={styles.activityItem}
+                  >
+
+                    {project.projectName}
+
+                  </div>
+
+                ))
+
+              )
+
+            }
+
+          </div>
+
+          {/* ACCOUNT */}
+
+          <div className={styles.section}>
+
+            <h2 className={styles.sectionTitle}>
+              Account Information
             </h2>
 
             <div className={styles.activityItem}>
-              CPU: --
+
+              Name:
+              {" "}
+              {user?.name || "--"}
+
             </div>
 
             <div className={styles.activityItem}>
-              RAM: --
+
+              Email:
+              {" "}
+              {user?.email || "--"}
+
             </div>
 
             <div className={styles.activityItem}>
-              Storage: --
+
+              Role:
+              {" "}
+              {user?.role || "--"}
+
             </div>
 
             <div className={styles.activityItem}>
-              Bandwidth: --
+
+              Plan:
+              {" "}
+              {currentPlan}
+
             </div>
 
           </div>
@@ -191,7 +360,9 @@ function Dashboard() {
       </div>
 
     </DashboardLayout>
+
   );
+
 }
 
 export default Dashboard;

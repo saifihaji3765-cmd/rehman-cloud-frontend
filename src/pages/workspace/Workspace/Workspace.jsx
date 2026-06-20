@@ -47,7 +47,13 @@ function Workspace() {
   const [liveUrl,
   setLiveUrl] =
   useState("");
+ const [aiResponse,
+setAiResponse] =
+useState("");
 
+const [selectedFile,
+setSelectedFile] =
+useState(null);
   useEffect(()=>{
 
     loadProjects();
@@ -91,10 +97,22 @@ function Workspace() {
 
       setLoading(true);
 
-      await generateCode(
-        prompt,
-        framework
-      );
+      const aiResult =
+
+await generateCode(
+  prompt,
+  framework
+);
+
+setAiResponse(
+
+  JSON.stringify(
+    aiResult,
+    null,
+    2
+  )
+
+);
 
       await createProject({
 
@@ -290,7 +308,30 @@ function Workspace() {
                 deployment workflow.
 
               </div>
+            {
+  aiResponse && (
 
+    <div
+      className={`${styles.message} ${styles.ai}`}
+    >
+
+      <h3>
+        AI Generated Output
+      </h3>
+
+      <pre
+        style={{
+          whiteSpace:"pre-wrap",
+          overflow:"auto"
+        }}
+      >
+        {aiResponse}
+      </pre>
+
+    </div>
+
+  )
+}
             </div>
 
             <div className={styles.inputArea}>
@@ -384,18 +425,14 @@ function Workspace() {
                     (file,index)=>(
 
                       <div
-
-                        key={index}
-
-                        className={
-                          styles.fileItem
-                        }
-
-                      >
-
-                        {file.path}
-
-                      </div>
+  key={index}
+  className={styles.fileItem}
+  onClick={()=>{
+    setSelectedFile(file);
+  }}
+>
+  {file.path}
+</div>
 
                     )
 
@@ -406,7 +443,31 @@ function Workspace() {
               </div>
 
             </div>
+            <div className={styles.card}>
 
+  <div className={styles.cardTitle}>
+    File Preview
+  </div>
+
+  <div className={styles.cardText}>
+
+    {
+
+      selectedFile
+
+      ?
+
+      selectedFile.path
+
+      :
+
+      "Select file to preview"
+
+    }
+
+  </div>
+
+</div>
             <div className={styles.card}>
 
               <div className={styles.cardTitle}>

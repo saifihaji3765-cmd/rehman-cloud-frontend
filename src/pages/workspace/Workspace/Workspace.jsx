@@ -8,24 +8,24 @@ import {
   deployProject
 } from "../../../services/projectService";
 
-import { generateCode } from "../../../services/aiService";
+import { generateCode }
+from "../../../services/aiService";
 
 import styles from "./Workspace.module.css";
 
 function Workspace() {
 
-  const [projects, setProjects] =
+  const [projects,setProjects] =
   useState([]);
 
   const [selectedProject,
   setSelectedProject] =
   useState(null);
 
-  const [prompt, setPrompt] =
+  const [prompt,setPrompt] =
   useState("");
 
-  const [loading,
-  setLoading] =
+  const [loading,setLoading] =
   useState(false);
 
   const [deploying,
@@ -42,7 +42,7 @@ function Workspace() {
 
   const [deploymentStatus,
   setDeploymentStatus] =
-  useState("Not Deployed");
+  useState("Waiting For Deployment");
 
   const [liveUrl,
   setLiveUrl] =
@@ -80,7 +80,7 @@ function Workspace() {
     if(!prompt.trim()){
 
       alert(
-        "Enter project idea"
+        "Enter project idea first"
       );
 
       return;
@@ -109,18 +109,15 @@ function Workspace() {
       });
 
       setGeneratedFiles([
-        {
-          path:"App.jsx"
-        },
-        {
-          path:"Dashboard.jsx"
-        },
-        {
-          path:"api.js"
-        }
+        { path:"App.jsx" },
+        { path:"Dashboard.jsx" },
+        { path:"Workspace.jsx" },
+        { path:"api.js" }
       ]);
 
       await loadProjects();
+
+      setPrompt("");
 
     }
 
@@ -205,13 +202,309 @@ function Workspace() {
 
     <DashboardLayout>
 
-      <h1
-        style={{
-          color:"#fff"
-        }}
-      >
-        Workspace V3 Loading...
-      </h1>
+      <div className={styles.page}>
+
+        {/* LEFT */}
+
+        <div className={styles.panel}>
+
+          <div className={styles.panelHeader}>
+
+            <h2 className={styles.panelTitle}>
+              Projects
+            </h2>
+
+          </div>
+
+          <div className={styles.history}>
+
+            {
+
+              projects.length > 0
+
+              ?
+
+              projects.map((project)=>(
+
+                <div
+
+                  key={project._id}
+
+                  className={
+                    styles.historyItem
+                  }
+
+                  onClick={()=>{
+
+                    setSelectedProject(
+                      project
+                    );
+
+                  }}
+
+                >
+
+                  {project.projectName}
+
+                </div>
+
+              ))
+
+              :
+
+              <div
+                className={
+                  styles.historyItem
+                }
+              >
+                No Projects Yet
+              </div>
+
+            }
+
+          </div>
+
+        </div>
+
+        {/* CENTER */}
+
+        <div className={styles.panel}>
+
+          <div className={styles.chatArea}>
+
+            <div className={styles.messages}>
+
+              <div
+                className={`${styles.message} ${styles.ai}`}
+              >
+
+                Describe your SaaS,
+                AI Product,
+                Automation System,
+                Startup Idea
+                or Business Platform.
+
+                ZyrionOS will help
+                generate the project
+                architecture and
+                deployment workflow.
+
+              </div>
+
+            </div>
+
+            <div className={styles.inputArea}>
+
+              <textarea
+
+                value={prompt}
+
+                onChange={(e)=>{
+
+                  setPrompt(
+                    e.target.value
+                  );
+
+                }}
+
+                className={
+                  styles.textarea
+                }
+
+                placeholder="Describe what you want to build..."
+
+              />
+
+              <div className={styles.actions}>
+
+                <button
+
+                  onClick={
+                    handleGenerate
+                  }
+
+                  disabled={loading}
+
+                  className={
+                    styles.generateButton
+                  }
+
+                >
+
+                  {
+
+                    loading
+
+                    ?
+
+                    "Generating..."
+
+                    :
+
+                    "Generate Project"
+
+                  }
+
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* RIGHT */}
+
+        <div className={styles.panel}>
+
+          <div className={styles.panelHeader}>
+
+            <h2 className={styles.panelTitle}>
+              Project Overview
+            </h2>
+
+          </div>
+
+          <div className={styles.sidebar}>
+
+            <div className={styles.card}>
+
+              <div className={styles.cardTitle}>
+                Generated Files
+              </div>
+
+              <div className={styles.fileList}>
+
+                {
+
+                  generatedFiles.map(
+
+                    (file,index)=>(
+
+                      <div
+
+                        key={index}
+
+                        className={
+                          styles.fileItem
+                        }
+
+                      >
+
+                        {file.path}
+
+                      </div>
+
+                    )
+
+                  )
+
+                }
+
+              </div>
+
+            </div>
+
+            <div className={styles.card}>
+
+              <div className={styles.cardTitle}>
+                Deployment Status
+              </div>
+
+              <div
+                className={
+                  deploymentStatus ===
+                  "Deployed"
+
+                  ?
+
+                  styles.statusReady
+
+                  :
+
+                  styles.statusPending
+                }
+              >
+
+                {deploymentStatus}
+
+              </div>
+
+            </div>
+
+            <div className={styles.card}>
+
+              <div className={styles.cardTitle}>
+                Framework
+              </div>
+
+              <div className={styles.cardText}>
+                {framework}
+              </div>
+
+            </div>
+
+            <div className={styles.card}>
+
+              <div className={styles.cardTitle}>
+                Live URL
+              </div>
+
+              <div className={styles.liveUrl}>
+
+                {
+
+                  liveUrl ||
+
+                  "Available After Deployment"
+
+                }
+
+              </div>
+
+            </div>
+
+            <div className={styles.card}>
+
+              <button
+
+                disabled={deploying}
+
+                onClick={
+                  handleDeploy
+                }
+
+                className={
+                  styles.deployButton
+                }
+
+              >
+
+                {
+
+                  deploying
+
+                  ?
+
+                  "Deploying..."
+
+                  :
+
+                  "Deploy Project"
+
+                }
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
 
     </DashboardLayout>
 

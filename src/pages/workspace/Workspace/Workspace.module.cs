@@ -572,3 +572,36 @@
   }
 
 }
+.activeProject{
+
+  border:1px solid #6366f1;
+
+  background:#1e1b4b;
+
+}
+
+.previewButton{
+
+  width:100%;
+  height:48px;
+
+  border:none;
+
+  border-radius:12px;
+
+  cursor:pointer;
+
+}
+
+.downloadButton{
+
+  width:100%;
+  height:48px;
+
+  border:none;
+
+  border-radius:12px;
+
+  cursor:pointer;
+
+}

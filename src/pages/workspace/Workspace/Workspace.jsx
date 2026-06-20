@@ -1,212 +1,222 @@
+import { useEffect, useState } from "react";
+
 import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
+
+import {
+  getProjects,
+  createProject,
+  deployProject
+} from "../../../services/projectService";
+
+import { generateCode } from "../../../services/aiService";
 
 import styles from "./Workspace.module.css";
 
 function Workspace() {
+
+  const [projects, setProjects] =
+  useState([]);
+
+  const [selectedProject,
+  setSelectedProject] =
+  useState(null);
+
+  const [prompt, setPrompt] =
+  useState("");
+
+  const [loading,
+  setLoading] =
+  useState(false);
+
+  const [deploying,
+  setDeploying] =
+  useState(false);
+
+  const [framework,
+  setFramework] =
+  useState("React");
+
+  const [generatedFiles,
+  setGeneratedFiles] =
+  useState([]);
+
+  const [deploymentStatus,
+  setDeploymentStatus] =
+  useState("Not Deployed");
+
+  const [liveUrl,
+  setLiveUrl] =
+  useState("");
+
+  useEffect(()=>{
+
+    loadProjects();
+
+  },[]);
+
+  async function loadProjects(){
+
+    try{
+
+      const response =
+      await getProjects();
+
+      setProjects(
+        response.data || []
+      );
+
+    }
+
+    catch(error){
+
+      console.error(error);
+
+    }
+
+  }
+
+  async function handleGenerate(){
+
+    if(!prompt.trim()){
+
+      alert(
+        "Enter project idea"
+      );
+
+      return;
+
+    }
+
+    try{
+
+      setLoading(true);
+
+      await generateCode(
+        prompt,
+        framework
+      );
+
+      await createProject({
+
+        projectName:
+        prompt.substring(0,50),
+
+        description:
+        prompt,
+
+        framework
+
+      });
+
+      setGeneratedFiles([
+        {
+          path:"App.jsx"
+        },
+        {
+          path:"Dashboard.jsx"
+        },
+        {
+          path:"api.js"
+        }
+      ]);
+
+      await loadProjects();
+
+    }
+
+    catch(error){
+
+      console.error(error);
+
+      alert(
+        error.message
+      );
+
+    }
+
+    finally{
+
+      setLoading(false);
+
+    }
+
+  }
+
+  async function handleDeploy(){
+
+    if(!selectedProject){
+
+      alert(
+        "Select project first"
+      );
+
+      return;
+
+    }
+
+    try{
+
+      setDeploying(true);
+
+      setDeploymentStatus(
+        "Deploying..."
+      );
+
+      const response =
+
+      await deployProject(
+        selectedProject._id
+      );
+
+      setDeploymentStatus(
+        "Deployed"
+      );
+
+      setLiveUrl(
+
+        response?.deployment
+        ?.liveUrl ||
+
+        "Deployment Ready"
+
+      );
+
+    }
+
+    catch(error){
+
+      console.error(error);
+
+      setDeploymentStatus(
+        "Failed"
+      );
+
+    }
+
+    finally{
+
+      setDeploying(false);
+
+    }
+
+  }
+
   return (
+
     <DashboardLayout>
 
-      <div className={styles.page}>
-
-        {/* LEFT PANEL */}
-
-        <div className={styles.panel}>
-
-          <div className={styles.panelHeader}>
-
-            <h2 className={styles.panelTitle}>
-              Projects
-            </h2>
-
-          </div>
-
-          <div className={styles.history}>
-
-            <div className={styles.historyItem}>
-              Company Analysis Platform
-            </div>
-
-            <div className={styles.historyItem}>
-              AI CRM System
-            </div>
-
-            <div className={styles.historyItem}>
-              Marketing Automation Suite
-            </div>
-
-            <div className={styles.historyItem}>
-              Global SaaS Builder
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* CENTER PANEL */}
-
-        <div className={styles.panel}>
-
-          <div className={styles.chatArea}>
-
-            <div className={styles.messages}>
-
-              <div
-                className={`${styles.message} ${styles.ai}`}
-              >
-
-                You are one prompt away from
-                building the next generation
-                software company.
-
-                <br /><br />
-
-                Describe your SaaS idea,
-                business platform,
-                automation system,
-                AI product or startup vision.
-
-                <br /><br />
-
-                ZyrionOS can transform
-                a simple idea into
-                production-ready architecture,
-                source code,
-                cloud infrastructure,
-                deployment pipelines
-                and scalable digital products.
-
-                <br /><br />
-
-                From concept to deployment.
-                Powered by ZyrionOS.
-
-              </div>
-
-            </div>
-
-            <div className={styles.inputArea}>
-
-              <textarea
-                className={styles.textarea}
-                placeholder="Describe what you want to build..."
-              />
-
-              <div className={styles.actions}>
-
-                <button
-                  className={styles.generateButton}
-                >
-                  Generate Project
-                </button>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* RIGHT PANEL */}
-
-<div className={styles.panel}>
-
-  <div className={styles.panelHeader}>
-
-    <h2 className={styles.panelTitle}>
-      Project Overview
-    </h2>
-
-  </div>
-
-  <div className={styles.sidebar}>
-
-    {/* GENERATED FILES */}
-
-    <div className={styles.card}>
-
-      <div className={styles.cardTitle}>
-        Generated Files
-      </div>
-
-      <div className={styles.fileList}>
-
-        <div className={styles.fileItem}>
-          App.jsx
-        </div>
-
-        <div className={styles.fileItem}>
-          Dashboard.jsx
-        </div>
-
-        <div className={styles.fileItem}>
-          Workspace.jsx
-        </div>
-
-        <div className={styles.fileItem}>
-          api.js
-        </div>
-
-      </div>
-
-    </div>
-
-    {/* DEPLOYMENT */}
-
-    <div className={styles.card}>
-
-      <div className={styles.cardTitle}>
-        Deployment Status
-      </div>
-
-      <div
-        className={styles.statusPending}
+      <h1
+        style={{
+          color:"#fff"
+        }}
       >
-        Waiting For Deployment
-      </div>
+        Workspace V3 Loading...
+      </h1>
 
-    </div>
+    </DashboardLayout>
 
-    {/* FRAMEWORK */}
+  );
 
-    <div className={styles.card}>
+}
 
-      <div className={styles.cardTitle}>
-        Framework
-      </div>
-
-      <div className={styles.cardText}>
-        React + Node.js
-      </div>
-
-    </div>
-
-    {/* LIVE URL */}
-
-    <div className={styles.card}>
-
-      <div className={styles.cardTitle}>
-        Live URL
-      </div>
-
-      <div className={styles.liveUrl}>
-        Available After Deployment
-      </div>
-
-    </div>
-
-    {/* DEPLOY */}
-
-    <div className={styles.card}>
-
-      <button
-        className={styles.deployButton}
-      >
-        Deploy Project
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
+export default Workspace;

@@ -375,3 +375,200 @@
   font-weight:700;
 
 }
+/* =========================
+   ACTIVE PROJECT
+========================= */
+
+.activeProject{
+
+  border:1px solid #6366f1;
+
+  background:#1e1b4b;
+
+}
+
+/* =========================
+   EMPTY STATE
+========================= */
+
+.emptyState{
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  padding:24px;
+
+  text-align:center;
+
+  color:#64748b;
+
+  font-size:14px;
+
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.loadingText{
+
+  color:#f8fafc;
+
+  font-size:14px;
+
+  text-align:center;
+
+  padding:12px;
+
+}
+
+/* =========================
+   PREVIEW
+========================= */
+
+.previewBox{
+
+  background:#0b1220;
+
+  border:1px solid #1f2937;
+
+  border-radius:14px;
+
+  overflow:hidden;
+
+}
+
+.previewHeader{
+
+  padding:14px;
+
+  border-bottom:1px solid #1f2937;
+
+  background:#111827;
+
+  color:#ffffff;
+
+  font-weight:700;
+
+}
+
+.previewContent{
+
+  max-height:320px;
+
+  overflow:auto;
+
+  padding:16px;
+
+  color:#cbd5e1;
+
+  font-size:13px;
+
+  line-height:1.8;
+
+  white-space:pre-wrap;
+
+  word-break:break-word;
+
+}
+
+/* =========================
+   STATUS
+========================= */
+
+.statusFailed{
+
+  color:#ef4444;
+
+  font-weight:700;
+
+}
+
+/* =========================
+   DISABLED
+========================= */
+
+.generateButton:disabled{
+
+  opacity:0.6;
+
+  cursor:not-allowed;
+
+}
+
+.deployButton:disabled{
+
+  opacity:0.6;
+
+  cursor:not-allowed;
+
+}
+
+/* =========================
+   HOVER
+========================= */
+
+.historyItem{
+
+  transition:all .2s ease;
+
+}
+
+.historyItem:hover{
+
+  border-color:#334155;
+
+}
+
+/* =========================
+   FILE ITEM
+========================= */
+
+.fileItem{
+
+  transition:all .2s ease;
+
+}
+
+.fileItem:hover{
+
+  border-color:#6366f1;
+
+  cursor:pointer;
+
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
+
+.previewContent::-webkit-scrollbar{
+
+  width:8px;
+
+}
+
+.previewContent::-webkit-scrollbar-thumb{
+
+  background:#374151;
+
+  border-radius:999px;
+
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:900px){
+
+  .previewContent{
+
+    max-height:220px;
+
+  }
+
+}

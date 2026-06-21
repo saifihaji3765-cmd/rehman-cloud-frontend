@@ -20,11 +20,15 @@ ReactDOM.createRoot(
 
   <React.StrictMode>
 
-    <AuthProvider>
+    <BrowserRouter>
 
-      <App />
+  <AuthProvider>
 
-    </AuthProvider>
+    <App />
+
+  </AuthProvider>
+
+</BrowserRouter>
 
   </React.StrictMode>
 

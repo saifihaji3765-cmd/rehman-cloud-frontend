@@ -6,7 +6,7 @@ import {
   getProjects,
   createProject,
   deployProject
-} from "../../../services/projectService";
+} from "../../../services/workspaceService";
 
 import { generateCode }
 from "../../../services/aiService";

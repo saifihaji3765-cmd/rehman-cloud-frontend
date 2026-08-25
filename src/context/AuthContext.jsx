@@ -1,173 +1,102 @@
 import {
-
   createContext,
-
   useContext,
-
   useEffect,
-
   useState
-
 } from "react";
 
 import {
-
   getStoredUser,
-
-  isAuthenticated,
-
+  getCurrentUser,
   logout
-
 } from "../services/authService";
 
-const AuthContext =
-createContext(null);
+const AuthContext = createContext(null);
 
-export function AuthProvider({
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
 
-  children
+  useEffect(() => {
+    async function initializeAuth() {
+      try {
+        // Server se actual authentication check
+        const response = await getCurrentUser();
 
-}) {
+        if (
+          response?.data?.success &&
+          response?.data?.user
+        ) {
+          const currentUser = response.data.user;
 
-  const [user,setUser] =
-  useState(null);
+          setUser(currentUser);
+          setAuthenticated(true);
 
-  const [loading,setLoading] =
-  useState(true);
-
-  const [
-
-    authenticated,
-
-    setAuthenticated
-
-  ] = useState(false);
-
-  useEffect(()=>{
-
-    try{
-
-      if(
-
-        isAuthenticated()
-
-      ){
-
-        const storedUser =
-
-        getStoredUser();
-
-        if(storedUser){
-
-          setUser(
-            storedUser
+          // Latest user profile locally save
+          localStorage.setItem(
+            "zyrions_user",
+            JSON.stringify(currentUser)
           );
-
-          setAuthenticated(
-            true
-          );
-
+        } else {
+          setUser(null);
+          setAuthenticated(false);
         }
+      } catch (error) {
+        console.error(
+          "Auth initialization failed:",
+          error
+        );
 
+        // Server authentication fail ho to
+        // local stale authentication ko valid mat mano.
+        setUser(null);
+        setAuthenticated(false);
+        localStorage.removeItem("zyrions_user");
+      } finally {
+        setLoading(false);
       }
-
     }
 
-    catch(error){
+    initializeAuth();
+  }, []);
 
-      console.error(
-        "Auth initialization failed:",
-        error
-      );
-
-    }
-
-    finally{
-
-      setLoading(
-        false
-      );
-
-    }
-
-  },[]);
-
-  async function signOut(){
-
-    try{
-
+  async function signOut() {
+    try {
       await logout();
-
-    }
-
-    catch(error){
-
-      console.error(
-        error
-      );
-
-    }
-
-    finally{
-
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
       setUser(null);
-
-      setAuthenticated(
-        false
-      );
-
+      setAuthenticated(false);
+      localStorage.removeItem("zyrions_user");
     }
-
   }
 
   const value = {
-
     user,
-
     loading,
-
     authenticated,
-
     setUser,
-
     setAuthenticated,
-
     signOut
-
   };
 
   return (
-
-    <AuthContext.Provider
-      value={value}
-    >
-
+    <AuthContext.Provider value={value}>
       {children}
-
     </AuthContext.Provider>
-
   );
-
 }
 
-export function useAuth(){
+export function useAuth() {
+  const context = useContext(AuthContext);
 
-  const context =
-
-  useContext(
-    AuthContext
-  );
-
-  if(!context){
-
+  if (!context) {
     throw new Error(
-
       "useAuth must be used inside AuthProvider"
-
     );
-
   }
 
   return context;
-
 }

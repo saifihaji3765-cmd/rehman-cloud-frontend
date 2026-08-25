@@ -41,8 +41,7 @@ function Login() {
   const navigate =
   useNavigate();
 
-  const { setUser } =
-  useAuth();
+  const { setUser, setAuthenticated } = useAuth();
 
   const [email,setEmail] =
   useState("");
@@ -94,9 +93,9 @@ function Login() {
 
       );
 
-      navigate(
-        "/dashboard"
-      );
+      setAuthenticated(true);
+
+      navigate("/dashboard", { replace: true });
 
     }
 

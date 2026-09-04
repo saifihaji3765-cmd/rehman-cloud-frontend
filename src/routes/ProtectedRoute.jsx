@@ -1,55 +1,54 @@
-import {
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-  Navigate
-
-} from "react-router-dom";
-
-import {
-
-  useAuth
-
-} from "../context/AuthContext";
-
-function ProtectedRoute({
-
-  children
-
-}) {
-
+function ProtectedRoute({ children }) {
   const {
-
     authenticated,
-
     loading
-
   } = useAuth();
 
-  if(loading){
+  const location = useLocation();
 
-    return <div>
-      Loading...
-    </div>;
+  /* =========================
+     AUTH INITIALIZATION
+  ========================= */
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}
+      >
+        Loading...
+      </div>
+    );
   }
 
-  if(
+  /* =========================
+     NOT AUTHENTICATED
+  ========================= */
 
-    !authenticated
-
-  ){
-
+  if (!authenticated) {
     return (
-
       <Navigate
         to="/login"
         replace
+        state={{
+          from: location.pathname
+        }}
       />
-
     );
-
   }
 
-  return children;
+  /* =========================
+     AUTHENTICATED
+  ========================= */
 
+  return children;
 }
 
 export default ProtectedRoute;

@@ -1,103 +1,596 @@
-/* =========================
+/* =========================================================
+   TOPBAR — ENTERPRISE UI SYSTEM
+   Component: src/components/Topbar/Topbar.jsx
+   ========================================================= */
+
+/* =========================================================
+   ROOT TOPBAR
+   ========================================================= */
+
+.topbar {
+  width: 100%;
+  min-height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+  padding: 10px 20px;
+
+  background: #0b1120;
+  border-bottom: 1px solid #1f2937;
+
+  color: #ffffff;
+
+  box-sizing: border-box;
+
+  position: relative;
+  z-index: 100;
+
+  flex-shrink: 0;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* =========================================================
+   LEFT SECTION
+   ========================================================= */
+
+.left {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  flex: 1 1 auto;
+}
+
+
+/* =========================================================
    WORKSPACE SWITCHER
-========================= */
+   ========================================================= */
 
-.workspaceSwitcher{
+.workspaceSwitcher {
+  min-height: 42px;
 
-  height:42px;
+  display: inline-flex;
+  align-items: center;
 
-  padding:0 14px;
+  padding: 0 14px;
 
-  display:flex;
+  border: 1px solid #263244;
+  border-radius: 10px;
 
-  align-items:center;
+  background: #111827;
 
-  border-radius:12px;
+  color: #ffffff;
 
-  background:#1e293b;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
 
-  color:#ffffff;
+  white-space: nowrap;
 
-  font-weight:600;
-
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
-/* =========================
-   STATUS
-========================= */
-
-.systemStatus{
-
-  display:flex;
-
-  align-items:center;
-
-  gap:8px;
-
-  color:#22c55e;
-
-  font-size:14px;
-
+.workspaceSwitcher:hover {
+  background: #172033;
+  border-color: #34445b;
 }
 
-.statusDot{
+.workspaceSwitcher:focus-visible {
+  outline: none;
 
-  width:8px;
+  border-color: #4f46e5;
 
-  height:8px;
-
-  border-radius:50%;
-
-  background:#22c55e;
-
+  box-shadow:
+    0 0 0 3px rgba(79, 70, 229, 0.18);
 }
 
-/* =========================
-   CREDIT CARD
-========================= */
 
-.creditBadge{
+/* =========================================================
+   SEARCH
+   ========================================================= */
 
-  height:40px;
+.searchBox {
+  width: min(420px, 42vw);
+  min-width: 180px;
+  height: 42px;
 
-  padding:0 14px;
+  padding: 0 14px;
 
-  border-radius:10px;
+  border: 1px solid #263244;
+  border-radius: 10px;
 
-  background:#0f172a;
+  background: #111827;
 
-  border:1px solid #1f2937;
+  color: #ffffff;
 
-  display:flex;
+  font-family: inherit;
+  font-size: 14px;
 
-  align-items:center;
+  box-sizing: border-box;
 
-  color:#ffffff;
+  outline: none;
 
-  font-size:14px;
-
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-/* =========================
+.searchBox::placeholder {
+  color: #64748b;
+}
+
+.searchBox:hover {
+  border-color: #34445b;
+}
+
+.searchBox:focus {
+  background: #0f172a;
+
+  border-color: #4f46e5;
+
+  box-shadow:
+    0 0 0 3px rgba(79, 70, 229, 0.14);
+}
+
+
+/* =========================================================
+   RIGHT SECTION
+   ========================================================= */
+
+.right {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 12px;
+
+  flex: 0 0 auto;
+}
+
+
+/* =========================================================
+   SYSTEM STATUS
+   ========================================================= */
+
+.systemStatus {
+  min-height: 40px;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 0 12px;
+
+  border: 1px solid #1f3a32;
+  border-radius: 10px;
+
+  background: #0d1917;
+
+  color: #22c55e;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+
+  flex: 0 0 8px;
+
+  border-radius: 50%;
+
+  background: #22c55e;
+
+  box-shadow:
+    0 0 0 3px rgba(34, 197, 94, 0.10),
+    0 0 10px rgba(34, 197, 94, 0.35);
+}
+
+
+/* =========================================================
+   AI CREDIT BADGE
+   ========================================================= */
+
+.creditBadge {
+  min-height: 40px;
+
+  display: inline-flex;
+  align-items: center;
+
+  padding: 0 13px;
+
+  border: 1px solid #263244;
+  border-radius: 10px;
+
+  background: #111827;
+
+  color: #f8fafc;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  box-sizing: border-box;
+
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.creditBadge:hover {
+  background: #172033;
+  border-color: #34445b;
+}
+
+
+/* =========================================================
+   ACTION BUTTON
+   ========================================================= */
+
+.actionButton {
+  min-height: 40px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 14px;
+
+  border: 1px solid #263244;
+  border-radius: 10px;
+
+  background: #111827;
+
+  color: #cbd5e1;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.actionButton:hover {
+  background: #172033;
+
+  border-color: #3b4a61;
+
+  color: #ffffff;
+}
+
+.actionButton:active {
+  transform: translateY(1px);
+}
+
+.actionButton:focus-visible {
+  outline: none;
+
+  border-color: #4f46e5;
+
+  box-shadow:
+    0 0 0 3px rgba(79, 70, 229, 0.16);
+}
+
+
+/* =========================================================
    PROFILE
-========================= */
+   ========================================================= */
 
-.profileInfo{
+.profileInfo {
+  min-width: 0;
 
-  display:flex;
+  display: flex;
+  align-items: center;
 
-  align-items:center;
+  gap: 10px;
 
-  gap:10px;
-
+  padding-left: 4px;
 }
 
-.profileName{
+.profile {
+  width: 38px;
+  height: 38px;
 
-  color:#ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  font-size:14px;
+  flex: 0 0 38px;
 
-  font-weight:600;
+  border: 1px solid #3b4a61;
+  border-radius: 50%;
 
+  background: #1e293b;
+
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  user-select: none;
+}
+
+.profileName {
+  max-width: 150px;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: #f8fafc;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .topbar {
+    gap: 14px;
+    padding: 10px 16px;
+  }
+
+  .left {
+    gap: 10px;
+  }
+
+  .right {
+    gap: 8px;
+  }
+
+  .searchBox {
+    width: min(320px, 32vw);
+  }
+
+  .profileName {
+    max-width: 110px;
+  }
+}
+
+
+/* =========================================================
+   SMALL TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .systemStatus {
+    padding: 0 10px;
+  }
+
+  .systemStatus {
+    font-size: 12px;
+  }
+
+  .creditBadge {
+    padding: 0 10px;
+  }
+
+  .actionButton {
+    padding: 0 11px;
+  }
+
+  .profileName {
+    display: none;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .topbar {
+    min-height: 58px;
+
+    padding: 8px 12px;
+
+    gap: 10px;
+  }
+
+  .left {
+    flex: 1 1 auto;
+
+    min-width: 0;
+
+    gap: 8px;
+  }
+
+  .workspaceSwitcher {
+    min-height: 38px;
+
+    padding: 0 10px;
+
+    border-radius: 9px;
+
+    font-size: 13px;
+  }
+
+  .searchBox {
+    width: 100%;
+    min-width: 0;
+
+    height: 38px;
+
+    padding: 0 11px;
+
+    border-radius: 9px;
+
+    font-size: 13px;
+  }
+
+  .right {
+    gap: 7px;
+  }
+
+  .systemStatus {
+    display: none;
+  }
+
+  .creditBadge {
+    min-height: 38px;
+
+    padding: 0 9px;
+
+    border-radius: 9px;
+
+    font-size: 12px;
+  }
+
+  .actionButton {
+    min-height: 38px;
+
+    padding: 0 9px;
+
+    border-radius: 9px;
+
+    font-size: 12px;
+  }
+
+  .profile {
+    width: 36px;
+    height: 36px;
+
+    flex-basis: 36px;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 560px) {
+  .topbar {
+    padding: 8px 10px;
+  }
+
+  .workspaceSwitcher {
+    display: none;
+  }
+
+  .searchBox {
+    width: 100%;
+  }
+
+  .creditBadge {
+    display: none;
+  }
+
+  .actionButton {
+    padding: 0 8px;
+  }
+
+  .profileInfo {
+    padding-left: 0;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL DEVICES
+   ========================================================= */
+
+@media (max-width: 380px) {
+  .topbar {
+    padding: 7px 8px;
+
+    gap: 7px;
+  }
+
+  .left {
+    gap: 6px;
+  }
+
+  .right {
+    gap: 5px;
+  }
+
+  .actionButton {
+    min-height: 36px;
+
+    padding: 0 7px;
+
+    font-size: 11px;
+  }
+
+  .profile {
+    width: 34px;
+    height: 34px;
+
+    flex-basis: 34px;
+
+    font-size: 12px;
+  }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .workspaceSwitcher,
+  .searchBox,
+  .creditBadge,
+  .actionButton {
+    transition: none;
+  }
+}
+
+
+/* =========================================================
+   DARK SYSTEM SAFETY
+   ========================================================= */
+
+@media (forced-colors: active) {
+  .topbar,
+  .workspaceSwitcher,
+  .searchBox,
+  .creditBadge,
+  .actionButton,
+  .systemStatus {
+    border: 1px solid CanvasText;
+  }
+
+  .profile {
+    border: 1px solid CanvasText;
+  }
 }

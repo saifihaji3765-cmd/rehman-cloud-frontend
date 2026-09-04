@@ -1,7 +1,19 @@
-import { Routes, Route } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate
+} from "react-router-dom";
+
+/* =========================
+   AUTH PAGES
+========================= */
 
 import Login from "../pages/auth/Login/Login.jsx";
 import Register from "../pages/auth/Register/Register.jsx";
+
+/* =========================
+   APPLICATION PAGES
+========================= */
 
 import Dashboard from "../pages/dashboard/Dashboard/Dashboard.jsx";
 import Workspace from "../pages/workspace/Workspace/Workspace.jsx";
@@ -9,14 +21,21 @@ import Deployments from "../pages/deployments/Deployments/Deployments.jsx";
 import Billing from "../pages/billing/Billing/Billing.jsx";
 import Settings from "../pages/settings/Settings/Settings.jsx";
 
+/* =========================
+   ROUTE GUARDS
+========================= */
+
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import PublicRoute from "./PublicRoute.jsx";
+
 
 function AppRoutes() {
   return (
     <Routes>
 
-      {/* PUBLIC */}
+      {/* ==================================================
+          PUBLIC ROUTES
+      ================================================== */}
 
       <Route
         path="/"
@@ -45,7 +64,10 @@ function AppRoutes() {
         }
       />
 
-      {/* PROTECTED */}
+
+      {/* ==================================================
+          PROTECTED APPLICATION
+      ================================================== */}
 
       <Route
         path="/dashboard"
@@ -92,8 +114,24 @@ function AppRoutes() {
         }
       />
 
+
+      {/* ==================================================
+          FALLBACK
+      ================================================== */}
+
+      <Route
+        path="*"
+        element={
+          <Navigate
+            to="/dashboard"
+            replace
+          />
+        }
+      />
+
     </Routes>
   );
 }
+
 
 export default AppRoutes;

@@ -6,15 +6,26 @@ import Topbar from "../../components/Topbar/Topbar.jsx";
 function DashboardLayout({ children }) {
   return (
     <div className={styles.layout}>
-      {/* Accessibility */}
-      <a href="#main-content" className={styles.skipLink}>
+      {/* =====================================================
+          ACCESSIBILITY
+      ====================================================== */}
+
+      <a
+        href="#main-content"
+        className={styles.skipLink}
+      >
         Skip to main content
       </a>
 
-      {/* Enterprise Application Shell */}
-      <div className={styles.appShell}>
+      {/* =====================================================
+          ENTERPRISE APPLICATION SHELL
+      ====================================================== */}
 
-        {/* Global Navigation */}
+      <div className={styles.appShell}>
+        {/* ===================================================
+            GLOBAL NAVIGATION
+        ==================================================== */}
+
         <aside
           className={styles.sidebar}
           aria-label="ZyrionOS primary navigation"
@@ -22,18 +33,37 @@ function DashboardLayout({ children }) {
           <Sidebar />
         </aside>
 
-        {/* Application Area */}
-        <section className={styles.mainArea}>
+        {/* ===================================================
+            MAIN APPLICATION AREA
+        ==================================================== */}
 
-          {/* Global Topbar */}
-          <header className={styles.topbar}>
+        <section className={styles.mainArea}>
+          {/* =================================================
+              GLOBAL TOPBAR
+          ================================================== */}
+
+          <header
+            className={styles.topbar}
+            aria-label="ZyrionOS application header"
+          >
             <Topbar />
           </header>
 
-          {/* Workspace Status Bar */}
-          <div className={styles.workspaceBar}>
+          {/* =================================================
+              WORKSPACE STATUS
+          ================================================== */}
+
+          <div
+            className={styles.workspaceBar}
+            role="status"
+            aria-label="Workspace status"
+          >
             <div className={styles.workspaceIdentity}>
-              <span className={styles.statusDot} />
+              <span
+                className={styles.statusDot}
+                aria-hidden="true"
+              />
+
               <span className={styles.workspaceName}>
                 ZyrionOS Workspace
               </span>
@@ -41,24 +71,40 @@ function DashboardLayout({ children }) {
 
             <div className={styles.workspaceMeta}>
               <span>Cloud</span>
-              <span className={styles.separator}>•</span>
+
+              <span
+                className={styles.separator}
+                aria-hidden="true"
+              >
+                /
+              </span>
+
               <span>AI Infrastructure</span>
-              <span className={styles.separator}>•</span>
+
+              <span
+                className={styles.separator}
+                aria-hidden="true"
+              >
+                /
+              </span>
+
               <span>Operational</span>
             </div>
           </div>
 
-          {/* Main Content */}
+          {/* =================================================
+              MAIN CONTENT
+          ================================================== */}
+
           <main
             id="main-content"
             className={styles.content}
-            tabIndex="-1"
+            tabIndex={-1}
           >
             <div className={styles.contentInner}>
               {children}
             </div>
           </main>
-
         </section>
       </div>
     </div>

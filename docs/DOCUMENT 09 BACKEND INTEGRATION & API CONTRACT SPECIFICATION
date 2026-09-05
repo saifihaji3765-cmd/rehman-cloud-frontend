@@ -1,0 +1,1471 @@
+ZYRIONOS
+ENTERPRISE PRODUCT FOUNDATION
+
+DOCUMENT 09
+BACKEND INTEGRATION & API CONTRACT SPECIFICATION
+
+Document Type:
+Enterprise Frontend ↔ Backend Integration Contract
+
+Status:
+FINAL FOUNDATION SPECIFICATION
+
+Version:
+1.0.0
+
+Purpose:
+To define the exact and deterministic contract between the
+ZyrionOS frontend and backend.
+
+This document establishes:
+
+- API ownership
+- endpoint structure
+- request contracts
+- response contracts
+- authentication behavior
+- authorization behavior
+- loading states
+- success states
+- error states
+- validation behavior
+- empty states
+- deployment integration
+- AI integration
+- project/workspace integration
+- billing integration
+- settings integration
+- account integration
+- frontend data normalization
+- security boundaries
+- API failure handling
+- retry rules
+- caching rules
+- real-data requirements
+
+NO MOCK DATA
+NO FAKE SUCCESS
+NO PLACEHOLDER API BEHAVIOR
+NO UI-ONLY STATE PRETENDING TO BE BACKEND STATE
+
+
+============================================================
+01. CORE PRINCIPLE
+============================================================
+
+ZyrionOS is a real product.
+
+Therefore:
+
+Frontend must never pretend that an operation succeeded.
+
+If the backend has not confirmed success:
+
+    frontend MUST NOT display success.
+
+Every important state must originate from a real source.
+
+Examples:
+
+Project created
+→ backend confirmation required.
+
+Project deployed
+→ deployment service/backend confirmation required.
+
+Payment completed
+→ payment provider/backend confirmation required.
+
+Subscription active
+→ backend subscription state required.
+
+AI generation completed
+→ actual AI response required.
+
+User settings saved
+→ backend confirmation required.
+
+Workspace files generated
+→ real persisted project data required.
+
+
+============================================================
+02. FRONTEND ↔ BACKEND ARCHITECTURE
+============================================================
+
+The architecture follows:
+
+USER
+  ↓
+PAGE
+  ↓
+COMPONENT
+  ↓
+SERVICE
+  ↓
+API CLIENT
+  ↓
+BACKEND API
+  ↓
+CONTROLLER
+  ↓
+SERVICE / BUSINESS LOGIC
+  ↓
+DATABASE / EXTERNAL PROVIDER
+
+
+Frontend must NOT directly communicate with databases.
+
+Frontend must NOT contain:
+
+- database credentials
+- provider secret keys
+- private API keys
+- deployment secrets
+- payment secrets
+- AI provider secrets
+
+
+============================================================
+03. API BASE CONFIGURATION
+============================================================
+
+Frontend API access must use one centralized API client.
+
+Example:
+
+VITE_API_URL
+
+Production:
+
+https://api.zyrionos.com
+
+The API base URL must never be duplicated throughout components.
+
+Incorrect:
+
+fetch("https://api.zyrionos.com/api/projects")
+
+Correct:
+
+api.get("/api/projects/me")
+
+
+============================================================
+04. CENTRAL API CLIENT
+============================================================
+
+The frontend must have one central API client.
+
+Example:
+
+src/api.js
+
+Responsibilities:
+
+- base URL
+- credentials
+- headers
+- timeout
+- request interception
+- response interception
+- authentication handling
+- standardized errors
+
+
+No page should create its own Axios instance.
+
+
+============================================================
+05. SERVICE LAYER RULE
+============================================================
+
+Pages must NOT contain raw API requests.
+
+Incorrect:
+
+api.post("/api/projects/create", data)
+
+inside Workspace.jsx.
+
+Correct:
+
+workspaceService.createProject(data)
+
+Then:
+
+workspaceService
+        ↓
+api
+        ↓
+backend
+
+
+Every major domain must have its own service.
+
+Examples:
+
+authService
+workspaceService
+aiService
+billingService
+settingsService
+userService
+deploymentService
+notificationService
+
+
+============================================================
+06. AUTHENTICATION CONTRACT
+============================================================
+
+Authentication must be backend-controlled.
+
+Frontend may know:
+
+authenticated
+unauthenticated
+loading
+
+Frontend must NOT independently invent authentication status.
+
+
+Required states:
+
+AUTH_LOADING
+AUTHENTICATED
+UNAUTHENTICATED
+
+
+When authenticated:
+
+Protected pages become available.
+
+When unauthenticated:
+
+Protected pages must not expose private application data.
+
+
+============================================================
+07. AUTHENTICATION FAILURE
+============================================================
+
+HTTP 401 means:
+
+Authentication required.
+
+Frontend behavior:
+
+1. Stop current protected operation.
+2. Do not pretend operation succeeded.
+3. Preserve useful error information.
+4. Allow AuthContext / authentication layer
+   to handle session state.
+5. Redirect only through the centralized auth mechanism.
+
+
+Individual services must not implement random redirects.
+
+
+============================================================
+08. AUTHORIZATION CONTRACT
+============================================================
+
+HTTP 403 means:
+
+Authenticated user does not have permission.
+
+Frontend must show:
+
+Permission denied
+
+or an appropriate product-specific message.
+
+Frontend must NOT attempt to bypass authorization.
+
+
+============================================================
+09. STANDARD API RESPONSE MODEL
+============================================================
+
+Backend responses should follow a predictable structure.
+
+Success example:
+
+{
+  "success": true,
+  "message": "Project created successfully.",
+  "data": {
+    ...
+  }
+}
+
+
+Failure example:
+
+{
+  "success": false,
+  "message": "Unable to create project.",
+  "code": "PROJECT_CREATE_FAILED"
+}
+
+
+Where pagination is required:
+
+{
+  "success": true,
+  "data": {
+    "projects": [],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 0,
+      "pages": 0
+    }
+  }
+}
+
+
+The frontend must not depend on inconsistent response shapes.
+
+
+============================================================
+10. PROJECT API CONTRACT
+============================================================
+
+Primary domain:
+
+/api/projects
+
+
+Create:
+
+POST /api/projects/create
+
+
+Request:
+
+{
+  "projectName": "Project Name",
+  "description": "Project description",
+  "framework": "React"
+}
+
+
+Response:
+
+{
+  "success": true,
+  "message": "Project created successfully.",
+  "data": {
+    "project": {
+      "id": "...",
+      "projectName": "...",
+      "description": "...",
+      "framework": "React",
+      "files": [],
+      "deploymentStatus": "not_deployed"
+    }
+  }
+}
+
+
+Get current user's projects:
+
+GET /api/projects/me
+
+
+Get project:
+
+GET /api/projects/:projectId
+
+
+Update:
+
+PUT /api/projects/update/:projectId
+
+
+Delete:
+
+DELETE /api/projects/delete/:projectId
+
+
+Deploy:
+
+POST /api/projects/deploy/:projectId
+
+
+The exact backend route is authoritative.
+
+Frontend must not guess routes.
+
+
+============================================================
+11. PROJECT ID RULE
+============================================================
+
+Every project operation must use a valid backend project ID.
+
+Never use:
+
+project name
+
+as a database identity.
+
+Never generate fake IDs in the frontend.
+
+Invalid ID:
+
+→ operation must stop.
+
+Frontend message:
+
+"Project ID is required."
+
+
+============================================================
+12. WORKSPACE CONTRACT
+============================================================
+
+Workspace is a real project environment.
+
+Workspace must represent:
+
+Project
+Framework
+Files
+Build state
+Deployment state
+Live URL
+AI generation state
+
+
+Workspace must never show fake files.
+
+If:
+
+files = []
+
+then UI must display:
+
+"No files generated yet."
+
+
+It must NOT generate fake:
+
+App.jsx
+index.html
+package.json
+
+unless those files actually exist in backend data.
+
+
+============================================================
+13. AI GENERATION CONTRACT
+============================================================
+
+AI generation endpoint:
+
+POST /api/ai/generate-code
+
+
+Request:
+
+{
+  "prompt": "...",
+  "framework": "React"
+}
+
+
+Expected response must contain real generation output.
+
+Possible structure:
+
+{
+  "success": true,
+  "data": {
+    "files": [
+      {
+        "path": "src/App.jsx",
+        "content": "..."
+      }
+    ]
+  }
+}
+
+
+Frontend must treat AI output as untrusted external data.
+
+Frontend must not assume:
+
+files exist
+
+unless response confirms them.
+
+
+============================================================
+14. AI GENERATION STATES
+============================================================
+
+AI generation has four primary states:
+
+IDLE
+
+BUILDING
+
+SUCCESS
+
+ERROR
+
+
+IDLE:
+
+"What do you want to build?"
+
+
+BUILDING:
+
+"Building your project"
+
+
+SUCCESS:
+
+"Project generated"
+
+
+ERROR:
+
+"Unable to generate the project."
+
+
+The UI must never remain permanently stuck in BUILDING.
+
+
+============================================================
+15. DEPLOYMENT CONTRACT
+============================================================
+
+Deployment is asynchronous.
+
+Initial state:
+
+not_deployed
+
+
+Possible states:
+
+not_deployed
+building
+deploying
+deployed
+failed
+
+
+Frontend must display the backend-confirmed state.
+
+
+Example:
+
+not_deployed
+→ Not deployed
+
+building
+→ Building
+
+deploying
+→ Deploying...
+
+deployed
+→ Deployed
+
+failed
+→ Deployment failed
+
+
+============================================================
+16. DEPLOYMENT SUCCESS
+============================================================
+
+Deployment success requires backend confirmation.
+
+Expected data:
+
+{
+  "success": true,
+  "data": {
+    "project": {},
+    "deployment": {
+      "status": "deployed",
+      "liveUrl": "..."
+    }
+  }
+}
+
+
+Only after receiving confirmation:
+
+Frontend may show:
+
+"Deployed"
+
+and:
+
+"Open live project"
+
+
+============================================================
+17. DEPLOYMENT FAILURE
+============================================================
+
+If deployment fails:
+
+Frontend must:
+
+- stop deployment loading
+- display failure state
+- preserve project state
+- show useful error
+- never show live URL unless valid
+
+
+Incorrect:
+
+Deploy request fails
+→ UI says "Deployed"
+
+Correct:
+
+Deploy request fails
+→ "Deployment failed"
+
+
+============================================================
+18. BILLING CONTRACT
+============================================================
+
+Billing UI must represent real subscription state.
+
+Frontend must never determine:
+
+premium
+expert
+active subscription
+
+solely from localStorage.
+
+Backend must remain authoritative.
+
+
+Possible subscription states:
+
+free
+trial
+active
+past_due
+cancelled
+expired
+
+
+Frontend displays backend-confirmed state.
+
+
+============================================================
+19. PAYMENT CONTRACT
+============================================================
+
+Payment completion must be verified server-side.
+
+Frontend payment redirect/success screen
+does NOT equal payment confirmation.
+
+Flow:
+
+USER
+ ↓
+PAYMENT PROVIDER
+ ↓
+BACKEND VERIFICATION
+ ↓
+DATABASE UPDATE
+ ↓
+FRONTEND REFRESH
+ ↓
+SUBSCRIPTION ACTIVE
+
+
+Frontend must not manually mark:
+
+paymentSuccess = true
+
+without backend confirmation.
+
+
+============================================================
+20. SETTINGS CONTRACT
+============================================================
+
+Settings page must represent persisted user settings.
+
+Categories may include:
+
+Profile
+Account
+Security
+Notifications
+Preferences
+Workspace
+AI preferences
+Appearance
+
+
+Save operation:
+
+Frontend
+→ settingsService
+→ backend
+→ database
+→ confirmation
+→ frontend state update
+
+
+Before backend confirmation:
+
+Do not display:
+
+"Saved"
+
+
+Use:
+
+"Saving..."
+
+
+After confirmation:
+
+"Saved"
+
+
+============================================================
+21. FORM VALIDATION
+============================================================
+
+Frontend validation improves UX.
+
+Backend validation protects the system.
+
+Both are required.
+
+Frontend:
+
+required fields
+format checks
+length checks
+basic constraints
+
+
+Backend:
+
+complete validation
+authorization
+business rules
+security validation
+database validation
+
+
+Frontend validation must NEVER replace backend validation.
+
+
+============================================================
+22. LOADING STATES
+============================================================
+
+Every asynchronous operation must have a clear loading state.
+
+Examples:
+
+Loading projects
+Loading project
+Creating project
+Generating AI
+Deploying
+Saving settings
+Loading billing
+Processing payment
+
+
+Buttons must prevent duplicate submissions when appropriate.
+
+
+Example:
+
+Build
+
+becomes:
+
+Building...
+
+
+Deploy
+
+becomes:
+
+Deploying...
+
+
+Save
+
+becomes:
+
+Saving...
+
+
+============================================================
+23. ERROR STATES
+============================================================
+
+Every API operation must have an error path.
+
+Error UI must be:
+
+clear
+professional
+non-technical
+actionable
+
+
+Avoid exposing:
+
+stack traces
+database errors
+internal paths
+provider secrets
+server internals
+
+
+Developer logs may contain diagnostic information.
+
+User-facing messages must remain safe.
+
+
+============================================================
+24. NETWORK ERROR
+============================================================
+
+If no response is received:
+
+Display:
+
+"Unable to connect to the server.
+Please check your internet connection and try again."
+
+
+Do not show:
+
+undefined
+null
+AxiosError
+ERR_NETWORK
+
+
+============================================================
+25. RATE LIMIT
+============================================================
+
+HTTP 429:
+
+Display:
+
+"Too many requests.
+Please wait a moment and try again."
+
+
+Frontend must avoid aggressive automatic retries.
+
+
+============================================================
+26. SERVER ERROR
+============================================================
+
+HTTP 500+:
+
+Display:
+
+"The server encountered an error.
+Please try again later."
+
+
+Developer logging may capture technical details.
+
+
+============================================================
+27. RETRY POLICY
+============================================================
+
+Automatic retries must be limited.
+
+Safe candidates:
+
+temporary network failures
+idempotent GET requests
+
+
+Avoid automatic retries for:
+
+payments
+project creation
+deletion
+deployment
+other non-idempotent operations
+
+
+A duplicate project must never be created
+because of an uncontrolled retry.
+
+
+============================================================
+28. DATA NORMALIZATION
+============================================================
+
+Frontend services may normalize backend responses.
+
+Normalization must:
+
+- preserve real data
+- handle missing optional fields
+- avoid inventing business data
+- keep naming predictable
+
+
+Example:
+
+project._id
+project.id
+
+may be normalized internally to:
+
+projectId
+
+
+But normalization must not fabricate values.
+
+
+============================================================
+29. EMPTY STATES
+============================================================
+
+Empty data is a valid state.
+
+Examples:
+
+No projects yet.
+
+No files generated yet.
+
+No deployment yet.
+
+No billing history.
+
+No notifications.
+
+No saved settings.
+
+
+Empty states must be designed intentionally.
+
+Never use fake records just to make the UI look populated.
+
+
+============================================================
+30. FRONTEND STATE OWNERSHIP
+============================================================
+
+Local state:
+
+temporary UI state.
+
+Examples:
+
+activeTab
+modalOpen
+inputValue
+selectedFile
+
+
+Backend state:
+
+persistent product state.
+
+Examples:
+
+project
+subscription
+deployment
+user profile
+saved settings
+files
+
+
+Frontend must not confuse the two.
+
+
+============================================================
+31. CACHE POLICY
+============================================================
+
+Persistent backend data should be refreshed after
+important mutations.
+
+Example:
+
+Create Project
+→ create response
+→ update local state
+→ optionally refresh projects
+
+
+Deploy Project
+→ deployment response
+→ update selected project
+→ synchronize project list
+
+
+Settings Save
+→ confirmation
+→ synchronize settings state
+
+
+No stale UI should remain after successful mutations.
+
+
+============================================================
+32. SECURITY CONTRACT
+============================================================
+
+Frontend is never a trusted security boundary.
+
+Backend must enforce:
+
+authentication
+authorization
+ownership
+validation
+rate limiting
+business rules
+
+
+Frontend hiding a button is NOT security.
+
+Example:
+
+if (!isAdmin) hide Admin button
+
+is UX only.
+
+Backend must still reject:
+
+POST /admin/action
+
+for unauthorized users.
+
+
+============================================================
+33. PROJECT OWNERSHIP
+============================================================
+
+Every project request must be authorized against
+the authenticated user.
+
+Frontend must never send:
+
+userId
+
+as a substitute for backend ownership verification.
+
+Backend determines ownership from authenticated identity.
+
+
+============================================================
+34. API SERVICE ORGANIZATION
+============================================================
+
+Recommended:
+
+src/services/
+
+authService.js
+workspaceService.js
+aiService.js
+billingService.js
+settingsService.js
+userService.js
+deploymentService.js
+notificationService.js
+
+
+Each service contains domain-specific API calls.
+
+
+============================================================
+35. COMPONENT RULE
+============================================================
+
+Components should handle:
+
+UI
+user interaction
+local UI state
+presentation
+
+
+Components should NOT contain:
+
+database logic
+business authorization
+raw endpoint construction
+payment verification
+secret keys
+
+
+Example:
+
+Workspace.jsx
+
+calls:
+
+generateCode()
+
+not:
+
+axios.post("/api/ai/generate-code")
+
+
+============================================================
+36. PAGE NAVIGATION CONTRACT
+============================================================
+
+Navigation must represent complete product pages.
+
+Examples:
+
+Create New Project
+→ full Workspace page
+
+Settings
+→ full Settings page
+
+Billing
+→ full Billing page
+
+Account
+→ full Account page
+
+AI Chat
+→ full Chat experience
+
+
+Do not squeeze complete product experiences
+into small temporary overlays unless specifically designed
+as modal workflows.
+
+
+============================================================
+37. URL / ROUTING CONTRACT
+============================================================
+
+Every major product area should have a stable route.
+
+Examples:
+
+/dashboard
+/workspace
+/settings
+/billing
+/account
+/ai
+/projects
+
+
+Route names must remain predictable.
+
+Navigation must not depend on fragile component state.
+
+
+============================================================
+38. FRONTEND DEPLOYMENT ENVIRONMENT
+============================================================
+
+Production frontend:
+
+AWS Amplify
+
+Backend:
+
+https://api.zyrionos.com
+
+
+Frontend must communicate through the production API configuration.
+
+Environment-specific values belong in environment variables.
+
+
+============================================================
+39. OBSERVABILITY
+============================================================
+
+Important API operations should be traceable.
+
+Development logging may include:
+
+request
+response status
+operation duration
+error category
+
+
+Never log:
+
+passwords
+tokens
+cookies
+private API keys
+payment secrets
+
+
+============================================================
+40. PERFORMANCE
+============================================================
+
+Frontend must avoid unnecessary API calls.
+
+Examples:
+
+Do not repeatedly fetch projects
+because of uncontrolled rendering.
+
+Do not call deployment endpoint multiple times
+from a single click.
+
+Do not reload entire application for small state changes.
+
+
+Use targeted refreshes.
+
+
+============================================================
+41. CONSISTENCY RULE
+============================================================
+
+Every API-connected page must follow the same lifecycle:
+
+IDLE
+ ↓
+LOADING
+ ↓
+SUCCESS
+
+or
+
+IDLE
+ ↓
+LOADING
+ ↓
+ERROR
+
+
+For mutation:
+
+READY
+ ↓
+SUBMITTING
+ ↓
+SUCCESS / ERROR
+
+
+No page may invent its own contradictory lifecycle.
+
+
+============================================================
+42. API CONTRACT SOURCE OF TRUTH
+============================================================
+
+Backend route/controller/service definitions are authoritative.
+
+Frontend documentation must match backend reality.
+
+If backend changes:
+
+API contract must be updated.
+
+If frontend requires a new operation:
+
+backend endpoint must be defined before UI
+pretends that operation exists.
+
+
+============================================================
+43. NO FAKE FUNCTIONALITY RULE
+============================================================
+
+The following are prohibited:
+
+fake deployment
+fake payment success
+fake project files
+fake subscription
+fake AI generation
+fake live URLs
+fake database records
+fake success messages
+
+
+UI may use visual placeholders during design phase,
+but production functionality must use real data.
+
+
+============================================================
+44. FINAL INTEGRATION FLOW
+============================================================
+
+USER ACTION
+
+↓
+
+FRONTEND COMPONENT
+
+↓
+
+SERVICE FUNCTION
+
+↓
+
+CENTRAL API CLIENT
+
+↓
+
+AUTHENTICATED REQUEST
+
+↓
+
+BACKEND ROUTE
+
+↓
+
+CONTROLLER
+
+↓
+
+BUSINESS SERVICE
+
+↓
+
+DATABASE / EXTERNAL PROVIDER
+
+↓
+
+BACKEND RESPONSE
+
+↓
+
+SERVICE NORMALIZATION
+
+↓
+
+FRONTEND STATE
+
+↓
+
+UI UPDATE
+
+
+============================================================
+45. ENTERPRISE ACCEPTANCE CRITERIA
+============================================================
+
+This document is considered correctly implemented only when:
+
+[ ] No page contains uncontrolled raw API requests.
+
+[ ] API communication is centralized.
+
+[ ] Authentication is centralized.
+
+[ ] Authorization is backend-enforced.
+
+[ ] Project data comes from the backend.
+
+[ ] Workspace files come from real data.
+
+[ ] AI generation uses the real AI endpoint.
+
+[ ] Deployment uses the real deployment endpoint.
+
+[ ] Billing uses backend-confirmed subscription state.
+
+[ ] Payment success is server verified.
+
+[ ] Settings persist through backend APIs.
+
+[ ] Every API operation has loading state.
+
+[ ] Every API operation has error handling.
+
+[ ] Empty states are intentional.
+
+[ ] No fake project data exists.
+
+[ ] No fake deployment data exists.
+
+[ ] No fake billing data exists.
+
+[ ] No fake success states exist.
+
+[ ] Secrets are never exposed to frontend.
+
+[ ] Project ownership is backend enforced.
+
+[ ] Duplicate mutation requests are prevented.
+
+[ ] API errors are normalized.
+
+[ ] Production API configuration is centralized.
+
+[ ] Major product areas have dedicated routes.
+
+[ ] Full-page experiences remain full-page experiences.
+
+[ ] Frontend and backend contracts remain synchronized.
+
+
+============================================================
+46. FINAL PRODUCT PRINCIPLE
+============================================================
+
+ZYRIONOS MUST BE:
+
+REAL.
+
+The frontend is not allowed to merely LOOK functional.
+
+It must BE connected to the real system.
+
+Every visible:
+
+Project
+File
+Deployment
+Subscription
+Setting
+AI result
+Live URL
+Account state
+
+must ultimately represent real product state.
+
+The UI communicates the state.
+
+The backend owns the truth.
+
+
+============================================================
+END OF DOCUMENT 09
+============================================================

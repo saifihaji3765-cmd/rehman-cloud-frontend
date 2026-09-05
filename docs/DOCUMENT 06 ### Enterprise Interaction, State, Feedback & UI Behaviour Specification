@@ -1,0 +1,1213 @@
+# ZYRIONOS — FRONTEND INTERACTION & STATE ARCHITECTURE
+## DOCUMENT 06
+### Enterprise Interaction, State, Feedback & UI Behaviour Specification
+
+Document Status: FINAL FOUNDATION
+Version: 1.0
+Scope: Complete ZyrionOS Frontend
+Audience: Frontend Engineers, Backend Engineers, AI Coding Agents, QA, Product, Design
+Authority: This document defines frontend behaviour and interaction rules.
+
+======================================================================
+1. PURPOSE
+======================================================================
+
+ZyrionOS frontend must never behave like a collection of independent pages.
+
+Every interaction must follow a predictable enterprise interaction model.
+
+This document defines:
+
+- Click behaviour
+- Navigation behaviour
+- Page transitions
+- Loading states
+- Empty states
+- Success states
+- Error states
+- Disabled states
+- Processing states
+- Confirmation flows
+- Modal behaviour
+- Drawer behaviour
+- Form behaviour
+- API request behaviour
+- Optimistic updates
+- Refresh behaviour
+- Unsaved-change behaviour
+- Search behaviour
+- Filtering behaviour
+- Pagination behaviour
+- Workspace behaviour
+- AI interaction behaviour
+- Deployment behaviour
+- Authentication behaviour
+- Billing interaction behaviour
+- Responsive interaction behaviour
+- Keyboard interaction
+- Accessibility interaction
+
+No page may invent its own interaction rules when a rule already exists here.
+
+======================================================================
+2. CORE PRINCIPLE
+======================================================================
+
+ZyrionOS must feel like ONE operating system.
+
+The user must always understand:
+
+1. Where they are.
+2. What they are doing.
+3. What the system is doing.
+4. Whether an action succeeded.
+5. Whether an action failed.
+6. What they can do next.
+7. Whether their data was saved.
+8. Whether an operation is still running.
+
+The interface must never leave the user guessing.
+
+======================================================================
+3. GLOBAL INTERACTION MODEL
+======================================================================
+
+Every meaningful user action follows:
+
+USER ACTION
+    ↓
+VALIDATION
+    ↓
+SYSTEM FEEDBACK
+    ↓
+API / LOCAL OPERATION
+    ↓
+SUCCESS / FAILURE
+    ↓
+UI STATE UPDATE
+    ↓
+NEXT AVAILABLE ACTION
+
+Example:
+
+Create Project
+    ↓
+Validate name
+    ↓
+Show processing state
+    ↓
+Backend request
+    ↓
+Project created
+    ↓
+Update project state
+    ↓
+Open Workspace
+
+======================================================================
+4. FULL-PAGE NAVIGATION RULE
+======================================================================
+
+Major application sections must occupy the complete application viewport.
+
+Examples:
+
+Create New Project
+    → Full Workspace
+
+Workspace
+    → Full Workspace application
+
+Settings
+    → Full Settings page
+
+Billing
+    → Full Billing page
+
+AI Chat
+    → Full AI Chat experience
+
+Projects
+    → Full Projects page
+
+Deployments
+    → Full Deployment page
+
+Analytics
+    → Full Analytics page
+
+Security
+    → Full Security page
+
+Profile
+    → Full Profile page
+
+A major page must NOT appear as a small card inside another page unless
+the product specification explicitly defines it as a modal, drawer or
+embedded panel.
+
+======================================================================
+5. NAVIGATION RULES
+======================================================================
+
+5.1 Primary navigation
+
+Primary navigation changes the application section.
+
+Example:
+
+Dashboard
+Projects
+Workspace
+AI
+Deployments
+Analytics
+Billing
+Settings
+
+Each destination receives the complete available application area.
+
+5.2 Active navigation
+
+The current navigation item must have:
+
+- Active visual state
+- Clear contrast
+- Persistent indication
+- Accessible active state
+
+5.3 Navigation during processing
+
+If an important operation is running:
+
+- Do not silently destroy the operation.
+- Preserve operation state.
+- Prevent accidental duplicate execution.
+- Navigation may continue only when safe.
+- Long-running operations must be recoverable.
+
+======================================================================
+6. CREATE NEW PROJECT FLOW
+======================================================================
+
+The Create New Project action is a major product action.
+
+Flow:
+
+Create New Project
+        ↓
+Project creation interface
+        ↓
+User enters project requirements
+        ↓
+User selects framework/configuration
+        ↓
+Validation
+        ↓
+Create request
+        ↓
+Project creation state
+        ↓
+Project successfully created
+        ↓
+Navigate to FULL WORKSPACE
+
+The Workspace must become the primary screen.
+
+The user must NOT remain inside a small creation card.
+
+======================================================================
+7. WORKSPACE INTERACTION MODEL
+======================================================================
+
+Workspace is an application environment, not a normal dashboard card.
+
+Workspace must support:
+
+- Project context
+- AI command input
+- Project files
+- Code
+- Preview
+- Build status
+- Deployment status
+- Logs
+- Project configuration
+- Runtime information
+- AI generation
+- Project actions
+
+Workspace interaction hierarchy:
+
+APPLICATION HEADER
+    ↓
+PROJECT CONTEXT
+    ↓
+WORKSPACE TOOLBAR
+    ↓
+MAIN WORKSPACE CANVAS
+    ↓
+COMMAND / AI INPUT
+    ↓
+OPTIONAL INSPECTOR / PANEL
+
+Workspace must maximize usable screen space.
+
+======================================================================
+8. BUTTON STATES
+======================================================================
+
+Every actionable button must support appropriate states.
+
+Required states:
+
+DEFAULT
+HOVER
+FOCUS
+ACTIVE
+DISABLED
+LOADING
+SUCCESS
+ERROR
+
+Not every button needs visible text for every state, but behaviour must
+remain clear.
+
+Example:
+
+Build
+    ↓
+Building...
+    ↓
+Build complete
+
+During processing:
+
+- Prevent duplicate request.
+- Prevent accidental double click.
+- Preserve button dimensions where possible.
+- Show meaningful processing feedback.
+
+======================================================================
+9. FORM INTERACTION
+======================================================================
+
+Every form must provide:
+
+- Clear labels
+- Correct input types
+- Validation
+- Error messages
+- Processing state
+- Success state
+- Accessible focus behaviour
+
+Validation must happen:
+
+1. Before request.
+2. On backend.
+3. After backend response where required.
+
+Frontend validation must never be considered security.
+
+Backend remains authoritative.
+
+======================================================================
+10. INPUT BEHAVIOUR
+======================================================================
+
+Inputs must clearly communicate:
+
+DEFAULT
+FOCUS
+FILLED
+INVALID
+DISABLED
+READ-ONLY
+LOADING
+
+Errors must appear close to the affected field.
+
+Do not rely exclusively on:
+
+- Red borders
+- Toast messages
+- Icons
+
+The user must understand what needs correction.
+
+======================================================================
+11. API REQUEST STATES
+======================================================================
+
+Every API-connected component must understand:
+
+IDLE
+LOADING
+SUCCESS
+EMPTY
+ERROR
+RETRY
+
+Example:
+
+IDLE
+ ↓
+LOADING
+ ↓
+SUCCESS
+
+or
+
+IDLE
+ ↓
+LOADING
+ ↓
+ERROR
+ ↓
+RETRY
+
+No API-connected screen may remain visually ambiguous during a request.
+
+======================================================================
+12. LOADING EXPERIENCE
+======================================================================
+
+Loading must communicate actual system activity.
+
+Use the appropriate loading mechanism:
+
+Short operation:
+    → Button loading
+
+Data loading:
+    → Skeleton
+
+Page loading:
+    → Page-level loading state
+
+Large operation:
+    → Progress / processing state
+
+AI generation:
+    → AI processing experience
+
+Deployment:
+    → Deployment progress experience
+
+Never use a loading spinner everywhere by default.
+
+======================================================================
+13. EMPTY STATES
+======================================================================
+
+Empty states must be useful.
+
+Every empty state should explain:
+
+1. What is empty.
+2. Why it may be empty when useful.
+3. What the user can do next.
+
+Example:
+
+No Projects
+
+You have not created a project yet.
+
+[Create New Project]
+
+Never display only:
+
+"No data."
+
+======================================================================
+14. ERROR STATES
+======================================================================
+
+Errors must be understandable and actionable.
+
+Error hierarchy:
+
+FIELD ERROR
+    ↓
+COMPONENT ERROR
+    ↓
+REQUEST ERROR
+    ↓
+PAGE ERROR
+    ↓
+SYSTEM ERROR
+
+Where possible provide:
+
+- What happened
+- What was affected
+- What the user can do
+- Retry action
+
+Example:
+
+"Project deployment failed."
+
+[Retry Deployment]
+
+Do not expose:
+
+- Stack traces
+- Internal server paths
+- Secrets
+- API keys
+- Database information
+- Internal infrastructure details
+
+======================================================================
+15. SUCCESS STATES
+======================================================================
+
+Successful operations must provide confirmation when useful.
+
+Examples:
+
+Project created
+Project saved
+Deployment completed
+Settings updated
+Payment completed
+API key created
+
+Feedback can use:
+
+- Inline confirmation
+- Toast
+- Status badge
+- Page state
+- Navigation to next stage
+
+Success feedback must never interrupt the workflow unnecessarily.
+
+======================================================================
+16. TOAST SYSTEM
+======================================================================
+
+Toasts are for short-lived informational feedback.
+
+Appropriate:
+
+- Saved successfully
+- Copied
+- Deployment started
+- Settings updated
+
+Not appropriate:
+
+- Critical instructions
+- Complex validation
+- Important legal information
+- Large error explanations
+- Information the user must act on
+
+Critical information belongs in the relevant interface.
+
+======================================================================
+17. MODAL RULES
+======================================================================
+
+Modals are reserved for focused decisions.
+
+Use modals for:
+
+- Confirmation
+- Destructive actions
+- Important configuration
+- Short focused workflows
+
+Do NOT use modals for:
+
+- Full Settings
+- Full Billing
+- Full Workspace
+- Large dashboards
+- Complex application screens
+
+Those must use full-page navigation.
+
+======================================================================
+18. DRAWER RULES
+======================================================================
+
+Drawers are secondary contextual interfaces.
+
+Appropriate:
+
+- Quick project details
+- File information
+- Activity details
+- Secondary configuration
+- Contextual inspector
+
+A drawer must never become a hidden replacement for a major page.
+
+======================================================================
+19. DESTRUCTIVE ACTIONS
+======================================================================
+
+Destructive actions require explicit confirmation when the action is
+irreversible or materially dangerous.
+
+Examples:
+
+Delete Project
+Delete Account
+Remove Integration
+Cancel Subscription
+Delete API Key
+
+Confirmation must clearly state:
+
+- What will be removed.
+- Whether recovery is possible.
+- What the user needs to confirm.
+
+Avoid ambiguous buttons such as:
+
+"Continue"
+
+Prefer:
+
+"Delete Project"
+
+======================================================================
+20. SEARCH INTERACTION
+======================================================================
+
+Global search must behave consistently throughout ZyrionOS.
+
+Search should support:
+
+- Input
+- Loading
+- Results
+- No results
+- Error
+- Clear action
+
+Search results must be grouped logically when multiple entity types exist.
+
+Example:
+
+Projects
+Files
+Deployments
+Users
+Settings
+Documentation
+
+Keyboard navigation should be supported where practical.
+
+======================================================================
+21. FILTERING & SORTING
+======================================================================
+
+Filters must clearly communicate:
+
+- Current filter
+- Number of active filters
+- Clear filters
+- Result count where appropriate
+
+Sorting must clearly communicate:
+
+- Current sort field
+- Ascending/descending direction
+
+Changing filters must never silently reset unrelated user selections.
+
+======================================================================
+22. PAGINATION
+======================================================================
+
+Large datasets must not load unnecessarily.
+
+Pagination or controlled loading must preserve:
+
+- Current filters
+- Current sort
+- Current page
+- Search query
+
+Changing page must provide appropriate loading feedback.
+
+======================================================================
+23. AUTO-SAVE
+======================================================================
+
+Auto-save may be used where appropriate.
+
+When auto-save exists, show a subtle status:
+
+Saving...
+Saved
+Save failed
+
+Never make the user guess whether their work was saved.
+
+======================================================================
+24. UNSAVED CHANGES
+======================================================================
+
+If leaving a screen could cause meaningful data loss:
+
+Show a confirmation.
+
+Example:
+
+Unsaved changes
+
+You have changes that have not been saved.
+
+[Stay]
+[Leave]
+
+Do not show unnecessary confirmations when no meaningful data can be lost.
+
+======================================================================
+25. AI CHAT INTERACTION
+======================================================================
+
+AI Chat is a first-class ZyrionOS interface.
+
+It must support:
+
+- User message
+- AI response
+- Processing state
+- Streaming where supported
+- Error state
+- Retry
+- Copy
+- Regenerate where supported
+- Conversation history
+- Context awareness
+- Attachments where supported
+- Code output
+- Tool/action status
+
+AI must clearly distinguish:
+
+USER
+AI
+SYSTEM / TOOL STATUS
+
+The chat interface must not feel like a basic text box.
+
+======================================================================
+26. AI PROCESSING STATES
+======================================================================
+
+AI operations may have multiple stages.
+
+Example:
+
+Understanding request
+    ↓
+Planning
+    ↓
+Executing
+    ↓
+Generating
+    ↓
+Validating
+    ↓
+Completed
+
+Only expose stages that are meaningful and accurate.
+
+Never fake progress.
+
+======================================================================
+27. AI CODE GENERATION
+======================================================================
+
+Code generation flow:
+
+User Request
+    ↓
+Validation
+    ↓
+AI Processing
+    ↓
+Code Generation
+    ↓
+Validation
+    ↓
+Project File Update
+    ↓
+Preview / Build
+    ↓
+Ready
+
+Generated code must not be presented as successfully built merely because
+the AI returned text.
+
+Generation and successful build are separate states.
+
+======================================================================
+28. DEPLOYMENT INTERACTION
+======================================================================
+
+Deployment is a long-running operation.
+
+Required conceptual states:
+
+NOT DEPLOYED
+QUEUED
+BUILDING
+DEPLOYING
+DEPLOYED
+FAILED
+
+The UI must reflect the actual backend deployment state.
+
+Never show "Deployed" simply because the deployment request was accepted.
+
+======================================================================
+29. DEPLOYMENT RETRY
+======================================================================
+
+When deployment fails:
+
+Show:
+
+- Failure status
+- Useful reason when available
+- Retry action
+- Relevant logs when available
+
+Retry must create a controlled deployment request.
+
+Duplicate deployment requests must be prevented.
+
+======================================================================
+30. BILLING INTERACTION
+======================================================================
+
+Billing is a full application section.
+
+Billing must support:
+
+- Current plan
+- Plan comparison
+- Usage
+- Payment status
+- Invoices
+- Subscription management
+- Upgrade
+- Downgrade where supported
+- Cancellation where supported
+
+Payment-related actions must always show clear processing and result states.
+
+Never display payment success based only on frontend assumptions.
+
+Backend/payment provider confirmation is authoritative.
+
+======================================================================
+31. SETTINGS INTERACTION
+======================================================================
+
+Settings is a full-page application area.
+
+Settings should be organized by logical categories.
+
+Examples:
+
+Account
+Profile
+Security
+Authentication
+Notifications
+Workspace
+AI
+Integrations
+API
+Billing
+Preferences
+
+Saving one category must not unintentionally reset another.
+
+======================================================================
+32. AUTHENTICATION INTERACTION
+======================================================================
+
+Authentication screens must provide:
+
+- Login
+- Signup
+- Password recovery
+- Verification where required
+- OAuth where supported
+- Loading
+- Validation
+- Error
+- Success
+- Session handling
+
+Authentication errors must be understandable without exposing sensitive
+backend information.
+
+======================================================================
+33. SESSION EXPIRATION
+======================================================================
+
+If the user's session expires:
+
+1. Detect authentication failure.
+2. Preserve useful local UI state where safe.
+3. Explain that authentication is required.
+4. Redirect to authentication when appropriate.
+5. Avoid infinite redirect loops.
+
+======================================================================
+34. RESPONSIVE INTERACTION
+======================================================================
+
+Responsive behaviour must be intentional.
+
+Desktop:
+    Full enterprise workspace.
+
+Tablet:
+    Condensed navigation and panels.
+
+Mobile:
+    Prioritize the primary task.
+    Secondary panels become navigational/contextual layers.
+
+Do not simply shrink desktop UI.
+
+Layouts must adapt structurally.
+
+======================================================================
+35. KEYBOARD INTERACTION
+======================================================================
+
+Important workflows should support keyboard interaction.
+
+Examples:
+
+Enter
+    → Submit where appropriate
+
+Shift + Enter
+    → New line in AI command/chat input
+
+Escape
+    → Close modal/drawer where appropriate
+
+Tab
+    → Move through interactive controls
+
+Arrow keys
+    → Navigate supported menus/results
+
+Keyboard shortcuts must never interfere with normal text entry.
+
+======================================================================
+36. FOCUS MANAGEMENT
+======================================================================
+
+When a modal opens:
+
+→ Move focus appropriately.
+
+When a modal closes:
+
+→ Return focus to the triggering control where possible.
+
+When navigation changes:
+
+→ Focus should move logically to the new page content.
+
+Focus must remain visible.
+
+======================================================================
+37. ACCESSIBILITY
+======================================================================
+
+Interactive components must have:
+
+- Accessible names
+- Keyboard access
+- Focus states
+- Correct semantic elements
+- Appropriate ARIA only where required
+- Sufficient contrast
+- Error identification
+- Status communication
+
+Never use a clickable <div> where a button or link is appropriate.
+
+======================================================================
+38. DOUBLE-SUBMISSION PROTECTION
+======================================================================
+
+Actions that create, delete, deploy, purchase or otherwise mutate data
+must prevent accidental duplicate execution.
+
+During processing:
+
+- Disable duplicate action.
+- Preserve current request state.
+- Re-enable after completion/failure.
+
+======================================================================
+39. DATA REFRESH RULES
+======================================================================
+
+After a successful mutation:
+
+Update local UI state immediately where safe.
+
+Then synchronize with backend data where necessary.
+
+Example:
+
+Create Project
+    ↓
+Update project list
+    ↓
+Select project
+    ↓
+Navigate Workspace
+    ↓
+Backend remains authoritative
+
+Never require a full browser refresh for normal application operation.
+
+======================================================================
+40. STATE OWNERSHIP
+======================================================================
+
+Each state must have a clear owner.
+
+SERVER STATE:
+    Backend/API data
+
+UI STATE:
+    Tabs, modals, drawers, temporary selections
+
+FORM STATE:
+    User input
+
+AUTH STATE:
+    Session/user authentication
+
+OPERATION STATE:
+    Build, deployment, AI execution
+
+Do not duplicate server state unnecessarily across unrelated components.
+
+======================================================================
+41. COMPONENT BEHAVIOUR
+======================================================================
+
+Reusable components must behave consistently.
+
+Examples:
+
+Button
+Input
+Select
+Dropdown
+Modal
+Drawer
+Toast
+Tabs
+Table
+Card
+Badge
+Command Bar
+File Explorer
+Code Editor
+AI Message
+Status Indicator
+
+A component must not change fundamental interaction behaviour merely
+because it appears on a different page.
+
+======================================================================
+42. PAGE-LEVEL STATE MODEL
+======================================================================
+
+Every enterprise page should conceptually support:
+
+INITIAL
+LOADING
+READY
+EMPTY
+ERROR
+PROCESSING
+SUCCESS
+
+Not every page needs every state visibly.
+
+The implementation must intentionally decide which states apply.
+
+======================================================================
+43. SECURITY INTERACTION PRINCIPLE
+======================================================================
+
+Frontend behaviour is NOT a security boundary.
+
+The frontend may:
+
+- Hide unavailable actions.
+- Disable unavailable controls.
+- Display permission states.
+
+The backend must enforce:
+
+- Authentication
+- Authorization
+- Ownership
+- Validation
+- Payment state
+- Deployment permissions
+- API permissions
+
+Never trust frontend-only restrictions.
+
+======================================================================
+44. PERFORMANCE INTERACTION
+======================================================================
+
+The interface must remain responsive.
+
+Use:
+
+- Lazy loading where appropriate
+- Pagination
+- Debounced search where appropriate
+- Controlled API requests
+- Cached server state where appropriate
+- Optimized rendering
+- Code splitting
+
+Do not sacrifice correctness for perceived speed.
+
+======================================================================
+45. NO FAKE UI PRINCIPLE
+======================================================================
+
+ZyrionOS must never pretend an operation happened when it did not.
+
+Examples:
+
+Do not show:
+    "Deployment successful"
+
+unless deployment actually succeeded.
+
+Do not show:
+    "Project generated"
+
+unless project generation completed.
+
+Do not show:
+    "Saved"
+
+unless the save operation succeeded.
+
+Do not show:
+    "Payment successful"
+
+unless payment confirmation is authoritative.
+
+Visual feedback must represent real system state.
+
+======================================================================
+46. INTERACTION CONSISTENCY RULE
+======================================================================
+
+The same action must behave the same way everywhere.
+
+Example:
+
+Delete
+
+must use the same conceptual confirmation model.
+
+Deploy
+
+must use the same deployment state model.
+
+Save
+
+must use the same save feedback model.
+
+Error
+
+must use the same error communication model.
+
+======================================================================
+47. FINAL USER EXPERIENCE PRINCIPLE
+======================================================================
+
+The user should feel:
+
+"I know where I am."
+
+"I know what I can do."
+
+"I know what ZyrionOS is doing."
+
+"I know whether it worked."
+
+"I know what happens next."
+
+This is the core interaction standard for the entire platform.
+
+======================================================================
+48. IMPLEMENTATION RULE
+======================================================================
+
+Before implementing any frontend page or component:
+
+1. Check Document 01 for product/UX intent.
+2. Check Document 02 for frontend placement.
+3. Check Document 03 for visual design system.
+4. Check Document 04 for component/page architecture.
+5. Check Document 05 for data/API/system integration rules.
+6. Apply Document 06 for interaction and state behaviour.
+
+If a proposed implementation conflicts with these documents:
+
+STOP.
+
+Do not create a local workaround.
+
+Resolve the architectural conflict before implementation.
+
+======================================================================
+49. FINAL STATUS
+======================================================================
+
+Document 06 is the authoritative interaction and state behaviour
+foundation for ZyrionOS frontend.
+
+It defines how the frontend behaves.
+
+It does NOT redefine:
+
+- Product vision
+- Visual design tokens
+- Backend architecture
+- Database architecture
+- Deployment infrastructure
+
+Those responsibilities belong to their respective documents.
+
+======================================================================
+END OF DOCUMENT 06
+======================================================================

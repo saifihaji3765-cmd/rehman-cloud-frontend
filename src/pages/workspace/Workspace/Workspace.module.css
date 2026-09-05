@@ -1,69 +1,103 @@
 /* =========================================================
-   ZYRION OS — WORKSPACE
-   Enterprise-grade responsive workspace interface
-   CSS Module for Workspace.jsx
+   ZYRIONOS — AI BUILD CONTROL CENTER
+   Workspace.module.css
+
+   Design goals:
+   - Full available workspace
+   - Large AI build/chat surface
+   - Persistent project rail
+   - Enterprise control sidebar
+   - Dark ZyrionOS visual language
+   - Responsive without crushing the UI
    ========================================================= */
 
-/* -------------------------
-   Design Tokens
-   ------------------------- */
+
+/* =========================================================
+   DESIGN SYSTEM
+   ========================================================= */
 
 .page {
-  --ws-bg: #f5f7fb;
-  --ws-surface: #ffffff;
-  --ws-surface-soft: #f8fafc;
-  --ws-border: #e2e8f0;
-  --ws-border-strong: #cbd5e1;
+  --ws-bg: #070b14;
+  --ws-bg-2: #0a1020;
 
-  --ws-text: #0f172a;
-  --ws-text-secondary: #475569;
-  --ws-text-muted: #64748b;
+  --ws-surface: #0c1322;
+  --ws-surface-2: #101827;
+  --ws-surface-3: #141e31;
+  --ws-surface-hover: #18243a;
 
-  --ws-primary: #4f46e5;
-  --ws-primary-hover: #4338ca;
-  --ws-primary-soft: #eef2ff;
+  --ws-border: rgba(148, 163, 184, 0.12);
+  --ws-border-strong: rgba(148, 163, 184, 0.2);
+  --ws-border-active: rgba(99, 102, 241, 0.45);
 
-  --ws-success: #16a34a;
-  --ws-success-soft: #ecfdf5;
+  --ws-text: #f8fafc;
+  --ws-text-secondary: #c1c9d8;
+  --ws-text-muted: #748096;
+  --ws-text-dim: #566176;
 
-  --ws-warning: #d97706;
-  --ws-warning-soft: #fffbeb;
+  --ws-primary: #6366f1;
+  --ws-primary-light: #818cf8;
+  --ws-primary-dark: #4f46e5;
 
-  --ws-danger: #dc2626;
-  --ws-danger-soft: #fef2f2;
+  --ws-success: #22c55e;
+  --ws-warning: #f59e0b;
+  --ws-danger: #ef4444;
+  --ws-info: #38bdf8;
+
+  --ws-primary-soft: rgba(99, 102, 241, 0.1);
+  --ws-success-soft: rgba(34, 197, 94, 0.1);
+  --ws-warning-soft: rgba(245, 158, 11, 0.1);
+  --ws-danger-soft: rgba(239, 68, 68, 0.1);
 
   --ws-radius-sm: 8px;
-  --ws-radius-md: 12px;
-  --ws-radius-lg: 16px;
+  --ws-radius-md: 11px;
+  --ws-radius-lg: 14px;
+  --ws-radius-xl: 17px;
 
   --ws-shadow-sm:
-    0 1px 2px rgba(15, 23, 42, 0.04);
+    0 4px 16px rgba(0, 0, 0, 0.22);
 
   --ws-shadow-md:
-    0 8px 24px rgba(15, 23, 42, 0.06);
+    0 10px 32px rgba(0, 0, 0, 0.28);
 
   --ws-shadow-lg:
-    0 18px 45px rgba(15, 23, 42, 0.08);
+    0 20px 70px rgba(0, 0, 0, 0.38);
+
+
+  /* =======================================================
+     FULL WORKSPACE
+     ======================================================= */
+
+  width: 100%;
+  height: calc(100vh - 80px);
+  min-height: 620px;
+
+  padding: 14px;
 
   box-sizing: border-box;
 
-  width: 100%;
-  min-height: calc(100vh - 80px);
-
-  padding: 24px;
-
   display: grid;
-  grid-template-columns:
-    minmax(220px, 0.85fr)
-    minmax(420px, 1.7fr)
-    minmax(260px, 0.95fr);
 
-  gap: 20px;
+  /*
+    Project rail | Main build surface | Control center
+  */
+  grid-template-columns:
+    235px
+    minmax(0, 1fr)
+    315px;
+
+  gap: 12px;
+
+  overflow: hidden;
 
   background:
     radial-gradient(
-      circle at top left,
-      rgba(79, 70, 229, 0.05),
+      circle at 50% 0%,
+      rgba(99, 102, 241, 0.08),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 100% 100%,
+      rgba(56, 189, 248, 0.035),
       transparent 28%
     ),
     var(--ws-bg);
@@ -80,204 +114,365 @@
     sans-serif;
 }
 
-/* Make sizing predictable */
+
+/* =========================================================
+   GLOBAL BOX SIZING
+   ========================================================= */
+
 .page *,
 .page *::before,
 .page *::after {
   box-sizing: border-box;
 }
 
-/* -------------------------
-   Panels
-   ------------------------- */
+
+/* =========================================================
+   PANEL BASE
+   ========================================================= */
 
 .panel {
   min-width: 0;
-  min-height: 620px;
+  min-height: 0;
 
   display: flex;
   flex-direction: column;
 
   overflow: hidden;
 
-  background: var(--ws-surface);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(15, 23, 40, 0.98),
+      rgba(9, 15, 27, 0.98)
+    );
 
   border: 1px solid var(--ws-border);
-  border-radius: var(--ws-radius-lg);
+
+  border-radius: var(--ws-radius-xl);
 
   box-shadow: var(--ws-shadow-md);
+
+  position: relative;
 }
 
-/* -------------------------
-   Panel Header
-   ------------------------- */
 
-.panelHeader {
-  min-height: 64px;
+/*
+  Subtle top edge used across enterprise panels.
+*/
 
-  display: flex;
-  align-items: center;
+.panel::before {
+  content: "";
 
-  padding: 16px 20px;
+  position: absolute;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: 1px;
 
   background:
     linear-gradient(
-      to bottom,
-      #ffffff,
-      #fbfdff
+      90deg,
+      transparent,
+      rgba(129, 140, 248, 0.28),
+      transparent
+    );
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   PANEL HEADER
+   ========================================================= */
+
+.panelHeader {
+  flex: 0 0 auto;
+
+  min-height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 13px 16px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(18, 27, 45, 0.9),
+      rgba(12, 19, 34, 0.92)
     );
 
   border-bottom: 1px solid var(--ws-border);
 }
+
 
 .panelTitle {
   margin: 0;
 
   color: var(--ws-text);
 
-  font-size: 15px;
-  line-height: 1.4;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: 14px;
+  line-height: 1.35;
+
+  font-weight: 750;
+
+  letter-spacing: -0.015em;
 }
 
-/* -------------------------
-   Project History
-   ------------------------- */
+
+/* =========================================================
+   PROJECT HISTORY / LEFT RAIL
+   ========================================================= */
 
 .history {
   flex: 1;
 
   min-height: 0;
 
-  padding: 12px;
+  padding: 10px;
 
   overflow-y: auto;
   overflow-x: hidden;
 }
 
+
+/* Scrollbars */
+
 .history::-webkit-scrollbar,
 .messages::-webkit-scrollbar,
-.fileList::-webkit-scrollbar {
-  width: 7px;
+.fileList::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar {
+  width: 6px;
 }
 
 .history::-webkit-scrollbar-track,
 .messages::-webkit-scrollbar-track,
-.fileList::-webkit-scrollbar-track {
+.fileList::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .history::-webkit-scrollbar-thumb,
 .messages::-webkit-scrollbar-thumb,
-.fileList::-webkit-scrollbar-thumb {
-  background: var(--ws-border-strong);
+.fileList::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb {
+  background: #263149;
+
   border-radius: 999px;
 }
+
+.history::-webkit-scrollbar-thumb:hover,
+.messages::-webkit-scrollbar-thumb:hover,
+.fileList::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #36435e;
+}
+
+
+/* Project item */
 
 .historyItem {
   position: relative;
 
   width: 100%;
 
-  margin-bottom: 6px;
-  padding: 11px 12px;
+  margin-bottom: 5px;
+
+  padding: 11px 11px 11px 35px;
 
   border: 1px solid transparent;
-  border-radius: var(--ws-radius-sm);
+
+  border-radius: 9px;
 
   color: var(--ws-text-secondary);
 
   background: transparent;
 
-  font-size: 13px;
-  line-height: 1.4;
-  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.45;
+
+  font-weight: 550;
 
   cursor: pointer;
 
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
   transition:
-    background 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease,
-    transform 160ms ease;
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
 }
 
+
+/* Project icon */
+
+.historyItem::before {
+  content: "◆";
+
+  position: absolute;
+
+  left: 13px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  color: #6366f1;
+
+  font-size: 7px;
+
+  opacity: 0.85;
+}
+
+
 .historyItem:hover {
-  color: var(--ws-primary);
+  color: #ffffff;
 
-  background: var(--ws-primary-soft);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(99, 102, 241, 0.13),
+      rgba(99, 102, 241, 0.05)
+    );
 
-  border-color: #c7d2fe;
+  border-color:
+    rgba(129, 140, 248, 0.2);
 
   transform: translateX(2px);
 }
+
 
 .historyItem:active {
   transform: translateX(1px);
 }
 
-/* -------------------------
-   Chat Area
-   ------------------------- */
+
+/* =========================================================
+   CHAT / MAIN BUILD SURFACE
+   ========================================================= */
 
 .chatArea {
   flex: 1;
 
+  min-width: 0;
   min-height: 0;
 
   display: flex;
   flex-direction: column;
 }
+
+
+/* =========================================================
+   MESSAGE AREA
+   ========================================================= */
 
 .messages {
   flex: 1;
 
   min-height: 0;
 
-  padding: 20px;
+  padding: 26px 30px;
 
   overflow-y: auto;
   overflow-x: hidden;
 
   display: flex;
   flex-direction: column;
-  gap: 12px;
+
+  gap: 16px;
 
   background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(99, 102, 241, 0.045),
+      transparent 34%
+    ),
     linear-gradient(
       180deg,
-      #fbfdff 0%,
-      #f8fafc 100%
+      #0a101d 0%,
+      #080e19 100%
     );
 }
 
-/* -------------------------
-   Messages
-   ------------------------- */
+
+/* =========================================================
+   AI MESSAGE
+   ========================================================= */
 
 .message {
-  max-width: 92%;
+  position: relative;
 
-  padding: 13px 15px;
+  max-width: min(820px, 92%);
+
+  padding: 15px 17px;
 
   border: 1px solid var(--ws-border);
 
-  border-radius: 14px;
+  border-radius: 13px;
 
   color: var(--ws-text-secondary);
 
-  background: var(--ws-surface);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(18, 27, 45, 0.96),
+      rgba(11, 18, 31, 0.96)
+    );
 
   box-shadow: var(--ws-shadow-sm);
 
   font-size: 13px;
-  line-height: 1.65;
+
+  line-height: 1.7;
 
   white-space: pre-wrap;
 
   overflow-wrap: anywhere;
 }
+
+
+/*
+  AI message left indicator
+*/
+
+.ai {
+  align-self: flex-start;
+
+  border-color:
+    rgba(129, 140, 248, 0.16);
+}
+
+
+.ai::before {
+  content: "";
+
+  position: absolute;
+
+  left: -1px;
+  top: 14px;
+
+  width: 3px;
+  height: 28px;
+
+  border-radius: 0 4px 4px 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--ws-primary-light),
+      var(--ws-primary-dark)
+    );
+}
+
 
 .message h3 {
   margin: 0 0 10px;
@@ -285,55 +480,98 @@
   color: var(--ws-text);
 
   font-size: 14px;
-  font-weight: 700;
+
+  font-weight: 750;
 }
 
-.ai {
-  align-self: flex-start;
 
-  border-color: #dbe4f0;
+.message pre {
+  margin: 0;
+
+  padding: 14px;
+
+  max-height: 500px;
+
+  overflow: auto;
+
+  border: 1px solid var(--ws-border);
+
+  border-radius: 10px;
+
+  background: #070c16;
+
+  color: #cbd5e1;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    monospace;
+
+  font-size: 11px;
+
+  line-height: 1.65;
+}
+
+
+/* =========================================================
+   INPUT AREA
+   ========================================================= */
+
+.inputArea {
+  flex: 0 0 auto;
+
+  padding: 14px 16px 16px;
 
   background:
     linear-gradient(
-      135deg,
-      #ffffff,
-      #f8fafc
+      180deg,
+      rgba(12, 19, 34, 0.96),
+      rgba(9, 15, 27, 1)
     );
-}
-
-/* -------------------------
-   Input Area
-   ------------------------- */
-
-.inputArea {
-  padding: 14px;
-
-  background: var(--ws-surface);
 
   border-top: 1px solid var(--ws-border);
 }
+
+
+/* =========================================================
+   TEXTAREA
+   ========================================================= */
 
 .textarea {
   display: block;
 
   width: 100%;
-  min-height: 105px;
+
+  min-height: 86px;
+  max-height: 220px;
 
   resize: vertical;
 
-  padding: 13px 14px;
+  padding: 14px 15px;
 
   color: var(--ws-text);
 
-  background: #ffffff;
+  background:
+    linear-gradient(
+      145deg,
+      #0e1728,
+      #0a1220
+    );
 
   border: 1px solid var(--ws-border-strong);
-  border-radius: var(--ws-radius-md);
+
+  border-radius: 12px;
 
   outline: none;
 
   font-family: inherit;
+
   font-size: 13px;
+
   line-height: 1.6;
 
   transition:
@@ -342,29 +580,37 @@
     background 160ms ease;
 }
 
+
 .textarea::placeholder {
-  color: #94a3b8;
+  color: #657188;
 }
+
 
 .textarea:hover {
-  border-color: #94a3b8;
+  border-color:
+    rgba(148, 163, 184, 0.3);
 }
+
 
 .textarea:focus {
-  border-color: var(--ws-primary);
+  border-color:
+    rgba(129, 140, 248, 0.62);
 
   box-shadow:
-    0 0 0 3px rgba(79, 70, 229, 0.12);
+    0 0 0 3px rgba(99, 102, 241, 0.1),
+    0 10px 30px rgba(0, 0, 0, 0.18);
 
-  background: #ffffff;
+  background: #0d1627;
 }
 
-/* -------------------------
-   Actions
-   ------------------------- */
+
+/* =========================================================
+   ACTION BAR
+   ========================================================= */
 
 .actions {
   display: flex;
+
   justify-content: flex-end;
   align-items: center;
 
@@ -373,17 +619,25 @@
   margin-top: 10px;
 }
 
+
+/* =========================================================
+   GENERATE BUTTON
+   ========================================================= */
+
 .generateButton,
 .deployButton {
   min-height: 42px;
 
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
 
   padding: 0 18px;
 
-  border: 1px solid transparent;
+  border: 1px solid
+    rgba(129, 140, 248, 0.35);
+
   border-radius: 10px;
 
   color: #ffffff;
@@ -391,167 +645,192 @@
   background:
     linear-gradient(
       135deg,
-      var(--ws-primary),
-      #6366f1
+      var(--ws-primary-light),
+      var(--ws-primary-dark)
     );
 
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
+
+  font-size: 12px;
+
+  font-weight: 750;
+
+  letter-spacing: 0.01em;
 
   cursor: pointer;
 
   box-shadow:
-    0 5px 14px rgba(79, 70, 229, 0.22);
+    0 8px 24px rgba(79, 70, 229, 0.22);
 
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
-    background 160ms ease,
+    filter 160ms ease,
     opacity 160ms ease;
 }
 
+
 .generateButton:hover:not(:disabled),
 .deployButton:hover:not(:disabled) {
-  background:
-    linear-gradient(
-      135deg,
-      var(--ws-primary-hover),
-      #4f46e5
-    );
-
   transform: translateY(-1px);
 
+  filter: brightness(1.08);
+
   box-shadow:
-    0 8px 20px rgba(79, 70, 229, 0.28);
+    0 12px 30px rgba(79, 70, 229, 0.32);
 }
+
 
 .generateButton:active:not(:disabled),
 .deployButton:active:not(:disabled) {
   transform: translateY(0);
 }
 
+
 .generateButton:disabled,
 .deployButton:disabled {
-  opacity: 0.55;
+  opacity: 0.48;
 
   cursor: not-allowed;
 
   box-shadow: none;
 }
 
-/* -------------------------
-   Right Sidebar
-   ------------------------- */
+
+/* =========================================================
+   RIGHT CONTROL CENTER
+   ========================================================= */
 
 .sidebar {
   flex: 1;
 
   min-height: 0;
 
-  padding: 14px;
+  padding: 12px;
 
   overflow-y: auto;
   overflow-x: hidden;
 
   display: flex;
+
   flex-direction: column;
 
-  gap: 12px;
+  gap: 10px;
 }
 
-.sidebar::-webkit-scrollbar {
-  width: 7px;
-}
 
-.sidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background: var(--ws-border-strong);
-  border-radius: 999px;
-}
-
-/* -------------------------
-   Cards
-   ------------------------- */
+/* =========================================================
+   CONTROL CARDS
+   ========================================================= */
 
 .card {
-  padding: 15px;
+  position: relative;
+
+  flex: 0 0 auto;
+
+  padding: 14px;
 
   border: 1px solid var(--ws-border);
 
-  border-radius: var(--ws-radius-md);
+  border-radius: 11px;
 
   background:
     linear-gradient(
       145deg,
-      #ffffff,
-      #fbfdff
+      rgba(16, 24, 39, 0.96),
+      rgba(11, 18, 31, 0.96)
     );
 
   box-shadow: var(--ws-shadow-sm);
 
   transition:
     border-color 160ms ease,
+    background 160ms ease,
     box-shadow 160ms ease;
 }
 
+
 .card:hover {
-  border-color: #cbd5e1;
+  border-color:
+    rgba(148, 163, 184, 0.2);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(18, 28, 46, 0.98),
+      rgba(12, 20, 34, 0.98)
+    );
 
   box-shadow: var(--ws-shadow-md);
 }
 
+
+/* =========================================================
+   CARD TITLE
+   ========================================================= */
+
 .cardTitle {
-  margin-bottom: 11px;
+  margin-bottom: 10px;
 
-  color: var(--ws-text);
+  color: #8d9ab0;
 
-  font-size: 12px;
+  font-size: 10px;
+
   line-height: 1.4;
+
   font-weight: 750;
 
   text-transform: uppercase;
-  letter-spacing: 0.055em;
+
+  letter-spacing: 0.09em;
 }
+
 
 .cardText {
   color: var(--ws-text-secondary);
 
-  font-size: 13px;
+  font-size: 12px;
+
   line-height: 1.55;
 
   overflow-wrap: anywhere;
 }
 
-/* -------------------------
-   Generated Files
-   ------------------------- */
+
+/* =========================================================
+   GENERATED FILES
+   ========================================================= */
 
 .fileList {
-  max-height: 220px;
+  max-height: 190px;
 
   overflow-y: auto;
+
   overflow-x: hidden;
 }
 
+
 .fileItem {
+  position: relative;
+
   display: flex;
+
   align-items: center;
 
-  min-height: 38px;
+  min-height: 35px;
 
-  margin-bottom: 5px;
-  padding: 8px 10px;
+  margin-bottom: 4px;
+
+  padding: 7px 9px 7px 29px;
 
   border: 1px solid transparent;
+
   border-radius: 8px;
 
-  color: var(--ws-text-secondary);
+  color: #b8c2d3;
 
-  background: var(--ws-surface-soft);
+  background:
+    rgba(7, 12, 22, 0.72);
 
   font-family:
     ui-monospace,
@@ -562,12 +841,14 @@
     "Liberation Mono",
     monospace;
 
-  font-size: 11px;
+  font-size: 10px;
 
   cursor: pointer;
 
   overflow: hidden;
+
   text-overflow: ellipsis;
+
   white-space: nowrap;
 
   transition:
@@ -576,57 +857,71 @@
     border-color 150ms ease;
 }
 
+
 .fileItem::before {
-  content: "▸";
+  content: "◇";
 
-  margin-right: 8px;
+  position: absolute;
 
-  color: var(--ws-primary);
+  left: 10px;
 
-  font-family: inherit;
+  color: var(--ws-primary-light);
+
+  font-size: 9px;
 }
+
 
 .fileItem:hover {
-  color: var(--ws-primary);
+  color: #ffffff;
 
-  background: var(--ws-primary-soft);
+  background:
+    rgba(99, 102, 241, 0.1);
 
-  border-color: #c7d2fe;
+  border-color:
+    rgba(129, 140, 248, 0.22);
 }
 
-/* -------------------------
-   Deployment Status
-   ------------------------- */
+
+/* =========================================================
+   DEPLOYMENT STATUS
+   ========================================================= */
 
 .statusReady,
 .statusPending {
   display: inline-flex;
+
   align-items: center;
 
-  min-height: 30px;
+  min-height: 29px;
 
   padding: 5px 10px;
 
   border-radius: 999px;
 
-  font-size: 11px;
+  font-size: 10px;
+
   line-height: 1.2;
-  font-weight: 700;
+
+  font-weight: 750;
 }
+
 
 .statusReady {
-  color: #15803d;
+  color: #4ade80;
 
-  background: var(--ws-success-soft);
+  background:
+    var(--ws-success-soft);
 
-  border: 1px solid #bbf7d0;
+  border: 1px solid
+    rgba(34, 197, 94, 0.22);
 }
+
 
 .statusReady::before {
   content: "";
 
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 
   margin-right: 7px;
 
@@ -635,22 +930,27 @@
   background: var(--ws-success);
 
   box-shadow:
-    0 0 0 3px rgba(22, 163, 74, 0.12);
+    0 0 0 4px rgba(34, 197, 94, 0.08),
+    0 0 12px rgba(34, 197, 94, 0.4);
 }
+
 
 .statusPending {
-  color: #a16207;
+  color: #fbbf24;
 
-  background: var(--ws-warning-soft);
+  background:
+    var(--ws-warning-soft);
 
-  border: 1px solid #fde68a;
+  border: 1px solid
+    rgba(245, 158, 11, 0.22);
 }
+
 
 .statusPending::before {
   content: "";
 
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 
   margin-right: 7px;
 
@@ -659,23 +959,27 @@
   background: var(--ws-warning);
 }
 
-/* -------------------------
-   Live URL
-   ------------------------- */
+
+/* =========================================================
+   LIVE URL
+   ========================================================= */
 
 .liveUrl {
-  min-height: 40px;
+  min-height: 38px;
 
   display: flex;
+
   align-items: center;
 
-  padding: 9px 10px;
+  padding: 8px 10px;
 
-  color: var(--ws-primary);
+  color: #a5b4fc;
 
-  background: var(--ws-primary-soft);
+  background:
+    rgba(99, 102, 241, 0.08);
 
-  border: 1px solid #c7d2fe;
+  border: 1px solid
+    rgba(129, 140, 248, 0.2);
 
   border-radius: 8px;
 
@@ -688,87 +992,152 @@
     "Liberation Mono",
     monospace;
 
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 10px;
+
+  line-height: 1.45;
 
   overflow-wrap: anywhere;
 }
 
-/* -------------------------
-   Deploy Button
-   ------------------------- */
+
+/* =========================================================
+   DEPLOY ACTION
+   ========================================================= */
 
 .card > .deployButton {
   width: 100%;
+
+  min-height: 44px;
+
+  font-size: 12px;
 }
 
-/* -------------------------
-   Selection
-   ------------------------- */
 
-.page ::selection {
-  color: #ffffff;
-  background: var(--ws-primary);
+/*
+  Make deployment card visually stronger.
+*/
+
+.sidebar .card:last-child {
+  border-color:
+    rgba(99, 102, 241, 0.25);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(25, 30, 67, 0.75),
+      rgba(12, 18, 34, 0.98)
+    );
 }
 
-/* -------------------------
-   Accessibility
-   ------------------------- */
+
+/* =========================================================
+   FOCUS / ACCESSIBILITY
+   ========================================================= */
 
 .historyItem:focus-visible,
 .fileItem:focus-visible,
 .generateButton:focus-visible,
 .deployButton:focus-visible,
 .textarea:focus-visible {
-  outline: 3px solid rgba(79, 70, 229, 0.22);
+  outline: 2px solid
+    rgba(129, 140, 248, 0.55);
+
   outline-offset: 2px;
 }
 
-/* -------------------------
-   Tablet
-   ------------------------- */
 
-@media (max-width: 1180px) {
+/* =========================================================
+   SELECTION
+   ========================================================= */
+
+.page ::selection {
+  color: #ffffff;
+
+  background:
+    rgba(99, 102, 241, 0.38);
+}
+
+
+/* =========================================================
+   LARGE DESKTOP
+   ========================================================= */
+
+@media (min-width: 1500px) {
+
   .page {
     grid-template-columns:
-      minmax(190px, 0.75fr)
-      minmax(360px, 1.5fr)
-      minmax(230px, 0.85fr);
+      250px
+      minmax(0, 1fr)
+      335px;
 
     gap: 14px;
 
     padding: 16px;
   }
 
-  .panel {
-    min-height: 580px;
+  .messages {
+    padding-left: 38px;
+    padding-right: 38px;
+  }
+
+}
+
+
+/* =========================================================
+   LAPTOP
+   ========================================================= */
+
+@media (max-width: 1250px) {
+
+  .page {
+    grid-template-columns:
+      205px
+      minmax(0, 1fr)
+      285px;
+
+    gap: 10px;
+
+    padding: 10px;
   }
 
   .messages {
-    padding: 16px;
+    padding: 20px;
   }
+
 }
 
-/* -------------------------
-   Small Tablet
-   ------------------------- */
 
-@media (max-width: 960px) {
+/* =========================================================
+   SMALL LAPTOP / TABLET
+   ========================================================= */
+
+@media (max-width: 1050px) {
+
   .page {
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns:
+      190px
+      minmax(0, 1fr);
+
+    gap: 10px;
   }
+
+  /*
+    Control center moves below main workspace.
+  */
 
   .page > .panel:last-child {
     grid-column: 1 / -1;
 
-    min-height: auto;
+    min-height: 250px;
+
+    max-height: 340px;
   }
 
   .page > .panel:last-child .sidebar {
     display: grid;
 
     grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+      repeat(3, minmax(0, 1fr));
 
     align-items: start;
   }
@@ -776,127 +1145,315 @@
   .page > .panel:last-child .card:last-child {
     grid-column: 1 / -1;
   }
+
 }
 
-/* -------------------------
-   Mobile
-   ------------------------- */
 
-@media (max-width: 720px) {
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 820px) {
+
   .page {
-    min-height: auto;
+    height: auto;
+
+    min-height: calc(100vh - 80px);
 
     grid-template-columns: 1fr;
 
+    overflow: visible;
+
     padding: 10px;
 
-    gap: 12px;
+    gap: 10px;
   }
 
-  .panel {
-    min-height: 0;
 
-    border-radius: 14px;
-  }
+  /*
+    Project rail becomes horizontal history.
+  */
 
   .page > .panel:first-child {
-    min-height: 220px;
-    max-height: 300px;
+    min-height: 105px;
+
+    max-height: 150px;
   }
+
+
+  .history {
+    display: flex;
+
+    gap: 7px;
+
+    overflow-x: auto;
+
+    overflow-y: hidden;
+  }
+
+
+  .historyItem {
+    flex: 0 0 auto;
+
+    width: auto;
+
+    min-width: 150px;
+
+    margin-bottom: 0;
+  }
+
+
+  /*
+    Main chat gets priority.
+  */
 
   .page > .panel:nth-child(2) {
-    min-height: 540px;
+    min-height: 620px;
   }
 
+
+  .messages {
+    padding: 18px;
+  }
+
+
+  /*
+    Control center.
+  */
+
   .page > .panel:last-child {
+    max-height: none;
+
     min-height: auto;
   }
 
-  .history {
-    max-height: 220px;
+
+  .page > .panel:last-child .sidebar {
+    display: grid;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    overflow: visible;
   }
 
-  .sidebar {
-    max-height: none;
-
-    display: flex !important;
-  }
-
-  .messages {
-    min-height: 320px;
-
-    padding: 14px;
-  }
-
-  .message {
-    max-width: 96%;
-
-    font-size: 12px;
-  }
-
-  .inputArea {
-    padding: 10px;
-  }
-
-  .textarea {
-    min-height: 100px;
-  }
-
-  .actions {
-    justify-content: stretch;
-  }
-
-  .generateButton {
-    width: 100%;
-  }
-
-  .panelHeader {
-    padding: 14px 16px;
-  }
 }
 
-/* -------------------------
-   Very Small Phones
-   ------------------------- */
 
-@media (max-width: 420px) {
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
   .page {
+    min-height: auto;
+
     padding: 7px;
+
+    gap: 8px;
+
+    background: var(--ws-bg);
   }
+
 
   .panel {
     border-radius: 12px;
   }
 
-  .panelTitle {
-    font-size: 14px;
+
+  .panelHeader {
+    min-height: 52px;
+
+    padding: 12px 13px;
   }
 
+
+  .panelTitle {
+    font-size: 13px;
+  }
+
+
+  /*
+    Projects
+  */
+
+  .page > .panel:first-child {
+    min-height: 92px;
+
+    max-height: 115px;
+  }
+
+
+  .history {
+    padding: 7px;
+  }
+
+
   .historyItem {
+    min-width: 135px;
+
+    padding: 9px 9px 9px 29px;
+
+    font-size: 11px;
+  }
+
+
+  /*
+    Chat
+  */
+
+  .page > .panel:nth-child(2) {
+    min-height: 620px;
+  }
+
+
+  .messages {
+    padding: 14px 12px;
+
+    gap: 12px;
+  }
+
+
+  .message {
+    max-width: 96%;
+
+    padding: 12px 13px;
+
+    font-size: 12px;
+
+    line-height: 1.6;
+  }
+
+
+  .message pre {
+    max-height: 360px;
+
+    padding: 11px;
+
+    font-size: 10px;
+  }
+
+
+  .inputArea {
+    padding: 10px;
+  }
+
+
+  .textarea {
+    min-height: 92px;
+
+    padding: 12px;
+
     font-size: 12px;
   }
+
+
+  .actions {
+    margin-top: 8px;
+
+    justify-content: stretch;
+  }
+
+
+  .generateButton {
+    width: 100%;
+
+    min-height: 42px;
+  }
+
+
+  /*
+    Control cards become single column.
+  */
+
+  .page > .panel:last-child .sidebar {
+    display: flex !important;
+
+    flex-direction: column;
+
+    gap: 8px;
+  }
+
 
   .card {
     padding: 12px;
   }
 
+
   .cardTitle {
+    font-size: 9px;
+  }
+
+
+  .cardText {
     font-size: 11px;
   }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 390px) {
+
+  .page {
+    padding: 5px;
+  }
+
+
+  .panelHeader {
+    padding: 10px 11px;
+  }
+
+
+  .historyItem {
+    min-width: 125px;
+
+    font-size: 10px;
+  }
+
+
+  .page > .panel:nth-child(2) {
+    min-height: 590px;
+  }
+
+
+  .messages {
+    padding: 11px 9px;
+  }
+
+
+  .message {
+    font-size: 11px;
+
+    padding: 11px;
+  }
+
+
+  .textarea {
+    min-height: 84px;
+  }
+
 
   .generateButton,
   .deployButton {
     min-height: 40px;
 
-    font-size: 12px;
+    font-size: 11px;
   }
+
 }
 
-/* -------------------------
-   Reduced Motion
-   ------------------------- */
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
+
   .page *,
   .page *::before,
   .page *::after {
@@ -906,97 +1463,5 @@
 
     animation: none !important;
   }
-}
 
-/* -------------------------
-   Dark Mode
-   ------------------------- */
-
-@media (prefers-color-scheme: dark) {
-  .page {
-    --ws-bg: #0b1120;
-    --ws-surface: #111827;
-    --ws-surface-soft: #172033;
-
-    --ws-border: #263244;
-    --ws-border-strong: #334155;
-
-    --ws-text: #f8fafc;
-    --ws-text-secondary: #cbd5e1;
-    --ws-text-muted: #94a3b8;
-
-    --ws-primary-soft: rgba(99, 102, 241, 0.14);
-
-    background:
-      radial-gradient(
-        circle at top left,
-        rgba(99, 102, 241, 0.12),
-        transparent 28%
-      ),
-      var(--ws-bg);
-  }
-
-  .panel,
-  .card {
-    background: var(--ws-surface);
-  }
-
-  .panelHeader {
-    background:
-      linear-gradient(
-        to bottom,
-        #111827,
-        #0f172a
-      );
-  }
-
-  .messages {
-    background:
-      linear-gradient(
-        180deg,
-        #0f172a 0%,
-        #0b1120 100%
-      );
-  }
-
-  .textarea {
-    color: var(--ws-text);
-
-    background: #0f172a;
-
-    border-color: var(--ws-border-strong);
-  }
-
-  .textarea:focus {
-    background: #0f172a;
-  }
-
-  .historyItem:hover,
-  .fileItem:hover {
-    background: var(--ws-primary-soft);
-
-    border-color: rgba(129, 140, 248, 0.35);
-  }
-
-  .fileItem {
-    color: #cbd5e1;
-
-    background: #172033;
-  }
-
-  .message {
-    color: #cbd5e1;
-
-    background: #111827;
-
-    border-color: var(--ws-border);
-  }
-
-  .liveUrl {
-    color: #a5b4fc;
-
-    background: var(--ws-primary-soft);
-
-    border-color: rgba(129, 140, 248, 0.35);
-  }
 }

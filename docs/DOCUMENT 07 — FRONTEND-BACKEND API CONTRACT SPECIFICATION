@@ -1,0 +1,1523 @@
+# ZYRIONOS
+# DOCUMENT 07 — FRONTEND-BACKEND API CONTRACT SPECIFICATION
+
+Document ID:
+DOC-07
+
+Document Name:
+Frontend–Backend API Contract Specification
+
+Version:
+1.0
+
+Status:
+FINAL FOUNDATION
+
+Scope:
+Complete ZyrionOS Frontend ↔ Backend Communication Layer
+
+Audience:
+Frontend Engineers
+Backend Engineers
+AI Coding Agents
+QA Engineers
+Security Engineers
+DevOps Engineers
+Technical Reviewers
+
+Authority:
+This document defines the contract between the ZyrionOS frontend
+and backend.
+
+======================================================================
+1. PURPOSE
+======================================================================
+
+ZyrionOS frontend must communicate with the real backend through
+well-defined, predictable and secure API contracts.
+
+The frontend must never guess backend behaviour.
+
+The backend must never require the frontend to depend on undocumented
+response structures.
+
+Every API-connected feature must have a defined contract.
+
+This document establishes the rules for:
+
+- API requests
+- API responses
+- Authentication
+- Authorization
+- Project APIs
+- Workspace APIs
+- AI APIs
+- Deployment APIs
+- Settings APIs
+- Billing APIs
+- User APIs
+- File APIs
+- Error responses
+- Validation
+- Pagination
+- Filtering
+- Sorting
+- Uploads
+- Long-running operations
+- Operation status
+- API versioning
+- Frontend service architecture
+- Security boundaries
+- Data normalization
+- Retry behaviour
+- Request cancellation
+- Contract consistency
+
+======================================================================
+2. CORE PRINCIPLE
+======================================================================
+
+Frontend and backend are separate systems connected through contracts.
+
+The frontend must NEVER assume:
+
+- A field exists.
+- A response is always successful.
+- A request always completes.
+- A deployment is immediately finished.
+- AI generation always succeeds.
+- A project always contains files.
+- A user always has permission.
+- A payment is successful because the browser received a response.
+
+The backend is authoritative for server-side state.
+
+======================================================================
+3. API BASE ARCHITECTURE
+======================================================================
+
+The frontend must communicate through a centralized API client.
+
+Example conceptual architecture:
+
+Frontend
+   ↓
+API Client
+   ↓
+Authentication / Request Layer
+   ↓
+Backend API
+   ↓
+Controllers
+   ↓
+Services
+   ↓
+Database / External Services
+
+Frontend components must NOT create independent Axios/fetch clients
+for individual pages.
+
+======================================================================
+4. CENTRAL API CLIENT
+======================================================================
+
+A single API client must be responsible for:
+
+- Base URL
+- Headers
+- Credentials
+- Authentication handling
+- Request metadata
+- Response handling
+- Error normalization
+- Timeout behaviour
+- Cancellation support where required
+
+Example:
+
+src/services/api.js
+
+All feature services must use the centralized client.
+
+Examples:
+
+workspaceService
+aiService
+billingService
+settingsService
+projectService
+deploymentService
+userService
+
+======================================================================
+5. API BASE URL
+======================================================================
+
+The API base URL must come from environment configuration.
+
+Example:
+
+VITE_API_URL
+
+Production:
+
+https://api.zyrionos.com
+
+The frontend must NOT hardcode multiple backend URLs throughout
+individual components.
+
+There must be one authoritative API configuration.
+
+======================================================================
+6. API VERSIONING
+======================================================================
+
+Backend API versioning must be planned from the foundation.
+
+Recommended conceptual structure:
+
+/api/v1/...
+
+If the current backend does not yet expose versioned routes, the
+frontend service layer must still isolate route definitions so that
+future version migration does not require rewriting UI components.
+
+UI components must never contain raw backend route strings when a
+service layer can own them.
+
+======================================================================
+7. REQUEST CONTRACT
+======================================================================
+
+Every request must define:
+
+- HTTP method
+- Endpoint
+- Authentication requirement
+- Request body
+- Query parameters
+- Path parameters
+- Expected response
+- Possible errors
+
+Example:
+
+CREATE PROJECT
+
+Method:
+POST
+
+Endpoint:
+/api/projects/create
+
+Authentication:
+Required
+
+Body:
+
+{
+  "projectName": "string",
+  "description": "string",
+  "framework": "string"
+}
+
+======================================================================
+8. RESPONSE CONTRACT
+======================================================================
+
+Successful responses should follow a consistent structure.
+
+Recommended:
+
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": {}
+}
+
+For collections:
+
+{
+  "success": true,
+  "data": {
+    "items": [],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 0,
+      "pages": 0
+    }
+  }
+}
+
+The exact backend implementation may vary where already established,
+but frontend services must normalize inconsistent legacy responses
+before exposing them to UI components.
+
+======================================================================
+9. FRONTEND SERVICE RESPONSIBILITY
+======================================================================
+
+Services are responsible for:
+
+- Calling backend APIs
+- Validating required client-side parameters
+- Normalizing API responses
+- Normalizing API errors
+- Returning predictable data
+- Keeping endpoint details away from UI
+
+Components are responsible for:
+
+- User interaction
+- UI state
+- Rendering
+- Calling service functions
+
+Components must NOT contain backend implementation logic.
+
+======================================================================
+10. PROJECT API CONTRACT
+======================================================================
+
+Project functionality must be isolated through project/workspace
+services.
+
+Required conceptual operations:
+
+CREATE PROJECT
+GET MY PROJECTS
+GET PROJECT
+UPDATE PROJECT
+DELETE PROJECT
+
+Optional future operations:
+
+DUPLICATE PROJECT
+ARCHIVE PROJECT
+RESTORE PROJECT
+TRANSFER PROJECT
+EXPORT PROJECT
+
+Every project operation must enforce backend ownership.
+
+======================================================================
+11. CREATE PROJECT
+======================================================================
+
+Endpoint:
+
+POST /api/projects/create
+
+Authentication:
+
+Required
+
+Expected body:
+
+{
+  "projectName": "string",
+  "description": "string",
+  "framework": "string"
+}
+
+Frontend must:
+
+1. Validate required values.
+2. Send request.
+3. Handle loading state.
+4. Process backend response.
+5. Select created project.
+6. Navigate to Workspace when appropriate.
+7. Synchronize project state.
+
+Frontend must NOT fabricate project IDs.
+
+======================================================================
+12. GET PROJECTS
+======================================================================
+
+Endpoint:
+
+GET /api/projects/me
+
+Purpose:
+
+Retrieve projects belonging to the authenticated user.
+
+Frontend must support:
+
+- Loading
+- Success
+- Empty
+- Error
+- Retry
+- Pagination if backend supports it
+
+The frontend must never display another user's projects.
+
+Backend authorization remains authoritative.
+
+======================================================================
+13. GET SINGLE PROJECT
+======================================================================
+
+Endpoint:
+
+GET /api/projects/:projectId
+
+Purpose:
+
+Retrieve complete project information.
+
+Possible project data:
+
+- ID
+- Name
+- Description
+- Framework
+- Files
+- Build state
+- Deployment state
+- Deployment URL
+- Created date
+- Updated date
+- Project metadata
+
+Only fields actually returned by backend may be displayed.
+
+======================================================================
+14. UPDATE PROJECT
+======================================================================
+
+Endpoint:
+
+PUT /api/projects/update/:projectId
+
+Frontend must:
+
+- Validate data.
+- Send only intended changes.
+- Handle loading.
+- Handle success.
+- Handle validation failure.
+- Handle authorization failure.
+- Synchronize returned project state.
+
+Avoid blindly replacing local project state with incomplete responses.
+
+======================================================================
+15. DELETE PROJECT
+======================================================================
+
+Endpoint:
+
+DELETE /api/projects/delete/:projectId
+
+Deletion must be treated as a destructive operation.
+
+Frontend flow:
+
+Delete request
+    ↓
+Confirmation
+    ↓
+Loading
+    ↓
+Backend response
+    ↓
+Success / failure
+    ↓
+Update project list
+    ↓
+Select appropriate next project or empty state
+
+The frontend must not remove the project permanently from UI merely
+because the delete button was clicked.
+
+======================================================================
+16. WORKSPACE API CONTRACT
+======================================================================
+
+Workspace is a high-value application environment.
+
+Workspace data may include:
+
+- Project
+- Files
+- Build information
+- Preview information
+- Deployment information
+- AI generation state
+- Logs
+- Runtime information
+
+Workspace must consume real backend state.
+
+No fake project files may be generated by the UI.
+
+======================================================================
+17. PROJECT FILE CONTRACT
+======================================================================
+
+A project file should have a predictable structure.
+
+Recommended:
+
+{
+  "id": "string",
+  "path": "string",
+  "name": "string",
+  "content": "string",
+  "language": "string"
+}
+
+Optional:
+
+{
+  "size": 0,
+  "updatedAt": "date",
+  "isBinary": false
+}
+
+Frontend must gracefully handle missing optional fields.
+
+======================================================================
+18. AI API CONTRACT
+======================================================================
+
+AI functionality must be isolated from UI components.
+
+Example:
+
+POST /api/ai/chat
+
+Request:
+
+{
+  "prompt": "string"
+}
+
+Example code generation:
+
+POST /api/ai/generate-code
+
+Request:
+
+{
+  "prompt": "string",
+  "framework": "string"
+}
+
+AI responses must be treated as untrusted external data.
+
+Frontend must never assume AI output has a particular structure unless
+the backend contract guarantees it.
+
+======================================================================
+19. AI RESPONSE NORMALIZATION
+======================================================================
+
+AI service responses may contain:
+
+- Text
+- Structured data
+- Files
+- Metadata
+- Operation information
+- Errors
+
+The service layer must normalize these responses.
+
+Example conceptual result:
+
+{
+  "success": true,
+  "text": "...",
+  "files": [],
+  "metadata": {}
+}
+
+UI components should receive predictable normalized data.
+
+======================================================================
+20. AI CODE GENERATION RULE
+======================================================================
+
+AI generation and project creation are separate responsibilities.
+
+Generation:
+
+AI creates/returns proposed output.
+
+Project creation:
+
+Backend creates persistent project state.
+
+Build:
+
+Project is validated/built.
+
+Deployment:
+
+Project is deployed.
+
+These states must never be incorrectly merged.
+
+======================================================================
+21. DEPLOYMENT API CONTRACT
+======================================================================
+
+Deployment is a long-running backend operation.
+
+Example:
+
+POST /api/projects/deploy/:projectId
+
+or the authoritative deployment endpoint exposed by the backend.
+
+The frontend must not assume that receiving HTTP success means the
+application is already deployed.
+
+Possible states:
+
+not_deployed
+queued
+building
+deploying
+deployed
+failed
+
+======================================================================
+22. DEPLOYMENT RESPONSE
+======================================================================
+
+Recommended conceptual response:
+
+{
+  "success": true,
+  "data": {
+    "project": {},
+    "deployment": {
+      "id": "string",
+      "status": "building",
+      "url": null
+    }
+  }
+}
+
+The frontend must display the actual backend status.
+
+======================================================================
+23. LONG-RUNNING OPERATIONS
+======================================================================
+
+For operations such as:
+
+- AI generation
+- Build
+- Deployment
+- Export
+- Large file processing
+
+The frontend must support asynchronous state.
+
+Possible architecture:
+
+REQUEST
+   ↓
+OPERATION CREATED
+   ↓
+OPERATION ID
+   ↓
+STATUS CHECK / REAL-TIME EVENT
+   ↓
+COMPLETED / FAILED
+
+The exact mechanism may be:
+
+- Polling
+- WebSocket
+- Server-Sent Events
+- Background job status API
+
+The frontend architecture must allow migration between mechanisms.
+
+======================================================================
+24. AUTHENTICATION
+======================================================================
+
+Authentication is backend-controlled.
+
+Frontend must send authentication information using the project's
+approved authentication mechanism.
+
+If cookie-based authentication is used:
+
+withCredentials must remain enabled where required.
+
+If token-based authentication is used:
+
+token handling must follow the project's security architecture.
+
+Never expose secrets in:
+
+- Source code
+- Client bundles
+- Logs
+- URLs
+- Local UI
+- Public environment variables
+
+======================================================================
+25. AUTHORIZATION
+======================================================================
+
+Frontend permissions are for UX.
+
+Backend permissions are security.
+
+Frontend may hide:
+
+- Admin controls
+- Restricted actions
+- Premium features
+
+Backend MUST independently verify authorization.
+
+A user must never gain access merely by manually calling a frontend
+route or API request.
+
+======================================================================
+26. API ERROR CONTRACT
+======================================================================
+
+Backend errors should be predictable.
+
+Recommended:
+
+{
+  "success": false,
+  "message": "Human-readable message",
+  "code": "ERROR_CODE",
+  "details": {}
+}
+
+Possible error categories:
+
+VALIDATION_ERROR
+AUTHENTICATION_ERROR
+AUTHORIZATION_ERROR
+NOT_FOUND
+CONFLICT
+RATE_LIMITED
+SERVER_ERROR
+SERVICE_UNAVAILABLE
+
+======================================================================
+27. HTTP STATUS HANDLING
+======================================================================
+
+Recommended frontend interpretation:
+
+200
+    Successful request
+
+201
+    Resource created
+
+204
+    Successful request without response body
+
+400
+    Invalid request
+
+401
+    Authentication required
+
+403
+    Permission denied
+
+404
+    Resource not found
+
+409
+    Resource conflict
+
+422
+    Validation failure
+
+429
+    Rate limit
+
+500
+    Server error
+
+502 / 503 / 504
+    Service/infrastructure failure
+
+The frontend must not blindly convert every error into the same message.
+
+======================================================================
+28. ERROR NORMALIZATION
+======================================================================
+
+All API errors should pass through a common normalization layer.
+
+Normalized frontend error:
+
+{
+  "message": "User-safe message",
+  "status": 400,
+  "code": "VALIDATION_ERROR",
+  "data": {}
+}
+
+Components should consume normalized errors instead of depending on
+Axios-specific structures.
+
+======================================================================
+29. NETWORK FAILURE
+======================================================================
+
+If no backend response is received:
+
+Display:
+
+"Unable to connect to the server. Please check your connection and try
+again."
+
+Where appropriate provide:
+
+[Retry]
+
+Do not falsely report the operation as failed if the network failure
+means the final backend state is unknown.
+
+For mutation requests, the system must consider whether retrying could
+create a duplicate operation.
+
+======================================================================
+30. REQUEST TIMEOUT
+======================================================================
+
+Timeouts must be treated separately from normal API errors.
+
+For read requests:
+
+Retry may be appropriate.
+
+For mutations:
+
+Retry must be carefully controlled.
+
+For long-running operations:
+
+Use an asynchronous operation model rather than excessively long
+browser requests.
+
+======================================================================
+31. RETRY POLICY
+======================================================================
+
+Retry automatically only where safe.
+
+Safe candidates may include:
+
+- Temporary network failures
+- Certain 5xx responses
+- Read-only requests
+
+Do not blindly retry:
+
+- Payments
+- Delete operations
+- Project creation
+- Deployment creation
+- Other non-idempotent mutations
+
+unless the backend supports idempotency.
+
+======================================================================
+32. REQUEST CANCELLATION
+======================================================================
+
+Requests that become irrelevant should be cancellable where practical.
+
+Examples:
+
+User changes search query.
+
+Previous search request
+    ↓
+Cancel / ignore stale result
+    ↓
+New search request
+
+The UI must not allow an older response to overwrite newer state.
+
+======================================================================
+33. SEARCH API
+======================================================================
+
+Search APIs should support, where required:
+
+- Query
+- Pagination
+- Sorting
+- Filtering
+
+Example:
+
+GET /api/search?q=...
+
+Frontend must debounce rapid search requests where appropriate.
+
+======================================================================
+34. PAGINATION CONTRACT
+======================================================================
+
+Recommended:
+
+{
+  "items": [],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "pages": 5
+  }
+}
+
+Frontend must preserve:
+
+- Search
+- Filters
+- Sort
+- Current page
+
+when requesting another page.
+
+======================================================================
+35. FILE UPLOAD CONTRACT
+======================================================================
+
+File uploads must use the backend-approved mechanism.
+
+Depending on architecture:
+
+- Multipart upload
+- Presigned URL
+- Direct object storage upload
+- Streaming upload
+
+The frontend must not expose storage credentials.
+
+Upload states:
+
+READY
+UPLOADING
+PROCESSING
+COMPLETED
+FAILED
+
+======================================================================
+36. SETTINGS API
+======================================================================
+
+Settings APIs must be separated by logical responsibility where
+appropriate.
+
+Examples:
+
+Profile
+Security
+Notifications
+Preferences
+AI configuration
+Integrations
+
+Frontend must update only the settings category being modified.
+
+======================================================================
+37. BILLING API
+======================================================================
+
+Billing data must come from authoritative backend/payment state.
+
+Possible data:
+
+- Current plan
+- Subscription status
+- Usage
+- Invoice history
+- Payment status
+- Renewal information
+
+The frontend must never determine payment success independently.
+
+======================================================================
+38. PAYMENT SECURITY
+======================================================================
+
+Sensitive payment information must not be stored in frontend state
+unless explicitly required by a trusted payment SDK.
+
+Never log:
+
+- Card details
+- Payment secrets
+- Authentication tokens
+- Private API keys
+- Payment provider secrets
+
+======================================================================
+39. DATA NORMALIZATION
+======================================================================
+
+Backend naming should ideally remain consistent.
+
+If legacy backend responses use different names, normalize them in
+services.
+
+Example:
+
+Backend:
+
+deploymentUrl
+
+Frontend model:
+
+liveUrl
+
+The conversion belongs in the service/adapter layer, not scattered
+across components.
+
+======================================================================
+40. NULL / MISSING DATA
+======================================================================
+
+Frontend must safely handle:
+
+null
+undefined
+empty arrays
+missing optional fields
+
+Examples:
+
+No files
+No deployment
+No URL
+No description
+No projects
+
+These must produce intentional UI states.
+
+======================================================================
+41. DATE & TIME
+======================================================================
+
+Backend should provide timestamps in a standard format.
+
+Recommended:
+
+ISO 8601
+
+Frontend should format timestamps for display.
+
+Do not store presentation-formatted dates as authoritative state.
+
+======================================================================
+42. ID HANDLING
+======================================================================
+
+Project/resource IDs must be treated as opaque identifiers.
+
+Frontend must:
+
+- Validate presence
+- Encode IDs in URL paths
+- Avoid manipulating IDs unnecessarily
+- Never invent IDs
+
+Example:
+
+encodeURIComponent(projectId)
+
+======================================================================
+43. API ROUTE OWNERSHIP
+======================================================================
+
+Route definitions belong to service modules.
+
+Example:
+
+workspaceService.js
+
+owns:
+
+/api/projects/me
+/api/projects/create
+/api/projects/:id
+/api/projects/update/:id
+/api/projects/delete/:id
+/api/projects/deploy/:id
+
+UI components should call:
+
+getProjects()
+createProject()
+deployProject()
+
+instead of:
+
+api.get("/api/projects/me")
+
+directly inside components.
+
+======================================================================
+44. SERVICE NAMING
+======================================================================
+
+Recommended:
+
+api.js
+
+authService.js
+
+projectService.js
+
+workspaceService.js
+
+aiService.js
+
+deploymentService.js
+
+billingService.js
+
+settingsService.js
+
+userService.js
+
+notificationService.js
+
+integrationService.js
+
+Names must describe responsibility.
+
+======================================================================
+45. COMPONENT/API SEPARATION
+======================================================================
+
+Incorrect:
+
+Component
+    ↓
+Axios
+    ↓
+Backend
+
+Correct:
+
+Component
+    ↓
+Service
+    ↓
+API Client
+    ↓
+Backend
+
+This separation is mandatory for enterprise maintainability.
+
+======================================================================
+46. API STATE OWNERSHIP
+======================================================================
+
+Server state should be owned by an appropriate state/data layer.
+
+UI-only state remains local when practical.
+
+Examples:
+
+Server state:
+
+Projects
+User
+Subscription
+Deployment
+Files
+
+UI state:
+
+Active tab
+Modal open
+Selected panel
+Temporary input
+
+Do not mix the two unnecessarily.
+
+======================================================================
+47. STALE DATA PROTECTION
+======================================================================
+
+When multiple requests can overlap:
+
+Request A
+Request B
+
+If B is newer than A:
+
+A must not overwrite B's newer result.
+
+This is particularly important for:
+
+- Search
+- AI conversations
+- Workspace refresh
+- Project selection
+- Deployment status
+
+======================================================================
+48. CACHE INVALIDATION
+======================================================================
+
+After mutation, related cached/server state must be invalidated or
+updated.
+
+Example:
+
+Create Project
+    ↓
+Invalidate project list
+    ↓
+Fetch updated projects
+
+Delete Project
+    ↓
+Remove/invalidate deleted project
+
+Update Project
+    ↓
+Refresh/update project
+
+Deploy Project
+    ↓
+Refresh deployment/project state
+
+======================================================================
+49. REAL DATA ONLY
+======================================================================
+
+Production UI must never rely on:
+
+- Hardcoded fake projects
+- Fake deployment URLs
+- Fake AI responses
+- Fake file lists
+- Fake billing status
+- Fake user data
+- Fake analytics
+
+Mock data may exist only in isolated development/testing systems and
+must never silently reach production.
+
+======================================================================
+50. SECURITY LOGGING
+======================================================================
+
+Frontend logs must never contain sensitive information.
+
+Never log:
+
+- Access tokens
+- Refresh tokens
+- Passwords
+- API keys
+- Payment secrets
+- Private user information
+- Full authentication payloads
+
+Development logging must be removable or controlled for production.
+
+======================================================================
+51. API OBSERVABILITY
+======================================================================
+
+Where appropriate, requests should carry correlation/request IDs.
+
+Example conceptual header:
+
+X-Request-ID
+
+This allows frontend and backend teams to trace failures without
+exposing sensitive data.
+
+======================================================================
+52. API CONTRACT TESTING
+======================================================================
+
+Critical API contracts should be tested.
+
+Tests should verify:
+
+- Request structure
+- Response structure
+- Error structure
+- Authentication behaviour
+- Authorization behaviour
+- Empty states
+- Invalid input
+- Network failure
+- Timeout
+- Pagination
+- Mutation behaviour
+
+Frontend and backend changes must not silently break the contract.
+
+======================================================================
+53. BACKWARD COMPATIBILITY
+======================================================================
+
+When backend responses evolve:
+
+Prefer additive changes.
+
+Example:
+
+Existing:
+
+{
+  "name": "Project"
+}
+
+New:
+
+{
+  "name": "Project",
+  "framework": "React"
+}
+
+Do not unexpectedly remove fields relied upon by existing clients.
+
+If a breaking change is necessary:
+
+- Version the contract.
+- Update frontend service adapters.
+- Test migration.
+- Remove legacy support deliberately.
+
+======================================================================
+54. API CONTRACT CHANGE PROCESS
+======================================================================
+
+No developer or AI agent should casually change an API contract.
+
+Required process:
+
+1. Identify current contract.
+2. Identify required change.
+3. Update backend contract.
+4. Update service layer.
+5. Update frontend consumers.
+6. Update tests.
+7. Verify authentication/authorization.
+8. Verify production behaviour.
+
+======================================================================
+55. AI CODING AGENT RULE
+======================================================================
+
+Any AI agent working on ZyrionOS must:
+
+1. Read this document.
+2. Inspect the existing backend route.
+3. Inspect controller/service response.
+4. Inspect frontend service.
+5. Preserve established contracts.
+6. Never invent an endpoint.
+7. Never invent response fields.
+8. Never invent deployment states.
+9. Never fabricate data.
+10. Never silently change a backend contract.
+
+If the backend contract is unknown:
+
+STOP.
+
+Inspect the backend before implementing the frontend.
+
+======================================================================
+56. CURRENT ZYRIONOS FRONTEND SERVICE PRINCIPLE
+======================================================================
+
+The current architecture uses a centralized API client.
+
+Example:
+
+import api from "./api";
+
+Feature services then use:
+
+api.get(...)
+api.post(...)
+api.put(...)
+api.delete(...)
+
+This pattern must remain centralized.
+
+======================================================================
+57. CURRENT WORKSPACE SERVICE PRINCIPLE
+======================================================================
+
+Workspace/project functionality must remain inside the workspace/project
+service layer.
+
+The Workspace page should call:
+
+getProjects()
+createProject()
+getProject()
+updateProject()
+deleteProject()
+deployProject()
+
+The page itself must not know implementation details of Axios,
+authentication headers, backend URL construction or error normalization.
+
+======================================================================
+58. CURRENT AI SERVICE PRINCIPLE
+======================================================================
+
+AI functionality must remain inside aiService.
+
+Examples:
+
+aiChat()
+generateCode()
+aiDeploy()
+generateThumbnail()
+
+The UI calls service functions.
+
+The UI does not directly call AI backend endpoints.
+
+======================================================================
+59. FRONTEND ERROR CONSUMPTION
+======================================================================
+
+Components should consume:
+
+error.message
+
+and, where required:
+
+error.status
+error.code
+
+They should not depend on deeply nested Axios structures.
+
+======================================================================
+60. FINAL API ARCHITECTURE
+======================================================================
+
+The final communication architecture is:
+
+                 ZYRIONOS UI
+                      │
+                      ▼
+             FEATURE SERVICE LAYER
+                      │
+                      ▼
+              CENTRAL API CLIENT
+                      │
+                      ▼
+             AUTH / REQUEST LAYER
+                      │
+                      ▼
+                BACKEND API
+                      │
+                      ▼
+                CONTROLLERS
+                      │
+                      ▼
+                 SERVICES
+                      │
+                      ▼
+                  DATABASE
+                      │
+                      ▼
+             EXTERNAL PROVIDERS
+
+
+======================================================================
+61. NON-NEGOTIABLE RULES
+======================================================================
+
+1. No fake production data.
+
+2. No hardcoded production API URLs inside components.
+
+3. No direct Axios calls from UI components.
+
+4. No invented API endpoints.
+
+5. No invented backend response fields.
+
+6. No frontend-only authorization.
+
+7. No secrets in frontend code.
+
+8. No fake deployment success.
+
+9. No fake payment success.
+
+10. No silent API contract changes.
+
+11. Backend remains authoritative for server state.
+
+12. Service layer owns API communication.
+
+13. API client owns common request/response behaviour.
+
+14. UI owns presentation and interaction.
+
+15. Errors must be normalized.
+
+16. Long-running operations must expose real state.
+
+17. Mutations must protect against accidental duplication.
+
+18. Stale responses must not overwrite newer state.
+
+19. Production must use real backend data.
+
+20. Every new API integration must follow this document.
+
+======================================================================
+62. FINAL ARCHITECTURAL RULE
+======================================================================
+
+The frontend is the operating interface.
+
+The backend is the authoritative system.
+
+The API contract is the bridge.
+
+Therefore:
+
+UI
+≠
+Backend
+
+UI
+→ Service
+→ API Contract
+→ Backend
+
+This separation must remain intact throughout the development of
+ZyrionOS.
+
+======================================================================
+END OF DOCUMENT 07
+======================================================================

@@ -1,0 +1,1892 @@
+# ZYRIONOS
+# DOCUMENT 04 — ENTERPRISE COMPONENT & INTERACTION ARCHITECTURE
+
+Document ID:
+ZYRIONOS-DOC-04
+
+Document Type:
+Enterprise Frontend Component Architecture
+
+Version:
+1.0
+
+Status:
+FOUNDATION LOCKED
+
+Owner:
+ZyrionOS Product & Engineering
+
+Applies To:
+Entire ZyrionOS Frontend
+
+Depends On:
+DOCUMENT 01 — Product / UX Experience
+DOCUMENT 02 — Frontend Information & Page Architecture
+DOCUMENT 03 — Enterprise Design System
+
+
+============================================================
+01. PURPOSE
+============================================================
+
+This document defines how the ZyrionOS frontend is constructed
+from reusable components.
+
+Document 03 defines how the product LOOKS.
+
+This document defines how the frontend UI is STRUCTURED,
+COMPOSED, INTERACTS and REUSES components.
+
+The objective is:
+
+ONE COMPONENT SYSTEM
++
+REUSABLE COMPONENTS
++
+PREDICTABLE BEHAVIOUR
++
+NO DUPLICATED UI LOGIC
++
+NO PAGE-SPECIFIC DESIGN SYSTEMS
+
+
+============================================================
+02. CORE ARCHITECTURAL PRINCIPLE
+============================================================
+
+Every frontend interface must be composed from reusable,
+well-defined components.
+
+A page should primarily be responsible for:
+
+- Page composition
+- Data orchestration
+- User flow
+- Business-level interaction
+
+A reusable component should be responsible for:
+
+- Presentation
+- Component-level interaction
+- Component states
+- Accessibility
+- Consistent behaviour
+
+
+============================================================
+03. COMPONENT HIERARCHY
+============================================================
+
+ZyrionOS uses the following hierarchy:
+
+FOUNDATION
+    ↓
+PRIMITIVES
+    ↓
+COMPOSITES
+    ↓
+PATTERNS
+    ↓
+FEATURE COMPONENTS
+    ↓
+PAGE COMPOSITION
+
+
+Example:
+
+Button
+    ↓
+ActionButton
+    ↓
+ProjectActionBar
+    ↓
+WorkspaceHeader
+    ↓
+WorkspacePage
+
+
+============================================================
+04. COMPONENT LEVELS
+============================================================
+
+
+------------------------------------------------------------
+LEVEL 01 — FOUNDATIONS
+------------------------------------------------------------
+
+Foundations contain system-wide primitives.
+
+Examples:
+
+- Design tokens
+- Typography
+- Icons
+- Spacing
+- Motion
+- Breakpoints
+
+
+These components contain NO business logic.
+
+
+------------------------------------------------------------
+LEVEL 02 — UI PRIMITIVES
+------------------------------------------------------------
+
+Small reusable UI elements.
+
+Examples:
+
+- Button
+- IconButton
+- Input
+- Textarea
+- Select
+- Checkbox
+- Radio
+- Switch
+- Badge
+- Avatar
+- Tooltip
+- Divider
+- Spinner
+- Skeleton
+
+
+These must remain highly reusable.
+
+
+------------------------------------------------------------
+LEVEL 03 — COMPOSITES
+------------------------------------------------------------
+
+Components made from primitives.
+
+Examples:
+
+- SearchInput
+- FormField
+- StatusBadge
+- UserMenu
+- ProjectSelector
+- DateSelector
+- Pagination
+- ConfirmDialog
+
+
+------------------------------------------------------------
+LEVEL 04 — PATTERNS
+------------------------------------------------------------
+
+Larger reusable interface patterns.
+
+Examples:
+
+- PageHeader
+- DataTable
+- EmptyState
+- ErrorState
+- LoadingState
+- SettingsSection
+- MetricCard
+- ActivityTimeline
+- CommandPalette
+- ModalLayout
+
+
+------------------------------------------------------------
+LEVEL 05 — FEATURE COMPONENTS
+------------------------------------------------------------
+
+Product-specific components.
+
+Examples:
+
+- AIComposer
+- AIMessage
+- AIActivity
+- ProjectCard
+- DeploymentCard
+- DeploymentTimeline
+- FileExplorer
+- CodeEditor
+- PreviewPanel
+- BillingPlanCard
+
+
+------------------------------------------------------------
+LEVEL 06 — PAGE
+------------------------------------------------------------
+
+Pages compose all lower layers.
+
+Examples:
+
+DashboardPage
+WorkspacePage
+SettingsPage
+BillingPage
+DeploymentsPage
+
+
+A page must NOT duplicate reusable component behaviour.
+
+
+============================================================
+05. COMPONENT DIRECTORY PRINCIPLE
+============================================================
+
+Recommended structure:
+
+src/
+|
++-- components/
+|   |
+|   +-- UI/
+|   |
+|   +-- Layout/
+|   |
+|   +-- Navigation/
+|   |
+|   +-- Feedback/
+|   |
+|   +-- DataDisplay/
+|   |
+|   +-- Forms/
+|   |
+|   +-- AI/
+|   |
+|   +-- Workspace/
+|   |
+|   +-- Projects/
+|   |
+|   +-- Deployments/
+|   |
+|   +-- Billing/
+|   |
+|   +-- Settings/
+|
++-- pages/
+|
++-- layouts/
+|
++-- services/
+|
++-- hooks/
+|
++-- utils/
+|
++-- styles/
+
+
+The exact folder location must follow the existing repository
+structure when implementation begins.
+
+This document defines architecture,
+not permission to arbitrarily reorganize the repository.
+
+
+============================================================
+06. SINGLE RESPONSIBILITY
+============================================================
+
+Every component must have one primary responsibility.
+
+BAD:
+
+WorkspaceButton
+that:
+- fetches projects
+- creates projects
+- changes routes
+- opens modal
+- manages billing
+- renders button
+
+
+GOOD:
+
+Button
++
+ProjectCreateAction
++
+ProjectCreateModal
++
+project service
+
+
+Components must not become uncontrolled
+"everything components."
+
+
+============================================================
+07. REUSABILITY RULE
+============================================================
+
+Before creating a new component, check whether
+an existing component can satisfy the requirement.
+
+If an existing component can be extended safely:
+
+EXTEND IT.
+
+Do not create:
+
+ButtonPrimary
+ButtonMain
+ButtonNew
+ButtonSpecial
+ButtonWorkspace
+
+when one reusable Button system is sufficient.
+
+
+============================================================
+08. DUPLICATION RULE
+============================================================
+
+The following must NOT be duplicated across pages:
+
+- Buttons
+- Inputs
+- Search bars
+- Modals
+- Toasts
+- Status badges
+- Page headers
+- Tables
+- Loading states
+- Error states
+- Empty states
+- Navigation controls
+- AI composer
+- Project cards
+
+
+If the same UI pattern appears twice,
+it must be evaluated for extraction into a reusable component.
+
+
+============================================================
+09. COMPONENT API PRINCIPLE
+============================================================
+
+Component APIs must be:
+
+- Predictable
+- Minimal
+- Semantic
+- Extensible
+- Type-safe where applicable
+
+
+Avoid excessive props.
+
+BAD:
+
+<Component
+  red={true}
+  large={true}
+  rounded={true}
+  special={true}
+  workspace={true}
+/>
+
+
+GOOD:
+
+<Button
+  variant="primary"
+  size="lg"
+/>
+
+
+============================================================
+10. VARIANT SYSTEM
+============================================================
+
+Reusable components should use controlled variants.
+
+Example:
+
+Button:
+
+variant:
+- primary
+- secondary
+- ghost
+- danger
+
+size:
+- sm
+- md
+- lg
+
+
+Badge:
+
+variant:
+- success
+- warning
+- danger
+- info
+- neutral
+
+
+Components must use the global design tokens
+defined in Document 03.
+
+
+============================================================
+11. COMPONENT STATES
+============================================================
+
+Every interactive component must explicitly define
+its supported states.
+
+Minimum:
+
+Default
+Hover
+Focus
+Pressed
+Disabled
+Loading
+Error
+Success where applicable
+
+
+A component must not depend on accidental browser behaviour
+for important states.
+
+
+============================================================
+12. BUTTON INTERACTION CONTRACT
+============================================================
+
+Every button must:
+
+- Clearly communicate its action
+- Provide visual feedback
+- Support keyboard interaction
+- Support disabled state
+- Support loading state where asynchronous
+- Prevent accidental repeated execution when appropriate
+
+
+Async action example:
+
+Default:
+
+Deploy
+
+Loading:
+
+Deploying...
+
+
+The component must prevent duplicate submissions
+when the operation is already running.
+
+
+============================================================
+13. FORM COMPONENT CONTRACT
+============================================================
+
+Every form field should support:
+
+Label
+Input
+Helper text
+Error message
+Disabled state
+Required indication where applicable
+
+
+Validation should be understandable.
+
+BAD:
+
+Invalid input.
+
+
+GOOD:
+
+Project name must contain at least 3 characters.
+
+
+============================================================
+14. MODAL CONTRACT
+============================================================
+
+Every modal must define:
+
+- Title
+- Content
+- Primary action
+- Secondary action where necessary
+- Close behaviour
+- Escape behaviour
+- Focus handling
+- Loading state
+- Error state
+
+
+Destructive actions must clearly communicate consequences.
+
+
+============================================================
+15. DRAWER CONTRACT
+============================================================
+
+Drawers are contextual interfaces.
+
+They should be used when the user needs additional information
+without losing the current page context.
+
+Examples:
+
+Deployment details
+Project details
+AI execution details
+Activity details
+
+
+Drawer must support:
+
+Open
+Close
+Loading
+Error
+Content
+Responsive behaviour
+
+
+============================================================
+16. TOAST CONTRACT
+============================================================
+
+Toasts communicate short-lived system feedback.
+
+Supported types:
+
+Success
+Error
+Warning
+Info
+
+
+Toast must contain:
+
+Title or message
+Optional supporting text
+Optional action
+
+
+Toast must NOT contain:
+
+Large forms
+Long explanations
+Critical information that disappears too quickly
+
+
+============================================================
+17. LOADING ARCHITECTURE
+============================================================
+
+Loading must be contextual.
+
+Use:
+
+Skeleton
+when page structure is known.
+
+Spinner
+for small localized actions.
+
+Progress
+for measurable operations.
+
+Status activity
+for long-running AI/deployment operations.
+
+
+Do not replace the entire application
+with a spinner for a small request.
+
+
+============================================================
+18. ERROR ARCHITECTURE
+============================================================
+
+Errors have three levels.
+
+
+LEVEL 01 — FIELD ERROR
+
+Example:
+
+Invalid email address.
+
+
+LEVEL 02 — COMPONENT ERROR
+
+Example:
+
+Unable to load project information.
+
+[Retry]
+
+
+LEVEL 03 — PAGE / SYSTEM ERROR
+
+Example:
+
+This workspace could not be loaded.
+
+[Try Again]
+
+[Return to Dashboard]
+
+
+Errors must provide a recovery path whenever possible.
+
+
+============================================================
+19. EMPTY STATE ARCHITECTURE
+============================================================
+
+Every data-driven component must define
+what happens when there is no data.
+
+Example:
+
+Project list:
+
+No projects yet.
+
+Create your first project to begin building.
+
+[Create Project]
+
+
+Empty states must be intentional,
+not accidental blank areas.
+
+
+============================================================
+20. DATA TABLE CONTRACT
+============================================================
+
+Reusable tables must support where applicable:
+
+- Loading
+- Empty
+- Error
+- Row hover
+- Row selection
+- Pagination
+- Sorting
+- Filtering
+- Responsive behaviour
+
+
+Table components must not contain
+page-specific business logic.
+
+
+============================================================
+21. SEARCH COMPONENT
+============================================================
+
+Search must be reusable across the product.
+
+It should support:
+
+- Query
+- Clear
+- Loading
+- Keyboard shortcut
+- Focus state
+- Empty results
+- Error state
+
+
+Global search may additionally support:
+
+Projects
+Deployments
+Settings
+Commands
+AI actions
+
+
+============================================================
+22. COMMAND PALETTE
+============================================================
+
+ZyrionOS may provide a global command interface.
+
+Example:
+
+Ctrl / Cmd + K
+
+
+Possible commands:
+
+Create project
+Open workspace
+Open settings
+Open billing
+Search projects
+View deployments
+Open AI
+Sign out
+
+
+Command palette must use the global design system.
+
+
+============================================================
+23. NAVIGATION COMPONENTS
+============================================================
+
+Navigation must be reusable.
+
+Components may include:
+
+Sidebar
+SidebarItem
+Topbar
+Breadcrumbs
+Tabs
+SubNavigation
+MobileNavigation
+
+
+Navigation components must understand:
+
+Active
+Inactive
+Hover
+Disabled
+Collapsed
+Mobile
+
+
+============================================================
+24. PAGE HEADER COMPONENT
+============================================================
+
+Standard enterprise pages should use:
+
+PageHeader
+
+Structure:
+
+Eyebrow
+Title
+Description
+Actions
+
+
+Example:
+
+PROJECTS
+
+Projects
+
+Manage and build your applications.
+
+[Create Project]
+
+
+This creates consistency across major modules.
+
+
+============================================================
+25. METRIC CARD COMPONENT
+============================================================
+
+MetricCard should support:
+
+Label
+Value
+Trend
+Description
+Icon
+Status
+Optional action
+
+
+Example:
+
+TOTAL PROJECTS
+
+24
+
++12%
+
+This month
+
+
+Metric cards must remain compact
+and information-focused.
+
+
+============================================================
+26. PROJECT COMPONENT SYSTEM
+============================================================
+
+Project-related reusable components:
+
+ProjectCard
+ProjectList
+ProjectSelector
+ProjectStatus
+ProjectActions
+ProjectHeader
+ProjectMetadata
+
+
+Responsibilities must remain separated.
+
+
+ProjectCard should NOT become responsible
+for deployment execution.
+
+
+Deployment logic belongs to deployment services
+and deployment feature components.
+
+
+============================================================
+27. WORKSPACE COMPONENT SYSTEM
+============================================================
+
+Workspace should be composed from reusable sections.
+
+Recommended:
+
+WorkspaceShell
+
+WorkspaceHeader
+
+ProjectRail
+
+BuildToolbar
+
+AIBuildPanel
+
+FileExplorer
+
+CodeEditor
+
+PreviewPanel
+
+InspectorPanel
+
+CommandBar
+
+DeploymentControl
+
+
+Each component owns its own presentation
+and local interaction.
+
+
+============================================================
+28. AI COMPONENT SYSTEM
+============================================================
+
+AI is a core ZyrionOS product surface.
+
+Reusable AI components:
+
+AIComposer
+AIMessage
+AIResponse
+AIActivity
+AIToolCall
+AIStatus
+AIProgress
+AICodeBlock
+AIFilePreview
+AIAction
+AIError
+
+
+AI components must be designed
+for future agent capabilities.
+
+
+============================================================
+29. AI COMPOSER
+============================================================
+
+AIComposer should support:
+
+- Text prompt
+- Submit
+- Stop generation
+- Loading
+- Attachment capability where supported
+- Context
+- Model information where applicable
+- Error state
+- Keyboard interaction
+
+
+The composer must remain reusable
+between:
+
+AI Chat
+Workspace Builder
+Agent interfaces
+
+
+============================================================
+30. AI ACTIVITY
+============================================================
+
+AIActivity represents an operation being executed.
+
+Example:
+
+ANALYZING REQUEST
+
+Completed
+
+
+GENERATING PROJECT
+
+Running
+
+
+VALIDATING FILES
+
+Queued
+
+
+This component should support
+multiple statuses.
+
+
+============================================================
+31. PROJECT FILE SYSTEM
+============================================================
+
+FileExplorer must support:
+
+- Files
+- Folders
+- Selected file
+- Expanded folders
+- Loading
+- Empty state
+- Error state
+
+
+FileExplorer must not directly own backend API calls
+unless architecture explicitly requires it.
+
+Prefer:
+
+Service
+→
+Page/Feature
+→
+Component
+
+
+============================================================
+32. CODE EDITOR
+============================================================
+
+CodeEditor must support:
+
+- File content
+- Read-only mode
+- Editable mode where enabled
+- Syntax highlighting
+- Loading
+- Empty file
+- Error state
+
+
+Editor technology may change internally.
+
+The external component API must remain stable.
+
+
+============================================================
+33. PREVIEW COMPONENT
+============================================================
+
+PreviewPanel must support:
+
+No preview
+Loading
+Preview available
+Preview error
+Live project
+Refresh
+
+
+It must not assume a specific deployment provider.
+
+
+============================================================
+34. DEPLOYMENT COMPONENT SYSTEM
+============================================================
+
+Reusable deployment components:
+
+DeploymentStatus
+DeploymentProgress
+DeploymentTimeline
+DeploymentLogs
+DeploymentHistory
+DeploymentActions
+LiveApplicationCard
+
+
+Deployment state:
+
+Queued
+Preparing
+Building
+Validating
+Deploying
+Live
+Failed
+Cancelled
+
+
+============================================================
+35. BILLING COMPONENT SYSTEM
+============================================================
+
+Reusable billing components:
+
+PlanCard
+CurrentPlan
+UsageMeter
+InvoiceList
+PaymentMethod
+BillingSummary
+UpgradeAction
+
+
+Billing UI must remain independent
+from payment-provider implementation.
+
+
+============================================================
+36. SETTINGS COMPONENT SYSTEM
+============================================================
+
+Reusable settings components:
+
+SettingsLayout
+SettingsNavigation
+SettingsSection
+SettingsRow
+SettingsField
+DangerZone
+SecuritySection
+
+
+Settings must use consistent patterns.
+
+
+============================================================
+37. RESPONSIVE COMPONENT BEHAVIOUR
+============================================================
+
+Components must adapt to viewport size.
+
+A component must not rely solely on page-level CSS
+to remain usable on mobile.
+
+
+Example:
+
+Sidebar:
+
+Desktop:
+Persistent
+
+Tablet:
+Collapsible
+
+Mobile:
+Drawer
+
+
+============================================================
+38. ACCESSIBILITY CONTRACT
+============================================================
+
+Reusable components must be accessible by default.
+
+Requirements include:
+
+- Keyboard navigation
+- Visible focus
+- Semantic HTML
+- Labels
+- Appropriate ARIA only when needed
+- Screen-reader meaningful states
+- Accessible contrast
+
+
+Accessibility must be built into the component,
+not repeatedly fixed on individual pages.
+
+
+============================================================
+39. COMPONENT COMPOSITION
+============================================================
+
+Prefer composition over giant configurable components.
+
+BAD:
+
+UniversalDashboardComponent
+with dozens of props.
+
+
+GOOD:
+
+Dashboard
++
+PageHeader
++
+MetricGrid
++
+MetricCard
++
+ActivityList
+
+
+Composition keeps the system maintainable.
+
+
+============================================================
+40. BUSINESS LOGIC BOUNDARY
+============================================================
+
+UI components should not randomly call backend APIs.
+
+Preferred flow:
+
+USER ACTION
+    ↓
+PAGE / FEATURE
+    ↓
+SERVICE
+    ↓
+BACKEND
+    ↓
+NORMALIZED RESPONSE
+    ↓
+STATE
+    ↓
+COMPONENT
+
+
+Components display and interact with state.
+
+
+============================================================
+41. SERVICE BOUNDARY
+============================================================
+
+Backend communication belongs in:
+
+services/
+
+
+Examples:
+
+workspaceService
+aiService
+authService
+billingService
+deploymentService
+projectService
+
+
+Do not place raw API calls throughout JSX components.
+
+
+============================================================
+42. STATE OWNERSHIP
+============================================================
+
+State must live at the lowest level
+that genuinely needs it.
+
+Local UI state:
+
+Component
+
+
+Feature state:
+
+Feature/page
+
+
+Global state:
+
+Only when multiple unrelated areas require it.
+
+
+Do not make every piece of state global.
+
+
+============================================================
+43. SERVER DATA VS UI STATE
+============================================================
+
+Server data:
+
+Projects
+Users
+Deployments
+Invoices
+AI responses
+
+
+UI state:
+
+Modal open
+Selected tab
+Expanded folder
+Input value
+Dropdown open
+
+
+These should not be mixed unnecessarily.
+
+
+============================================================
+44. EVENT HANDLING
+============================================================
+
+Events must have semantic names.
+
+Preferred:
+
+handleCreateProject
+handleDeployProject
+handleSelectProject
+handleOpenSettings
+
+
+Avoid vague names:
+
+doThing
+run
+click
+action
+
+
+============================================================
+45. ASYNC ACTION CONTRACT
+============================================================
+
+Every asynchronous feature must define:
+
+Idle
+Loading
+Success
+Error
+
+
+Example:
+
+Deployment:
+
+Idle
+↓
+Deploying
+↓
+Live
+
+OR
+
+Idle
+↓
+Deploying
+↓
+Failed
+
+
+The UI must reflect actual state.
+
+
+============================================================
+46. OPTIMISTIC UI
+============================================================
+
+Optimistic updates may be used only
+when the operation is safe and reversible.
+
+For critical operations such as:
+
+Deployment
+Payment
+Account deletion
+Security changes
+
+prefer confirmed backend state.
+
+
+============================================================
+47. DATA NORMALIZATION
+============================================================
+
+Frontend components should receive predictable data.
+
+If backend responses vary:
+
+Backend response
+↓
+Service normalization
+↓
+Predictable frontend model
+↓
+Component
+
+
+Components should not contain dozens
+of backend response-format checks.
+
+
+============================================================
+48. COMPONENT NAMING
+============================================================
+
+Names must describe responsibility.
+
+GOOD:
+
+ProjectCard
+DeploymentStatus
+AIComposer
+SettingsSection
+
+
+BAD:
+
+Box1
+CardNew
+Thing
+Panel2
+MagicComponent
+
+
+============================================================
+49. FILE NAMING
+============================================================
+
+Use consistent naming.
+
+Component:
+
+ComponentName.jsx
+
+
+Style:
+
+ComponentName.module.css
+
+
+Service:
+
+serviceName.js
+
+
+Hook:
+
+useFeatureName.js
+
+
+Utility:
+
+utilityName.js
+
+
+Exact naming must remain consistent
+with the existing repository conventions.
+
+
+============================================================
+50. CSS ARCHITECTURE
+============================================================
+
+Component-specific styles should remain
+with their component.
+
+Global styles should contain:
+
+- Reset
+- Base typography
+- Global tokens
+- Global utilities
+- Global accessibility rules
+
+
+Do not create giant page CSS files
+containing unrelated component styles.
+
+
+============================================================
+51. DESIGN TOKEN USAGE
+============================================================
+
+All components MUST consume
+Document 03 design tokens.
+
+Never introduce arbitrary:
+
+Colors
+Spacing
+Radius
+Shadows
+Transitions
+
+
+without a justified system-level reason.
+
+
+============================================================
+52. COMPONENT EXTENSION RULE
+============================================================
+
+If a component needs a new capability:
+
+FIRST:
+Determine whether the capability belongs
+in the existing component.
+
+SECOND:
+Add a controlled variant or optional feature.
+
+THIRD:
+Only create a new component
+if the responsibility is genuinely different.
+
+
+============================================================
+53. DEPRECATION RULE
+============================================================
+
+Old components must not be silently abandoned.
+
+When replacing a component:
+
+1. Identify consumers.
+2. Migrate consumers.
+3. Verify behaviour.
+4. Remove obsolete component.
+5. Update documentation.
+
+
+No dead UI architecture should remain unnecessarily.
+
+
+============================================================
+54. TESTABILITY
+============================================================
+
+Important reusable components must be testable.
+
+Priority components:
+
+- Authentication forms
+- AI composer
+- Project creation
+- Deployment controls
+- Billing actions
+- Navigation
+- Modals
+- Forms
+- Data tables
+
+
+Tests should focus on behaviour,
+not implementation details.
+
+
+============================================================
+55. PERFORMANCE
+============================================================
+
+Components must avoid unnecessary rendering.
+
+Important areas:
+
+- AI streaming
+- Code editor
+- Large project lists
+- Deployment logs
+- Tables
+- Chat history
+
+
+Use appropriate:
+
+Memoization
+Virtualization
+Pagination
+Lazy loading
+
+
+Only when justified by actual requirements.
+
+
+============================================================
+56. SECURITY
+============================================================
+
+Frontend components must never assume
+that UI visibility equals authorization.
+
+Example:
+
+Hiding:
+
+Delete Project
+
+does NOT provide security.
+
+
+Authorization must be enforced by backend.
+
+
+Frontend may reflect permissions,
+but backend remains authoritative.
+
+
+============================================================
+57. COMPONENT SECURITY RULE
+============================================================
+
+Never expose:
+
+- Secrets
+- Private API keys
+- Internal credentials
+- Sensitive backend configuration
+
+
+through reusable UI components.
+
+
+============================================================
+58. UX CONSISTENCY RULE
+============================================================
+
+The same interaction must behave consistently.
+
+Example:
+
+If Enter submits one AI composer,
+the same composer component must behave
+the same way wherever reused.
+
+
+If Escape closes one modal,
+all standard modals should follow the same contract.
+
+
+============================================================
+59. NO MAGIC BEHAVIOUR
+============================================================
+
+Components must not contain unexplained behaviour.
+
+Every significant interaction should have
+a clear reason and ownership.
+
+
+Avoid:
+
+Hidden timers
+Random redirects
+Unexpected navigation
+Silent state resets
+Unexpected data mutations
+
+
+============================================================
+60. PAGE COMPOSITION RULE
+============================================================
+
+Pages should be readable at a glance.
+
+A page file should conceptually look like:
+
+Page
+    |
+    +-- Layout
+    +-- Header
+    +-- Main Sections
+    +-- Components
+    +-- Feature Actions
+
+
+It should NOT become:
+
+Page
+    |
+    +-- 2000 lines of duplicated UI
+    +-- repeated styles
+    +-- raw API calls
+    +-- business logic
+    +-- random state
+
+
+============================================================
+61. FULL-PAGE MODULE RULE
+============================================================
+
+Major navigation actions must transition
+to their complete page/module.
+
+Examples:
+
+Create Project
+→ Workspace
+
+Settings
+→ Settings Page
+
+Billing
+→ Billing Page
+
+Deployments
+→ Deployment Page
+
+Projects
+→ Projects Page
+
+
+Do not implement a major module
+as a tiny nested card unless it is explicitly
+defined as a modal/contextual interaction.
+
+
+============================================================
+62. GLOBAL INTERACTION CONTRACT
+============================================================
+
+Users should learn ZyrionOS once.
+
+Therefore:
+
+Buttons behave consistently.
+Forms behave consistently.
+Navigation behaves consistently.
+Modals behave consistently.
+Search behaves consistently.
+AI interactions behave consistently.
+Loading behaves consistently.
+Errors behave consistently.
+
+
+============================================================
+63. COMPONENT REVIEW CHECKLIST
+============================================================
+
+Before approving a reusable component:
+
+[ ] Single responsibility
+[ ] Reusable
+[ ] Accessible
+[ ] Responsive
+[ ] Uses design tokens
+[ ] Defines states
+[ ] Handles loading where required
+[ ] Handles error where required
+[ ] Does not duplicate existing component
+[ ] Does not contain unnecessary backend logic
+[ ] Has semantic naming
+[ ] Has predictable props
+[ ] Does not introduce random styling
+
+
+============================================================
+64. PAGE REVIEW CHECKLIST
+============================================================
+
+Before approving a page:
+
+[ ] Uses global layout
+[ ] Uses reusable components
+[ ] Uses Document 03 visual system
+[ ] Uses correct page hierarchy
+[ ] Uses full available space where appropriate
+[ ] Handles loading
+[ ] Handles error
+[ ] Handles empty state
+[ ] Handles responsive layout
+[ ] Handles keyboard interaction
+[ ] Contains no unnecessary duplicated UI
+[ ] Contains no random visual rules
+
+
+============================================================
+65. FINAL ARCHITECTURAL CONTRACT
+============================================================
+
+ZyrionOS frontend must be built as a SYSTEM,
+not as a collection of pages.
+
+The architecture is:
+
+DESIGN TOKENS
+    ↓
+UI PRIMITIVES
+    ↓
+COMPOSITES
+    ↓
+PATTERNS
+    ↓
+FEATURE COMPONENTS
+    ↓
+PAGES
+    ↓
+APPLICATION
+
+
+Backend communication:
+
+COMPONENT
+    ↓
+FEATURE / PAGE
+    ↓
+SERVICE
+    ↓
+API
+    ↓
+BACKEND
+
+
+This separation must remain clear.
+
+
+============================================================
+66. NON-NEGOTIABLE RULES
+============================================================
+
+RULE 01:
+
+Do not duplicate reusable components.
+
+
+RULE 02:
+
+Do not create page-specific versions
+of global components without a real architectural reason.
+
+
+RULE 03:
+
+Do not place raw backend API calls randomly
+inside presentation components.
+
+
+RULE 04:
+
+Do not invent colors or visual tokens.
+
+
+RULE 05:
+
+Do not create giant components
+with unrelated responsibilities.
+
+
+RULE 06:
+
+Do not make global state unnecessarily.
+
+
+RULE 07:
+
+Do not treat frontend visibility
+as backend authorization.
+
+
+RULE 08:
+
+Do not sacrifice responsive behaviour
+for desktop-only appearance.
+
+
+RULE 09:
+
+Do not silently change established component behaviour.
+
+
+RULE 10:
+
+Do not bypass this architecture
+for temporary shortcuts.
+
+
+============================================================
+67. FINAL STANDARD
+============================================================
+
+The objective is not simply:
+
+"Make the page look good."
+
+The objective is:
+
+"Build a frontend system in which every page
+automatically feels like ZyrionOS."
+
+
+A new page should inherit:
+
+- Brand
+- Typography
+- Components
+- Interactions
+- States
+- Accessibility
+- Responsiveness
+- Enterprise behaviour
+
+
+without rebuilding the system from zero.
+
+
+============================================================
+DOCUMENT STATUS
+============================================================
+
+DOCUMENT 04:
+
+ENTERPRISE COMPONENT & INTERACTION ARCHITECTURE
+
+STATUS:
+FOUNDATION LOCKED
+
+This document defines how ZyrionOS frontend
+components are structured, reused and operated.
+
+It does not replace:
+
+Document 01 — Product / UX Experience
+Document 02 — Frontend Information & Page Architecture
+Document 03 — Enterprise Design System
+
+
+END OF DOCUMENT 04

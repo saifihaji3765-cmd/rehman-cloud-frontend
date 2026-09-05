@@ -1,23 +1,25 @@
-import api from "../api";
+import api from "./api";
 
 /*
  * =========================================================
- * ZYRION OS — WORKSPACE SERVICE
+ * ZYRIONOS — WORKSPACE SERVICE
  * Enterprise Workspace API Layer
  *
  * Responsibilities:
- * - Project CRUD
+ * - Project creation
  * - Project retrieval
- * - Deployment
- * - Input validation
- * - Safe project-id handling
- * - Consistent error handling
+ * - Project update
+ * - Project deletion
+ * - Project deployment
+ * - Safe project ID handling
+ * - Consistent API error handling
  *
  * IMPORTANT:
- * This service talks to the REAL backend.
- * No mock/fake project data is generated here.
+ * This service uses the REAL backend.
+ * No mock/fake project data is created here.
  * =========================================================
  */
+
 
 /* =========================================================
    CONFIGURATION
@@ -25,12 +27,13 @@ import api from "../api";
 
 const API_PREFIX = "/api/projects";
 
+
 /* =========================================================
    INTERNAL HELPERS
 ========================================================= */
 
 /**
- * Safely encode IDs before placing them in URLs.
+ * Safely normalize and encode a project ID.
  */
 function normalizeProjectId(projectId) {
   if (
@@ -41,11 +44,14 @@ function normalizeProjectId(projectId) {
     throw new Error("Project ID is required.");
   }
 
-  return encodeURIComponent(String(projectId).trim());
+  return encodeURIComponent(
+    String(projectId).trim()
+  );
 }
 
+
 /**
- * Validate project creation/update payloads.
+ * Validate project payload.
  */
 function validateProjectData(projectData) {
   if (
@@ -53,69 +59,79 @@ function validateProjectData(projectData) {
     typeof projectData !== "object" ||
     Array.isArray(projectData)
   ) {
-    throw new Error("Project data must be a valid object.");
+    throw new Error(
+      "Project data must be a valid object."
+    );
   }
 }
 
+
 /**
- * Convert backend/API errors into useful frontend errors.
+ * Normalize service errors.
  *
- * We do NOT expose internal backend details unnecessarily.
+ * api.js preserves the original Axios error,
+ * so we can safely read:
+ *
+ * error.response.data
+ * error.response.status
+ * error.message
  */
-function normalizeApiError(error, fallbackMessage) {
-  const responseData = error?.response?.data;
+function normalizeApiError(
+  error,
+  fallbackMessage
+) {
+  const responseData =
+    error?.response?.data;
 
   const backendMessage =
     responseData?.message ||
     responseData?.error ||
     responseData?.detail;
 
-  const status = error?.response?.status;
+  const status =
+    error?.response?.status ??
+    error?.status ??
+    null;
 
-  if (backendMessage) {
-    const normalizedError = new Error(
-      String(backendMessage)
-    );
+  const message =
+    backendMessage ||
+    error?.message ||
+    fallbackMessage;
 
-    normalizedError.status = status;
-    normalizedError.code =
-      responseData?.code || null;
+  const normalizedError =
+    new Error(String(message));
 
-    return normalizedError;
-  }
+  normalizedError.status =
+    status;
 
-  if (error?.message) {
-    const normalizedError = new Error(
-      error.message
-    );
+  normalizedError.code =
+    responseData?.code ||
+    error?.code ||
+    null;
 
-    normalizedError.status = status;
-
-    return normalizedError;
-  }
-
-  const normalizedError = new Error(
-    fallbackMessage
-  );
-
-  normalizedError.status = status;
+  normalizedError.data =
+    responseData ||
+    error?.data ||
+    null;
 
   return normalizedError;
 }
+
 
 /* =========================================================
    CREATE PROJECT
 ========================================================= */
 
 /**
- * Create a new project using the real backend.
- *
- * Backend:
  * POST /api/projects/create
  */
-export async function createProject(projectData) {
+export async function createProject(
+  projectData
+) {
   try {
-    validateProjectData(projectData);
+    validateProjectData(
+      projectData
+    );
 
     return await api.post(
       `${API_PREFIX}/create`,
@@ -129,14 +145,12 @@ export async function createProject(projectData) {
   }
 }
 
+
 /* =========================================================
    GET MY PROJECTS
 ========================================================= */
 
 /**
- * Get projects belonging to the authenticated user.
- *
- * Backend:
  * GET /api/projects/me
  */
 export async function getProjects() {
@@ -152,21 +166,22 @@ export async function getProjects() {
   }
 }
 
+
 /* =========================================================
    GET SINGLE PROJECT
 ========================================================= */
 
 /**
- * Get one complete project from the backend.
- *
- * Backend:
  * GET /api/projects/:projectId
  */
-export async function getProject(projectId) {
+export async function getProject(
+  projectId
+) {
   try {
-    const id = normalizeProjectId(
-      projectId
-    );
+    const id =
+      normalizeProjectId(
+        projectId
+      );
 
     return await api.get(
       `${API_PREFIX}/${id}`
@@ -179,14 +194,12 @@ export async function getProject(projectId) {
   }
 }
 
+
 /* =========================================================
    UPDATE PROJECT
 ========================================================= */
 
 /**
- * Update an existing project.
- *
- * Backend:
  * PUT /api/projects/update/:projectId
  */
 export async function updateProject(
@@ -194,11 +207,14 @@ export async function updateProject(
   projectData
 ) {
   try {
-    const id = normalizeProjectId(
-      projectId
-    );
+    const id =
+      normalizeProjectId(
+        projectId
+      );
 
-    validateProjectData(projectData);
+    validateProjectData(
+      projectData
+    );
 
     return await api.put(
       `${API_PREFIX}/update/${id}`,
@@ -212,23 +228,22 @@ export async function updateProject(
   }
 }
 
+
 /* =========================================================
    DELETE PROJECT
 ========================================================= */
 
 /**
- * Delete a project belonging to the authenticated user.
- *
- * Backend:
  * DELETE /api/projects/delete/:projectId
  */
 export async function deleteProject(
   projectId
 ) {
   try {
-    const id = normalizeProjectId(
-      projectId
-    );
+    const id =
+      normalizeProjectId(
+        projectId
+      );
 
     return await api.delete(
       `${API_PREFIX}/delete/${id}`
@@ -241,28 +256,25 @@ export async function deleteProject(
   }
 }
 
+
 /* =========================================================
    DEPLOY PROJECT
 ========================================================= */
 
 /**
- * Deploy an existing project.
+ * POST /api/projects/deploy/:projectId
  *
- * IMPORTANT:
- * Keep the actual deployment route that already
- * exists in your backend.
- *
- * If your backend route is different from the one
- * currently used by this project, change ONLY the
- * endpoint below.
+ * The backend is expected to return deployment
+ * information in its response.
  */
 export async function deployProject(
   projectId
 ) {
   try {
-    const id = normalizeProjectId(
-      projectId
-    );
+    const id =
+      normalizeProjectId(
+        projectId
+      );
 
     return await api.post(
       `${API_PREFIX}/deploy/${id}`
@@ -275,6 +287,7 @@ export async function deployProject(
   }
 }
 
+
 /* =========================================================
    DEFAULT SERVICE OBJECT
 ========================================================= */
@@ -285,7 +298,7 @@ const workspaceService = {
   getProject,
   updateProject,
   deleteProject,
-  deployProject
+  deployProject,
 };
 
 export default workspaceService;

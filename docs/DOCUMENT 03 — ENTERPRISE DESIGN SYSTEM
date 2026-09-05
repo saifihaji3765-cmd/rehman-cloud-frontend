@@ -1,0 +1,2346 @@
+# ZyrionOS
+# DOCUMENT 03 — ENTERPRISE DESIGN SYSTEM
+
+Document ID:
+ZYRIONOS-DOC-03
+
+Document Type:
+Enterprise Frontend Design System
+
+Version:
+1.0
+
+Status:
+FOUNDATION LOCKED
+
+Owner:
+ZyrionOS Product & Engineering
+
+Applies To:
+Entire ZyrionOS Frontend
+
+Primary Purpose:
+This document defines the complete visual language of ZyrionOS.
+
+This is the single visual source of truth for the entire application.
+
+Every page, component, layout, dashboard, workspace, AI interface,
+billing screen, settings screen, authentication screen, deployment screen,
+modal, drawer, form, table and system state MUST follow this document.
+
+
+============================================================
+01. DESIGN SYSTEM PRINCIPLE
+============================================================
+
+ZyrionOS must look like a serious enterprise AI infrastructure platform.
+
+The interface must communicate:
+
+- Intelligence
+- Reliability
+- Infrastructure
+- Security
+- Control
+- Precision
+- Premium quality
+- Enterprise maturity
+- Technical sophistication
+- Trust
+
+The interface must NOT look like:
+
+- A generic SaaS template
+- A gaming dashboard
+- A cryptocurrency dashboard
+- A colorful consumer application
+- A basic admin panel
+- A collection of unrelated cards
+- A copied Tailwind template
+- A prototype
+- A student project
+
+
+============================================================
+02. CORE VISUAL PHILOSOPHY
+============================================================
+
+ZyrionOS uses a:
+
+DARK-FIRST
+ENTERPRISE
+AI-INFRASTRUCTURE
+PRECISION
+HIGH-DENSITY
+PREMIUM
+
+visual language.
+
+The design must feel:
+
+"calm + powerful + intelligent + controlled"
+
+
+Primary visual hierarchy:
+
+1. Content
+2. Structure
+3. Action
+4. Status
+5. Decoration
+
+Decoration must NEVER overpower information.
+
+
+============================================================
+03. VISUAL IDENTITY
+============================================================
+
+Brand character:
+
+ZyrionOS = Intelligent Operating Infrastructure
+
+Visual keywords:
+
+- Deep
+- Dark
+- Precise
+- Premium
+- Controlled
+- Technical
+- Minimal
+- Intelligent
+- High-end
+- Modern
+
+The interface should feel closer to an enterprise command center
+than a traditional website.
+
+
+============================================================
+04. COLOR ARCHITECTURE
+============================================================
+
+Color is a CORE identity element of ZyrionOS.
+
+No page may independently invent colors.
+
+All colors MUST come from the design tokens defined below.
+
+
+------------------------------------------------------------
+04.1 PRIMARY BACKGROUND
+------------------------------------------------------------
+
+Background 950:
+
+#060914
+
+Purpose:
+Application shell and deepest background.
+
+Background 900:
+
+#080C18
+
+Purpose:
+Primary page background.
+
+Background 850:
+
+#0B1020
+
+Purpose:
+Large workspace regions.
+
+Background 800:
+
+#0F1526
+
+Purpose:
+Panels and elevated surfaces.
+
+Background 750:
+
+#121A2D
+
+Purpose:
+Cards and secondary surfaces.
+
+
+------------------------------------------------------------
+04.2 SURFACE SYSTEM
+------------------------------------------------------------
+
+Surface 1:
+
+#0D1322
+
+Use:
+Standard cards.
+
+Surface 2:
+
+#11182A
+
+Use:
+Elevated cards.
+
+Surface 3:
+
+#151D31
+
+Use:
+Hover and interactive surfaces.
+
+Surface 4:
+
+#192238
+
+Use:
+Active controls and selected regions.
+
+
+------------------------------------------------------------
+04.3 PRIMARY BRAND COLOR
+------------------------------------------------------------
+
+Zyrion Violet:
+
+#6C63FF
+
+Primary brand identity.
+
+Used for:
+
+- Primary buttons
+- Active navigation
+- Selected states
+- Important links
+- AI actions
+- Focus indicators
+- Primary highlights
+
+
+Zyrion Violet Bright:
+
+#8179FF
+
+Used for:
+
+- Hover
+- Emphasis
+- Active gradients
+- AI intelligence indicators
+
+
+Zyrion Violet Deep:
+
+#5148D9
+
+Used for:
+
+- Pressed states
+- Dark emphasis
+- Secondary brand surfaces
+
+
+------------------------------------------------------------
+04.4 AI ACCENT
+------------------------------------------------------------
+
+AI Cyan:
+
+#35D7FF
+
+Purpose:
+
+AI-generated information
+AI activity
+Intelligence indicators
+Streaming state
+AI processing
+Technical visualization
+
+
+AI Blue:
+
+#4C8DFF
+
+Purpose:
+
+AI/infrastructure secondary accent.
+
+
+IMPORTANT:
+
+AI colors must not dominate the complete interface.
+
+AI accent exists to communicate intelligence,
+not to turn the interface into a neon dashboard.
+
+
+------------------------------------------------------------
+04.5 SEMANTIC COLORS
+------------------------------------------------------------
+
+Success:
+
+#20C77A
+
+Success background:
+
+rgba(32,199,122,0.10)
+
+Warning:
+
+#F4B740
+
+Warning background:
+
+rgba(244,183,64,0.10)
+
+Danger:
+
+#F05A67
+
+Danger background:
+
+rgba(240,90,103,0.10)
+
+Info:
+
+#45A3FF
+
+Info background:
+
+rgba(69,163,255,0.10)
+
+
+------------------------------------------------------------
+04.6 TEXT COLORS
+------------------------------------------------------------
+
+Primary Text:
+
+#F4F7FF
+
+Used for:
+
+- Main headings
+- Important values
+- Primary content
+
+
+Secondary Text:
+
+#A8B1C7
+
+Used for:
+
+- Descriptions
+- Supporting information
+- Secondary labels
+
+
+Muted Text:
+
+#6F7890
+
+Used for:
+
+- Metadata
+- Helper text
+- Low-priority information
+
+
+Disabled Text:
+
+#4A5266
+
+Used for:
+
+- Disabled controls
+- Unavailable actions
+
+
+------------------------------------------------------------
+04.7 BORDER COLORS
+------------------------------------------------------------
+
+Border Default:
+
+#1B2438
+
+Border Strong:
+
+#27324A
+
+Border Interactive:
+
+#35436A
+
+Border Brand:
+
+rgba(108,99,255,0.45)
+
+
+Borders must remain subtle.
+
+The application must never look like every element
+has a bright outline.
+
+
+============================================================
+05. COLOR USAGE RATIO
+============================================================
+
+Approximate visual balance:
+
+70%
+Deep dark surfaces
+
+20%
+Neutral text and structural elements
+
+7%
+Brand violet
+
+3%
+Semantic / AI accents
+
+
+IMPORTANT:
+
+Purple is the identity color.
+
+Purple is NOT the background color everywhere.
+
+The dark infrastructure environment must remain dominant.
+
+
+============================================================
+06. GRADIENT SYSTEM
+============================================================
+
+Gradients are allowed only for:
+
+- Brand hero areas
+- Primary CTA emphasis
+- AI activity
+- Important visual highlights
+- Premium empty states
+
+Primary brand gradient:
+
+linear-gradient(
+  135deg,
+  #5148D9 0%,
+  #6C63FF 55%,
+  #8179FF 100%
+)
+
+AI gradient:
+
+linear-gradient(
+  135deg,
+  #4C8DFF 0%,
+  #35D7FF 100%
+)
+
+
+Do NOT use gradients on:
+
+- Every card
+- Every button
+- Every heading
+- Tables
+- Forms
+- Navigation items
+- Every section
+
+Gradients are emphasis tools.
+
+
+============================================================
+07. TYPOGRAPHY
+============================================================
+
+Primary Font:
+
+Inter
+
+Fallback:
+
+system-ui, -apple-system, BlinkMacSystemFont,
+"Segoe UI", sans-serif
+
+
+------------------------------------------------------------
+07.1 TYPE SCALE
+------------------------------------------------------------
+
+Display:
+
+48px
+Line-height: 1.05
+Weight: 700
+
+Page Hero:
+
+40px
+Line-height: 1.10
+Weight: 700
+
+Page Heading:
+
+32px
+Line-height: 1.15
+Weight: 700
+
+Section Heading:
+
+24px
+Line-height: 1.20
+Weight: 650
+
+Card Heading:
+
+18px
+Line-height: 1.30
+Weight: 600
+
+Body Large:
+
+16px
+Line-height: 1.60
+Weight: 400
+
+Body:
+
+14px
+Line-height: 1.55
+Weight: 400
+
+Small:
+
+13px
+Line-height: 1.45
+
+Caption:
+
+12px
+Line-height: 1.40
+
+Micro:
+
+11px
+Line-height: 1.30
+
+
+------------------------------------------------------------
+07.2 FONT WEIGHT
+------------------------------------------------------------
+
+Regular:
+
+400
+
+Medium:
+
+500
+
+Semibold:
+
+600
+
+Bold:
+
+700
+
+
+Do not overuse 700 weight.
+
+Strong hierarchy must come from:
+
+- Size
+- Weight
+- Spacing
+- Contrast
+- Position
+
+
+============================================================
+08. SPACING SYSTEM
+============================================================
+
+Base spacing unit:
+
+4px
+
+
+Allowed spacing scale:
+
+4
+8
+12
+16
+20
+24
+32
+40
+48
+56
+64
+80
+96
+
+
+Common usage:
+
+4px
+Icon-to-text micro spacing
+
+8px
+Compact internal spacing
+
+12px
+Input internal spacing
+
+16px
+Standard card spacing
+
+24px
+Standard section spacing
+
+32px
+Major component spacing
+
+40px
+Large section separation
+
+48px+
+Page-level separation
+
+
+No arbitrary spacing values unless technically necessary.
+
+
+============================================================
+09. BORDER RADIUS SYSTEM
+============================================================
+
+Radius XS:
+
+6px
+
+Radius SM:
+
+8px
+
+Radius MD:
+
+10px
+
+Radius LG:
+
+14px
+
+Radius XL:
+
+18px
+
+Radius 2XL:
+
+24px
+
+Pill:
+
+999px
+
+
+Recommended usage:
+
+Inputs:
+10px
+
+Buttons:
+10px
+
+Cards:
+14px
+
+Large containers:
+18px
+
+Badges:
+999px
+
+
+Avoid excessive rounded UI.
+
+Enterprise does NOT mean every object is a pill.
+
+
+============================================================
+10. SHADOW SYSTEM
+============================================================
+
+ZyrionOS uses subtle shadows.
+
+Shadow SM:
+
+0 4px 12px rgba(0,0,0,0.18)
+
+Shadow MD:
+
+0 12px 32px rgba(0,0,0,0.24)
+
+Shadow LG:
+
+0 24px 64px rgba(0,0,0,0.32)
+
+
+Brand glow:
+
+0 0 28px rgba(108,99,255,0.18)
+
+
+AI glow:
+
+0 0 28px rgba(53,215,255,0.14)
+
+
+Glow must be used sparingly.
+
+
+============================================================
+11. PAGE STRUCTURE
+============================================================
+
+Every authenticated application page follows:
+
+Application Shell
+    |
+    +-- Sidebar
+    |
+    +-- Main Content
+            |
+            +-- Page Header
+            |
+            +-- Primary Content
+            |
+            +-- Supporting Content
+
+
+The main content must use available screen space.
+
+Pages must NOT appear as a tiny centered application
+inside a huge empty browser area.
+
+
+============================================================
+12. FULL-PAGE PRINCIPLE
+============================================================
+
+When the user navigates to a major application module,
+that module owns the available application viewport.
+
+Examples:
+
+Create New Project
+    -> Full Workspace
+
+Workspace
+    -> Full Workspace Interface
+
+Settings
+    -> Full Settings Page
+
+Billing
+    -> Full Billing Page
+
+Deployments
+    -> Full Deployments Page
+
+Dashboard
+    -> Full Dashboard
+
+Authentication
+    -> Full Authentication Experience
+
+
+A major page must NEVER behave like a small card
+inside another page unless intentionally defined as a modal.
+
+
+============================================================
+13. APPLICATION SHELL
+============================================================
+
+Desktop:
+
+Sidebar:
+240px - 280px
+
+Topbar:
+64px - 72px
+
+Main content:
+Remaining viewport
+
+
+Tablet:
+
+Sidebar may collapse.
+
+Mobile:
+
+Sidebar becomes drawer.
+
+Content uses nearly full viewport width.
+
+
+The shell must feel like an operating environment,
+not a normal marketing website.
+
+
+============================================================
+14. SIDEBAR
+============================================================
+
+Sidebar hierarchy:
+
+Brand
+|
+Primary Navigation
+|
+Workspace Navigation
+|
+Secondary Navigation
+|
+System / Account
+
+
+Navigation items must have:
+
+- Icon
+- Label
+- Optional badge
+- Active state
+
+
+Active state:
+
+Background:
+rgba(108,99,255,0.12)
+
+Border:
+rgba(108,99,255,0.20)
+
+Text:
+#F4F7FF
+
+Icon:
+#8179FF
+
+
+Hover:
+
+Surface 3
+
+
+Sidebar must remain visually quiet.
+
+The selected destination receives emphasis.
+
+
+============================================================
+15. TOPBAR
+============================================================
+
+Topbar contains only high-value global controls.
+
+Possible elements:
+
+- Global search
+- Workspace switcher
+- Notifications
+- System status
+- User menu
+
+
+Topbar must NOT become a dumping ground
+for random buttons.
+
+
+------------------------------------------------------------
+15.1 GLOBAL SEARCH
+------------------------------------------------------------
+
+Search must look like an enterprise command/search interface.
+
+Minimum visual requirements:
+
+- Search icon
+- Clear placeholder
+- Keyboard shortcut indicator
+- Hover state
+- Focus state
+- Optional command palette
+
+
+Search placeholder example:
+
+"Search projects, deployments, settings..."
+
+
+Shortcut:
+
+⌘K
+
+or
+
+Ctrl K
+
+
+Search must be properly aligned
+and must never visually overlap account controls.
+
+
+============================================================
+16. BUTTON SYSTEM
+============================================================
+
+Primary Button:
+
+Brand gradient / brand surface
+
+Text:
+White
+
+Radius:
+10px
+
+Height:
+40px - 44px
+
+
+Secondary Button:
+
+Surface 2
+
+Border:
+Border Default
+
+Text:
+Primary
+
+
+Ghost Button:
+
+Transparent
+
+Hover:
+Surface 3
+
+
+Danger Button:
+
+Danger semantic color
+
+
+Button hierarchy:
+
+Primary
+>
+Secondary
+>
+Ghost
+
+
+Only one primary action should dominate
+a major section when possible.
+
+
+============================================================
+17. BUTTON STATES
+============================================================
+
+Every interactive button must support:
+
+Default
+Hover
+Focus
+Pressed
+Disabled
+Loading
+Success where applicable
+
+
+Loading state:
+
+Button text remains understandable.
+
+Example:
+
+Deploy
+
+becomes:
+
+Deploying...
+
+
+Never silently disable a button.
+
+
+============================================================
+18. INPUT SYSTEM
+============================================================
+
+Input background:
+
+#0B1020
+
+Border:
+
+#1B2438
+
+Text:
+
+#F4F7FF
+
+Placeholder:
+
+#6F7890
+
+
+Focus:
+
+Border:
+#6C63FF
+
+Optional subtle brand glow.
+
+
+Input height:
+
+40px - 44px
+
+
+Large inputs:
+
+48px+
+
+
+Inputs must have:
+
+- Label
+- Input
+- Helper text where necessary
+- Error state where necessary
+
+
+============================================================
+19. TEXTAREA / AI PROMPT INPUT
+============================================================
+
+The AI command input is a CORE ZyrionOS component.
+
+It must feel like:
+
+"command center + AI workspace"
+
+Minimum structure:
+
+Prompt Area
+    |
+    +-- Text input
+    |
+    +-- Context / tools
+    |
+    +-- Model / mode information
+    |
+    +-- Submit action
+
+
+The AI prompt area must be visually stronger
+than ordinary form inputs.
+
+
+============================================================
+20. AI CHAT VISUAL LANGUAGE
+============================================================
+
+AI Chat is a first-class product interface.
+
+It must NOT look like a basic messaging application.
+
+
+Structure:
+
+Chat Header
+    |
+Conversation Area
+    |
+AI Response
+    |
+User Message
+    |
+Tool / Action State
+    |
+Composer
+
+
+AI messages may contain:
+
+- Markdown
+- Code
+- Tables
+- Files
+- Tool status
+- Progress
+- Actions
+- Citations
+- Structured results
+
+
+AI identity:
+
+Small ZyrionOS / AI indicator
+
+AI responses use slightly elevated surfaces.
+
+User messages use a distinct but restrained surface.
+
+
+============================================================
+21. AI STREAMING STATE
+============================================================
+
+During AI generation:
+
+Show:
+
+- Active AI indicator
+- Streaming cursor
+- Processing state
+- Optional tool activity
+
+
+Example:
+
+AI is thinking...
+
+AI is generating...
+
+AI is executing...
+
+
+Do not use meaningless spinning loaders everywhere.
+
+
+============================================================
+22. AI TOOL ACTIVITY
+============================================================
+
+When AI executes an operation:
+
+Display a compact activity block.
+
+Example:
+
+AI ACTION
+
+Generating project architecture
+
+Status:
+Running
+
+Then:
+
+Status:
+Completed
+
+
+For multiple operations:
+
+1. Analyze request
+2. Generate architecture
+3. Create files
+4. Validate project
+5. Prepare deployment
+
+
+This creates a professional agent experience.
+
+
+============================================================
+23. CODE INTERFACE
+============================================================
+
+Code panels use a dedicated technical visual language.
+
+Structure:
+
+File Explorer
+|
+Editor
+|
+Editor Header
+|
+Code Content
+
+
+File explorer:
+
+Dark surface.
+
+Selected file:
+
+Brand-tinted background.
+
+
+Code editor:
+
+Near-black surface.
+
+Monospace font.
+
+Recommended:
+
+JetBrains Mono
+
+Fallback:
+
+ui-monospace, SFMono-Regular, Menlo, monospace
+
+
+Code must be readable first.
+
+Decoration must remain secondary.
+
+
+============================================================
+24. CARDS
+============================================================
+
+Cards are used to group related information.
+
+Standard card:
+
+Background:
+Surface 1
+
+Border:
+Border Default
+
+Radius:
+14px
+
+Padding:
+20px - 24px
+
+
+Card hierarchy:
+
+Label
+Title
+Description
+Value / Content
+Optional Action
+
+
+Cards must NOT be unnecessarily nested.
+
+
+============================================================
+25. DASHBOARD CARDS
+============================================================
+
+Dashboard metric card:
+
+Label
+Large Value
+Trend / Status
+Supporting Information
+
+
+Example:
+
+ACTIVE PROJECTS
+
+24
+
++8.4%
+
+vs previous period
+
+
+Large values must have strong visual hierarchy.
+
+
+============================================================
+26. STATUS SYSTEM
+============================================================
+
+Status must always communicate through:
+
+Color
++
+Text
+
+Never color alone.
+
+
+Success:
+
+● Operational
+
+Warning:
+
+● Attention required
+
+Danger:
+
+● Failed
+
+Neutral:
+
+● Not configured
+
+
+Recommended status badge:
+
+Small dot
++
+text
+
+
+============================================================
+27. TABLE SYSTEM
+============================================================
+
+Tables are enterprise data surfaces.
+
+Requirements:
+
+- Strong column hierarchy
+- Compact row spacing
+- Hover state
+- Selected state
+- Status badges
+- Pagination
+- Empty state
+- Loading state
+
+
+Header:
+
+Muted uppercase or strong secondary text.
+
+Rows:
+
+Minimum comfortable touch/click height.
+
+
+Tables must never look cramped.
+
+
+============================================================
+28. MODALS
+============================================================
+
+Modal hierarchy:
+
+Backdrop
+    |
+Modal
+    |
+Header
+    |
+Content
+    |
+Actions
+
+
+Modal:
+
+Surface 2
+
+Border:
+Border Strong
+
+Radius:
+18px
+
+Shadow:
+Shadow LG
+
+
+Modal must have:
+
+- Clear title
+- Close control
+- Content
+- Explicit action area
+
+
+Dangerous operations require clear confirmation.
+
+
+============================================================
+29. DRAWERS
+============================================================
+
+Drawers are used when contextual information
+should remain connected to the current page.
+
+Examples:
+
+- Project details
+- Deployment details
+- Activity logs
+- AI execution details
+
+
+Drawer must feel like an extension of the current workspace,
+not a separate application.
+
+
+============================================================
+30. TOAST / NOTIFICATION SYSTEM
+============================================================
+
+Notifications must be concise.
+
+Success:
+
+"Project created successfully."
+
+Error:
+
+"Deployment failed. Check deployment logs."
+
+Warning:
+
+"Your current plan has reached its project limit."
+
+Info:
+
+"Deployment is being prepared."
+
+
+Avoid technical error dumps for normal users.
+
+
+============================================================
+31. EMPTY STATES
+============================================================
+
+Empty states must be useful.
+
+Structure:
+
+Icon / Illustration
+Title
+Explanation
+Primary Action
+
+
+Example:
+
+No projects yet
+
+Create your first project and start building
+with ZyrionOS.
+
+[ Create Project ]
+
+
+Empty states must never feel unfinished.
+
+
+============================================================
+32. LOADING STATES
+============================================================
+
+Use:
+
+Skeletons
+Progress indicators
+Inline loading
+Contextual status
+
+
+Avoid full-screen spinners unless the entire application
+is genuinely unavailable.
+
+
+Loading should explain what is happening.
+
+
+============================================================
+33. ERROR STATES
+============================================================
+
+Error design:
+
+Problem
++
+Reason
++
+Recovery action
+
+
+Example:
+
+Deployment failed
+
+The deployment service could not complete
+your project.
+
+[ Retry Deployment ]
+
+[ View Logs ]
+
+
+Never show only:
+
+"Something went wrong."
+
+
+============================================================
+34. DASHBOARD VISUAL LANGUAGE
+============================================================
+
+Dashboard must feel like:
+
+ZyrionOS Command Center
+
+
+Primary hierarchy:
+
+1. Global status
+2. Key metrics
+3. Recent projects
+4. Deployments
+5. Infrastructure
+6. AI activity
+7. Quick actions
+
+
+The dashboard must use the full available page width.
+
+
+============================================================
+35. WORKSPACE VISUAL LANGUAGE
+============================================================
+
+Workspace is one of the most important ZyrionOS surfaces.
+
+It must feel like:
+
+AI IDE
++
+Project Builder
++
+Deployment Control Center
+
+
+Recommended structure:
+
+--------------------------------------------------
+Header
+--------------------------------------------------
+
+Project Identity
+Actions
+Deployment Status
+
+
+--------------------------------------------------
+Main Workspace
+--------------------------------------------------
+
+Project/File Explorer
+AI Builder / Editor
+Preview
+
+
+--------------------------------------------------
+Context Inspector
+--------------------------------------------------
+
+Project
+Build
+Files
+Deployment
+Environment
+
+
+The workspace must occupy the available viewport.
+
+
+============================================================
+36. DEPLOYMENT VISUAL LANGUAGE
+============================================================
+
+Deployment page must communicate:
+
+Infrastructure
+Status
+Progress
+Logs
+Environment
+Live URL
+History
+
+
+Deployment lifecycle:
+
+Queued
+    ↓
+Preparing
+    ↓
+Building
+    ↓
+Validating
+    ↓
+Deploying
+    ↓
+Live
+
+
+Failure state:
+
+Failed
+    ↓
+Reason
+    ↓
+Recovery
+
+
+============================================================
+37. BILLING VISUAL LANGUAGE
+============================================================
+
+Billing must feel trustworthy and premium.
+
+Primary sections:
+
+Current Plan
+Usage
+Plans
+Payment
+Invoices
+Billing History
+
+
+Pricing cards must clearly communicate:
+
+- Plan name
+- Price
+- Billing period
+- Features
+- Limits
+- Current plan
+- Upgrade action
+
+
+No confusing visual hierarchy.
+
+
+============================================================
+38. SETTINGS VISUAL LANGUAGE
+============================================================
+
+Settings must be a complete application page.
+
+Recommended structure:
+
+Settings Navigation
+    |
+General
+Account
+Security
+Notifications
+AI
+Workspace
+API
+Billing
+Danger Zone
+
+
+Each section should be clearly separated.
+
+
+============================================================
+39. AUTHENTICATION VISUAL LANGUAGE
+============================================================
+
+Login and Signup are part of the ZyrionOS brand experience.
+
+They must NOT look like generic forms.
+
+
+Authentication experience must communicate:
+
+Security
+Trust
+Enterprise quality
+Simplicity
+
+
+Recommended structure:
+
+Brand Area
++
+Authentication Form
++
+Security / trust information
+
+
+Required:
+
+- Clear branding
+- Strong typography
+- Proper input hierarchy
+- Password visibility control
+- Error handling
+- Loading states
+- OAuth where supported
+- Terms / privacy references where applicable
+
+
+============================================================
+40. RESPONSIVE DESIGN
+============================================================
+
+Breakpoints:
+
+Mobile:
+
+< 640px
+
+Tablet:
+
+640px - 1023px
+
+Desktop:
+
+1024px - 1439px
+
+Large Desktop:
+
+1440px+
+
+
+At every breakpoint:
+
+Content hierarchy remains intact.
+
+Nothing should:
+
+- overflow
+- overlap
+- become unreadable
+- disappear unexpectedly
+- become unusably small
+
+
+============================================================
+41. MOBILE PRINCIPLE
+============================================================
+
+Mobile is NOT a scaled-down desktop.
+
+Mobile receives its own layout adaptation.
+
+Examples:
+
+Desktop:
+
+Sidebar + Main + Inspector
+
+Mobile:
+
+Topbar
+Content
+Context drawer
+
+
+Desktop workspace:
+
+Three-column
+
+Mobile workspace:
+
+Stacked / tabbed / drawer-based
+
+
+============================================================
+42. MAXIMUM CONTENT WIDTH
+============================================================
+
+For standard content pages:
+
+Maximum content width:
+
+1600px
+
+
+For dense enterprise pages:
+
+Can use:
+
+Full available width
+
+
+For workspace:
+
+Use maximum available viewport width.
+
+
+Do not unnecessarily constrain enterprise interfaces
+to narrow marketing-page widths.
+
+
+============================================================
+43. ICONOGRAPHY
+============================================================
+
+Icons must use one consistent icon family.
+
+Preferred style:
+
+Minimal
+Geometric
+Outline-first
+
+
+Icons must:
+
+- Have consistent stroke weight
+- Have consistent visual size
+- Align with text
+- Never overpower labels
+
+
+Do not mix multiple unrelated icon styles.
+
+
+============================================================
+44. ICON SIZE
+============================================================
+
+Micro:
+
+12px
+
+Small:
+
+14px
+
+Standard:
+
+16px
+
+Medium:
+
+18px
+
+Large:
+
+20px
+
+Hero:
+
+24px - 32px
+
+
+Standard UI icons:
+
+16px - 18px
+
+
+============================================================
+45. MOTION SYSTEM
+============================================================
+
+Motion must communicate state.
+
+Standard transition:
+
+150ms - 180ms
+
+Medium:
+
+200ms - 240ms
+
+Large:
+
+300ms
+
+
+Use motion for:
+
+- Hover
+- Focus
+- Expand/collapse
+- Modal
+- Drawer
+- Navigation
+- AI streaming
+- Deployment progress
+
+
+Avoid excessive animation.
+
+
+============================================================
+46. ACCESSIBILITY
+============================================================
+
+All visual components must maintain accessible contrast.
+
+Interactive elements must have:
+
+- Visible focus state
+- Keyboard accessibility
+- Clear labels
+- Appropriate touch targets
+- Meaningful status text
+
+
+Minimum recommended touch target:
+
+44px
+
+
+Color must never be the only way
+to communicate important information.
+
+
+============================================================
+47. Z-INDEX ARCHITECTURE
+============================================================
+
+Base:
+
+0
+
+Elevated content:
+
+10
+
+Sticky elements:
+
+20
+
+Dropdowns:
+
+30
+
+Popovers:
+
+40
+
+Modal:
+
+50
+
+Modal backdrop:
+
+45
+
+Toast:
+
+60
+
+Critical overlay:
+
+70
+
+
+No component may invent arbitrary z-index values.
+
+
+============================================================
+48. DESIGN TOKEN PRINCIPLE
+============================================================
+
+All reusable visual values MUST be represented
+through centralized design tokens.
+
+Examples:
+
+--color-bg-primary
+--color-surface-1
+--color-brand
+--color-text-primary
+--color-text-secondary
+--color-border
+--radius-md
+--space-4
+--shadow-md
+--transition-fast
+
+
+Components must consume tokens.
+
+Components must NOT randomly define their own colors.
+
+
+============================================================
+49. COMPONENT CONSISTENCY RULE
+============================================================
+
+If the same component appears in multiple pages,
+it must visually behave the same everywhere.
+
+Example:
+
+Primary Button on:
+
+Dashboard
+Workspace
+Billing
+Settings
+
+must remain the same component language.
+
+
+Only its semantic purpose may change.
+
+
+============================================================
+50. PAGE CONSISTENCY RULE
+============================================================
+
+Every page must inherit:
+
+- Global colors
+- Typography
+- Spacing
+- Radius
+- Shadows
+- Buttons
+- Inputs
+- Status system
+- Responsive rules
+- Navigation language
+
+
+A page cannot create an independent visual system.
+
+
+============================================================
+51. VISUAL DENSITY
+============================================================
+
+ZyrionOS is a professional enterprise product.
+
+Therefore:
+
+Information density should be HIGH enough
+for productivity.
+
+But:
+
+Readability must remain HIGH.
+
+
+Target feeling:
+
+"Everything I need is available,
+but nothing is fighting for my attention."
+
+
+============================================================
+52. WHITESPACE PRINCIPLE
+============================================================
+
+Whitespace exists to establish hierarchy.
+
+Avoid:
+
+Huge empty areas
++
+Tiny content blocks
+
+
+Avoid:
+
+Overcrowded sections
++
+No breathing room
+
+
+Use whitespace strategically.
+
+
+============================================================
+53. ENTERPRISE PREMIUM RULE
+============================================================
+
+Premium does NOT mean:
+
+More gradients
+More glow
+More animations
+More colors
+More rounded cards
+
+
+Premium means:
+
+Better hierarchy
+Better spacing
+Better typography
+Better alignment
+Better information architecture
+Better interaction feedback
+Better consistency
+Better restraint
+
+
+============================================================
+54. VISUAL QUALITY CHECK
+============================================================
+
+Every page must pass:
+
+ALIGNMENT CHECK
+
+Are elements aligned?
+
+
+SPACING CHECK
+
+Are spacing values consistent?
+
+
+COLOR CHECK
+
+Are only approved tokens being used?
+
+
+TYPOGRAPHY CHECK
+
+Is hierarchy obvious?
+
+
+COMPONENT CHECK
+
+Are existing components reused?
+
+
+RESPONSIVE CHECK
+
+Does the page work across viewport sizes?
+
+
+ACCESSIBILITY CHECK
+
+Are focus, contrast and interaction states clear?
+
+
+ENTERPRISE CHECK
+
+Does the page feel production-grade?
+
+
+============================================================
+55. FORBIDDEN DESIGN PATTERNS
+============================================================
+
+Never use:
+
+- Random colors
+- Random gradients
+- Random shadows
+- Random border radii
+- Excessive glassmorphism
+- Excessive neon effects
+- Giant decorative icons
+- Unnecessary animations
+- Generic dashboard templates
+- Tiny application containers
+- Inconsistent buttons
+- Inconsistent typography
+- Random spacing
+- Multiple competing primary actions
+- Broken alignment
+- Overlapping controls
+- Decorative UI without purpose
+
+
+============================================================
+56. SOURCE OF TRUTH
+============================================================
+
+When a visual decision is required:
+
+First:
+Use this document.
+
+Second:
+Use the centralized design tokens.
+
+Third:
+Use existing reusable components.
+
+Never:
+Invent a new visual rule at page level.
+
+
+============================================================
+57. IMPLEMENTATION ARCHITECTURE
+============================================================
+
+The frontend should centralize visual primitives.
+
+Recommended foundation:
+
+src/
+|
++-- styles/
+|   |
+|   +-- tokens.css
+|   +-- globals.css
+|   +-- typography.css
+|   +-- utilities.css
+|
++-- components/
+    |
+    +-- UI/
+        |
+        +-- Button
+        +-- Input
+        +-- Select
+        +-- Modal
+        +-- Drawer
+        +-- Badge
+        +-- Card
+        +-- Table
+        +-- Toast
+        +-- Skeleton
+        +-- EmptyState
+        +-- ErrorState
+        +-- LoadingState
+
+
+Exact implementation must follow the existing
+frontend structure defined in the implementation documents.
+
+
+============================================================
+58. DESIGN TOKEN EXAMPLE
+============================================================
+
+The implementation should centralize values approximately
+like this:
+
+--zy-bg-950: #060914;
+--zy-bg-900: #080C18;
+--zy-bg-850: #0B1020;
+--zy-bg-800: #0F1526;
+
+--zy-surface-1: #0D1322;
+--zy-surface-2: #11182A;
+--zy-surface-3: #151D31;
+--zy-surface-4: #192238;
+
+--zy-brand: #6C63FF;
+--zy-brand-bright: #8179FF;
+--zy-brand-deep: #5148D9;
+
+--zy-ai-cyan: #35D7FF;
+--zy-ai-blue: #4C8DFF;
+
+--zy-success: #20C77A;
+--zy-warning: #F4B740;
+--zy-danger: #F05A67;
+--zy-info: #45A3FF;
+
+--zy-text-primary: #F4F7FF;
+--zy-text-secondary: #A8B1C7;
+--zy-text-muted: #6F7890;
+--zy-text-disabled: #4A5266;
+
+--zy-border: #1B2438;
+--zy-border-strong: #27324A;
+
+--zy-radius-sm: 8px;
+--zy-radius-md: 10px;
+--zy-radius-lg: 14px;
+--zy-radius-xl: 18px;
+
+--zy-space-1: 4px;
+--zy-space-2: 8px;
+--zy-space-3: 12px;
+--zy-space-4: 16px;
+--zy-space-5: 20px;
+--zy-space-6: 24px;
+--zy-space-8: 32px;
+--zy-space-10: 40px;
+--zy-space-12: 48px;
+
+
+============================================================
+59. FINAL DESIGN CONTRACT
+============================================================
+
+This document establishes the visual contract
+for the ZyrionOS frontend.
+
+The contract is:
+
+ONE BRAND
+ONE COLOR SYSTEM
+ONE TYPOGRAPHY SYSTEM
+ONE SPACING SYSTEM
+ONE COMPONENT LANGUAGE
+ONE STATUS LANGUAGE
+ONE RESPONSIVE SYSTEM
+ONE AI VISUAL LANGUAGE
+
+
+No page is allowed to become a separate design system.
+
+No developer, AI agent or component may introduce
+visual rules that contradict this document.
+
+
+============================================================
+60. FINAL QUALITY STANDARD
+============================================================
+
+The finished ZyrionOS interface must feel like:
+
+A serious enterprise AI operating platform.
+
+When a user opens the product,
+the immediate impression should be:
+
+"These people built infrastructure,
+not just a website."
+
+
+============================================================
+DOCUMENT STATUS
+============================================================
+
+DOCUMENT 03:
+
+ENTERPRISE DESIGN SYSTEM
+
+STATUS:
+FOUNDATION LOCKED
+
+This document is the visual source of truth
+for all future ZyrionOS frontend implementation.
+
+
+END OF DOCUMENT 03

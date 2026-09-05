@@ -1,0 +1,2057 @@
+# ZYRIONOS — ENTERPRISE FRONTEND MASTER DOCUMENT
+# DOCUMENT 05 — APPLICATION FLOW, STATE & BACKEND INTEGRATION SPECIFICATION
+
+Document ID:
+ZYRIONOS-FE-DOC-05
+
+Document Type:
+Enterprise Frontend Architecture & Runtime Behavior Specification
+
+Status:
+FINAL FOUNDATION
+
+Scope:
+Frontend application flow, page behavior, state management,
+API integration, backend communication, loading states,
+error states, empty states, success states, navigation behavior,
+authentication-aware behavior and real-data handling.
+
+Audience:
+- Frontend Developers
+- Backend Developers
+- Full-Stack Developers
+- AI Coding Agents
+- Product Engineers
+- QA Engineers
+- Technical Reviewers
+- Professors / Evaluators
+- Future Maintainers
+
+Primary Objective:
+Define exactly how the ZyrionOS frontend behaves at runtime
+and how every user-facing feature communicates with the real backend.
+
+============================================================
+1. CORE PRINCIPLE
+============================================================
+
+ZyrionOS frontend is NOT a collection of disconnected pages.
+
+It is one unified application.
+
+Every page, component, action and state must follow the same
+application architecture.
+
+The frontend must:
+
+1. Use real backend data.
+2. Never depend on fake production data.
+3. Never silently invent missing data.
+4. Never hide API failures.
+5. Never expose backend implementation details unnecessarily.
+6. Maintain predictable loading behavior.
+7. Maintain predictable error behavior.
+8. Maintain predictable empty states.
+9. Preserve user context whenever possible.
+10. Keep navigation consistent across the entire application.
+11. Keep authenticated and unauthenticated experiences separate.
+12. Keep API communication centralized.
+13. Keep business logic outside purely visual components whenever practical.
+14. Prevent duplicated API logic across pages.
+15. Make every major action observable and understandable.
+
+============================================================
+2. APPLICATION ARCHITECTURE
+============================================================
+
+The frontend follows this logical structure:
+
+USER
+ ↓
+PAGE
+ ↓
+FEATURE COMPONENT
+ ↓
+SERVICE / STATE LOGIC
+ ↓
+API CLIENT
+ ↓
+BACKEND API
+ ↓
+DATABASE / EXTERNAL SERVICE
+ ↓
+RESPONSE
+ ↓
+STATE UPDATE
+ ↓
+UI UPDATE
+
+The UI must never directly communicate with the database.
+
+The UI must never contain database queries.
+
+The UI must never contain secret API keys.
+
+The UI must never bypass the centralized API client.
+
+============================================================
+3. PAGE OWNERSHIP
+============================================================
+
+Every major route represents a complete application experience.
+
+Examples:
+
+/login
+/signup
+/forgot-password
+
+/dashboard
+/workspace
+/projects
+/ai
+/chat
+/agents
+/automation
+/analytics
+/settings
+/billing
+/profile
+
+A page is responsible for:
+
+- Layout composition
+- Feature composition
+- Page-level state
+- Data loading coordination
+- User interaction
+- Navigation
+- Page-level error handling
+
+A reusable component is responsible for:
+
+- One defined visual/function unit
+- Local interaction
+- Controlled state where appropriate
+
+A service is responsible for:
+
+- Backend communication
+- Request construction
+- Response handling
+- API errors
+
+============================================================
+4. FULL-PAGE NAVIGATION RULE
+============================================================
+
+Major navigation items MUST open their complete page experience.
+
+Examples:
+
+Create New Project
+→ Opens the complete Workspace page.
+
+Settings
+→ Opens the complete Settings page.
+
+Billing
+→ Opens the complete Billing page.
+
+Projects
+→ Opens the complete Projects page.
+
+Agents
+→ Opens the complete Agents page.
+
+Analytics
+→ Opens the complete Analytics page.
+
+The application must NOT create an artificial small panel
+when the user expects a complete product section.
+
+Small overlays are reserved for:
+
+- Confirmation
+- Quick actions
+- Small contextual information
+- Temporary utilities
+
+Large product experiences belong to full pages.
+
+============================================================
+5. ROUTING PRINCIPLE
+============================================================
+
+Navigation must be route-driven.
+
+Example:
+
+Click "Workspace"
+
+→ navigate("/workspace")
+
+Click "Settings"
+
+→ navigate("/settings")
+
+Click "Billing"
+
+→ navigate("/billing")
+
+Click "Projects"
+
+→ navigate("/projects")
+
+The route must represent the user's current location.
+
+Browser refresh must preserve the current route.
+
+Browser back/forward navigation must behave naturally.
+
+Deep links must work correctly after deployment.
+
+============================================================
+6. AUTHENTICATION FLOW
+============================================================
+
+Authentication is handled centrally.
+
+The frontend must distinguish:
+
+AUTHENTICATED
+AUTHENTICATING
+UNAUTHENTICATED
+AUTH_ERROR
+
+Protected pages require authentication.
+
+If the user is not authenticated:
+
+Protected route
+→ redirect to Login.
+
+If authentication is being restored:
+
+Protected route
+→ show authentication loading state.
+
+The application must NOT briefly expose protected content
+before authentication is confirmed.
+
+============================================================
+7. AUTHENTICATION STATE
+============================================================
+
+Global authentication state should conceptually contain:
+
+{
+  user,
+  isAuthenticated,
+  isLoading,
+  error
+}
+
+Possible states:
+
+1. Initializing
+2. Authenticated
+3. Unauthenticated
+4. Authentication error
+
+The UI must react to these states.
+
+============================================================
+8. LOGIN FLOW
+============================================================
+
+LOGIN PAGE
+
+Initial:
+
+Display complete professional login experience.
+
+User submits credentials.
+
+Frontend:
+
+1. Validate required fields.
+2. Disable submit while processing.
+3. Send request to backend.
+4. Wait for response.
+5. Handle success/error.
+
+SUCCESS:
+
+1. Store/restore authenticated session according to backend strategy.
+2. Update authentication state.
+3. Navigate to intended destination.
+4. Otherwise navigate to Dashboard.
+
+FAILURE:
+
+1. Keep user on login page.
+2. Display clear error.
+3. Re-enable form.
+4. Preserve safe user input where appropriate.
+
+Never show raw backend stack traces.
+
+============================================================
+9. SIGNUP FLOW
+============================================================
+
+SIGNUP PAGE
+
+User enters registration information.
+
+Frontend validates basic input.
+
+Backend performs authoritative validation.
+
+During submission:
+
+- Disable submit.
+- Show progress state.
+- Prevent duplicate submission.
+
+Success:
+
+→ authenticate or continue verification flow according
+to backend response.
+
+Failure:
+
+→ display understandable message.
+
+The frontend must never assume account creation succeeded
+until the backend confirms it.
+
+============================================================
+10. SESSION RESTORATION
+============================================================
+
+On application startup:
+
+1. Check current authentication state.
+2. Restore valid session.
+3. Load user information if required.
+4. Render authenticated application.
+
+If session is invalid:
+
+→ clear authentication state
+→ show unauthenticated experience.
+
+No protected API request should depend on manually copied
+tokens inside individual pages.
+
+============================================================
+11. API CLIENT RULE
+============================================================
+
+All backend requests must pass through the centralized API client.
+
+Example:
+
+services/api.js
+
+Responsibilities:
+
+- Base URL
+- Credentials
+- Headers
+- Request configuration
+- Response handling
+- Common errors
+- Authentication handling
+- Timeout handling
+
+Individual pages must NOT create separate axios clients.
+
+============================================================
+12. SERVICE LAYER RULE
+============================================================
+
+Backend operations belong inside service modules.
+
+Example:
+
+services/
+├── api.js
+├── aiService.js
+├── workspaceService.js
+├── authService.js
+├── billingService.js
+├── projectService.js
+├── settingsService.js
+└── analyticsService.js
+
+Services contain API communication.
+
+Pages consume services.
+
+Example:
+
+Page
+→ workspaceService.getProjects()
+
+NOT:
+
+Page
+→ axios.get(...)
+
+============================================================
+13. RESPONSE NORMALIZATION
+============================================================
+
+Backend responses must be normalized carefully.
+
+Frontend must tolerate expected API response structures.
+
+Example conceptual response:
+
+{
+  success: true,
+  data: {...},
+  message: "..."
+}
+
+The frontend must not blindly assume every response is identical.
+
+Important values should be extracted explicitly.
+
+Never display:
+
+undefined
+null
+[object Object]
+
+to the user.
+
+============================================================
+14. REQUEST LIFECYCLE
+============================================================
+
+Every important request follows:
+
+IDLE
+ ↓
+LOADING
+ ↓
+SUCCESS
+
+or
+
+IDLE
+ ↓
+LOADING
+ ↓
+ERROR
+
+Possible state model:
+
+{
+  data,
+  loading,
+  error
+}
+
+For mutations:
+
+{
+  submitting,
+  error,
+  success
+}
+
+============================================================
+15. LOADING STATE RULE
+============================================================
+
+Loading states must communicate that work is happening.
+
+Do NOT leave a blank page.
+
+Do NOT freeze the UI without explanation.
+
+Examples:
+
+Page loading
+→ skeleton / structured loading state.
+
+Button request
+→ button changes to processing state.
+
+AI generation
+→ dedicated generation state.
+
+Deployment
+→ deployment progress state.
+
+File loading
+→ file-specific loading state.
+
+============================================================
+16. BUTTON STATE RULE
+============================================================
+
+Action buttons must prevent duplicate submissions.
+
+Example:
+
+Normal:
+
+Deploy
+
+Processing:
+
+Deploying...
+
+Normal:
+
+Build
+
+Processing:
+
+Building...
+
+Normal:
+
+Save Changes
+
+Processing:
+
+Saving...
+
+The button must remain disabled while the same action
+is actively processing.
+
+============================================================
+17. ERROR STATE RULE
+============================================================
+
+Errors must be:
+
+- Understandable
+- Relevant
+- Non-destructive
+- Recoverable where possible
+
+Bad:
+
+"AxiosError: Request failed with status code 500"
+
+Good:
+
+"Unable to load your projects. Please try again."
+
+Developer logs may contain technical information.
+
+User UI should contain useful information.
+
+============================================================
+18. ERROR CLASSIFICATION
+============================================================
+
+Frontend should distinguish:
+
+400
+→ Invalid request.
+
+401
+→ Authentication required.
+
+403
+→ Permission denied.
+
+404
+→ Resource not found.
+
+409
+→ Conflict.
+
+422
+→ Validation error.
+
+429
+→ Rate limit.
+
+500+
+→ Server error.
+
+Network failure
+→ Connection problem.
+
+Timeout
+→ Request took too long.
+
+============================================================
+19. EMPTY STATE RULE
+============================================================
+
+Empty data is NOT automatically an error.
+
+Example:
+
+Projects = []
+
+Display:
+
+"No projects yet"
+
+with useful primary action:
+
+"Create your first project"
+
+Do NOT display:
+
+"Error loading projects"
+
+when the backend successfully returned an empty list.
+
+============================================================
+20. SUCCESS STATE RULE
+============================================================
+
+Important user actions must provide confirmation.
+
+Examples:
+
+Project created
+→ Project successfully created.
+
+Settings saved
+→ Changes saved.
+
+Deployment completed
+→ Deployment successful.
+
+Agent created
+→ Agent created successfully.
+
+The success state should not block the user unnecessarily.
+
+============================================================
+21. PROJECT CREATION FLOW
+============================================================
+
+User:
+
+Create New Project
+
+↓
+
+Open full Workspace experience.
+
+↓
+
+User enters project description.
+
+↓
+
+Select framework if applicable.
+
+↓
+
+Click Build.
+
+↓
+
+Frontend validates prompt.
+
+↓
+
+AI generation request begins.
+
+↓
+
+Show building state.
+
+↓
+
+Backend/AI returns generation result.
+
+↓
+
+Project creation request is executed according
+to backend architecture.
+
+↓
+
+Project is stored.
+
+↓
+
+Project becomes selected project.
+
+↓
+
+Workspace updates.
+
+↓
+
+Generated files are displayed if actually returned
+by backend/AI.
+
+↓
+
+Preview becomes available when actual preview data exists.
+
+IMPORTANT:
+
+Frontend MUST NOT invent project files.
+
+Frontend MUST NOT claim a deployment exists
+unless backend confirms deployment.
+
+============================================================
+22. PROJECT SELECTION FLOW
+============================================================
+
+User selects project.
+
+↓
+
+Frontend updates selected project.
+
+↓
+
+Load associated project data if necessary.
+
+↓
+
+Update:
+
+- Project name
+- Framework
+- Files
+- Deployment status
+- Live URL
+- Preview state
+
+The selected project must remain visually clear.
+
+============================================================
+23. PROJECT UPDATE FLOW
+============================================================
+
+User changes project configuration/content.
+
+↓
+
+Validate input.
+
+↓
+
+Submit update.
+
+↓
+
+Show saving state.
+
+↓
+
+Backend confirms update.
+
+↓
+
+Update local state.
+
+↓
+
+Display success state.
+
+If update fails:
+
+→ preserve previous confirmed state
+→ show error.
+
+============================================================
+24. PROJECT DELETE FLOW
+============================================================
+
+Delete is destructive.
+
+Flow:
+
+User clicks Delete.
+
+↓
+
+Confirmation UI.
+
+↓
+
+User confirms.
+
+↓
+
+Delete request begins.
+
+↓
+
+Button becomes processing state.
+
+↓
+
+Backend confirms deletion.
+
+↓
+
+Remove project from local list.
+
+↓
+
+Select next logical project if available.
+
+↓
+
+If no projects remain:
+
+Show empty state.
+
+Never remove project permanently from UI
+before backend confirmation unless an intentional
+optimistic strategy is explicitly implemented.
+
+============================================================
+25. DEPLOYMENT FLOW
+============================================================
+
+User clicks Deploy.
+
+↓
+
+Validate selected project.
+
+↓
+
+Start deployment.
+
+↓
+
+UI:
+
+Deployment
+Deploying...
+
+↓
+
+Backend processes deployment.
+
+Possible states:
+
+QUEUED
+BUILDING
+DEPLOYING
+DEPLOYED
+FAILED
+
+↓
+
+On success:
+
+- Save deployment status.
+- Save live URL.
+- Update selected project.
+- Update project list.
+- Show live application action.
+
+↓
+
+On failure:
+
+- Show failure state.
+- Preserve project.
+- Provide retry action.
+
+Never display "Deployed" merely because the button
+was clicked.
+
+Backend confirmation is authoritative.
+
+============================================================
+26. LIVE URL RULE
+============================================================
+
+A live URL must only be displayed when a valid deployment
+URL is actually returned or stored by the backend.
+
+If no URL exists:
+
+Do not render:
+
+"Open live project"
+
+Do not generate fake URLs.
+
+============================================================
+27. AI GENERATION FLOW
+============================================================
+
+AI actions follow:
+
+User prompt
+ ↓
+Validation
+ ↓
+Request
+ ↓
+Generation state
+ ↓
+AI response
+ ↓
+Normalize response
+ ↓
+Render result
+ ↓
+Persist result where required
+
+AI responses must not automatically be treated as
+database-persisted project data.
+
+Generated content and persisted project state are separate
+concepts unless backend explicitly combines them.
+
+============================================================
+28. AI CHAT FLOW
+============================================================
+
+Chat UI maintains:
+
+- Messages
+- Current input
+- Sending state
+- Error state
+- Conversation context
+
+Message lifecycle:
+
+USER MESSAGE
+ ↓
+SEND
+ ↓
+AI PROCESSING
+ ↓
+AI RESPONSE
+ ↓
+MESSAGE DISPLAY
+
+The UI must clearly distinguish:
+
+User message
+AI message
+System state
+Error
+
+The chat must never visually look like a plain text log.
+
+============================================================
+29. CHAT INPUT RULES
+============================================================
+
+Chat input:
+
+- Multi-line capable
+- Enter behavior defined consistently
+- Shift + Enter for newline where configured
+- Disabled only when appropriate
+- Clear send action
+- Processing state
+- Error recovery
+
+Long messages must remain usable.
+
+The chat area must remain readable at maximum supported width.
+
+============================================================
+30. AI RESPONSE ERROR
+============================================================
+
+If AI request fails:
+
+Do not erase the conversation.
+
+Display:
+
+"Unable to generate a response right now."
+
+Provide retry behavior where appropriate.
+
+The user's last input should remain recoverable.
+
+============================================================
+31. SETTINGS FLOW
+============================================================
+
+Settings is a complete page.
+
+Sections may include:
+
+- Account
+- Profile
+- Security
+- Preferences
+- Notifications
+- AI preferences
+- Workspace preferences
+- Connected services
+- Privacy
+- Danger Zone
+
+Each section must have explicit ownership.
+
+Changes must follow:
+
+Edit
+ ↓
+Save
+ ↓
+Backend confirmation
+ ↓
+Updated state
+
+============================================================
+32. BILLING FLOW
+============================================================
+
+Billing is a complete page.
+
+Billing UI must reflect real backend/subscription state.
+
+Possible states:
+
+No subscription
+Active
+Trial
+Past due
+Cancelled
+Payment required
+
+The frontend must never assume a user has paid
+without backend/payment confirmation.
+
+Prices displayed in UI must originate from an authoritative
+configuration/backend source where applicable.
+
+============================================================
+33. DASHBOARD DATA FLOW
+============================================================
+
+Dashboard is an overview.
+
+It must aggregate real information.
+
+Examples:
+
+- Projects
+- AI activity
+- Agents
+- Deployments
+- Usage
+- Recent activity
+- System status
+
+Each dashboard widget must have a defined data source.
+
+No fake statistics in production.
+
+If data is unavailable:
+
+→ show unavailable/empty state.
+
+Do not silently display made-up numbers.
+
+============================================================
+34. GLOBAL STATE VS LOCAL STATE
+============================================================
+
+GLOBAL STATE:
+
+Use for information required across many areas.
+
+Examples:
+
+- Authentication
+- Current user
+- Global application preferences
+- Theme
+- Workspace context where genuinely global
+
+LOCAL STATE:
+
+Use for page/component-specific information.
+
+Examples:
+
+- Modal open/closed
+- Input value
+- Selected tab
+- Temporary form state
+- Current file selection
+
+Do not put every piece of state into global storage.
+
+============================================================
+35. STATE OWNERSHIP RULE
+============================================================
+
+Every state value must have one clear owner.
+
+Avoid:
+
+Component A owns state
+Component B duplicates it
+Component C modifies another copy.
+
+Preferred:
+
+Single source of truth
+ ↓
+Controlled consumers
+
+============================================================
+36. SERVER DATA VS UI STATE
+============================================================
+
+Separate:
+
+SERVER DATA
+
+Examples:
+
+- Projects
+- User profile
+- Subscription
+- Deployment
+- Agent data
+
+from:
+
+UI STATE
+
+Examples:
+
+- Modal open
+- Active tab
+- Selected file
+- Input text
+- Sidebar open
+
+Server data must not be treated as temporary UI state
+without reason.
+
+============================================================
+37. CACHE / REFRESH PRINCIPLE
+============================================================
+
+After mutations:
+
+Create
+Update
+Delete
+Deploy
+
+the frontend must ensure displayed data is synchronized
+with the backend.
+
+Preferred approaches:
+
+1. Use returned authoritative object.
+2. Update local state carefully.
+3. Refetch when necessary.
+
+Never allow stale UI to remain indefinitely.
+
+============================================================
+38. CONCURRENT REQUEST PROTECTION
+============================================================
+
+The frontend must avoid duplicate actions.
+
+Examples:
+
+Two Deploy clicks
+→ one active deployment request.
+
+Two Save clicks
+→ prevent duplicate submission.
+
+Repeated Build click
+→ disabled during generation.
+
+Where multiple independent requests are valid,
+they must have separate loading states.
+
+============================================================
+39. COMPONENT FAILURE
+============================================================
+
+A failure in one non-critical feature should not necessarily
+destroy the entire application.
+
+Example:
+
+Analytics widget fails.
+
+Dashboard should still render:
+
+- Navigation
+- Projects
+- User information
+- Other healthy widgets
+
+Feature-level errors should be isolated where practical.
+
+============================================================
+40. RESPONSIVE BEHAVIOR
+============================================================
+
+The application must work across:
+
+Desktop
+Laptop
+Tablet
+Mobile
+
+However:
+
+Desktop is the primary enterprise workspace experience.
+
+Complex interfaces may adapt rather than simply shrink.
+
+Examples:
+
+Three-column workspace:
+
+Desktop:
+Project Rail | Build Area | Inspector
+
+Tablet:
+Project Rail | Build Area
+Inspector becomes drawer/secondary panel
+
+Mobile:
+Single primary area
+Secondary areas become navigable panels/drawers.
+
+============================================================
+41. ACCESSIBILITY
+============================================================
+
+Interactive elements must have:
+
+- Keyboard accessibility
+- Visible focus state
+- Meaningful labels
+- Appropriate semantic HTML
+- Accessible button names
+- Form labels
+- Error associations
+
+Do not use visual appearance as the only way
+to communicate state.
+
+============================================================
+42. SECURITY PRINCIPLES
+============================================================
+
+Frontend security rules:
+
+1. Never store secret API keys in frontend code.
+2. Never expose server credentials.
+3. Never trust frontend authorization.
+4. Backend remains authoritative.
+5. Never place sensitive information in URLs unnecessarily.
+6. Never log sensitive tokens.
+7. Never display raw server errors to users.
+8. Never assume frontend validation is sufficient.
+
+============================================================
+43. ENVIRONMENT CONFIGURATION
+============================================================
+
+Environment-specific configuration must be separated.
+
+Example:
+
+VITE_API_URL
+
+Development:
+
+Development backend.
+
+Production:
+
+Production backend.
+
+Frontend source code must not contain hardcoded secrets.
+
+Public configuration may be exposed.
+
+Secrets must remain server-side.
+
+============================================================
+44. LOGGING
+============================================================
+
+Development logging may include:
+
+- Request failures
+- Response status
+- Feature errors
+- Debug information
+
+Production logging must avoid:
+
+- Access tokens
+- Passwords
+- Secret keys
+- Sensitive user information
+
+User-facing UI must not expose developer stack traces.
+
+============================================================
+45. RETRY STRATEGY
+============================================================
+
+Retry is appropriate for:
+
+- Temporary network failure
+- Recoverable server failure
+- Explicit user retry
+
+Retry is NOT appropriate blindly for:
+
+- Invalid input
+- Unauthorized requests
+- Forbidden actions
+- Destructive mutations
+
+Retry actions must be intentional.
+
+============================================================
+46. OFFLINE / NETWORK FAILURE
+============================================================
+
+If network connection fails:
+
+Display:
+
+"Unable to connect to ZyrionOS."
+
+Where possible provide:
+
+"Try again"
+
+Do not delete existing confirmed local UI data
+merely because a refresh failed.
+
+============================================================
+47. DATA VALIDATION
+============================================================
+
+Frontend validation provides immediate feedback.
+
+Backend validation remains authoritative.
+
+Example:
+
+Frontend:
+
+Project name required.
+
+Backend:
+
+Project name uniqueness / permissions / business rules.
+
+Both layers are required.
+
+============================================================
+48. FORM RULES
+============================================================
+
+Forms must support:
+
+- Clear labels
+- Validation
+- Error messages
+- Disabled submission during processing
+- Success confirmation
+- Recovery from failure
+
+Do not clear all form data after an unsuccessful request
+unless there is a specific security reason.
+
+============================================================
+49. NAVIGATION SAFETY
+============================================================
+
+Unsaved changes must be handled intentionally.
+
+If a page contains important unsaved work:
+
+Navigation may trigger:
+
+"Unsaved changes"
+
+with:
+
+Stay
+Leave
+
+Do not unexpectedly destroy user work.
+
+============================================================
+50. PAGE INITIALIZATION
+============================================================
+
+Every data-driven page should conceptually follow:
+
+PAGE MOUNT
+ ↓
+INITIALIZE
+ ↓
+REQUEST DATA
+ ↓
+LOADING STATE
+ ↓
+SUCCESS / EMPTY / ERROR
+ ↓
+INTERACTIVE PAGE
+
+The page must not render random intermediate states.
+
+============================================================
+51. PAGE STATES
+============================================================
+
+Every major page must define:
+
+1. Initial state
+2. Loading state
+3. Success state
+4. Empty state
+5. Error state
+6. Mutation state
+7. Permission state
+8. Offline/network state where relevant
+
+This requirement is mandatory.
+
+============================================================
+52. WORKSPACE STATES
+============================================================
+
+Workspace must support:
+
+NO PROJECT
+
+→ Empty workspace.
+
+PROJECT SELECTED
+
+→ Full project workspace.
+
+GENERATING
+
+→ AI/building state.
+
+GENERATED
+
+→ Result state.
+
+FILES AVAILABLE
+
+→ Code explorer/editor.
+
+DEPLOYING
+
+→ Deployment progress.
+
+DEPLOYED
+
+→ Live URL / preview.
+
+DEPLOYMENT FAILED
+
+→ Error + retry.
+
+============================================================
+53. PROJECT LIST STATES
+============================================================
+
+Loading:
+
+→ Project skeleton.
+
+Success:
+
+→ Project list.
+
+Empty:
+
+→ "No projects yet"
+→ "Create your first project"
+
+Error:
+
+→ Error message
+→ Retry.
+
+============================================================
+54. CODE EXPLORER STATES
+============================================================
+
+No files:
+
+"No files generated yet."
+
+Files:
+
+Show real backend/AI-generated files.
+
+File selected:
+
+Show actual file content.
+
+File unavailable:
+
+Show:
+
+"File content unavailable."
+
+Never create fake code merely to make the editor
+look populated.
+
+============================================================
+55. PREVIEW STATES
+============================================================
+
+Preview unavailable:
+
+"Preview unavailable yet."
+
+Building:
+
+"Preparing preview..."
+
+Available:
+
+Render actual preview.
+
+Deployment available:
+
+Provide live application action.
+
+Preview failure:
+
+"Preview could not be loaded."
+
+============================================================
+56. DEPLOYMENT STATES
+============================================================
+
+NOT_DEPLOYED
+
+DEPLOYING
+
+BUILDING
+
+DEPLOYED
+
+FAILED
+
+Each state must have corresponding UI.
+
+No ambiguous deployment state.
+
+============================================================
+57. GLOBAL NOTIFICATION SYSTEM
+============================================================
+
+ZyrionOS may use centralized notifications for:
+
+- Success
+- Warning
+- Error
+- Information
+
+Notifications must:
+
+- Be readable
+- Not obstruct important controls
+- Auto-dismiss only when appropriate
+- Remain accessible
+
+Critical errors should remain visible until addressed.
+
+============================================================
+58. MODALS
+============================================================
+
+Modals are for focused decisions.
+
+Examples:
+
+- Delete confirmation
+- Connect integration
+- Confirm billing action
+- Create small resource
+- Important warning
+
+Do not put complete application pages inside tiny modals.
+
+============================================================
+59. DRAWERS
+============================================================
+
+Drawers are appropriate for:
+
+- Inspector
+- Secondary navigation
+- Quick details
+- Mobile adaptations
+- Contextual tools
+
+A drawer must never replace a full page
+when the user expects full-page navigation.
+
+============================================================
+60. DATA OWNERSHIP
+============================================================
+
+Each backend resource must have a clear owner.
+
+Example:
+
+User
+→ Auth/Profile
+
+Project
+→ Project/Workspace
+
+Deployment
+→ Deployment service
+
+Subscription
+→ Billing service
+
+AI generation
+→ AI service
+
+The frontend must not mix unrelated resource logic
+inside one service file.
+
+============================================================
+61. API CONTRACT DISCIPLINE
+============================================================
+
+Frontend implementation must follow actual backend contracts.
+
+Before implementing a feature:
+
+1. Identify endpoint.
+2. Identify HTTP method.
+3. Identify request body.
+4. Identify authentication requirement.
+5. Identify response structure.
+6. Identify possible errors.
+7. Identify loading behavior.
+8. Identify success behavior.
+
+Never invent an endpoint because its name "looks right."
+
+============================================================
+62. BACKEND-FIRST VALIDATION
+============================================================
+
+When connecting a new frontend feature:
+
+Backend contract
+ ↓
+Service function
+ ↓
+State handling
+ ↓
+Component
+ ↓
+Page
+
+Not:
+
+Design first
+ ↓
+Fake API
+ ↓
+Later backend adjustment
+
+The final system must be built around the real backend.
+
+============================================================
+63. NO MOCK PRODUCTION DATA
+============================================================
+
+Mock data is permitted only for:
+
+- Local development
+- Isolated component testing
+- Explicit prototypes
+
+Mock data must never accidentally ship as production data.
+
+============================================================
+64. NO SILENT FAILURE
+============================================================
+
+If an important request fails:
+
+The user must know.
+
+Bad:
+
+API fails
+→ empty dashboard
+
+Good:
+
+API fails
+→ dashboard structure remains
+→ affected section shows error state.
+
+============================================================
+65. PERFORMANCE PRINCIPLES
+============================================================
+
+The frontend should:
+
+- Avoid unnecessary API calls
+- Avoid unnecessary rerenders
+- Lazy-load heavy features where appropriate
+- Avoid loading large resources unnecessarily
+- Keep primary interactions responsive
+
+Performance optimization must not sacrifice correctness.
+
+============================================================
+66. DATA CONSISTENCY
+============================================================
+
+After backend mutation, the frontend must represent
+the confirmed backend state.
+
+Priority:
+
+BACKEND CONFIRMED STATE
+>
+LOCAL ASSUMPTION
+
+This is especially important for:
+
+- Payments
+- Deployments
+- Projects
+- Permissions
+- Account state
+
+============================================================
+67. PERMISSION HANDLING
+============================================================
+
+Frontend may hide unavailable actions for usability.
+
+However:
+
+Backend remains authoritative.
+
+If backend returns 403:
+
+Show permission error.
+
+Never assume hidden UI equals security.
+
+============================================================
+68. BILLING SECURITY
+============================================================
+
+Frontend may display:
+
+Plan
+Price
+Subscription state
+Usage
+
+But billing status must come from trusted backend/payment state.
+
+Never treat:
+
+Button clicked
+or
+Checkout opened
+
+as payment success.
+
+Only verified backend/payment confirmation counts.
+
+============================================================
+69. AI SECURITY
+============================================================
+
+AI responses are untrusted generated content.
+
+Frontend must:
+
+- Render safely
+- Avoid unsafe HTML injection
+- Sanitize where necessary
+- Avoid executing generated code directly in the browser
+  without a controlled sandbox architecture
+
+Generated code is data until intentionally executed
+by a secure execution system.
+
+============================================================
+70. DEPLOYMENT SECURITY
+============================================================
+
+Deployment actions must be authenticated.
+
+Frontend sends project identity.
+
+Backend verifies:
+
+- User identity
+- Project ownership
+- Permission
+- Deployment eligibility
+
+Frontend must never rely on project ID alone as authorization.
+
+============================================================
+71. FEATURE BOUNDARIES
+============================================================
+
+A feature should have:
+
+PAGE
+COMPONENTS
+SERVICE
+STATE
+API CONTRACT
+ERROR STATES
+
+This makes every feature understandable
+to both humans and AI coding agents.
+
+============================================================
+72. AI CODING AGENT RULE
+============================================================
+
+Any AI agent modifying the frontend MUST first determine:
+
+1. Which page?
+2. Which feature?
+3. Which component?
+4. Which service?
+5. Which API?
+6. Which state?
+7. Which design-system rules?
+8. Which error states?
+9. Which responsive behavior?
+10. Which existing architecture must remain untouched?
+
+The AI agent must not randomly create duplicate systems.
+
+============================================================
+73. CHANGE DISCIPLINE
+============================================================
+
+A feature change must modify the smallest correct
+architectural area.
+
+Example:
+
+Changing API endpoint:
+
+→ Service layer.
+
+Changing button appearance:
+
+→ Design system/component.
+
+Changing page composition:
+
+→ Page layer.
+
+Changing authentication behavior:
+
+→ Auth architecture.
+
+Do not solve one problem by damaging unrelated systems.
+
+============================================================
+74. FINAL RUNTIME PRINCIPLE
+============================================================
+
+Every user action must have a predictable lifecycle:
+
+USER ACTION
+ ↓
+VALIDATION
+ ↓
+REQUEST
+ ↓
+VISIBLE PROCESSING STATE
+ ↓
+BACKEND RESPONSE
+ ↓
+STATE UPDATE
+ ↓
+VISIBLE RESULT
+
+Possible result:
+
+SUCCESS
+
+or
+
+ERROR + RECOVERY
+
+There must be no unexplained intermediate state.
+
+============================================================
+75. FINAL ENTERPRISE STANDARD
+============================================================
+
+ZyrionOS frontend must feel like one coherent operating system,
+not a collection of web pages.
+
+The following principles are mandatory:
+
+✓ Full-page experiences for major product areas
+✓ Real backend integration
+✓ Centralized API client
+✓ Dedicated service layer
+✓ Predictable state management
+✓ Loading states
+✓ Empty states
+✓ Error states
+✓ Success states
+✓ Permission states
+✓ Authentication-aware routing
+✓ Real deployment status
+✓ Real project data
+✓ No fake production data
+✓ No fake deployment URLs
+✓ No silent API failures
+✓ No duplicate API clients
+✓ No secret frontend credentials
+✓ Accessible interactions
+✓ Responsive enterprise layout
+✓ Consistent navigation
+✓ Clear ownership of state
+✓ Backend-authoritative data
+✓ Safe AI rendering
+✓ Secure deployment flow
+✓ Predictable mutation lifecycle
+✓ AI-agent-readable architecture
+
+============================================================
+76. DOCUMENT DEPENDENCY
+============================================================
+
+This document depends on:
+
+DOC 01
+Product / UX Experience Specification
+
+DOC 02
+Frontend Information Architecture & Placement Specification
+
+DOC 03
+Enterprise Design System
+
+DOC 04
+Component & Interface System Specification
+
+This document defines:
+
+HOW THE SYSTEM ACTUALLY OPERATES
+AFTER THOSE FOUNDATIONS ARE APPLIED.
+
+============================================================
+77. IMPLEMENTATION ORDER
+============================================================
+
+The implementation sequence is:
+
+1. Authentication foundation
+2. API client
+3. Service layer
+4. Global application state
+5. Routing
+6. Dashboard shell
+7. Full-page navigation
+8. Projects
+9. Workspace
+10. AI functionality
+11. Deployments
+12. Settings
+13. Billing
+14. Notifications
+15. Error boundaries
+16. Responsive behavior
+17. Accessibility
+18. Integration testing
+19. Real backend testing
+20. Production deployment validation
+
+============================================================
+78. FINAL DECISION
+============================================================
+
+This document establishes the runtime behavior contract
+for the ZyrionOS frontend.
+
+No feature should be considered production-ready
+until its:
+
+- API contract
+- State model
+- Loading state
+- Empty state
+- Error state
+- Success state
+- Permission behavior
+- Authentication behavior
+- Navigation behavior
+- Responsive behavior
+
+have been defined and implemented.
+
+The frontend is not complete when the screen looks correct.
+
+The frontend is complete when:
+
+DESIGN
++
+STATE
++
+NAVIGATION
++
+API
++
+BACKEND
++
+ERROR HANDLING
++
+SECURITY
++
+RESPONSIVENESS
+
+work together as one system.
+
+============================================================
+END OF DOCUMENT 05
+============================================================

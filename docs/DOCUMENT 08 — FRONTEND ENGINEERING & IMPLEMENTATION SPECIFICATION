@@ -1,0 +1,1820 @@
+# ZYRIONOS
+# DOCUMENT 08 — FRONTEND ENGINEERING & IMPLEMENTATION SPECIFICATION
+
+Document ID: ZYR-FE-08
+Version: 1.0
+Status: FINAL FOUNDATION
+Scope: Complete ZyrionOS Frontend
+Audience:
+- Frontend Developers
+- Backend Developers
+- AI Coding Agents
+- QA Engineers
+- Product Engineers
+- Technical Reviewers
+
+---
+
+# 1. DOCUMENT PURPOSE
+
+This document defines how the approved ZyrionOS product experience,
+information architecture, and design system must be converted into
+production-grade frontend code.
+
+This document establishes the engineering rules for:
+
+- React architecture
+- Page architecture
+- Component architecture
+- Feature architecture
+- Routing
+- State management
+- API integration
+- Authentication
+- Forms
+- Loading states
+- Error states
+- Empty states
+- Success states
+- Modals
+- Drawers
+- Notifications
+- AI interfaces
+- Workspace interfaces
+- Deployment interfaces
+- Responsive behavior
+- Accessibility
+- Security boundaries
+- Performance
+- Code quality
+- AI coding-agent behavior
+- Production validation
+
+CORE RULE:
+
+Design documents define WHAT the user experiences.
+
+This document defines HOW that experience is engineered.
+
+No developer or AI coding agent may invent a separate architecture
+for a feature that has already been defined by the approved
+ZyrionOS documentation.
+
+---
+
+# 2. FRONTEND ENGINEERING PRINCIPLES
+
+ZyrionOS frontend must follow these principles.
+
+## 2.1 Production First
+
+Every implementation must be designed for real production use.
+
+The frontend must not depend on:
+
+- Demo-only architecture
+- Temporary UI hacks
+- Fake API responses
+- Fake deployment URLs
+- Unnecessary mock data
+- Duplicated components
+- Duplicated API clients
+- Hardcoded business logic
+- Placeholder production behavior
+
+Temporary development tools may exist during development,
+but they must not become part of the production architecture.
+
+---
+
+## 2.2 Reusable First
+
+Before creating a new component, determine whether an existing
+component can be reused.
+
+Shared components should be used wherever the same interaction
+or visual pattern appears.
+
+Examples:
+
+- Button
+- Input
+- Textarea
+- Select
+- Modal
+- Drawer
+- Card
+- Badge
+- Table
+- Tabs
+- Dropdown
+- Tooltip
+- Toast
+- Loading State
+- Empty State
+- Error State
+
+A page must not create a private version of a global component
+without a documented reason.
+
+---
+
+## 2.3 Single Responsibility
+
+Each component must have one primary responsibility.
+
+Avoid giant components that control unrelated systems.
+
+BAD:
+
+Dashboard.jsx
+- Navigation
+- Authentication
+- API requests
+- Billing
+- Project logic
+- Tables
+- Modals
+- Notifications
+- Settings
+
+PREFERRED:
+
+Dashboard
+├── DashboardHeader
+├── DashboardOverview
+├── ProjectSummary
+├── UsageSummary
+├── ActivityFeed
+└── DashboardActions
+
+---
+
+## 2.4 Predictability
+
+A developer should be able to understand where a feature belongs
+without searching through unrelated files.
+
+The same architectural pattern must be used throughout the product.
+
+---
+
+## 2.5 Consistency
+
+Equivalent actions must behave equivalently across the application.
+
+Examples:
+
+- Save buttons behave consistently.
+- Delete confirmations behave consistently.
+- Loading states behave consistently.
+- Error messages behave consistently.
+- Notifications behave consistently.
+- Navigation behaves consistently.
+
+---
+
+# 3. APPLICATION ARCHITECTURE
+
+The ZyrionOS frontend follows this conceptual architecture:
+
+UI
+↓
+Page
+↓
+Feature
+↓
+Service
+↓
+API Client
+↓
+Backend API
+↓
+Database / Infrastructure
+
+Example:
+
+Workspace Page
+↓
+Workspace Feature
+↓
+workspaceService
+↓
+api.js
+↓
+Backend
+↓
+Database / Deployment Infrastructure
+
+The architecture must maintain clear boundaries between:
+
+- Presentation
+- Feature logic
+- API communication
+- Authentication
+- Application state
+- Backend business logic
+
+---
+
+# 4. PAGE ARCHITECTURE
+
+Every primary navigation destination is a full application page.
+
+Examples:
+
+- Dashboard
+- Workspace
+- Projects
+- AI Chat
+- Agents
+- Automation
+- Analytics
+- Billing
+- Settings
+- Profile
+- Security
+- Notifications
+
+A primary product destination must not unnecessarily be implemented
+as a small card or restricted panel inside another page.
+
+---
+
+# 5. FULL-PAGE NAVIGATION RULE
+
+When a user selects a primary destination, the destination must
+occupy the intended application page.
+
+Examples:
+
+Create New Project
+↓
+FULL WORKSPACE PAGE
+
+Settings
+↓
+FULL SETTINGS PAGE
+
+Billing
+↓
+FULL BILLING PAGE
+
+Projects
+↓
+FULL PROJECTS PAGE
+
+Workspace
+↓
+FULL WORKSPACE PAGE
+
+The UI must never make a primary destination feel like a
+small embedded widget when the product specification defines
+it as a full application environment.
+
+---
+
+# 6. ROUTING STANDARD
+
+Routes must represent real application destinations.
+
+Example route structure:
+
+/dashboard
+/workspace
+/projects
+/agents
+/automation
+/analytics
+/billing
+/settings
+/settings/profile
+/settings/security
+/settings/notifications
+
+Routing must be centralized.
+
+Components must not independently implement competing routing logic.
+
+---
+
+# 7. APPLICATION SHELL
+
+The application shell provides the persistent structure of
+the authenticated product.
+
+Conceptual architecture:
+
+App
+│
+├── Router
+│
+├── Authentication Layer
+│
+└── Application Shell
+    │
+    ├── Sidebar
+    ├── Topbar
+    └── Page Content
+
+The shell must remain visually and structurally consistent
+throughout the application.
+
+---
+
+# 8. PAGE STRUCTURE
+
+Primary pages should follow a predictable structure:
+
+Application Shell
+↓
+Page Layout
+↓
+Page Header
+↓
+Primary Actions
+↓
+Page Content
+↓
+Sections
+↓
+Supporting Information
+
+A page must use available viewport space intelligently.
+
+The product should not feel like:
+
+small card
+inside card
+inside another card
+inside dashboard
+
+unless specifically required by the product design.
+
+---
+
+# 9. COMPONENT HIERARCHY
+
+Components should be organized into logical levels.
+
+## LEVEL 1 — PRIMITIVES
+
+Examples:
+
+- Button
+- IconButton
+- Input
+- Textarea
+- Select
+- Checkbox
+- Radio
+- Switch
+- Tooltip
+- Badge
+- Avatar
+- Spinner
+
+---
+
+## LEVEL 2 — COMPOSITE COMPONENTS
+
+Examples:
+
+- SearchBar
+- FormField
+- StatCard
+- ProjectCard
+- UserMenu
+- NotificationItem
+- FileRow
+- Pagination
+- EmptyState
+- ErrorState
+
+---
+
+## LEVEL 3 — FEATURE COMPONENTS
+
+Examples:
+
+- WorkspaceBuilder
+- ProjectExplorer
+- DeploymentPanel
+- BillingPlanSelector
+- AIChatPanel
+- AgentControlPanel
+- ProjectSettings
+- UsagePanel
+
+---
+
+## LEVEL 4 — PAGE COMPONENTS
+
+Examples:
+
+- DashboardPage
+- WorkspacePage
+- ProjectsPage
+- BillingPage
+- SettingsPage
+- AgentsPage
+
+Page components should compose feature components instead of
+containing every implementation detail themselves.
+
+---
+
+# 10. API INTEGRATION STANDARD
+
+All backend communication must pass through the centralized
+API/service architecture.
+
+Preferred flow:
+
+Component
+↓
+Feature
+↓
+Service
+↓
+API Client
+↓
+Backend
+
+Components should not randomly contain direct network calls when
+a service layer already exists.
+
+Avoid scattering:
+
+axios.get(...)
+axios.post(...)
+fetch(...)
+
+through unrelated UI components.
+
+---
+
+# 11. SERVICE RESPONSIBILITY
+
+Service files are responsible for communication with backend APIs.
+
+Examples:
+
+workspaceService
+projectService
+billingService
+authService
+aiService
+deploymentService
+
+Services should:
+
+- Call the correct endpoint.
+- Send the correct payload.
+- Normalize errors where appropriate.
+- Return predictable responses.
+- Avoid presentation logic.
+
+Services must not render UI.
+
+---
+
+# 12. RESPONSE NORMALIZATION
+
+Backend responses should be normalized at the appropriate
+service boundary.
+
+Preferred conceptual structure:
+
+{
+  success: true,
+  data: {},
+  message: ""
+}
+
+The exact backend contract must remain authoritative.
+
+The frontend must not spread backend-specific response assumptions
+across dozens of components.
+
+---
+
+# 13. LOADING STATE STANDARD
+
+Every asynchronous operation must have an intentional loading state.
+
+Examples:
+
+- Page loading
+- Section loading
+- Table loading
+- File loading
+- AI generation
+- Deployment
+- Saving
+- Updating
+- Deleting
+- Uploading
+
+Buttons must communicate activity.
+
+Example:
+
+Build
+↓
+Building...
+
+Deploy
+↓
+Deploying...
+
+Save
+↓
+Saving...
+
+The user must never wonder whether an action actually started.
+
+---
+
+# 14. BUTTON LOADING RULE
+
+When an action is executing:
+
+1. The action must visibly indicate progress.
+2. Repeated accidental submissions must be prevented.
+3. The UI must remain stable.
+4. The action must return to a usable state after completion or failure.
+
+Example:
+
+BEFORE:
+
+[ Deploy ]
+
+DURING:
+
+[ Deploying... ]
+
+SUCCESS:
+
+[ Deployed ]
+
+FAILURE:
+
+[ Try Again ]
+
+---
+
+# 15. ERROR STATE STANDARD
+
+Errors must be understandable and useful.
+
+Do not expose raw technical implementation details
+to ordinary users.
+
+Avoid:
+
+AxiosError
+500
+MongoError
+stack trace
+
+Preferred:
+
+Deployment failed.
+
+We couldn't deploy this project.
+Please try again.
+
+Technical details may remain available to developers
+through appropriate logging and diagnostics.
+
+---
+
+# 16. EMPTY STATE STANDARD
+
+Empty pages must never feel broken.
+
+Every meaningful empty state should answer:
+
+1. What is empty?
+2. Why is it empty?
+3. What can the user do next?
+
+Example:
+
+Projects
+
+No projects yet.
+
+Create your first project to start building.
+
+[ Create Project ]
+
+---
+
+# 17. SUCCESS STATE STANDARD
+
+Successful operations must provide appropriate feedback.
+
+Examples:
+
+Project created.
+Changes saved.
+Deployment completed.
+API key created.
+Plan updated.
+
+Success feedback must not unnecessarily interrupt the user's workflow.
+
+---
+
+# 18. FORM ENGINEERING
+
+Forms must provide:
+
+- Clear labels
+- Correct input types
+- Validation
+- Helpful error messages
+- Loading states
+- Disabled states
+- Success feedback
+- Keyboard accessibility
+
+Validation should happen before unnecessary API requests
+whenever possible.
+
+---
+
+# 19. FORM VALIDATION
+
+Validation must be:
+
+- Predictable
+- Consistent
+- Human-readable
+- Relevant to the field
+- Non-destructive
+
+Example:
+
+BAD:
+
+Invalid input.
+
+PREFERRED:
+
+Project name must contain at least 3 characters.
+
+---
+
+# 20. SEARCH ENGINEERING
+
+Global and page-level search must use consistent behavior.
+
+Preferred flow:
+
+User types
+↓
+Input processing
+↓
+Debounce where appropriate
+↓
+API query
+↓
+Loading
+↓
+Results
+↓
+Empty state
+↓
+Error state
+
+Search must not appear as an unrelated floating element
+with inconsistent styling or behavior.
+
+---
+
+# 21. AI INTERACTION STANDARD
+
+AI is a core capability of ZyrionOS.
+
+AI interfaces must feel like professional operational systems,
+not basic chat widgets.
+
+The AI experience should communicate:
+
+User Request
+↓
+AI Processing
+↓
+Plan / Execution
+↓
+Result
+↓
+Available Actions
+
+Example:
+
+Build Project
+
+User:
+Create an AI SaaS dashboard.
+
+ZyrionOS:
+Planning...
+
+Generating...
+
+Validating...
+
+Preparing workspace...
+
+Result:
+Project generated.
+
+Actions:
+
+[ Preview ]
+[ View Code ]
+[ Deploy ]
+
+---
+
+# 22. AI CHAT ARCHITECTURE
+
+The AI chat experience should follow:
+
+Conversation Header
+↓
+Conversation History
+↓
+User Messages
+↓
+AI Messages
+↓
+Execution Status
+↓
+Composer
+↓
+Actions
+
+The chat composer should be prominent,
+but it must remain part of the overall product hierarchy.
+
+---
+
+# 23. AI MESSAGE STATES
+
+AI interfaces may use states such as:
+
+- Thinking
+- Planning
+- Generating
+- Executing
+- Waiting for input
+- Completed
+- Failed
+
+Each state must have a clear visual and semantic representation.
+
+---
+
+# 24. AI EXECUTION TRANSPARENCY
+
+When an AI action performs meaningful work,
+the interface should communicate the current operational state.
+
+Example:
+
+Request received
+↓
+Analyzing request
+↓
+Preparing project
+↓
+Generating files
+↓
+Validating project
+↓
+Ready
+
+The UI must not falsely claim that an operation completed
+before the backend confirms completion.
+
+---
+
+# 25. WORKSPACE ENGINEERING STANDARD
+
+Workspace is a core ZyrionOS application environment.
+
+Workspace architecture should support:
+
+Workspace
+├── Project Navigation
+├── Project Header
+├── Builder
+├── Preview
+├── Code
+├── File Explorer
+├── AI Command Interface
+├── Inspector
+├── Deployment
+└── Project Status
+
+Workspace must be treated as a primary application environment.
+
+It must not be implemented as a tiny dashboard widget
+when the product experience requires a full workspace.
+
+---
+
+# 26. PROJECT DATA FLOW
+
+Preferred conceptual flow:
+
+Create Project
+↓
+Backend creates Project
+↓
+Project ID
+↓
+Workspace
+↓
+AI Generation
+↓
+Files
+↓
+Build
+↓
+Preview
+↓
+Validation
+↓
+Deployment
+↓
+Live URL
+
+The frontend must display only states confirmed by the backend.
+
+---
+
+# 27. DEPLOYMENT STATE MACHINE
+
+Deployment must support meaningful states.
+
+Example:
+
+Not Deployed
+↓
+Queued
+↓
+Building
+↓
+Deploying
+↓
+Deployed
+
+Failure may occur during:
+
+Building
+↓
+Failed
+
+or:
+
+Deploying
+↓
+Failed
+
+The frontend must not assume:
+
+Button clicked = deployed
+
+Deployment completion must come from the backend/deployment system.
+
+---
+
+# 28. LIVE URL RULE
+
+A live URL must only be displayed when a valid deployment result
+has been received from the backend.
+
+The frontend must never generate fake deployment URLs.
+
+---
+
+# 29. AUTHENTICATION ARCHITECTURE
+
+Authentication must be centralized.
+
+Preferred architecture:
+
+Auth Provider
+↓
+Auth State
+↓
+Protected Route
+↓
+Application
+
+Individual pages must not independently reinvent authentication logic.
+
+---
+
+# 30. AUTHENTICATION STATES
+
+The frontend must correctly handle:
+
+- Authenticated
+- Unauthenticated
+- Loading authentication
+- Session expired
+- Unauthorized
+- Forbidden
+- Network failure
+
+The application must transition to an appropriate state
+instead of leaving the user on a broken screen.
+
+---
+
+# 31. SESSION HANDLING
+
+Session behavior must be predictable.
+
+If authentication becomes invalid:
+
+1. Detect the authentication failure.
+2. Preserve appropriate application state where possible.
+3. Prevent unauthorized operations.
+4. Redirect or display the correct authentication experience
+   according to the approved authentication architecture.
+
+---
+
+# 32. SECURITY PRINCIPLES
+
+Client-side controls are not the final security boundary.
+
+Examples:
+
+Hidden button != Security
+
+Disabled button != Authorization
+
+Frontend route guard != Backend authorization
+
+The backend must enforce:
+
+- Authentication
+- Authorization
+- Ownership
+- Permissions
+- Access control
+
+The frontend only provides the user experience around those rules.
+
+---
+
+# 33. PROJECT OWNERSHIP
+
+When a project belongs to a user,
+the frontend must rely on backend authorization to enforce ownership.
+
+The frontend must not assume that possession of a project ID
+grants access.
+
+---
+
+# 34. RESPONSIVE ENGINEERING
+
+The application must support:
+
+- Large Desktop
+- Desktop
+- Laptop
+- Tablet
+- Mobile
+
+Responsive behavior must be intentional.
+
+Desktop layouts must not simply overflow onto smaller screens.
+
+---
+
+# 35. RESPONSIVE PRIORITY
+
+When screen space becomes limited:
+
+1. Preserve primary actions.
+2. Preserve core content.
+3. Collapse secondary navigation where appropriate.
+4. Maintain readable typography.
+5. Maintain usable controls.
+6. Avoid horizontal overflow unless intentionally designed.
+
+---
+
+# 36. ACCESSIBILITY
+
+Interactive elements must support:
+
+- Keyboard navigation
+- Visible focus
+- Semantic HTML
+- Accessible labels
+- Meaningful button names
+- Appropriate ARIA
+- Logical reading order
+- Sufficient contrast
+
+Critical information must never depend only on color.
+
+Icons alone must not communicate critical actions
+without accessible labels.
+
+---
+
+# 37. KEYBOARD BEHAVIOR
+
+Common interactions should support expected keyboard behavior.
+
+Examples:
+
+- Enter submits appropriate forms.
+- Shift + Enter creates a new line where applicable.
+- Escape closes dialogs where appropriate.
+- Tab navigates controls logically.
+- Enter/Space activates appropriate controls.
+
+Keyboard behavior must not conflict with text editing.
+
+---
+
+# 38. MODAL STANDARD
+
+Modals are for focused decisions.
+
+Examples:
+
+- Delete Project
+- Confirm Deployment
+- Create API Key
+- Upgrade Plan
+- Confirm Account Action
+
+A modal must not replace a full page when the content
+requires substantial interaction.
+
+---
+
+# 39. DRAWER STANDARD
+
+Drawers may be used for contextual information.
+
+Examples:
+
+- Project Details
+- Activity
+- Notifications
+- Quick Settings
+
+Primary navigation destinations remain full pages.
+
+---
+
+# 40. NOTIFICATION SYSTEM
+
+ZyrionOS must use one consistent notification system.
+
+Supported conceptual types:
+
+- Success
+- Error
+- Warning
+- Information
+
+Notifications must use the approved design system.
+
+Individual pages must not invent unrelated toast styles.
+
+---
+
+# 41. STATE MANAGEMENT
+
+State should live at the lowest appropriate level.
+
+Example:
+
+Input state
+→ Local component state
+
+Workspace state
+→ Workspace feature state
+
+Authentication state
+→ Global authentication layer
+
+Application preferences
+→ Appropriate global settings layer
+
+Do not place every variable into global state.
+
+---
+
+# 42. SERVER DATA VS UI STATE
+
+The frontend should distinguish between:
+
+Server Data
+and
+UI State
+
+Server data examples:
+
+- Projects
+- User profile
+- Billing information
+- Deployment status
+- Usage information
+
+UI state examples:
+
+- Active tab
+- Open modal
+- Selected file
+- Search input
+- Sidebar state
+
+This separation reduces unnecessary complexity.
+
+---
+
+# 43. ERROR BOUNDARIES
+
+Major application areas should have controlled failure handling.
+
+A failure inside one feature should not unnecessarily destroy
+the entire application.
+
+Example:
+
+Workspace failure
+!=
+Entire Dashboard failure
+
+---
+
+# 44. PERFORMANCE STANDARD
+
+The frontend must minimize unnecessary:
+
+- Rerenders
+- API requests
+- Duplicate calculations
+- Large component trees
+- Unnecessary dependencies
+- Oversized assets
+
+Optimization must remain practical.
+
+Avoid premature complexity without measurable benefit.
+
+---
+
+# 45. API REQUEST DISCIPLINE
+
+The frontend must avoid accidental duplicate API calls.
+
+Examples of problems to prevent:
+
+- Multiple identical requests
+- Requests triggered by unnecessary rerenders
+- Requests after component unmount
+- Repeated submissions
+- Polling without clear purpose
+
+---
+
+# 46. DATA FRESHNESS
+
+When backend data changes,
+the frontend should update the relevant state intentionally.
+
+Preferred approaches may include:
+
+- Refetching
+- Updating local state
+- Invalidating cached data
+- Receiving backend events
+
+The selected method must remain consistent with the application architecture.
+
+---
+
+# 47. CODE QUALITY RULES
+
+Production frontend code must maintain:
+
+- Readable naming
+- Predictable structure
+- Small reusable components
+- Minimal duplication
+- Consistent imports
+- Consistent formatting
+- Clear responsibilities
+- No dead code
+- No unexplained magic values
+- No random architecture decisions
+
+---
+
+# 48. FORBIDDEN FRONTEND PATTERNS
+
+The following are prohibited in production:
+
+- Fake project data
+- Fake deployment URLs
+- Fake success responses
+- Hardcoded user information
+- Random API endpoints
+- Duplicate API clients
+- Giant monolithic components
+- UI-only deployment success
+- Silent API failures
+- Unhandled promise failures
+- Production console errors
+- Random colors outside the Design System
+- Random spacing outside the Design System
+- Random border radii
+- Random button styles
+- Duplicate versions of global components
+- Business logic hidden inside presentation-only components
+- Primary pages implemented as tiny widgets without approval
+
+---
+
+# 49. DESIGN SYSTEM ENFORCEMENT
+
+Frontend implementation must consume the approved
+ZyrionOS Design System.
+
+Developers must not independently decide:
+
+- Brand colors
+- Typography
+- Border radius
+- Shadows
+- Spacing
+- Button appearance
+- Input appearance
+- Card appearance
+- Badge appearance
+- Modal appearance
+
+If a required visual pattern does not exist,
+the Design System must be updated according to the approved
+design-system process instead of inventing a one-off solution.
+
+---
+
+# 50. AI CODING AGENT RULE
+
+Any AI agent modifying the ZyrionOS frontend must follow:
+
+1. Understand the existing structure.
+2. Identify the affected page.
+3. Identify the affected feature.
+4. Identify reusable components.
+5. Check the relevant service.
+6. Check the API contract.
+7. Check the Design System.
+8. Implement only the required change.
+9. Validate loading state.
+10. Validate empty state.
+11. Validate error state.
+12. Validate success state.
+13. Validate responsive behavior.
+14. Validate accessibility.
+15. Validate build.
+16. Check for console errors.
+
+AI agents must not rewrite unrelated files simply because
+they prefer a different architecture.
+
+---
+
+# 51. AI AGENT CHANGE BOUNDARY
+
+Before modifying a file, the AI coding agent must understand:
+
+- Why the file is being changed.
+- Which requirement requires the change.
+- Which components depend on it.
+- Which services it uses.
+- Whether a reusable component already exists.
+
+Unrelated refactoring must not be bundled into feature implementation.
+
+---
+
+# 52. CHANGE CONTROL
+
+Approved product documentation is the source of truth.
+
+Implementation flow:
+
+Product Requirement
+↓
+Relevant Documentation
+↓
+Implementation
+↓
+Validation
+↓
+Production
+
+If a requirement conflicts with an existing implementation,
+the implementation must be corrected.
+
+The implementation must not silently redefine the requirement.
+
+---
+
+# 53. NO TEMPORARY ARCHITECTURE
+
+The frontend must not be intentionally built with an architecture
+that is expected to be replaced later.
+
+Avoid:
+
+"temporary version"
+
+"we will restructure later"
+
+"we will replace this component later"
+
+"we will fix architecture after MVP"
+
+The foundation should be engineered correctly from the beginning.
+
+---
+
+# 54. FEATURE COMPLETION STANDARD
+
+A feature is not complete merely because its primary screen renders.
+
+A feature must consider:
+
+- Initial state
+- Loading state
+- Success state
+- Empty state
+- Error state
+- Disabled state
+- Permission state
+- Mobile behavior
+- Desktop behavior
+- Accessibility
+- API behavior
+- Backend failure
+- Network failure
+
+---
+
+# 55. PAGE COMPLETION STANDARD
+
+A page is complete only when:
+
+[ ] Correct route
+[ ] Correct page structure
+[ ] Correct layout
+[ ] Correct components
+[ ] Correct API integration
+[ ] Correct authentication behavior
+[ ] Loading state
+[ ] Empty state
+[ ] Error state
+[ ] Success state
+[ ] Disabled states
+[ ] Responsive behavior
+[ ] Accessibility
+[ ] Design System compliance
+[ ] No fake data
+[ ] No fake URLs
+[ ] No console errors
+[ ] Production build passes
+
+---
+
+# 56. WORKSPACE COMPLETION STANDARD
+
+Workspace is complete only when:
+
+[ ] Full Workspace page opens
+[ ] Project selection works
+[ ] New project flow works
+[ ] Project creation connects to backend
+[ ] AI generation connects to backend
+[ ] Project files come from real data
+[ ] File selection works
+[ ] Preview state is accurate
+[ ] Code view works
+[ ] Deployment connects to backend
+[ ] Deployment state is accurate
+[ ] Live URL comes from backend
+[ ] Loading states work
+[ ] Error states work
+[ ] Empty states work
+[ ] Responsive behavior works
+[ ] Accessibility is handled
+[ ] Production build passes
+
+---
+
+# 57. BILLING PAGE STANDARD
+
+Billing must be treated as a primary application page.
+
+When the user selects Billing:
+
+Billing
+↓
+FULL BILLING PAGE
+
+The page may contain:
+
+- Current plan
+- Available plans
+- Pricing
+- Usage
+- Billing status
+- Payment method
+- Invoices
+- Upgrade action
+- Downgrade action
+- Subscription management
+
+Billing data must come from the real backend/payment system.
+
+No fake subscription state may be presented as real.
+
+---
+
+# 58. SETTINGS PAGE STANDARD
+
+Settings must be a full application destination.
+
+Settings
+↓
+FULL SETTINGS PAGE
+
+Settings may contain:
+
+- Profile
+- Account
+- Security
+- Authentication
+- Notifications
+- Preferences
+- API keys
+- Connected services
+- Workspace preferences
+
+Settings sections should be logically organized.
+
+---
+
+# 59. DASHBOARD STANDARD
+
+Dashboard is the user's operational overview.
+
+It should provide:
+
+- High-level status
+- Projects
+- Usage
+- Activity
+- AI activity
+- Deployment information
+- Important actions
+- Relevant alerts
+
+The dashboard must not attempt to contain the entire product.
+
+Primary workflows should transition into their dedicated pages.
+
+---
+
+# 60. NAVIGATION STANDARD
+
+Navigation must clearly communicate:
+
+- Current location
+- Available destinations
+- Primary actions
+- User/account controls
+
+The selected navigation item must be visually distinguishable.
+
+Navigation must not become visually cluttered.
+
+---
+
+# 61. HEADER STANDARD
+
+Primary page headers should communicate:
+
+- Page identity
+- Context
+- Important supporting information
+- Primary actions
+
+The header must not contain unrelated controls simply to fill space.
+
+---
+
+# 62. FILE EXPLORER STANDARD
+
+File explorers must:
+
+- Clearly display paths/names.
+- Support selection.
+- Clearly show active file.
+- Handle empty state.
+- Handle loading state.
+- Handle file errors.
+- Avoid fake files.
+
+A file should not appear in the UI unless it comes from
+a valid project source.
+
+---
+
+# 63. CODE VIEW STANDARD
+
+Code viewers/editors must clearly identify:
+
+- File name
+- File path where appropriate
+- Language where appropriate
+- Current content
+- Loading state
+- Empty state
+- Error state
+
+The UI must not claim that generated code is persisted
+unless persistence has been confirmed.
+
+---
+
+# 64. PREVIEW STANDARD
+
+Preview UI must accurately communicate the preview state.
+
+Possible states:
+
+- No preview
+- Preparing preview
+- Building preview
+- Preview ready
+- Preview failed
+
+A placeholder must not falsely represent a live application.
+
+---
+
+# 65. DEPLOYMENT UX STANDARD
+
+Deployment UX must communicate:
+
+Before:
+
+Not deployed
+
+During:
+
+Preparing
+Building
+Deploying
+
+After success:
+
+Deployed
+Live application
+Open live project
+
+After failure:
+
+Deployment failed
+Try again
+
+The status must correspond to backend reality.
+
+---
+
+# 66. NETWORK FAILURE STANDARD
+
+When the frontend cannot connect to the backend,
+the application should display a useful message.
+
+Example:
+
+Unable to connect to the server.
+
+Please check your connection and try again.
+
+The raw Axios/network implementation must not become
+the primary user-facing message.
+
+---
+
+# 67. PERMISSION FAILURE STANDARD
+
+For 403/permission failures,
+the UI should communicate:
+
+You do not have permission to perform this action.
+
+The interface must not expose sensitive implementation details.
+
+---
+
+# 68. RATE LIMIT STANDARD
+
+For rate-limit responses,
+the UI should communicate that requests are temporarily limited.
+
+Example:
+
+Too many requests.
+
+Please wait a moment and try again.
+
+---
+
+# 69. DATA OWNERSHIP STANDARD
+
+The frontend must respect backend ownership rules.
+
+The UI must not assume that:
+
+- User A can access User B's project.
+- A project ID is sufficient authorization.
+- A hidden project is secure.
+- A hidden UI element protects data.
+
+Backend authorization remains authoritative.
+
+---
+
+# 70. PRODUCTION CONSOLE STANDARD
+
+Production builds must not contain avoidable:
+
+- console errors
+- unhandled promise rejections
+- broken imports
+- missing keys
+- invalid DOM structures
+- failed API calls without handling
+
+Development diagnostics may remain where appropriate,
+but production output must be clean.
+
+---
+
+# 71. BUILD VALIDATION
+
+Before a frontend change is considered complete:
+
+- Dependencies must resolve.
+- Imports must resolve.
+- Application must compile.
+- Production build must pass.
+- Routes must resolve.
+- Major interactions must work.
+- API calls must be valid.
+- No critical console errors should remain.
+
+---
+
+# 72. FINAL ENGINEERING CHECKLIST
+
+Before release:
+
+[ ] Architecture follows approved documentation
+[ ] Routes are correct
+[ ] Pages are correctly separated
+[ ] Components are reusable
+[ ] Services are centralized
+[ ] API integration is real
+[ ] Authentication is correct
+[ ] Authorization relies on backend
+[ ] Loading states exist
+[ ] Empty states exist
+[ ] Error states exist
+[ ] Success states exist
+[ ] Disabled states exist
+[ ] AI states are clear
+[ ] Workspace is production-ready
+[ ] Deployment state is accurate
+[ ] Billing is real
+[ ] Settings are real
+[ ] Responsive behavior is tested
+[ ] Accessibility is tested
+[ ] Design System is followed
+[ ] No fake production data
+[ ] No fake deployment URLs
+[ ] No duplicate API clients
+[ ] No unnecessary duplication
+[ ] No critical console errors
+[ ] Production build passes
+
+---
+
+# 73. FINAL ARCHITECTURAL PRINCIPLE
+
+ZyrionOS must behave as one unified product.
+
+It must NOT become:
+
+Dashboard made by one design
++
+Workspace made by another design
++
+Settings made separately
++
+Billing made separately
++
+Login made separately
++
+Chat made separately
+
+Instead:
+
+                         ZYRIONOS
+                             │
+              ┌──────────────┴──────────────┐
+              │                             │
+        DESIGN SYSTEM               ENGINEERING SYSTEM
+              │                             │
+              └──────────────┬──────────────┘
+                             │
+                      UNIFIED FRONTEND
+                             │
+          ┌──────────────────┼──────────────────┐
+          │                  │                  │
+      Dashboard          Workspace          Settings
+          │                  │                  │
+       Billing            AI / Agents        Security
+          │                  │                  │
+          └──────────────────┼──────────────────┘
+                             │
+                       REAL BACKEND
+                             │
+                    REAL INFRASTRUCTURE
+
+The user should experience one coherent ZyrionOS,
+not a collection of unrelated pages.
+
+---
+
+# 74. DOCUMENT AUTHORITY
+
+Document 08 establishes the engineering implementation
+standard for the ZyrionOS frontend.
+
+All frontend implementation must remain compatible with:
+
+- Document 01 — Product / UX Foundation
+- Document 02 — Frontend Information Architecture
+- Document 03 — Enterprise Design System
+- Document 04 — Approved Product Structure
+- Document 05 — Approved Interaction / Experience Rules
+- Document 06 — Approved Application Behavior
+- Document 07 — Approved Frontend Product Specification
+
+Where a lower-level implementation decision conflicts with
+an approved product or design requirement, the approved
+requirement takes precedence.
+
+---
+
+# DOCUMENT 08 STATUS
+
+STATUS: FINAL FOUNDATION
+
+DOCUMENT ID:
+ZYR-FE-08
+
+DOCUMENT NAME:
+FRONTEND ENGINEERING & IMPLEMENTATION SPECIFICATION
+
+PURPOSE:
+Defines how the approved ZyrionOS product experience is converted
+into production-grade frontend architecture and code.
+
+END OF DOCUMENT 08

@@ -2,7 +2,7 @@ import axios from "axios";
 
 /*
 |--------------------------------------------------------------------------
-| API CONFIGURATION
+| ZYRIONOS — API CONFIGURATION
 |--------------------------------------------------------------------------
 */
 
@@ -37,11 +37,6 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    /*
-     * Request timestamp
-     * Useful for debugging and observability.
-     */
-
     config.metadata = {
       startTime: Date.now(),
     };
@@ -58,6 +53,19 @@ api.interceptors.request.use(
 |--------------------------------------------------------------------------
 | RESPONSE INTERCEPTOR
 |--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| We preserve the original Axios error object.
+|
+| workspaceService.js depends on:
+|
+| error.response.data
+| error.response.status
+| error.message
+|
+| Therefore we must NOT replace Axios errors
+| with plain objects.
+|--------------------------------------------------------------------------
 */
 
 api.interceptors.response.use(
@@ -65,93 +73,104 @@ api.interceptors.response.use(
     return response;
   },
 
-  async (error) => {
+  (error) => {
+    const status =
+      error?.response?.status;
+
+    const responseData =
+      error?.response?.data;
+
     /*
-     * Network / timeout error
+     * Backend-provided message
+     */
+
+    const backendMessage =
+      responseData?.message ||
+      responseData?.error ||
+      responseData?.detail;
+
+    /*
+     * Network / timeout
      */
 
     if (!error.response) {
-      return Promise.reject({
-        success: false,
-        message:
-          "Unable to connect to the server. Please check your internet connection.",
-        originalError: error,
-      });
+      error.message =
+        error.code === "ECONNABORTED"
+          ? "The request timed out. Please try again."
+          : "Unable to connect to the server. Please check your internet connection.";
+
+      error.status = null;
+
+      return Promise.reject(error);
     }
 
     /*
-     * Authentication failure
+     * Authentication
      */
 
-    if (error.response.status === 401) {
-      /*
-       * Do not automatically redirect here.
-       *
-       * AuthContext / ProtectedRoute should decide
-       * what happens to the user.
-       */
+    if (status === 401) {
+      error.message =
+        backendMessage ||
+        "Authentication required.";
 
-      return Promise.reject({
-        success: false,
-        message: "Authentication required.",
-        status: 401,
-        data: error.response.data,
-      });
+      error.status = 401;
+
+      return Promise.reject(error);
     }
 
     /*
      * Forbidden
      */
 
-    if (error.response.status === 403) {
-      return Promise.reject({
-        success: false,
-        message: "You do not have permission to perform this action.",
-        status: 403,
-        data: error.response.data,
-      });
+    if (status === 403) {
+      error.message =
+        backendMessage ||
+        "You do not have permission to perform this action.";
+
+      error.status = 403;
+
+      return Promise.reject(error);
     }
 
     /*
      * Rate limit
      */
 
-    if (error.response.status === 429) {
-      return Promise.reject({
-        success: false,
-        message:
-          "Too many requests. Please wait a moment and try again.",
-        status: 429,
-        data: error.response.data,
-      });
+    if (status === 429) {
+      error.message =
+        backendMessage ||
+        "Too many requests. Please wait a moment and try again.";
+
+      error.status = 429;
+
+      return Promise.reject(error);
     }
 
     /*
      * Server error
      */
 
-    if (error.response.status >= 500) {
-      return Promise.reject({
-        success: false,
-        message:
-          "The server encountered an error. Please try again later.",
-        status: error.response.status,
-        data: error.response.data,
-      });
+    if (status >= 500) {
+      error.message =
+        backendMessage ||
+        "The server encountered an error. Please try again later.";
+
+      error.status = status;
+
+      return Promise.reject(error);
     }
 
     /*
      * Other API errors
      */
 
-    return Promise.reject({
-      success: false,
-      message:
-        error.response?.data?.message ||
-        "Something went wrong with the request.",
-      status: error.response.status,
-      data: error.response.data,
-    });
+    error.message =
+      backendMessage ||
+      "Something went wrong with the request.";
+
+    error.status = status;
+
+    return Promise.reject(error);
   }
 );
 

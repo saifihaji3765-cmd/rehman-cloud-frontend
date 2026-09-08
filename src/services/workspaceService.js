@@ -1,78 +1,67 @@
 import api from "./api";
 
 /*
- * =========================================================
- * ZYRIONOS — WORKSPACE SERVICE
- * Enterprise Project / Workspace API Layer
- *
- * RESPONSIBILITY
- * ---------------------------------------------------------
- * This service is the single frontend API boundary for
- * project/workspace operations.
- *
- * Handles:
- * - Project creation
- * - Project listing
- * - Single project retrieval
- * - Project update
- * - Project deletion
- * - Project deployment
- * - Project ID normalization
- * - Payload validation
- * - Consistent API error normalization
- *
- * DOES NOT HANDLE
- * ---------------------------------------------------------
- * - UI rendering
- * - React state
- * - Routing
- * - Billing UI
- * - Subscription decisions
- * - Authentication UI
- * - Fake/mock project data
- * - Backend business rules
- *
- * Architecture:
- *
- * Page
- *   ↓
- * workspaceService
- *   ↓
- * api client
- *   ↓
- * Real Backend API
- *
- * IMPORTANT
- * ---------------------------------------------------------
- * Existing backend endpoint paths are intentionally
- * preserved so the current Workspace.jsx integration
- * does not break.
- * =========================================================
- */
+|--------------------------------------------------------------------------
+| ZYRIONOS — PROJECT SERVICE
+|--------------------------------------------------------------------------
+|
+| Enterprise Project API Layer
+|
+| Responsibilities:
+| - Project creation
+| - Project listing
+| - Single project retrieval
+| - Project update
+| - Project deletion
+| - Project deployment
+| - Project ID validation
+| - Project ID normalization
+| - Consistent API error normalization
+|
+| Architecture:
+|
+| Page / Feature
+|       ↓
+| projectService
+|       ↓
+| centralized api client
+|       ↓
+| REAL BACKEND API
+|
+| IMPORTANT:
+| - No mock data
+| - No fake projects
+| - No fake deployment URLs
+| - No frontend authorization
+| - Backend remains authoritative for ownership,
+|   permissions, subscription limits and business rules.
+|
+|--------------------------------------------------------------------------
+*/
 
 
-/* =========================================================
-   CONFIGURATION
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| CONFIGURATION
+|--------------------------------------------------------------------------
+*/
 
 const API_PREFIX = "/api/projects";
 
 
-/* =========================================================
-   INTERNAL HELPERS
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| INTERNAL HELPERS
+|--------------------------------------------------------------------------
+*/
+
 
 /**
- * Normalize a project ID before it is used in a URL.
- *
- * This prevents:
- * - undefined IDs
- * - null IDs
- * - empty IDs
- * - accidental whitespace
- * - unsafe URL characters
+ * Validate a project identifier.
  */
-function normalizeProjectId(projectId) {
+function normalizeProjectId(
+  projectId
+) {
   if (
     projectId === undefined ||
     projectId === null
@@ -91,6 +80,9 @@ function normalizeProjectId(projectId) {
     );
   }
 
+  /*
+   * Encode the ID before putting it into a URL.
+   */
   return encodeURIComponent(
     normalizedId
   );
@@ -98,11 +90,17 @@ function normalizeProjectId(projectId) {
 
 
 /**
- * Validate an object payload.
+ * Validate a project payload.
  *
- * The service validates shape only.
- * Actual authorization, ownership, plan limits
- * and business rules remain backend responsibilities.
+ * This only validates the basic JavaScript shape.
+ *
+ * Backend remains responsible for:
+ * - Authentication
+ * - Authorization
+ * - Ownership
+ * - Subscription limits
+ * - Business rules
+ * - Field-level validation
  */
 function validateProjectData(
   projectData
@@ -121,53 +119,118 @@ function validateProjectData(
 
 
 /**
- * Normalize backend/API errors into one predictable
- * Error object for the pages consuming this service.
- *
- * api.js is expected to preserve the original Axios
- * response structure.
+ * Normalize API errors into a predictable Error object.
  */
 function normalizeApiError(
   error,
   fallbackMessage
 ) {
-  /*
-   * Axios response payload
-   */
   const responseData =
     error?.response?.data;
 
+  const status =
+    error?.response?.status ??
+    error?.status ??
+    null;
 
-  /*
-   * Backend may expose one of several
-   * conventional message fields.
-   */
   const backendMessage =
     responseData?.message ||
     responseData?.error ||
     responseData?.detail ||
     responseData?.reason;
 
-
-  /*
-   * HTTP status
-   */
-  const status =
-    error?.response?.status ??
-    error?.status ??
-    null;
-
-
-  /*
-   * Final user-facing error message.
-   *
-   * Do not expose raw backend internals unless
-   * the backend intentionally provides a safe message.
-   */
-  const message =
+  let message =
     backendMessage ||
     error?.message ||
     fallbackMessage;
+
+
+  /*
+   * Network / timeout failures.
+   */
+  if (!error?.response) {
+    if (
+      error?.code === "ECONNABORTED"
+    ) {
+      message =
+        "The request timed out. Please try again.";
+    } else {
+      message =
+        "Unable to connect to the server. Please check your internet connection.";
+    }
+  }
+
+
+  /*
+   * Authentication.
+   */
+  if (
+    status === 401 &&
+    !backendMessage
+  ) {
+    message =
+      "Authentication required. Please sign in again.";
+  }
+
+
+  /*
+   * Authorization.
+   */
+  if (
+    status === 403 &&
+    !backendMessage
+  ) {
+    message =
+      "You do not have permission to perform this action.";
+  }
+
+
+  /*
+   * Project not found.
+   */
+  if (
+    status === 404 &&
+    !backendMessage
+  ) {
+    message =
+      "The requested project could not be found.";
+  }
+
+
+  /*
+   * Conflict.
+   */
+  if (
+    status === 409 &&
+    !backendMessage
+  ) {
+    message =
+      "This project operation could not be completed because of a conflict.";
+  }
+
+
+  /*
+   * Rate limiting.
+   */
+  if (
+    status === 429 &&
+    !backendMessage
+  ) {
+    message =
+      "Too many requests. Please wait a moment and try again.";
+  }
+
+
+  /*
+   * Backend/server failure.
+   */
+  if (
+    status >= 500 &&
+    !backendMessage
+  ) {
+    message =
+      "The project service encountered an error. Please try again later.";
+  }
 
 
   const normalizedError =
@@ -177,26 +240,22 @@ function normalizeApiError(
 
 
   /*
-   * Preserve useful diagnostic information
-   * without coupling pages to Axios.
+   * Preserve safe diagnostic information.
    */
   normalizedError.status =
     status;
-
 
   normalizedError.code =
     responseData?.code ||
     error?.code ||
     null;
 
-
   normalizedError.data =
     responseData ||
     error?.data ||
     null;
 
-
-  normalizedError.isWorkspaceError =
+  normalizedError.isProjectError =
     true;
 
 
@@ -205,11 +264,8 @@ function normalizeApiError(
 
 
 /**
- * Execute an API operation through one common
- * error-normalization boundary.
- *
- * This keeps every exported service function
- * consistent.
+ * Execute an API request through one
+ * centralized error-normalization boundary.
  */
 async function executeRequest(
   request,
@@ -226,28 +282,24 @@ async function executeRequest(
 }
 
 
-/* =========================================================
-   CREATE PROJECT
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| CREATE PROJECT
+|--------------------------------------------------------------------------
+|
+| POST /api/projects/create
+|
+| Existing Workspace payload:
+|
+| {
+|   projectName,
+|   description,
+|   framework
+| }
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * POST /api/projects/create
- *
- * Expected payload from Workspace:
- *
- * {
- *   projectName,
- *   description,
- *   framework
- * }
- *
- * The backend remains responsible for:
- * - authentication
- * - authorization
- * - ownership
- * - subscription limits
- * - project creation rules
- */
 export async function createProject(
   projectData
 ) {
@@ -266,22 +318,20 @@ export async function createProject(
 }
 
 
-/* =========================================================
-   GET MY PROJECTS
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| GET MY PROJECTS
+|--------------------------------------------------------------------------
+|
+| GET /api/projects/me
+|
+| Returns projects belonging to the authenticated user.
+|
+| Backend authorization remains authoritative.
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * GET /api/projects/me
- *
- * Returns the authenticated user's projects.
- *
- * Workspace.jsx expects the Axios response so it can
- * consume:
- *
- * response.data.projects
- *
- * or the compatible backend response shape.
- */
 export async function getProjects() {
   return executeRequest(
     () =>
@@ -293,13 +343,16 @@ export async function getProjects() {
 }
 
 
-/* =========================================================
-   GET SINGLE PROJECT
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| GET SINGLE PROJECT
+|--------------------------------------------------------------------------
+|
+| GET /api/projects/:projectId
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * GET /api/projects/:projectId
- */
 export async function getProject(
   projectId
 ) {
@@ -318,19 +371,16 @@ export async function getProject(
 }
 
 
-/* =========================================================
-   UPDATE PROJECT
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| UPDATE PROJECT
+|--------------------------------------------------------------------------
+|
+| PUT /api/projects/update/:projectId
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * PUT /api/projects/update/:projectId
- *
- * This function intentionally performs no frontend
- * business-rule enforcement.
- *
- * Backend determines whether the authenticated user
- * can update the project.
- */
 export async function updateProject(
   projectId,
   projectData
@@ -355,16 +405,23 @@ export async function updateProject(
 }
 
 
-/* =========================================================
-   DELETE PROJECT
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| DELETE PROJECT
+|--------------------------------------------------------------------------
+|
+| DELETE /api/projects/delete/:projectId
+|
+| This is a destructive operation.
+|
+| The frontend does not treat possession of a project ID
+| as authorization.
+|
+| Backend must enforce ownership and permission.
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * DELETE /api/projects/delete/:projectId
- *
- * Destructive authorization must be enforced
- * by the backend.
- */
 export async function deleteProject(
   projectId
 ) {
@@ -383,31 +440,26 @@ export async function deleteProject(
 }
 
 
-/* =========================================================
-   DEPLOY PROJECT
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| DEPLOY PROJECT
+|--------------------------------------------------------------------------
+|
+| POST /api/projects/deploy/:projectId
+|
+| IMPORTANT:
+|
+| This service does NOT:
+| - create a deployment URL
+| - force deployment success
+| - invent deployment status
+| - modify deployment response
+|
+| The backend response remains authoritative.
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * POST /api/projects/deploy/:projectId
- *
- * Expected backend response may contain:
- *
- * data: {
- *   project,
- *   deployment
- * }
- *
- * Workspace.jsx already handles:
- *
- * deployment.liveUrl
- * deployment.url
- * project.liveUrl
- * project.deploymentUrl
- *
- * This service therefore deliberately returns the
- * original API response instead of inventing or
- * reshaping deployment data.
- */
 export async function deployProject(
   projectId
 ) {
@@ -426,16 +478,17 @@ export async function deployProject(
 }
 
 
-/* =========================================================
-   OPTIONAL PROJECT OPERATIONS
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| PROJECT ID VALIDATION
+|--------------------------------------------------------------------------
+|
+| Utility for UI/features that need to determine
+| whether a project ID exists before calling the API.
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Small utility for consumers that need to safely
- * determine whether a value can represent a project ID.
- *
- * This does not call the backend.
- */
 export function isValidProjectId(
   projectId
 ) {
@@ -452,14 +505,17 @@ export function isValidProjectId(
 }
 
 
-/**
- * Small utility for consumers that need a normalized
- * project identifier without directly handling URL
- * encoding.
- *
- * Kept separate from normalizeProjectId because the
- * internal helper is intentionally private.
- */
+/*
+|--------------------------------------------------------------------------
+| NORMALIZED PROJECT ID
+|--------------------------------------------------------------------------
+|
+| Public utility for consumers that need the
+| same ID normalization used internally.
+|
+|--------------------------------------------------------------------------
+*/
+
 export function getNormalizedProjectId(
   projectId
 ) {
@@ -469,11 +525,13 @@ export function getNormalizedProjectId(
 }
 
 
-/* =========================================================
-   DEFAULT SERVICE OBJECT
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| DEFAULT EXPORT
+|--------------------------------------------------------------------------
+*/
 
-const workspaceService = {
+const projectService = {
   createProject,
   getProjects,
   getProject,
@@ -485,4 +543,4 @@ const workspaceService = {
 };
 
 
-export default workspaceService;
+export default projectService;

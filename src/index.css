@@ -1,170 +1,1249 @@
-/* =========================
-   RESET
-========================= */
+/* =========================================================
+   ZYRIONOS
+   GLOBAL ENTERPRISE DESIGN FOUNDATION
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
+   DOCUMENT 03
+   Enterprise Design System
+
+   DOCUMENT 04
+   Enterprise Component & Interaction Architecture
+
+   RESPONSIBILITY
+   ---------------------------------------------------------
+   This file contains ONLY global visual foundations:
+
+   - Reset
+   - Design tokens
+   - Typography
+   - Global element defaults
+   - Accessibility foundations
+   - Scroll behaviour
+   - Selection
+   - Form inheritance
+   - Global scrollbar
+   - Motion defaults
+   - Utility foundations
+
+   This file MUST NOT contain:
+   - Page-specific layouts
+   - Component-specific business logic
+   - API calls
+   - Authentication logic
+   - Routing
+   - Feature-specific styles
+   - Random page colors
+   ========================================================= */
+
+
+/* =========================================================
+   01. GLOBAL RESET
+========================================================= */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* =========================
-   ROOT
-========================= */
 
-:root{
+/* =========================================================
+   02. DESIGN TOKENS
+========================================================= */
 
-  --bg-primary:#0b1020;
+:root {
 
-  --bg-secondary:#111827;
+  /* =======================================================
+     BACKGROUND SYSTEM
+  ======================================================= */
 
-  --bg-card:#161f36;
+  --zy-bg-950: #060914;
+  --zy-bg-900: #080C18;
+  --zy-bg-850: #0B1020;
+  --zy-bg-800: #0F1526;
+  --zy-bg-750: #121A2D;
 
-  --border-color:#24304a;
 
-  --text-primary:#ffffff;
+  /* =======================================================
+     SURFACE SYSTEM
+  ======================================================= */
 
-  --text-secondary:#94a3b8;
+  --zy-surface-1: #0D1322;
+  --zy-surface-2: #11182A;
+  --zy-surface-3: #151D31;
+  --zy-surface-4: #192238;
 
-  --accent:#5b5cff;
 
-  --success:#10b981;
+  /* =======================================================
+     BRAND SYSTEM
+  ======================================================= */
 
-  --warning:#f59e0b;
+  --zy-brand: #6C63FF;
+  --zy-brand-bright: #8179FF;
+  --zy-brand-deep: #5148D9;
 
-  --danger:#ef4444;
 
-  --radius-sm:12px;
+  /* =======================================================
+     AI ACCENTS
+  ======================================================= */
 
-  --radius-md:18px;
+  --zy-ai-cyan: #35D7FF;
+  --zy-ai-blue: #4C8DFF;
 
-  --radius-lg:24px;
 
+  /* =======================================================
+     SEMANTIC COLORS
+  ======================================================= */
+
+  --zy-success: #20C77A;
+  --zy-success-bg: rgba(32, 199, 122, 0.10);
+
+  --zy-warning: #F4B740;
+  --zy-warning-bg: rgba(244, 183, 64, 0.10);
+
+  --zy-danger: #F05A67;
+  --zy-danger-bg: rgba(240, 90, 103, 0.10);
+
+  --zy-info: #45A3FF;
+  --zy-info-bg: rgba(69, 163, 255, 0.10);
+
+
+  /* =======================================================
+     TEXT COLORS
+  ======================================================= */
+
+  --zy-text-primary: #F4F7FF;
+  --zy-text-secondary: #A8B1C7;
+  --zy-text-muted: #6F7890;
+  --zy-text-disabled: #4A5266;
+
+
+  /* =======================================================
+     BORDER SYSTEM
+  ======================================================= */
+
+  --zy-border: #1B2438;
+  --zy-border-strong: #27324A;
+  --zy-border-interactive: #35436A;
+  --zy-border-brand: rgba(108, 99, 255, 0.45);
+
+
+  /* =======================================================
+     GRADIENT SYSTEM
+  ======================================================= */
+
+  --zy-gradient-brand:
+    linear-gradient(
+      135deg,
+      #5148D9 0%,
+      #6C63FF 55%,
+      #8179FF 100%
+    );
+
+  --zy-gradient-ai:
+    linear-gradient(
+      135deg,
+      #4C8DFF 0%,
+      #35D7FF 100%
+    );
+
+
+  /* =======================================================
+     TYPOGRAPHY
+  ======================================================= */
+
+  --zy-font-sans:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  --zy-font-mono:
+    "JetBrains Mono",
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+
+  /* =======================================================
+     FONT WEIGHTS
+  ======================================================= */
+
+  --zy-font-regular: 400;
+  --zy-font-medium: 500;
+  --zy-font-semibold: 600;
+  --zy-font-bold: 700;
+
+
+  /* =======================================================
+     SPACING SYSTEM
+  ======================================================= */
+
+  --zy-space-1: 4px;
+  --zy-space-2: 8px;
+  --zy-space-3: 12px;
+  --zy-space-4: 16px;
+  --zy-space-5: 20px;
+  --zy-space-6: 24px;
+  --zy-space-8: 32px;
+  --zy-space-10: 40px;
+  --zy-space-12: 48px;
+  --zy-space-14: 56px;
+  --zy-space-16: 64px;
+  --zy-space-20: 80px;
+  --zy-space-24: 96px;
+
+
+  /* =======================================================
+     RADIUS SYSTEM
+  ======================================================= */
+
+  --zy-radius-xs: 6px;
+  --zy-radius-sm: 8px;
+  --zy-radius-md: 10px;
+  --zy-radius-lg: 14px;
+  --zy-radius-xl: 18px;
+  --zy-radius-2xl: 24px;
+  --zy-radius-pill: 999px;
+
+
+  /* =======================================================
+     SHADOW SYSTEM
+  ======================================================= */
+
+  --zy-shadow-sm:
+    0 4px 12px rgba(0, 0, 0, 0.18);
+
+  --zy-shadow-md:
+    0 12px 32px rgba(0, 0, 0, 0.24);
+
+  --zy-shadow-lg:
+    0 24px 64px rgba(0, 0, 0, 0.32);
+
+  --zy-shadow-brand:
+    0 0 28px rgba(108, 99, 255, 0.18);
+
+  --zy-shadow-ai:
+    0 0 28px rgba(53, 215, 255, 0.14);
+
+
+  /* =======================================================
+     MOTION SYSTEM
+  ======================================================= */
+
+  --zy-transition-fast:
+    150ms ease;
+
+  --zy-transition-standard:
+    180ms ease;
+
+  --zy-transition-medium:
+    220ms ease;
+
+  --zy-transition-large:
+    300ms ease;
+
+
+  /* =======================================================
+     Z-INDEX ARCHITECTURE
+  ======================================================= */
+
+  --zy-z-base: 0;
+  --zy-z-elevated: 10;
+  --zy-z-sticky: 20;
+  --zy-z-dropdown: 30;
+  --zy-z-popover: 40;
+  --zy-z-backdrop: 45;
+  --zy-z-modal: 50;
+  --zy-z-toast: 60;
+  --zy-z-critical: 70;
+
+
+  /* =======================================================
+     LAYOUT TOKENS
+  ======================================================= */
+
+  --zy-sidebar-min: 240px;
+  --zy-sidebar-max: 280px;
+
+  --zy-topbar-min: 64px;
+  --zy-topbar-max: 72px;
+
+  --zy-content-max: 1600px;
+
+
+  /* =======================================================
+     INTERACTION
+  ======================================================= */
+
+  --zy-focus-ring:
+    0 0 0 3px rgba(108, 99, 255, 0.24);
+
+  --zy-selection-bg:
+    rgba(108, 99, 255, 0.30);
+
+  --zy-selection-text:
+    #F4F7FF;
 }
 
-/* =========================
-   HTML
-========================= */
 
-html{
+/* =========================================================
+   03. HTML FOUNDATION
+========================================================= */
 
-  scroll-behavior:smooth;
+html {
+  min-height: 100%;
+  background: var(--zy-bg-950);
 
+  scroll-behavior: smooth;
+
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+
+  scrollbar-gutter: stable;
 }
 
-/* =========================
-   BODY
-========================= */
 
-body{
+/* =========================================================
+   04. BODY FOUNDATION
+========================================================= */
 
-  font-family:
+body {
 
-  Inter,
-  system-ui,
-  -apple-system,
-  BlinkMacSystemFont,
-  "Segoe UI",
-  sans-serif;
+  min-height: 100vh;
 
   background:
-  var(--bg-primary);
+    var(--zy-bg-950);
 
   color:
-  var(--text-primary);
+    var(--zy-text-primary);
 
-  min-height:100vh;
+  font-family:
+    var(--zy-font-sans);
+
+  font-size: 14px;
+
+  font-weight:
+    var(--zy-font-regular);
+
+  line-height: 1.55;
+
+  letter-spacing: 0;
 
   -webkit-font-smoothing:
-  antialiased;
+    antialiased;
 
   -moz-osx-font-smoothing:
-  grayscale;
+    grayscale;
 
+  text-rendering:
+    optimizeLegibility;
+
+  overflow-x:
+    hidden;
 }
 
-/* =========================
-   ROOT APP
-========================= */
 
-#root{
+/* =========================================================
+   05. ROOT APPLICATION
+========================================================= */
 
-  min-height:100vh;
+#root {
 
+  min-height: 100vh;
+
+  width: 100%;
+
+  isolation: isolate;
 }
 
-/* =========================
-   LINKS
-========================= */
 
-a{
+/* =========================================================
+   06. HEADINGS
+========================================================= */
 
-  text-decoration:none;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 
-  color:inherit;
+  margin: 0;
 
+  color:
+    var(--zy-text-primary);
+
+  font-family:
+    var(--zy-font-sans);
+
+  font-weight:
+    var(--zy-font-semibold);
+
+  letter-spacing:
+    -0.01em;
 }
 
-/* =========================
-   BUTTON
-========================= */
 
-button{
+/* =========================================================
+   07. HEADING SCALE
+========================================================= */
 
-  font-family:inherit;
+h1 {
 
+  font-size: 32px;
+
+  line-height: 1.15;
+
+  font-weight:
+    var(--zy-font-bold);
 }
 
-/* =========================
-   INPUT
-========================= */
+h2 {
+
+  font-size: 24px;
+
+  line-height: 1.20;
+
+  font-weight:
+    var(--zy-font-semibold);
+}
+
+h3 {
+
+  font-size: 18px;
+
+  line-height: 1.30;
+
+  font-weight:
+    var(--zy-font-semibold);
+}
+
+h4 {
+
+  font-size: 16px;
+
+  line-height: 1.40;
+
+  font-weight:
+    var(--zy-font-semibold);
+}
+
+h5 {
+
+  font-size: 14px;
+
+  line-height: 1.45;
+
+  font-weight:
+    var(--zy-font-semibold);
+}
+
+h6 {
+
+  font-size: 13px;
+
+  line-height: 1.45;
+
+  font-weight:
+    var(--zy-font-medium);
+}
+
+
+/* =========================================================
+   08. PARAGRAPHS
+========================================================= */
+
+p {
+
+  margin: 0;
+
+  color:
+    var(--zy-text-secondary);
+
+  font-size: 14px;
+
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   09. LINKS
+========================================================= */
+
+a {
+
+  color: inherit;
+
+  text-decoration: none;
+
+  transition:
+    color var(--zy-transition-fast);
+}
+
+
+a:hover {
+
+  color:
+    var(--zy-brand-bright);
+}
+
+
+a:focus-visible {
+
+  outline: none;
+
+  box-shadow:
+    var(--zy-focus-ring);
+
+  border-radius:
+    var(--zy-radius-xs);
+}
+
+
+/* =========================================================
+   10. BUTTON FOUNDATION
+========================================================= */
+
+button {
+
+  appearance: none;
+
+  border: 0;
+
+  background: none;
+
+  color: inherit;
+
+  font: inherit;
+
+  cursor: pointer;
+
+  -webkit-tap-highlight-color:
+    transparent;
+}
+
+
+button:disabled {
+
+  cursor: not-allowed;
+}
+
+
+button:focus-visible {
+
+  outline: none;
+
+  box-shadow:
+    var(--zy-focus-ring);
+}
+
+
+/* =========================================================
+   11. FORM ELEMENT FOUNDATION
+========================================================= */
 
 input,
 textarea,
-select{
+select {
 
-  font-family:inherit;
+  width: 100%;
 
+  font-family:
+    inherit;
+
+  font-size:
+    inherit;
+
+  color:
+    var(--zy-text-primary);
+
+  background:
+    var(--zy-bg-850);
+
+  border:
+    1px solid var(--zy-border);
+
+  border-radius:
+    var(--zy-radius-md);
+
+  outline: none;
+
+  transition:
+    border-color var(--zy-transition-fast),
+    box-shadow var(--zy-transition-fast),
+    background-color var(--zy-transition-fast);
+
+  -webkit-appearance:
+    none;
 }
 
-/* =========================
-   IMAGE
-========================= */
 
-img{
+/* =========================================================
+   12. FORM FOCUS
+========================================================= */
 
-  max-width:100%;
+input:focus,
+textarea:focus,
+select:focus {
 
-  display:block;
+  border-color:
+    var(--zy-brand);
 
+  box-shadow:
+    var(--zy-focus-ring);
 }
 
-/* =========================
-   SCROLLBAR
-========================= */
 
-::-webkit-scrollbar{
+/* =========================================================
+   13. PLACEHOLDER
+========================================================= */
 
-  width:8px;
+input::placeholder,
+textarea::placeholder {
 
+  color:
+    var(--zy-text-muted);
+
+  opacity: 1;
 }
 
-::-webkit-scrollbar-track{
 
-  background:#0f172a;
+/* =========================================================
+   14. DISABLED FORM CONTROLS
+========================================================= */
 
+input:disabled,
+textarea:disabled,
+select:disabled {
+
+  color:
+    var(--zy-text-disabled);
+
+  background:
+    var(--zy-surface-1);
+
+  border-color:
+    var(--zy-border);
+
+  cursor:
+    not-allowed;
+
+  opacity:
+    0.7;
 }
 
-::-webkit-scrollbar-thumb{
 
-  background:#334155;
+/* =========================================================
+   15. TEXTAREA
+========================================================= */
 
-  border-radius:999px;
+textarea {
 
+  min-height:
+    100px;
+
+  resize:
+    vertical;
 }
 
-::-webkit-scrollbar-thumb:hover{
 
-  background:#475569;
+/* =========================================================
+   16. SELECT
+========================================================= */
 
+select {
+
+  cursor:
+    pointer;
 }
+
+
+/* =========================================================
+   17. LABEL
+========================================================= */
+
+label {
+
+  color:
+    var(--zy-text-primary);
+
+  font-size:
+    13px;
+
+  font-weight:
+    var(--zy-font-medium);
+
+  line-height:
+    1.45;
+}
+
+
+/* =========================================================
+   18. IMAGES
+========================================================= */
+
+img {
+
+  display:
+    block;
+
+  max-width:
+    100%;
+
+  height:
+    auto;
+}
+
+
+/* =========================================================
+   19. SVG
+========================================================= */
+
+svg {
+
+  display:
+    block;
+
+  flex-shrink:
+    0;
+}
+
+
+/* =========================================================
+   20. LIST RESET
+========================================================= */
+
+ul,
+ol {
+
+  margin: 0;
+
+  padding: 0;
+
+  list-style: none;
+}
+
+
+/* =========================================================
+   21. TABLE FOUNDATION
+========================================================= */
+
+table {
+
+  width:
+    100%;
+
+  border-collapse:
+    collapse;
+
+  border-spacing:
+    0;
+}
+
+
+/* =========================================================
+   22. CODE FOUNDATION
+========================================================= */
+
+code,
+pre,
+kbd,
+samp {
+
+  font-family:
+    var(--zy-font-mono);
+}
+
+
+code {
+
+  color:
+    var(--zy-ai-cyan);
+
+  font-size:
+    0.9em;
+}
+
+
+pre {
+
+  margin: 0;
+
+  overflow-x:
+    auto;
+
+  color:
+    var(--zy-text-primary);
+
+  background:
+    var(--zy-bg-950);
+
+  border:
+    1px solid var(--zy-border);
+
+  border-radius:
+    var(--zy-radius-lg);
+}
+
+
+/* =========================================================
+   23. HORIZONTAL RULE
+========================================================= */
+
+hr {
+
+  height:
+    1px;
+
+  margin: 0;
+
+  border: 0;
+
+  background:
+    var(--zy-border);
+}
+
+
+/* =========================================================
+   24. TEXT SELECTION
+========================================================= */
+
+::selection {
+
+  color:
+    var(--zy-selection-text);
+
+  background:
+    var(--zy-selection-bg);
+}
+
+
+/* =========================================================
+   25. KEYBOARD FOCUS
+========================================================= */
+
+:focus-visible {
+
+  outline:
+    2px solid var(--zy-brand);
+
+  outline-offset:
+    2px;
+}
+
+
+/* =========================================================
+   26. REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+
+    scroll-behavior:
+      auto !important;
+
+    animation-duration:
+      0.01ms !important;
+
+    animation-iteration-count:
+      1 !important;
+
+    transition-duration:
+      0.01ms !important;
+  }
+}
+
+
+/* =========================================================
+   27. SCROLLBAR
+========================================================= */
+
+* {
+
+  scrollbar-width:
+    thin;
+
+  scrollbar-color:
+    var(--zy-border-strong)
+    var(--zy-bg-900);
+}
+
+
+::-webkit-scrollbar {
+
+  width:
+    8px;
+
+  height:
+    8px;
+}
+
+
+::-webkit-scrollbar-track {
+
+  background:
+    var(--zy-bg-900);
+}
+
+
+::-webkit-scrollbar-thumb {
+
+  background:
+    var(--zy-border-strong);
+
+  border:
+    2px solid var(--zy-bg-900);
+
+  border-radius:
+    var(--zy-radius-pill);
+}
+
+
+::-webkit-scrollbar-thumb:hover {
+
+  background:
+    var(--zy-border-interactive);
+}
+
+
+/* =========================================================
+   28. APP SURFACE DEFAULTS
+========================================================= */
+
+main {
+
+  min-width:
+    0;
+}
+
+
+/* =========================================================
+   29. RESPONSIVE TYPOGRAPHY
+========================================================= */
+
+@media (min-width: 1440px) {
+
+  h1 {
+
+    font-size:
+      32px;
+  }
+}
+
+
+@media (max-width: 1023px) {
+
+  h1 {
+
+    font-size:
+      30px;
+  }
+
+  h2 {
+
+    font-size:
+      22px;
+  }
+}
+
+
+@media (max-width: 639px) {
+
+  h1 {
+
+    font-size:
+      28px;
+  }
+
+  h2 {
+
+    font-size:
+      20px;
+  }
+
+  h3 {
+
+    font-size:
+      17px;
+  }
+
+  body {
+
+    font-size:
+      14px;
+  }
+}
+
+
+/* =========================================================
+   30. MOBILE INTERACTION
+========================================================= */
+
+@media (max-width: 639px) {
+
+  button,
+  input,
+  textarea,
+  select {
+
+    -webkit-tap-highlight-color:
+      transparent;
+  }
+}
+
+
+/* =========================================================
+   31. GLOBAL UTILITY — VISUALLY HIDDEN
+========================================================= */
+
+.zy-sr-only {
+
+  position:
+    absolute;
+
+  width:
+    1px;
+
+  height:
+    1px;
+
+  padding:
+    0;
+
+  margin:
+    -1px;
+
+  overflow:
+    hidden;
+
+  clip:
+    rect(0, 0, 0, 0);
+
+  white-space:
+    nowrap;
+
+  border:
+    0;
+}
+
+
+/* =========================================================
+   32. GLOBAL UTILITY — TEXT TRUNCATION
+========================================================= */
+
+.zy-truncate {
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+
+/* =========================================================
+   33. GLOBAL UTILITY — CONTAINER
+========================================================= */
+
+.zy-container {
+
+  width:
+    100%;
+
+  max-width:
+    var(--zy-content-max);
+
+  margin-inline:
+    auto;
+
+  padding-inline:
+    var(--zy-space-6);
+}
+
+
+@media (max-width: 639px) {
+
+  .zy-container {
+
+    padding-inline:
+      var(--zy-space-4);
+  }
+}
+
+
+/* =========================================================
+   34. GLOBAL UTILITY — MONOSPACE
+========================================================= */
+
+.zy-mono {
+
+  font-family:
+    var(--zy-font-mono);
+}
+
+
+/* =========================================================
+   35. GLOBAL UTILITY — NO SELECT
+========================================================= */
+
+.zy-no-select {
+
+  user-select:
+    none;
+
+  -webkit-user-select:
+    none;
+}
+
+
+/* =========================================================
+   36. GLOBAL UTILITY — FULL HEIGHT
+========================================================= */
+
+.zy-full-height {
+
+  min-height:
+    100vh;
+
+  min-height:
+    100dvh;
+}
+
+
+/* =========================================================
+   37. GLOBAL UTILITY — FOCUSABLE
+========================================================= */
+
+.zy-focusable:focus-visible {
+
+  outline:
+    2px solid var(--zy-brand);
+
+  outline-offset:
+    2px;
+
+  box-shadow:
+    var(--zy-focus-ring);
+}
+
+
+/* =========================================================
+   38. GLOBAL IMAGE / MEDIA SAFETY
+========================================================= */
+
+video,
+canvas {
+
+  max-width:
+    100%;
+}
+
+
+/* =========================================================
+   39. FIELDSET
+========================================================= */
+
+fieldset {
+
+  min-width:
+    0;
+
+  margin:
+    0;
+
+  padding:
+    0;
+
+  border:
+    0;
+}
+
+
+/* =========================================================
+   40. DIALOG FOUNDATION
+========================================================= */
+
+dialog {
+
+  color:
+    var(--zy-text-primary);
+
+  background:
+    var(--zy-surface-2);
+
+  border:
+    1px solid var(--zy-border-strong);
+
+  border-radius:
+    var(--zy-radius-xl);
+
+  box-shadow:
+    var(--zy-shadow-lg);
+}
+
+
+dialog::backdrop {
+
+  background:
+    rgba(0, 0, 0, 0.62);
+}
+
+
+/* =========================================================
+   41. PLACEHOLDER / AUTOFILL NORMALIZATION
+========================================================= */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+
+  -webkit-text-fill-color:
+    var(--zy-text-primary);
+
+  -webkit-box-shadow:
+    0 0 0 1000px var(--zy-bg-850) inset;
+
+  transition:
+    background-color 9999s ease-in-out 0s;
+}
+
+
+/* =========================================================
+   42. PRINT SAFETY
+========================================================= */
+
+@media print {
+
+  body {
+
+    background:
+      #ffffff;
+
+    color:
+      #000000;
+  }
+
+  * {
+
+    box-shadow:
+      none !important;
+  }
+}
+
+
+/* =========================================================
+   END OF GLOBAL DESIGN FOUNDATION
+========================================================= */

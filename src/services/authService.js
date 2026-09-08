@@ -2,107 +2,203 @@ import api from "./api";
 
 /*
 |--------------------------------------------------------------------------
-| ZYRIONOS — AUTH SERVICE
+| ZYRIONOS — AUTHENTICATION SERVICE
 |--------------------------------------------------------------------------
+|
 | Enterprise Authentication API Layer
 |
 | Responsibilities:
 | - Login
 | - Registration
-| - Current-session validation
+| - Current-session verification
 | - Logout
-| - OAuth redirects
-| - Safe local user profile persistence
+| - Google OAuth
+| - GitHub OAuth
+| - Local user profile cache
+| - Authentication error normalization
 |
-| SECURITY:
-| - JWT/access token is NOT stored in localStorage.
-| - Authentication is handled through the backend HttpOnly cookie.
-| - Axios sends credentials through the centralized api client.
+| IMPORTANT SECURITY RULE:
 |
-| ARCHITECTURE:
+| Authentication tokens / JWTs must NEVER be stored in localStorage.
 |
-| UI
-|  ↓
-| Auth Service
-|  ↓
-| api.js
-|  ↓
-| Real Backend
-|  ↓
-| HttpOnly Session Cookie
+| The backend is responsible for establishing the authenticated
+| session using a secure HttpOnly cookie.
 |
-| IMPORTANT:
-| This service contains NO fake authentication,
-| mock users, fake sessions, or fake API responses.
+| Axios credentials are enabled through the centralized API client.
+|
 |--------------------------------------------------------------------------
 */
 
 
-/* ==========================================================================
-   CONSTANTS
-========================================================================== */
+/*
+|--------------------------------------------------------------------------
+| CONFIGURATION
+|--------------------------------------------------------------------------
+*/
 
-const AUTH_PREFIX = "/api/auth";
+const API_PREFIX = "/api/auth";
 
-const STORED_USER_KEY =
-  "zyrions_user";
+const USER_STORAGE_KEY = "zyrions_user";
 
 
-/* ==========================================================================
-   INTERNAL HELPERS
-========================================================================== */
+/*
+|--------------------------------------------------------------------------
+| INTERNAL HELPERS
+|--------------------------------------------------------------------------
+*/
+
 
 /**
- * Return the centralized API base URL.
+ * Normalize an authentication error into a safe Error object.
  *
- * We intentionally read this from the existing Axios instance instead
- * of creating another Axios client or duplicating API configuration.
+ * The original Axios error is intentionally not exposed directly
+ * to presentation components.
  */
-function getApiBaseUrl() {
-  const baseURL =
-    api?.defaults?.baseURL;
+function normalizeAuthError(
+  error,
+  fallbackMessage = "Authentication request failed."
+) {
+  const responseData =
+    error?.response?.data;
+
+  const status =
+    error?.response?.status ??
+    error?.status ??
+    null;
+
+  const backendMessage =
+    responseData?.message ||
+    responseData?.error ||
+    responseData?.detail;
+
+  let message =
+    backendMessage ||
+    error?.message ||
+    fallbackMessage;
+
+  /*
+   * Authentication-specific messages.
+   */
 
   if (
-    typeof baseURL !== "string" ||
-    !baseURL.trim()
+    status === 401 &&
+    !backendMessage
   ) {
-    throw new Error(
-      "API base URL is not configured."
-    );
+    message =
+      "Authentication required. Please sign in again.";
   }
 
-  return baseURL.replace(
-    /\/+$/,
-    ""
-  );
+  if (
+    status === 403 &&
+    !backendMessage
+  ) {
+    message =
+      "You do not have permission to perform this action.";
+  }
+
+  if (
+    status === 409 &&
+    !backendMessage
+  ) {
+    message =
+      "This account already exists.";
+  }
+
+  if (
+    status === 429 &&
+    !backendMessage
+  ) {
+    message =
+      "Too many requests. Please wait a moment and try again.";
+  }
+
+  if (
+    status >= 500 &&
+    !backendMessage
+  ) {
+    message =
+      "The authentication service is temporarily unavailable. Please try again later.";
+  }
+
+  /*
+   * Network / connection failure.
+   */
+
+  if (!error?.response) {
+    if (
+      error?.code === "ECONNABORTED"
+    ) {
+      message =
+        "The request timed out. Please try again.";
+    } else {
+      message =
+        "Unable to connect to the authentication service. Please check your internet connection.";
+    }
+  }
+
+  const normalizedError =
+    new Error(String(message));
+
+  normalizedError.status =
+    status;
+
+  normalizedError.code =
+    responseData?.code ||
+    error?.code ||
+    null;
+
+  normalizedError.data =
+    responseData ||
+    error?.data ||
+    null;
+
+  return normalizedError;
 }
 
 
 /**
- * Normalize an email before sending it to the backend.
+ * Validate an email address.
  *
- * This only performs safe client-side normalization.
+ * This is lightweight client-side validation only.
  * Backend validation remains authoritative.
  */
-function normalizeEmail(email) {
+function validateEmail(email) {
   if (
     typeof email !== "string" ||
     !email.trim()
   ) {
     throw new Error(
-      "Email is required."
+      "Email address is required."
     );
   }
 
-  return email.trim();
+  const normalizedEmail =
+    email.trim();
+
+  const emailPattern =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (
+    !emailPattern.test(
+      normalizedEmail
+    )
+  ) {
+    throw new Error(
+      "Please enter a valid email address."
+    );
+  }
+
+  return normalizedEmail;
 }
 
 
 /**
- * Validate password before an unnecessary request.
+ * Validate password input.
  *
- * This does NOT enforce a backend password policy.
- * The backend remains the final authority.
+ * This does not impose product-specific password rules
+ * beyond requiring a non-empty value.
+ *
+ * The backend remains authoritative for password policy.
  */
 function validatePassword(password) {
   if (
@@ -119,354 +215,62 @@ function validatePassword(password) {
 
 
 /**
- * Normalize a generic auth error without exposing
- * implementation details to the UI.
- *
- * The centralized api.js already preserves Axios errors
- * and supplies the backend/network status.
+ * Validate registration payload.
  */
-function getAuthErrorMessage(
-  error,
-  fallbackMessage
-) {
-  const responseData =
-    error?.response?.data;
-
-  return (
-    responseData?.message ||
-    responseData?.error ||
-    responseData?.detail ||
-    error?.message ||
-    fallbackMessage
-  );
-}
-
-
-/**
- * Create a user-friendly authentication error
- * while preserving useful status/data information.
- */
-function normalizeAuthError(
-  error,
-  fallbackMessage
-) {
-  const normalizedError =
-    new Error(
-      getAuthErrorMessage(
-        error,
-        fallbackMessage
-      )
-    );
-
-  normalizedError.status =
-    error?.response?.status ??
-    error?.status ??
-    null;
-
-  normalizedError.code =
-    responseDataCode(error);
-
-  normalizedError.data =
-    error?.response?.data ||
-    error?.data ||
-    null;
-
-  return normalizedError;
-}
-
-
-/**
- * Safely read backend error code.
- */
-function responseDataCode(error) {
-  return (
-    error?.response?.data?.code ||
-    error?.code ||
-    null
-  );
-}
-
-
-/* ==========================================================================
-   LOGIN
-========================================================================== */
-
-/**
- * POST /api/auth/login
- *
- * Backend is responsible for:
- * - Credential validation
- * - Authentication
- * - Creating the authenticated session
- * - Setting the HttpOnly cookie
- *
- * Frontend never stores the JWT/access token.
- */
-export async function login(
-  email,
-  password
-) {
-  try {
-    const normalizedEmail =
-      normalizeEmail(email);
-
-    const normalizedPassword =
-      validatePassword(password);
-
-    const response =
-      await api.post(
-        `${AUTH_PREFIX}/login`,
-        {
-          email:
-            normalizedEmail,
-
-          password:
-            normalizedPassword,
-        }
-      );
-
-    /*
-     * The centralized api client already uses
-     * withCredentials: true.
-     *
-     * Therefore the backend's HttpOnly cookie
-     * is handled by the browser automatically.
-     */
-
-    return response?.data;
-  } catch (error) {
-    throw normalizeAuthError(
-      error,
-      "Unable to sign in. Please try again."
-    );
-  }
-}
-
-
-/* ==========================================================================
-   REGISTER
-========================================================================== */
-
-/**
- * POST /api/auth/register
- *
- * Registration payload remains backend-defined.
- * We do not invent or transform unknown fields.
- */
-export async function register(
+function validateRegisterData(
   userData
 ) {
-  try {
-    if (
-      !userData ||
-      typeof userData !== "object" ||
-      Array.isArray(userData)
-    ) {
-      throw new Error(
-        "Registration data is required."
-      );
-    }
-
-    const response =
-      await api.post(
-        `${AUTH_PREFIX}/register`,
-        userData
-      );
-
-    return response?.data;
-  } catch (error) {
-    throw normalizeAuthError(
-      error,
-      "Unable to create your account. Please try again."
-    );
-  }
-}
-
-
-/* ==========================================================================
-   CURRENT USER / SESSION
-========================================================================== */
-
-/**
- * GET /api/auth/me
- *
- * This is the authoritative authentication check.
- *
- * The frontend does NOT decide authentication
- * from localStorage.
- */
-export async function getCurrentUser() {
-  try {
-    return await api.get(
-      `${AUTH_PREFIX}/me`
-    );
-  } catch (error) {
-    throw normalizeAuthError(
-      error,
-      "Unable to verify your session."
-    );
-  }
-}
-
-
-/* ==========================================================================
-   LOGOUT
-========================================================================== */
-
-/**
- * POST /api/auth/logout
- *
- * Backend is responsible for invalidating/clearing
- * the authenticated HttpOnly session cookie.
- *
- * Local user profile information is cleared regardless
- * of the API result because it is only cached UI information.
- *
- * IMPORTANT:
- * We do not silently swallow unexpected logout failures.
- */
-export async function logout() {
-  let response = null;
-  let logoutError = null;
-
-  try {
-    response =
-      await api.post(
-        `${AUTH_PREFIX}/logout`,
-        {}
-      );
-  } catch (error) {
-    logoutError =
-      normalizeAuthError(
-        error,
-        "Unable to complete logout."
-      );
-  } finally {
-    /*
-     * This is only cached profile information.
-     *
-     * JWT/access tokens are never stored here.
-     */
-    clearStoredUser();
-  }
-
-  if (logoutError) {
-    throw logoutError;
-  }
-
-  return response?.data;
-}
-
-
-/* ==========================================================================
-   SAVE AUTH — BACKWARD COMPATIBILITY
-========================================================================== */
-
-/**
- * Compatibility helper for existing frontend callers.
- *
- * IMPORTANT:
- * `token` is intentionally ignored.
- *
- * Authentication token/session belongs to the backend
- * HttpOnly cookie and must never be persisted by JavaScript.
- *
- * Only non-sensitive user profile information may be cached.
- */
-export function saveAuth(
-  token,
-  user
-) {
-  /*
-   * Intentionally unused.
-   *
-   * Keeping the parameter preserves compatibility
-   * with existing callers that may still invoke:
-   *
-   * saveAuth(token, user)
-   */
-
-  void token;
-
   if (
-    !user ||
-    typeof user !== "object"
+    !userData ||
+    typeof userData !== "object" ||
+    Array.isArray(userData)
   ) {
+    throw new Error(
+      "Registration data must be a valid object."
+    );
+  }
+}
+
+
+/**
+ * Safely store only the user profile.
+ *
+ * NEVER stores:
+ * - JWT
+ * - access token
+ * - refresh token
+ * - session token
+ * - authorization header
+ */
+function storeUserProfile(user) {
+  if (!user) {
     return;
   }
 
   try {
     localStorage.setItem(
-      STORED_USER_KEY,
+      USER_STORAGE_KEY,
       JSON.stringify(user)
     );
   } catch (error) {
     /*
-     * localStorage is only a UI cache.
-     *
-     * Authentication itself remains server-side.
+     * Storage failure must not break authentication.
      */
     console.warn(
-      "Unable to persist cached user profile:",
+      "Unable to cache user profile:",
       error
     );
   }
 }
 
 
-/* ==========================================================================
-   STORED USER
-========================================================================== */
-
 /**
- * Read cached user profile.
- *
- * This is NOT an authentication check.
- *
- * A user being present here does not mean the
- * backend session is valid.
+ * Remove cached user profile.
  */
-export function getStoredUser() {
-  try {
-    const storedUser =
-      localStorage.getItem(
-        STORED_USER_KEY
-      );
-
-    if (!storedUser) {
-      return null;
-    }
-
-    return JSON.parse(
-      storedUser
-    );
-  } catch (error) {
-    console.warn(
-      "Invalid cached user profile. Clearing local cache.",
-      error
-    );
-
-    clearStoredUser();
-
-    return null;
-  }
-}
-
-
-/* ==========================================================================
-   CLEAR STORED USER
-========================================================================== */
-
-/**
- * Remove only the cached profile.
- *
- * No authentication token is removed because
- * no authentication token is stored in localStorage.
- */
-export function clearStoredUser() {
+function clearStoredUserProfile() {
   try {
     localStorage.removeItem(
-      STORED_USER_KEY
+      USER_STORAGE_KEY
     );
   } catch (error) {
     console.warn(
@@ -477,24 +281,269 @@ export function clearStoredUser() {
 }
 
 
-/* ==========================================================================
-   AUTHENTICATION CHECK
-========================================================================== */
+/*
+|--------------------------------------------------------------------------
+| LOGIN
+|--------------------------------------------------------------------------
+|
+| POST /api/auth/login
+|
+| Backend establishes the authenticated HttpOnly cookie.
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Verify authentication against the real backend.
- *
- * IMPORTANT:
- * Never use localStorage as the source of truth.
- */
+export async function login(
+  email,
+  password
+) {
+  try {
+    const normalizedEmail =
+      validateEmail(email);
+
+    const normalizedPassword =
+      validatePassword(password);
+
+    const response =
+      await api.post(
+        `${API_PREFIX}/login`,
+        {
+          email: normalizedEmail,
+          password: normalizedPassword,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+    /*
+     * Cache profile information only when the backend
+     * actually returns it.
+     */
+    const user =
+      response?.data?.user ||
+      response?.data?.data?.user;
+
+    if (user) {
+      storeUserProfile(user);
+    }
+
+    return response.data;
+  } catch (error) {
+    throw normalizeAuthError(
+      error,
+      "Unable to sign in. Please check your credentials and try again."
+    );
+  }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| REGISTER
+|--------------------------------------------------------------------------
+|
+| POST /api/auth/register
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function register(
+  userData
+) {
+  try {
+    validateRegisterData(
+      userData
+    );
+
+    const payload = {
+      ...userData,
+    };
+
+    /*
+     * Normalize email when supplied.
+     */
+    if (
+      Object.prototype.hasOwnProperty.call(
+        payload,
+        "email"
+      )
+    ) {
+      payload.email =
+        validateEmail(
+          payload.email
+        );
+    }
+
+    /*
+     * Validate password when supplied.
+     */
+    if (
+      Object.prototype.hasOwnProperty.call(
+        payload,
+        "password"
+      )
+    ) {
+      payload.password =
+        validatePassword(
+          payload.password
+        );
+    }
+
+    const response =
+      await api.post(
+        `${API_PREFIX}/register`,
+        payload,
+        {
+          withCredentials: true,
+        }
+      );
+
+    /*
+     * Some backends authenticate the user immediately
+     * after registration and return the profile.
+     */
+    const user =
+      response?.data?.user ||
+      response?.data?.data?.user;
+
+    if (user) {
+      storeUserProfile(user);
+    }
+
+    return response.data;
+  } catch (error) {
+    throw normalizeAuthError(
+      error,
+      "Unable to create your account. Please try again."
+    );
+  }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CURRENT USER / SESSION
+|--------------------------------------------------------------------------
+|
+| GET /api/auth/me
+|
+| This is the authoritative authentication check.
+|
+| The frontend must not consider the user authenticated
+| merely because a localStorage profile exists.
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function getCurrentUser() {
+  try {
+    const response =
+      await api.get(
+        `${API_PREFIX}/me`,
+        {
+          withCredentials: true,
+        }
+      );
+
+    const user =
+      response?.data?.user ||
+      response?.data?.data?.user;
+
+    if (user) {
+      storeUserProfile(user);
+    }
+
+    return response;
+  } catch (error) {
+    /*
+     * If the server confirms that the session is invalid,
+     * the cached profile must not be treated as authoritative.
+     */
+    if (
+      error?.response?.status === 401
+    ) {
+      clearStoredUserProfile();
+    }
+
+    throw normalizeAuthError(
+      error,
+      "Unable to verify your authentication session."
+    );
+  }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOGOUT
+|--------------------------------------------------------------------------
+|
+| POST /api/auth/logout
+|
+| Backend should invalidate / clear the HttpOnly session cookie.
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function logout() {
+  try {
+    const response =
+      await api.post(
+        `${API_PREFIX}/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+    /*
+     * Clear local profile only after the logout request
+     * has completed successfully.
+     */
+    clearStoredUserProfile();
+
+    return response.data;
+  } catch (error) {
+    /*
+     * Even if the backend logout endpoint fails,
+     * remove the local cached profile so stale UI state
+     * is not presented as current user information.
+     */
+    clearStoredUserProfile();
+
+    throw normalizeAuthError(
+      error,
+      "Unable to complete logout. Please try again."
+    );
+  }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATION STATUS
+|--------------------------------------------------------------------------
+|
+| The server is the source of truth.
+|
+|--------------------------------------------------------------------------
+*/
+
 export async function isAuthenticated() {
   try {
     const response =
       await getCurrentUser();
 
+    const responseData =
+      response?.data;
+
     return !!(
-      response?.data?.success &&
-      response?.data?.user
+      responseData?.success &&
+      (
+        responseData?.user ||
+        responseData?.data?.user
+      )
     );
   } catch {
     return false;
@@ -502,61 +551,143 @@ export async function isAuthenticated() {
 }
 
 
-/* ==========================================================================
-   GOOGLE LOGIN
-========================================================================== */
+/*
+|--------------------------------------------------------------------------
+| STORED USER PROFILE
+|--------------------------------------------------------------------------
+|
+| This is only a cached profile.
+|
+| It must NEVER be used as proof of authentication.
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Redirect to the real backend Google OAuth endpoint.
- *
- * The backend completes OAuth and establishes
- * the authenticated HttpOnly session.
- */
+export function getStoredUser() {
+  try {
+    const storedUser =
+      localStorage.getItem(
+        USER_STORAGE_KEY
+      );
+
+    if (!storedUser) {
+      return null;
+    }
+
+    return JSON.parse(
+      storedUser
+    );
+  } catch (error) {
+    clearStoredUserProfile();
+
+    return null;
+  }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SAVE AUTH — LEGACY COMPATIBILITY
+|--------------------------------------------------------------------------
+|
+| Existing frontend code may still call:
+|
+| saveAuth(token, user)
+|
+| The token parameter is intentionally ignored.
+|
+| JWT/session credentials must remain inside the secure
+| backend-controlled HttpOnly cookie.
+|
+|--------------------------------------------------------------------------
+*/
+
+export function saveAuth(
+  _token,
+  user
+) {
+  if (user) {
+    storeUserProfile(user);
+  }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CLEAR LOCAL AUTH PROFILE
+|--------------------------------------------------------------------------
+|
+| Useful when the application needs to discard cached
+| profile information without making a server request.
+|
+|--------------------------------------------------------------------------
+*/
+
+export function clearAuthProfile() {
+  clearStoredUserProfile();
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| GOOGLE OAUTH
+|--------------------------------------------------------------------------
+|
+| GET /api/auth/google
+|
+| OAuth authentication is handled by the backend.
+|
+| The browser is redirected to the backend OAuth route.
+|
+|--------------------------------------------------------------------------
+*/
+
 export function loginWithGoogle() {
   const apiBaseUrl =
-    getApiBaseUrl();
+    import.meta.env.VITE_API_URL ||
+    "https://api.zyrionos.com";
 
   window.location.assign(
-    `${apiBaseUrl}${AUTH_PREFIX}/google`
+    `${apiBaseUrl}${API_PREFIX}/google`
   );
 }
 
 
-/* ==========================================================================
-   GITHUB LOGIN
-========================================================================== */
+/*
+|--------------------------------------------------------------------------
+| GITHUB OAUTH
+|--------------------------------------------------------------------------
+|
+| GET /api/auth/github
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Redirect to the real backend GitHub OAuth endpoint.
- *
- * No token is processed or stored by the frontend.
- */
 export function loginWithGithub() {
   const apiBaseUrl =
-    getApiBaseUrl();
+    import.meta.env.VITE_API_URL ||
+    "https://api.zyrionos.com";
 
   window.location.assign(
-    `${apiBaseUrl}${AUTH_PREFIX}/github`
+    `${apiBaseUrl}${API_PREFIX}/github`
   );
 }
 
 
-/* ==========================================================================
-   DEFAULT SERVICE OBJECT
-========================================================================== */
+/*
+|--------------------------------------------------------------------------
+| DEFAULT SERVICE EXPORT
+|--------------------------------------------------------------------------
+*/
 
 const authService = {
   login,
   register,
   getCurrentUser,
   logout,
-
+  isAuthenticated,
   saveAuth,
   getStoredUser,
-  clearStoredUser,
-
-  isAuthenticated,
-
+  clearAuthProfile,
   loginWithGoogle,
   loginWithGithub,
 };

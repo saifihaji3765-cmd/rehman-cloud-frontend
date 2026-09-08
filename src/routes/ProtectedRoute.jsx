@@ -1,36 +1,93 @@
-import { Navigate, useLocation } from "react-router-dom";
+import {
+  Navigate,
+  useLocation
+} from "react-router-dom";
+
 import { useAuth } from "../context/AuthContext";
 
-function ProtectedRoute({ children }) {
+
+/*
+|--------------------------------------------------------------------------
+| ZYRIONOS — PROTECTED ROUTE
+|--------------------------------------------------------------------------
+|
+| Purpose:
+| Protect authenticated application routes.
+|
+| Architecture:
+|
+| AuthProvider
+|      ↓
+| ProtectedRoute
+|      ↓
+| Protected Page
+|
+| Responsibilities:
+| - Wait for authentication initialization.
+| - Prevent protected content from rendering before auth is known.
+| - Redirect unauthenticated users to /login.
+| - Preserve the attempted location.
+|
+| IMPORTANT:
+| - This is NOT the final security boundary.
+| - Backend authorization remains authoritative.
+| - No JWT is read from localStorage.
+| - No project ownership is checked here.
+| - No business permissions are invented here.
+|--------------------------------------------------------------------------
+*/
+
+
+function ProtectedRoute({
+  children
+}) {
   const {
     authenticated,
     loading
   } = useAuth();
 
-  const location = useLocation();
+  const location =
+    useLocation();
 
-  /* =========================
-     AUTH INITIALIZATION
-  ========================= */
+
+  /*
+  |--------------------------------------------------------------------------
+  | AUTHENTICATION INITIALIZATION
+  |--------------------------------------------------------------------------
+  |
+  | While AuthProvider is checking the real backend session,
+  | do not render protected application content.
+  |
+  |--------------------------------------------------------------------------
+  */
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}
+      <main
+        aria-busy="true"
+        aria-live="polite"
       >
-        Loading...
-      </div>
+        <p>
+          Checking your session...
+        </p>
+      </main>
     );
   }
 
-  /* =========================
-     NOT AUTHENTICATED
-  ========================= */
+
+  /*
+  |--------------------------------------------------------------------------
+  | UNAUTHENTICATED
+  |--------------------------------------------------------------------------
+  |
+  | Authentication has finished loading and the user does not
+  | have a valid authenticated session.
+  |
+  | Preserve the complete location so the authentication flow
+  | can know which protected destination was requested.
+  |
+  |--------------------------------------------------------------------------
+  */
 
   if (!authenticated) {
     return (
@@ -38,17 +95,21 @@ function ProtectedRoute({ children }) {
         to="/login"
         replace
         state={{
-          from: location.pathname
+          from: location
         }}
       />
     );
   }
 
-  /* =========================
-     AUTHENTICATED
-  ========================= */
+
+  /*
+  |--------------------------------------------------------------------------
+  | AUTHENTICATED
+  |--------------------------------------------------------------------------
+  */
 
   return children;
 }
+
 
 export default ProtectedRoute;

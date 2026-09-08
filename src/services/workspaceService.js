@@ -3,20 +3,50 @@ import api from "./api";
 /*
  * =========================================================
  * ZYRIONOS — WORKSPACE SERVICE
- * Enterprise Workspace API Layer
+ * Enterprise Project / Workspace API Layer
  *
- * Responsibilities:
+ * RESPONSIBILITY
+ * ---------------------------------------------------------
+ * This service is the single frontend API boundary for
+ * project/workspace operations.
+ *
+ * Handles:
  * - Project creation
- * - Project retrieval
+ * - Project listing
+ * - Single project retrieval
  * - Project update
  * - Project deletion
  * - Project deployment
- * - Safe project ID handling
- * - Consistent API error handling
+ * - Project ID normalization
+ * - Payload validation
+ * - Consistent API error normalization
  *
- * IMPORTANT:
- * This service uses the REAL backend.
- * No mock/fake project data is created here.
+ * DOES NOT HANDLE
+ * ---------------------------------------------------------
+ * - UI rendering
+ * - React state
+ * - Routing
+ * - Billing UI
+ * - Subscription decisions
+ * - Authentication UI
+ * - Fake/mock project data
+ * - Backend business rules
+ *
+ * Architecture:
+ *
+ * Page
+ *   ↓
+ * workspaceService
+ *   ↓
+ * api client
+ *   ↓
+ * Real Backend API
+ *
+ * IMPORTANT
+ * ---------------------------------------------------------
+ * Existing backend endpoint paths are intentionally
+ * preserved so the current Workspace.jsx integration
+ * does not break.
  * =========================================================
  */
 
@@ -33,29 +63,53 @@ const API_PREFIX = "/api/projects";
 ========================================================= */
 
 /**
- * Safely normalize and encode a project ID.
+ * Normalize a project ID before it is used in a URL.
+ *
+ * This prevents:
+ * - undefined IDs
+ * - null IDs
+ * - empty IDs
+ * - accidental whitespace
+ * - unsafe URL characters
  */
 function normalizeProjectId(projectId) {
   if (
     projectId === undefined ||
-    projectId === null ||
-    String(projectId).trim() === ""
+    projectId === null
   ) {
-    throw new Error("Project ID is required.");
+    throw new Error(
+      "Project ID is required."
+    );
+  }
+
+  const normalizedId =
+    String(projectId).trim();
+
+  if (!normalizedId) {
+    throw new Error(
+      "Project ID is required."
+    );
   }
 
   return encodeURIComponent(
-    String(projectId).trim()
+    normalizedId
   );
 }
 
 
 /**
- * Validate project payload.
+ * Validate an object payload.
+ *
+ * The service validates shape only.
+ * Actual authorization, ownership, plan limits
+ * and business rules remain backend responsibilities.
  */
-function validateProjectData(projectData) {
+function validateProjectData(
+  projectData
+) {
   if (
-    !projectData ||
+    projectData === null ||
+    projectData === undefined ||
     typeof projectData !== "object" ||
     Array.isArray(projectData)
   ) {
@@ -67,54 +121,108 @@ function validateProjectData(projectData) {
 
 
 /**
- * Normalize service errors.
+ * Normalize backend/API errors into one predictable
+ * Error object for the pages consuming this service.
  *
- * api.js preserves the original Axios error,
- * so we can safely read:
- *
- * error.response.data
- * error.response.status
- * error.message
+ * api.js is expected to preserve the original Axios
+ * response structure.
  */
 function normalizeApiError(
   error,
   fallbackMessage
 ) {
+  /*
+   * Axios response payload
+   */
   const responseData =
     error?.response?.data;
 
+
+  /*
+   * Backend may expose one of several
+   * conventional message fields.
+   */
   const backendMessage =
     responseData?.message ||
     responseData?.error ||
-    responseData?.detail;
+    responseData?.detail ||
+    responseData?.reason;
 
+
+  /*
+   * HTTP status
+   */
   const status =
     error?.response?.status ??
     error?.status ??
     null;
 
+
+  /*
+   * Final user-facing error message.
+   *
+   * Do not expose raw backend internals unless
+   * the backend intentionally provides a safe message.
+   */
   const message =
     backendMessage ||
     error?.message ||
     fallbackMessage;
 
-  const normalizedError =
-    new Error(String(message));
 
+  const normalizedError =
+    new Error(
+      String(message)
+    );
+
+
+  /*
+   * Preserve useful diagnostic information
+   * without coupling pages to Axios.
+   */
   normalizedError.status =
     status;
+
 
   normalizedError.code =
     responseData?.code ||
     error?.code ||
     null;
 
+
   normalizedError.data =
     responseData ||
     error?.data ||
     null;
 
+
+  normalizedError.isWorkspaceError =
+    true;
+
+
   return normalizedError;
+}
+
+
+/**
+ * Execute an API operation through one common
+ * error-normalization boundary.
+ *
+ * This keeps every exported service function
+ * consistent.
+ */
+async function executeRequest(
+  request,
+  fallbackMessage
+) {
+  try {
+    return await request();
+  } catch (error) {
+    throw normalizeApiError(
+      error,
+      fallbackMessage
+    );
+  }
 }
 
 
@@ -124,25 +232,37 @@ function normalizeApiError(
 
 /**
  * POST /api/projects/create
+ *
+ * Expected payload from Workspace:
+ *
+ * {
+ *   projectName,
+ *   description,
+ *   framework
+ * }
+ *
+ * The backend remains responsible for:
+ * - authentication
+ * - authorization
+ * - ownership
+ * - subscription limits
+ * - project creation rules
  */
 export async function createProject(
   projectData
 ) {
-  try {
-    validateProjectData(
-      projectData
-    );
+  validateProjectData(
+    projectData
+  );
 
-    return await api.post(
-      `${API_PREFIX}/create`,
-      projectData
-    );
-  } catch (error) {
-    throw normalizeApiError(
-      error,
-      "Unable to create the project."
-    );
-  }
+  return executeRequest(
+    () =>
+      api.post(
+        `${API_PREFIX}/create`,
+        projectData
+      ),
+    "Unable to create the project."
+  );
 }
 
 
@@ -152,18 +272,24 @@ export async function createProject(
 
 /**
  * GET /api/projects/me
+ *
+ * Returns the authenticated user's projects.
+ *
+ * Workspace.jsx expects the Axios response so it can
+ * consume:
+ *
+ * response.data.projects
+ *
+ * or the compatible backend response shape.
  */
 export async function getProjects() {
-  try {
-    return await api.get(
-      `${API_PREFIX}/me`
-    );
-  } catch (error) {
-    throw normalizeApiError(
-      error,
-      "Unable to load your projects."
-    );
-  }
+  return executeRequest(
+    () =>
+      api.get(
+        `${API_PREFIX}/me`
+      ),
+    "Unable to load your projects."
+  );
 }
 
 
@@ -177,21 +303,18 @@ export async function getProjects() {
 export async function getProject(
   projectId
 ) {
-  try {
-    const id =
-      normalizeProjectId(
-        projectId
-      );
+  const id =
+    normalizeProjectId(
+      projectId
+    );
 
-    return await api.get(
-      `${API_PREFIX}/${id}`
-    );
-  } catch (error) {
-    throw normalizeApiError(
-      error,
-      "Unable to load the project."
-    );
-  }
+  return executeRequest(
+    () =>
+      api.get(
+        `${API_PREFIX}/${id}`
+      ),
+    "Unable to load the project."
+  );
 }
 
 
@@ -201,31 +324,34 @@ export async function getProject(
 
 /**
  * PUT /api/projects/update/:projectId
+ *
+ * This function intentionally performs no frontend
+ * business-rule enforcement.
+ *
+ * Backend determines whether the authenticated user
+ * can update the project.
  */
 export async function updateProject(
   projectId,
   projectData
 ) {
-  try {
-    const id =
-      normalizeProjectId(
-        projectId
-      );
-
-    validateProjectData(
-      projectData
+  const id =
+    normalizeProjectId(
+      projectId
     );
 
-    return await api.put(
-      `${API_PREFIX}/update/${id}`,
-      projectData
-    );
-  } catch (error) {
-    throw normalizeApiError(
-      error,
-      "Unable to update the project."
-    );
-  }
+  validateProjectData(
+    projectData
+  );
+
+  return executeRequest(
+    () =>
+      api.put(
+        `${API_PREFIX}/update/${id}`,
+        projectData
+      ),
+    "Unable to update the project."
+  );
 }
 
 
@@ -235,25 +361,25 @@ export async function updateProject(
 
 /**
  * DELETE /api/projects/delete/:projectId
+ *
+ * Destructive authorization must be enforced
+ * by the backend.
  */
 export async function deleteProject(
   projectId
 ) {
-  try {
-    const id =
-      normalizeProjectId(
-        projectId
-      );
+  const id =
+    normalizeProjectId(
+      projectId
+    );
 
-    return await api.delete(
-      `${API_PREFIX}/delete/${id}`
-    );
-  } catch (error) {
-    throw normalizeApiError(
-      error,
-      "Unable to delete the project."
-    );
-  }
+  return executeRequest(
+    () =>
+      api.delete(
+        `${API_PREFIX}/delete/${id}`
+      ),
+    "Unable to delete the project."
+  );
 }
 
 
@@ -264,27 +390,82 @@ export async function deleteProject(
 /**
  * POST /api/projects/deploy/:projectId
  *
- * The backend is expected to return deployment
- * information in its response.
+ * Expected backend response may contain:
+ *
+ * data: {
+ *   project,
+ *   deployment
+ * }
+ *
+ * Workspace.jsx already handles:
+ *
+ * deployment.liveUrl
+ * deployment.url
+ * project.liveUrl
+ * project.deploymentUrl
+ *
+ * This service therefore deliberately returns the
+ * original API response instead of inventing or
+ * reshaping deployment data.
  */
 export async function deployProject(
   projectId
 ) {
-  try {
-    const id =
-      normalizeProjectId(
-        projectId
-      );
+  const id =
+    normalizeProjectId(
+      projectId
+    );
 
-    return await api.post(
-      `${API_PREFIX}/deploy/${id}`
-    );
-  } catch (error) {
-    throw normalizeApiError(
-      error,
-      "Unable to deploy the project."
-    );
+  return executeRequest(
+    () =>
+      api.post(
+        `${API_PREFIX}/deploy/${id}`
+      ),
+    "Unable to deploy the project."
+  );
+}
+
+
+/* =========================================================
+   OPTIONAL PROJECT OPERATIONS
+========================================================= */
+
+/**
+ * Small utility for consumers that need to safely
+ * determine whether a value can represent a project ID.
+ *
+ * This does not call the backend.
+ */
+export function isValidProjectId(
+  projectId
+) {
+  if (
+    projectId === undefined ||
+    projectId === null
+  ) {
+    return false;
   }
+
+  return (
+    String(projectId).trim().length > 0
+  );
+}
+
+
+/**
+ * Small utility for consumers that need a normalized
+ * project identifier without directly handling URL
+ * encoding.
+ *
+ * Kept separate from normalizeProjectId because the
+ * internal helper is intentionally private.
+ */
+export function getNormalizedProjectId(
+  projectId
+) {
+  return normalizeProjectId(
+    projectId
+  );
 }
 
 
@@ -299,6 +480,9 @@ const workspaceService = {
   updateProject,
   deleteProject,
   deployProject,
+  isValidProjectId,
+  getNormalizedProjectId,
 };
+
 
 export default workspaceService;

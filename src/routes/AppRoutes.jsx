@@ -4,16 +4,20 @@ import {
   Navigate
 } from "react-router-dom";
 
-/* =========================
-   AUTH PAGES
-========================= */
+/*
+|--------------------------------------------------------------------------
+| AUTH PAGES
+|--------------------------------------------------------------------------
+*/
 
 import Login from "../pages/auth/Login/Login.jsx";
 import Register from "../pages/auth/Register/Register.jsx";
 
-/* =========================
-   APPLICATION PAGES
-========================= */
+/*
+|--------------------------------------------------------------------------
+| APPLICATION PAGES
+|--------------------------------------------------------------------------
+*/
 
 import Dashboard from "../pages/dashboard/Dashboard/Dashboard.jsx";
 import Workspace from "../pages/workspace/Workspace/Workspace.jsx";
@@ -21,15 +25,45 @@ import Deployments from "../pages/deployments/Deployments/Deployments.jsx";
 import Billing from "../pages/billing/Billing/Billing.jsx";
 import Settings from "../pages/settings/Settings/Settings.jsx";
 
-/* =========================
-   ROUTE GUARDS
-========================= */
+/*
+|--------------------------------------------------------------------------
+| ROUTE GUARDS
+|--------------------------------------------------------------------------
+*/
 
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import PublicRoute from "./PublicRoute.jsx";
 
 
+/*
+|--------------------------------------------------------------------------
+| APP ROUTES
+|--------------------------------------------------------------------------
+|
+| Architecture:
+|
+| App
+|  ↓
+| AppRoutes
+|  ├── PublicRoute
+|  │    ├── Login
+|  │    └── Register
+|  │
+|  └── ProtectedRoute
+|       ├── Dashboard
+|       ├── Workspace
+|       ├── Deployments
+|       ├── Billing
+|       └── Settings
+|
+| Authentication is handled centrally by
+| AuthContext + route guards.
+|
+|--------------------------------------------------------------------------
+*/
+
 function AppRoutes() {
+
   return (
     <Routes>
 
@@ -66,7 +100,7 @@ function AppRoutes() {
 
 
       {/* ==================================================
-          PROTECTED APPLICATION
+          PROTECTED APPLICATION ROUTES
       ================================================== */}
 
       <Route
@@ -116,7 +150,15 @@ function AppRoutes() {
 
 
       {/* ==================================================
-          FALLBACK
+          UNKNOWN ROUTES
+      ==================================================
+      
+      Unknown URLs should never leave the user
+      on a blank/broken page.
+
+      Authenticated users will ultimately be handled
+      by the dashboard route.
+
       ================================================== */}
 
       <Route
@@ -133,5 +175,11 @@ function AppRoutes() {
   );
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| EXPORT
+|--------------------------------------------------------------------------
+*/
 
 export default AppRoutes;

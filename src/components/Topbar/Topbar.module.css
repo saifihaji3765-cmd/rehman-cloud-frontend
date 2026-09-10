@@ -1,596 +1,1633 @@
 /* =========================================================
-   TOPBAR — ENTERPRISE UI SYSTEM
-   Component: src/components/Topbar/Topbar.jsx
-   ========================================================= */
+   ZYRIONOS
+   ENTERPRISE TOPBAR SYSTEM
+
+   Responsibilities:
+   - Application header
+   - Workspace navigation
+   - Global search
+   - Real platform state
+   - AI credit visibility
+   - Account access
+   - Responsive behaviour
+
+   No API logic.
+   No fake notification system.
+   No fake platform status.
+   No page-specific styling.
+========================================================= */
+
 
 /* =========================================================
-   ROOT TOPBAR
-   ========================================================= */
+   ROOT
+========================================================= */
 
 .topbar {
-  width: 100%;
-  min-height: 64px;
 
-  display: flex;
+  position: relative;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(210px, auto)
+    minmax(280px, 1fr)
+    auto;
+
   align-items: center;
-  justify-content: space-between;
 
-  gap: 20px;
-  padding: 10px 20px;
+  gap: 24px;
 
-  background: #0b1120;
-  border-bottom: 1px solid #1f2937;
+  width: 100%;
 
-  color: #ffffff;
+  min-height: 68px;
+
+  padding:
+    10px 24px;
+
+  background:
+    rgba(7, 12, 23, 0.94);
+
+  border-bottom:
+    1px solid rgba(148, 163, 184, 0.12);
+
+  color:
+    #f4f7ff;
 
   box-sizing: border-box;
 
-  position: relative;
   z-index: 100;
 
-  flex-shrink: 0;
+  isolation: isolate;
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+}
+
+
+/* =========================================================
+   TOPBAR LIGHT
+========================================================= */
+
+.topbar::before {
+
+  content: "";
+
+  position: absolute;
+
+  inset:
+    0 20% auto 0;
+
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(108, 99, 255, 0.55),
+      rgba(53, 215, 255, 0.12),
+      transparent
+    );
+
+  pointer-events: none;
+
 }
 
 
 /* =========================================================
    LEFT SECTION
-   ========================================================= */
+========================================================= */
 
-.left {
+.leftSection {
+
   min-width: 0;
 
   display: flex;
+
   align-items: center;
 
-  gap: 14px;
-
-  flex: 1 1 auto;
 }
 
 
 /* =========================================================
-   WORKSPACE SWITCHER
-   ========================================================= */
+   WORKSPACE LINK
+========================================================= */
 
-.workspaceSwitcher {
-  min-height: 42px;
+.workspaceLink {
+
+  min-width: 0;
 
   display: inline-flex;
+
   align-items: center;
 
-  padding: 0 14px;
+  gap: 11px;
 
-  border: 1px solid #263244;
-  border-radius: 10px;
+  min-height: 44px;
 
-  background: #111827;
+  padding:
+    5px 10px;
 
-  color: #ffffff;
+  border:
+    1px solid transparent;
 
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
+  border-radius:
+    11px;
 
-  white-space: nowrap;
+  color:
+    inherit;
+
+  text-decoration: none;
 
   transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+
 }
 
-.workspaceSwitcher:hover {
-  background: #172033;
-  border-color: #34445b;
+
+.workspaceLink:hover {
+
+  background:
+    rgba(148, 163, 184, 0.055);
+
+  border-color:
+    rgba(148, 163, 184, 0.10);
+
 }
 
-.workspaceSwitcher:focus-visible {
-  outline: none;
 
-  border-color: #4f46e5;
+.workspaceLink:active {
+
+  transform:
+    translateY(1px);
+
+}
+
+
+.workspaceLink:focus-visible {
+
+  outline:
+    none;
+
+  border-color:
+    rgba(108, 99, 255, 0.55);
 
   box-shadow:
-    0 0 0 3px rgba(79, 70, 229, 0.18);
+    0 0 0 3px rgba(108, 99, 255, 0.16);
+
 }
 
 
 /* =========================================================
-   SEARCH
-   ========================================================= */
+   WORKSPACE MARK
+========================================================= */
 
-.searchBox {
-  width: min(420px, 42vw);
-  min-width: 180px;
-  height: 42px;
+.workspaceMark {
 
-  padding: 0 14px;
+  position: relative;
 
-  border: 1px solid #263244;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
 
-  background: #111827;
+  flex:
+    0 0 34px;
 
-  color: #ffffff;
+  display: grid;
 
-  font-family: inherit;
-  font-size: 14px;
+  place-items: center;
 
-  box-sizing: border-box;
+  gap: 2px;
 
-  outline: none;
+  border:
+    1px solid rgba(129, 121, 255, 0.34);
 
-  transition:
-    border-color 0.18s ease,
-    background-color 0.18s ease,
-    box-shadow 0.18s ease;
-}
+  border-radius:
+    9px;
 
-.searchBox::placeholder {
-  color: #64748b;
-}
-
-.searchBox:hover {
-  border-color: #34445b;
-}
-
-.searchBox:focus {
-  background: #0f172a;
-
-  border-color: #4f46e5;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(108, 99, 255, 0.20),
+      rgba(53, 215, 255, 0.08)
+    );
 
   box-shadow:
-    0 0 0 3px rgba(79, 70, 229, 0.14);
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 0 20px rgba(108, 99, 255, 0.10);
+
+}
+
+
+.workspaceMark span {
+
+  position: absolute;
+
+  width: 13px;
+  height: 4px;
+
+  border-radius:
+    999px;
+
+  background:
+    #8179ff;
+
+  transform:
+    rotate(-45deg);
+
+}
+
+
+.workspaceMark span:nth-child(1) {
+
+  transform:
+    translateY(-5px)
+    rotate(-45deg);
+
+}
+
+
+.workspaceMark span:nth-child(2) {
+
+  transform:
+    translateY(0)
+    rotate(45deg);
+
+}
+
+
+.workspaceMark span:nth-child(3) {
+
+  transform:
+    translateY(5px)
+    rotate(-45deg);
+
+}
+
+
+/* =========================================================
+   WORKSPACE IDENTITY
+========================================================= */
+
+.workspaceIdentity {
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  gap: 2px;
+
+}
+
+
+/* =========================================================
+   PRODUCT NAME
+========================================================= */
+
+.productName {
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  color:
+    #f4f7ff;
+
+  font-size:
+    14px;
+
+  line-height:
+    1.2;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    -0.015em;
+
+}
+
+
+/* =========================================================
+   WORKSPACE LABEL
+========================================================= */
+
+.workspaceLabel {
+
+  color:
+    #707b92;
+
+  font-size:
+    10px;
+
+  line-height:
+    1.2;
+
+  font-weight:
+    600;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    0.09em;
+
+}
+
+
+/* =========================================================
+   CENTER SECTION
+========================================================= */
+
+.centerSection {
+
+  min-width: 0;
+
+  width: 100%;
+
+  display: flex;
+
+  justify-content: center;
+
+}
+
+
+/* =========================================================
+   SEARCH FORM
+========================================================= */
+
+.searchForm {
+
+  position: relative;
+
+  width:
+    min(100%, 620px);
+
+  min-width:
+    0;
+
+}
+
+
+/* =========================================================
+   SEARCH INPUT
+========================================================= */
+
+.searchForm input {
+
+  width: 100%;
+
+  height: 42px;
+
+  padding:
+    0 74px
+    0 42px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.13);
+
+  border-radius:
+    11px;
+
+  outline:
+    none;
+
+  background:
+    rgba(17, 24, 39, 0.78);
+
+  color:
+    #f4f7ff;
+
+  font-family:
+    inherit;
+
+  font-size:
+    13px;
+
+  font-weight:
+    450;
+
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+}
+
+
+.searchForm input:hover {
+
+  border-color:
+    rgba(148, 163, 184, 0.22);
+
+}
+
+
+.searchForm input:focus {
+
+  background:
+    rgba(15, 23, 42, 0.96);
+
+  border-color:
+    rgba(108, 99, 255, 0.62);
+
+  box-shadow:
+    0 0 0 3px rgba(108, 99, 255, 0.12),
+    0 8px 28px rgba(0, 0, 0, 0.14);
+
+}
+
+
+.searchForm input::placeholder {
+
+  color:
+    #657088;
+
+  opacity:
+    1;
+
+}
+
+
+/* Remove browser search decoration */
+
+.searchForm input::-webkit-search-cancel-button {
+
+  appearance:
+    none;
+
+}
+
+
+/* =========================================================
+   SEARCH ICON
+========================================================= */
+
+.searchIcon {
+
+  position: absolute;
+
+  left: 14px;
+
+  top: 50%;
+
+  transform:
+    translateY(-50%);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color:
+    #71809a;
+
+  pointer-events:
+    none;
+
+  z-index: 2;
+
+}
+
+
+/* =========================================================
+   SEARCH ACTIVE
+========================================================= */
+
+.searchActive .searchIcon {
+
+  color:
+    #8179ff;
+
+}
+
+
+/* =========================================================
+   COMMAND SHORTCUT
+========================================================= */
+
+.commandShortcut {
+
+  position: absolute;
+
+  right: 8px;
+
+  top: 50%;
+
+  transform:
+    translateY(-50%);
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 3px;
+
+  min-width: 43px;
+
+  height: 26px;
+
+  padding:
+    0 8px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.13);
+
+  border-radius:
+    7px;
+
+  background:
+    rgba(148, 163, 184, 0.055);
+
+  color:
+    #7f8da3;
+
+  font-size:
+    11px;
+
+  font-weight:
+    650;
+
+  cursor:
+    pointer;
+
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+
+}
+
+
+.commandShortcut:hover {
+
+  color:
+    #dce3f2;
+
+  background:
+    rgba(148, 163, 184, 0.09);
+
+  border-color:
+    rgba(148, 163, 184, 0.22);
+
+}
+
+
+.commandShortcut:focus-visible {
+
+  outline:
+    2px solid rgba(108, 99, 255, 0.70);
+
+  outline-offset:
+    2px;
+
 }
 
 
 /* =========================================================
    RIGHT SECTION
-   ========================================================= */
+========================================================= */
 
-.right {
+.rightSection {
+
   min-width: 0;
 
   display: flex;
+
   align-items: center;
+
   justify-content: flex-end;
 
-  gap: 12px;
+  gap: 9px;
 
-  flex: 0 0 auto;
 }
 
 
 /* =========================================================
-   SYSTEM STATUS
-   ========================================================= */
+   PLATFORM STATUS
+========================================================= */
 
 .systemStatus {
-  min-height: 40px;
 
   display: inline-flex;
+
   align-items: center;
 
   gap: 8px;
 
-  padding: 0 12px;
+  min-height: 34px;
 
-  border: 1px solid #1f3a32;
-  border-radius: 10px;
+  padding:
+    0 10px;
 
-  background: #0d1917;
+  border:
+    1px solid rgba(32, 199, 122, 0.18);
 
-  color: #22c55e;
+  border-radius:
+    9px;
 
-  font-size: 13px;
-  font-weight: 600;
+  background:
+    rgba(32, 199, 122, 0.055);
 
-  white-space: nowrap;
+  color:
+    #72dca9;
+
+  font-size:
+    11px;
+
+  font-weight:
+    650;
+
+  white-space:
+    nowrap;
+
 }
 
-.statusDot {
-  width: 8px;
-  height: 8px;
 
-  flex: 0 0 8px;
+/* =========================================================
+   STATUS INDICATOR
+========================================================= */
 
-  border-radius: 50%;
+.statusIndicator {
 
-  background: #22c55e;
+  width: 7px;
+  height: 7px;
+
+  flex:
+    0 0 7px;
+
+  border-radius:
+    50%;
+
+  background:
+    #20c77a;
 
   box-shadow:
-    0 0 0 3px rgba(34, 197, 94, 0.10),
-    0 0 10px rgba(34, 197, 94, 0.35);
+    0 0 0 3px rgba(32, 199, 122, 0.08),
+    0 0 12px rgba(32, 199, 122, 0.30);
+
+}
+
+
+.statusIndicator span {
+
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  border-radius:
+    inherit;
+
 }
 
 
 /* =========================================================
-   AI CREDIT BADGE
-   ========================================================= */
+   AI CREDITS
+========================================================= */
 
-.creditBadge {
-  min-height: 40px;
+.credits {
 
   display: inline-flex;
+
   align-items: center;
 
-  padding: 0 13px;
+  gap: 6px;
 
-  border: 1px solid #263244;
-  border-radius: 10px;
+  min-height: 34px;
 
-  background: #111827;
+  padding:
+    0 10px;
 
-  color: #f8fafc;
+  border:
+    1px solid rgba(148, 163, 184, 0.12);
 
-  font-size: 13px;
-  font-weight: 600;
+  border-radius:
+    9px;
 
-  white-space: nowrap;
+  background:
+    rgba(17, 24, 39, 0.72);
 
-  box-sizing: border-box;
+  white-space:
+    nowrap;
 
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease;
 }
 
-.creditBadge:hover {
-  background: #172033;
-  border-color: #34445b;
+
+.creditsIcon {
+
+  display: flex;
+
+  color:
+    #8179ff;
+
+}
+
+
+.creditsValue {
+
+  color:
+    #eef2ff;
+
+  font-size:
+    12px;
+
+  font-weight:
+    700;
+
+}
+
+
+.creditsLabel {
+
+  color:
+    #737f96;
+
+  font-size:
+    10px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    0.05em;
+
 }
 
 
 /* =========================================================
-   ACTION BUTTON
-   ========================================================= */
+   PROFILE CONTAINER
+========================================================= */
 
-.actionButton {
-  min-height: 40px;
+.profileContainer {
 
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  position:
+    relative;
 
-  padding: 0 14px;
+}
 
-  border: 1px solid #263244;
-  border-radius: 10px;
 
-  background: #111827;
+/* =========================================================
+   PROFILE BUTTON
+========================================================= */
 
-  color: #cbd5e1;
+.profileButton {
 
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  min-height:
+    42px;
 
-  cursor: pointer;
+  display:
+    inline-flex;
 
-  white-space: nowrap;
+  align-items:
+    center;
+
+  gap:
+    9px;
+
+  padding:
+    3px 7px 3px 4px;
+
+  border:
+    1px solid transparent;
+
+  border-radius:
+    10px;
+
+  background:
+    transparent;
+
+  color:
+    inherit;
+
+  cursor:
+    pointer;
 
   transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+    background-color 160ms ease,
+    border-color 160ms ease;
+
 }
 
-.actionButton:hover {
-  background: #172033;
 
-  border-color: #3b4a61;
+.profileButton:hover {
 
-  color: #ffffff;
+  background:
+    rgba(148, 163, 184, 0.055);
+
+  border-color:
+    rgba(148, 163, 184, 0.10);
+
 }
 
-.actionButton:active {
-  transform: translateY(1px);
-}
 
-.actionButton:focus-visible {
-  outline: none;
+.profileButton:focus-visible {
 
-  border-color: #4f46e5;
+  outline:
+    none;
+
+  border-color:
+    rgba(108, 99, 255, 0.55);
 
   box-shadow:
-    0 0 0 3px rgba(79, 70, 229, 0.16);
+    0 0 0 3px rgba(108, 99, 255, 0.14);
+
 }
 
 
 /* =========================================================
-   PROFILE
-   ========================================================= */
+   AVATAR
+========================================================= */
 
-.profileInfo {
-  min-width: 0;
+.avatar,
+.menuAvatar {
 
-  display: flex;
-  align-items: center;
+  display:
+    flex;
 
-  gap: 10px;
+  align-items:
+    center;
 
-  padding-left: 4px;
+  justify-content:
+    center;
+
+  flex:
+    0 0 36px;
+
+  width:
+    36px;
+
+  height:
+    36px;
+
+  border:
+    1px solid rgba(129, 121, 255, 0.34);
+
+  border-radius:
+    10px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(108, 99, 255, 0.25),
+      rgba(53, 215, 255, 0.08)
+    );
+
+  color:
+    #ffffff;
+
+  font-size:
+    12px;
+
+  font-weight:
+    750;
+
+  letter-spacing:
+    0.02em;
+
+  user-select:
+    none;
+
 }
 
-.profile {
-  width: 38px;
-  height: 38px;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* =========================================================
+   PROFILE TEXT
+========================================================= */
 
-  flex: 0 0 38px;
+.profileText {
 
-  border: 1px solid #3b4a61;
-  border-radius: 50%;
+  min-width:
+    0;
 
-  background: #1e293b;
+  max-width:
+    150px;
 
-  color: #ffffff;
+  display:
+    flex;
 
-  font-size: 13px;
-  font-weight: 700;
+  flex-direction:
+    column;
 
-  text-transform: uppercase;
+  align-items:
+    flex-start;
 
-  user-select: none;
+  gap:
+    2px;
+
 }
+
 
 .profileName {
-  max-width: 150px;
 
-  overflow: hidden;
+  width:
+    100%;
 
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow:
+    hidden;
 
-  color: #f8fafc;
+  text-overflow:
+    ellipsis;
 
-  font-size: 14px;
-  font-weight: 600;
+  white-space:
+    nowrap;
+
+  color:
+    #eaf0fb;
+
+  font-size:
+    12px;
+
+  line-height:
+    1.25;
+
+  font-weight:
+    650;
+
+}
+
+
+.profileEmail {
+
+  width:
+    100%;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  color:
+    #68758d;
+
+  font-size:
+    10px;
+
+  line-height:
+    1.25;
+
+}
+
+
+/* =========================================================
+   PROFILE CHEVRON
+========================================================= */
+
+.profileChevron {
+
+  display:
+    flex;
+
+  color:
+    #68758d;
+
+  transition:
+    transform 160ms ease;
+
+}
+
+
+.profileChevronOpen {
+
+  transform:
+    rotate(180deg);
+
+}
+
+
+/* =========================================================
+   ACCOUNT MENU
+========================================================= */
+
+.profileMenu {
+
+  position:
+    absolute;
+
+  top:
+    calc(100% + 10px);
+
+  right:
+    0;
+
+  width:
+    280px;
+
+  padding:
+    8px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.15);
+
+  border-radius:
+    14px;
+
+  background:
+    rgba(11, 18, 32, 0.98);
+
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.40),
+    inset 0 1px 0 rgba(255,255,255,0.035);
+
+  backdrop-filter:
+    blur(18px);
+
+  -webkit-backdrop-filter:
+    blur(18px);
+
+  z-index:
+    200;
+
+}
+
+
+/* =========================================================
+   PROFILE MENU HEADER
+========================================================= */
+
+.profileMenuHeader {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  padding:
+    10px;
+
+}
+
+
+.menuIdentity {
+
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    3px;
+
+}
+
+
+.menuIdentity strong {
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  color:
+    #f4f7ff;
+
+  font-size:
+    13px;
+
+}
+
+
+.menuIdentity span {
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  color:
+    #707b92;
+
+  font-size:
+    10px;
+
+}
+
+
+/* =========================================================
+   MENU DIVIDER
+========================================================= */
+
+.menuDivider {
+
+  height:
+    1px;
+
+  margin:
+    4px 2px 6px;
+
+  background:
+    rgba(148, 163, 184, 0.10);
+
+}
+
+
+/* =========================================================
+   MENU ITEM
+========================================================= */
+
+.menuItem {
+
+  width:
+    100%;
+
+  min-height:
+    40px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  padding:
+    0 10px;
+
+  border:
+    1px solid transparent;
+
+  border-radius:
+    9px;
+
+  background:
+    transparent;
+
+  color:
+    #a8b1c7;
+
+  font-size:
+    12px;
+
+  font-weight:
+    550;
+
+  text-align:
+    left;
+
+  cursor:
+    pointer;
+
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+
+}
+
+
+.menuItem:hover {
+
+  color:
+    #ffffff;
+
+  background:
+    rgba(148, 163, 184, 0.075);
+
+  border-color:
+    rgba(148, 163, 184, 0.08);
+
+}
+
+
+.menuItem:focus-visible {
+
+  outline:
+    none;
+
+  border-color:
+    rgba(108, 99, 255, 0.55);
+
+  box-shadow:
+    0 0 0 3px rgba(108, 99, 255, 0.12);
+
 }
 
 
 /* =========================================================
    TABLET
-   ========================================================= */
+========================================================= */
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
+
   .topbar {
-    gap: 14px;
-    padding: 10px 16px;
+
+    grid-template-columns:
+      minmax(190px, auto)
+      minmax(220px, 1fr)
+      auto;
+
+    gap:
+      14px;
+
+    padding:
+      9px 18px;
+
   }
 
-  .left {
-    gap: 10px;
+  .profileText {
+
+    max-width:
+      115px;
+
   }
 
-  .right {
-    gap: 8px;
-  }
-
-  .searchBox {
-    width: min(320px, 32vw);
-  }
-
-  .profileName {
-    max-width: 110px;
-  }
 }
 
 
 /* =========================================================
    SMALL TABLET
-   ========================================================= */
+========================================================= */
 
-@media (max-width: 900px) {
-  .systemStatus {
-    padding: 0 10px;
+@media (max-width: 960px) {
+
+  .topbar {
+
+    grid-template-columns:
+      auto
+      minmax(180px, 1fr)
+      auto;
+
+    gap:
+      10px;
+
+  }
+
+  .workspaceLabel {
+
+    display:
+      none;
+
   }
 
   .systemStatus {
-    font-size: 12px;
+
+    padding:
+      0 8px;
+
   }
 
-  .creditBadge {
-    padding: 0 10px;
+  .profileText {
+
+    display:
+      none;
+
   }
 
-  .actionButton {
-    padding: 0 11px;
-  }
-
-  .profileName {
-    display: none;
-  }
 }
 
 
 /* =========================================================
    MOBILE
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 768px) {
+
   .topbar {
-    min-height: 58px;
 
-    padding: 8px 12px;
+    display:
+      grid;
 
-    gap: 10px;
+    grid-template-columns:
+      auto
+      minmax(0, 1fr)
+      auto;
+
+    min-height:
+      60px;
+
+    gap:
+      8px;
+
+    padding:
+      8px 12px;
+
   }
 
-  .left {
-    flex: 1 1 auto;
+  .workspaceLink {
 
-    min-width: 0;
+    min-height:
+      40px;
 
-    gap: 8px;
+    padding:
+      3px 5px;
+
   }
 
-  .workspaceSwitcher {
-    min-height: 38px;
+  .workspaceMark {
 
-    padding: 0 10px;
+    width:
+      32px;
 
-    border-radius: 9px;
+    height:
+      32px;
 
-    font-size: 13px;
+    flex-basis:
+      32px;
+
   }
 
-  .searchBox {
-    width: 100%;
-    min-width: 0;
+  .productName {
 
-    height: 38px;
+    font-size:
+      12px;
 
-    padding: 0 11px;
-
-    border-radius: 9px;
-
-    font-size: 13px;
   }
 
-  .right {
-    gap: 7px;
+  .centerSection {
+
+    min-width:
+      0;
+
+  }
+
+  .searchForm input {
+
+    height:
+      40px;
+
+    padding-left:
+      38px;
+
+    padding-right:
+      52px;
+
+    font-size:
+      12px;
+
+  }
+
+  .commandShortcut {
+
+    min-width:
+      34px;
+
+    height:
+      24px;
+
+    padding:
+      0 6px;
+
+    font-size:
+      10px;
+
   }
 
   .systemStatus {
-    display: none;
+
+    display:
+      none;
+
   }
 
-  .creditBadge {
-    min-height: 38px;
+  .credits {
 
-    padding: 0 9px;
+    display:
+      none;
 
-    border-radius: 9px;
-
-    font-size: 12px;
   }
 
-  .actionButton {
-    min-height: 38px;
+  .profileButton {
 
-    padding: 0 9px;
+    padding:
+      2px;
 
-    border-radius: 9px;
-
-    font-size: 12px;
   }
 
-  .profile {
-    width: 36px;
-    height: 36px;
+  .avatar {
 
-    flex-basis: 36px;
+    width:
+      34px;
+
+    height:
+      34px;
+
+    flex-basis:
+      34px;
+
+    border-radius:
+      9px;
+
   }
+
 }
 
 
 /* =========================================================
    SMALL MOBILE
-   ========================================================= */
+========================================================= */
 
-@media (max-width: 560px) {
+@media (max-width: 520px) {
+
   .topbar {
-    padding: 8px 10px;
+
+    grid-template-columns:
+      auto
+      minmax(0, 1fr)
+      auto;
+
+    padding:
+      7px 9px;
+
   }
 
-  .workspaceSwitcher {
-    display: none;
+  .workspaceIdentity {
+
+    display:
+      none;
+
   }
 
-  .searchBox {
-    width: 100%;
+  .workspaceLink {
+
+    border:
+      1px solid rgba(148, 163, 184, 0.10);
+
+    background:
+      rgba(148, 163, 184, 0.04);
+
   }
 
-  .creditBadge {
-    display: none;
+  .workspaceLink svg {
+
+    display:
+      none;
+
   }
 
-  .actionButton {
-    padding: 0 8px;
+  .searchForm input {
+
+    height:
+      38px;
+
+    padding-left:
+      36px;
+
+    padding-right:
+      12px;
+
   }
 
-  .profileInfo {
-    padding-left: 0;
+  .commandShortcut {
+
+    display:
+      none;
+
   }
+
+  .profileMenu {
+
+    position:
+      fixed;
+
+    top:
+      64px;
+
+    right:
+      9px;
+
+    width:
+      min(280px, calc(100vw - 18px));
+
+  }
+
 }
 
 
 /* =========================================================
-   VERY SMALL DEVICES
-   ========================================================= */
+   VERY SMALL MOBILE
+========================================================= */
 
-@media (max-width: 380px) {
+@media (max-width: 360px) {
+
   .topbar {
-    padding: 7px 8px;
 
-    gap: 7px;
+    gap:
+      6px;
+
+    padding:
+      6px 7px;
+
   }
 
-  .left {
-    gap: 6px;
+  .workspaceMark {
+
+    width:
+      30px;
+
+    height:
+      30px;
+
+    flex-basis:
+      30px;
+
   }
 
-  .right {
-    gap: 5px;
+  .avatar {
+
+    width:
+      32px;
+
+    height:
+      32px;
+
+    flex-basis:
+      32px;
+
   }
 
-  .actionButton {
-    min-height: 36px;
+  .searchForm input {
 
-    padding: 0 7px;
+    font-size:
+      11px;
 
-    font-size: 11px;
   }
 
-  .profile {
-    width: 34px;
-    height: 34px;
-
-    flex-basis: 34px;
-
-    font-size: 12px;
-  }
 }
 
 
 /* =========================================================
-   ACCESSIBILITY
-   ========================================================= */
+   REDUCED MOTION
+========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-  .workspaceSwitcher,
-  .searchBox,
-  .creditBadge,
-  .actionButton {
-    transition: none;
+
+  .workspaceLink,
+  .searchForm input,
+  .commandShortcut,
+  .profileButton,
+  .profileChevron,
+  .menuItem {
+
+    transition:
+      none;
+
   }
+
 }
 
 
 /* =========================================================
-   DARK SYSTEM SAFETY
-   ========================================================= */
+   FORCED COLORS
+========================================================= */
 
 @media (forced-colors: active) {
+
   .topbar,
-  .workspaceSwitcher,
-  .searchBox,
-  .creditBadge,
-  .actionButton,
-  .systemStatus {
-    border: 1px solid CanvasText;
+  .workspaceLink,
+  .searchForm input,
+  .credits,
+  .systemStatus,
+  .profileButton,
+  .profileMenu,
+  .menuItem {
+
+    border-color:
+      CanvasText;
+
   }
 
-  .profile {
-    border: 1px solid CanvasText;
+  .workspaceMark,
+  .avatar,
+  .menuAvatar {
+
+    border-color:
+      CanvasText;
+
   }
+
 }

@@ -1,25 +1,28 @@
 /* =========================================================
    ZYRIONOS
-   ENTERPRISE SIDEBAR
-
-   Document 03
-   Design System
-
-   Document 04
-   Component & Interaction Architecture
+   ENTERPRISE SIDEBAR SYSTEM
+   ---------------------------------------------------------
+   Designed for:
+   - Desktop persistent navigation
+   - Collapsed desktop navigation
+   - Mobile drawer navigation
+   - Touch-friendly controls
+   - Accessibility
+   - Reduced motion
+   - Approved ZyrionOS design tokens
 ========================================================= */
 
 
 /* =========================================================
-   SIDEBAR
+   ROOT SIDEBAR
 ========================================================= */
 
 .sidebar {
-
-  --sidebar-width: 264px;
+  --sidebar-width: 272px;
   --sidebar-collapsed-width: 76px;
 
   position: relative;
+  z-index: var(--zy-z-sticky, 100);
 
   display: flex;
   flex-direction: column;
@@ -30,7 +33,7 @@
   height: 100vh;
   height: 100dvh;
 
-  padding: 16px 12px;
+  padding: 14px 12px;
 
   background:
     linear-gradient(
@@ -39,45 +42,42 @@
       var(--zy-bg-950)
     );
 
-  border-right:
-    1px solid var(--zy-border);
+  border-right: 1px solid var(--zy-border);
 
-  color:
-    var(--zy-text-primary);
+  color: var(--zy-text-primary);
 
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
 
   isolation: isolate;
 
   transition:
-    width var(--zy-transition-standard),
-    min-width var(--zy-transition-standard);
+    width var(--zy-transition-standard, 180ms ease),
+    min-width var(--zy-transition-standard, 180ms ease),
+    transform var(--zy-transition-large, 260ms ease);
 
   scrollbar-width: thin;
 }
 
 
 /* =========================================================
-   SUBTLE AMBIENT LIGHT
+   AMBIENT BRAND LIGHT
 ========================================================= */
 
 .sidebar::before {
-
   content: "";
 
   position: absolute;
 
   top: -180px;
-  left: -140px;
+  left: -180px;
 
-  width: 360px;
-  height: 360px;
+  width: 380px;
+  height: 380px;
 
   background:
     radial-gradient(
       circle,
-      rgba(108, 99, 255, 0.08),
+      rgba(108, 99, 255, 0.095),
       transparent 68%
     );
 
@@ -88,19 +88,43 @@
 
 
 /* =========================================================
-   COLLAPSED
+   SECONDARY AMBIENT LIGHT
+========================================================= */
+
+.sidebar::after {
+  content: "";
+
+  position: absolute;
+
+  right: -180px;
+  bottom: -220px;
+
+  width: 360px;
+  height: 360px;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(53, 215, 255, 0.035),
+      transparent 70%
+    );
+
+  pointer-events: none;
+
+  z-index: -1;
+}
+
+
+/* =========================================================
+   COLLAPSED DESKTOP SIDEBAR
 ========================================================= */
 
 .collapsed {
+  width: var(--sidebar-collapsed-width);
+  min-width: var(--sidebar-collapsed-width);
 
-  width:
-    var(--sidebar-collapsed-width);
-
-  min-width:
-    var(--sidebar-collapsed-width);
-
-  padding-inline:
-    10px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 
@@ -109,20 +133,17 @@
 ========================================================= */
 
 .header {
-
   position: relative;
 
   display: flex;
   align-items: center;
 
-  min-height: 54px;
+  min-height: 52px;
 
   margin-bottom: 12px;
-
   padding-bottom: 12px;
 
-  border-bottom:
-    1px solid var(--zy-border);
+  border-bottom: 1px solid var(--zy-border);
 
   flex-shrink: 0;
 }
@@ -133,7 +154,6 @@
 ========================================================= */
 
 .brand {
-
   display: flex;
   align-items: center;
 
@@ -141,33 +161,28 @@
 
   flex: 1;
 
-  gap: 11px;
+  gap: 10px;
 
-  color:
-    var(--zy-text-primary);
+  color: var(--zy-text-primary);
 
   text-decoration: none;
 
-  border-radius:
-    var(--zy-radius-sm);
+  border-radius: var(--zy-radius-sm);
 
   transition:
-    opacity var(--zy-transition-fast);
+    opacity var(--zy-transition-fast, 120ms ease);
 }
 
 
 .brand:hover {
-
-  opacity: 0.92;
+  opacity: 0.94;
 }
 
 
 .brand:focus-visible {
-
   outline: none;
 
-  box-shadow:
-    var(--zy-focus-ring);
+  box-shadow: var(--zy-focus-ring);
 }
 
 
@@ -176,72 +191,60 @@
 ========================================================= */
 
 .brandMark {
-
   position: relative;
 
   display: grid;
 
-  grid-template-columns:
-    repeat(2, 7px);
-
-  grid-template-rows:
-    repeat(2, 7px);
+  grid-template-columns: repeat(2, 7px);
+  grid-template-rows: repeat(2, 7px);
 
   gap: 2px;
 
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
 
-  flex: 0 0 26px;
+  flex: 0 0 30px;
 
-  padding: 5px;
+  padding: 6px;
 
-  border:
-    1px solid var(--zy-border-strong);
+  border: 1px solid var(--zy-border-strong);
 
-  border-radius:
-    var(--zy-radius-sm);
+  border-radius: 9px;
 
   background:
-    var(--zy-surface-2);
+    linear-gradient(
+      145deg,
+      rgba(108, 99, 255, 0.16),
+      var(--zy-surface-2)
+    );
 
   box-shadow:
-    var(--zy-shadow-sm);
+    0 4px 14px rgba(0, 0, 0, 0.22);
 }
 
 
 .brandMark span {
-
   display: block;
+
+  min-width: 0;
 
   border-radius: 2px;
 
-  background:
-    var(--zy-brand);
-
+  background: var(--zy-brand);
 }
 
 
 .brandMark span:nth-child(2) {
-
   opacity: 0.72;
-
 }
 
 
 .brandMark span:nth-child(3) {
-
-  opacity: 0.45;
-
-}
-
-
-.brandMark span:nth-child(3) {
-
   grid-column: 1 / 3;
 
   width: 100%;
 
+  opacity: 0.46;
 }
 
 
@@ -250,7 +253,6 @@
 ========================================================= */
 
 .brandContent {
-
   display: flex;
   flex-direction: column;
 
@@ -261,46 +263,35 @@
 
 
 .brandName {
-
-  color:
-    var(--zy-text-primary);
+  color: var(--zy-text-primary);
 
   font-size: 15px;
+  font-weight: var(--zy-font-bold);
 
-  font-weight:
-    var(--zy-font-bold);
+  line-height: 1.15;
 
-  line-height: 1.2;
-
-  letter-spacing:
-    -0.025em;
+  letter-spacing: -0.025em;
 
   white-space: nowrap;
 
   overflow: hidden;
-
   text-overflow: ellipsis;
 }
 
 
 .brandTagline {
-
   margin-top: 3px;
 
-  color:
-    var(--zy-text-muted);
+  color: var(--zy-text-muted);
 
-  font-size: 10px;
+  font-size: 9px;
+  font-weight: var(--zy-font-medium);
 
-  font-weight:
-    var(--zy-font-medium);
-
-  line-height: 1.3;
+  line-height: 1.25;
 
   white-space: nowrap;
 
   overflow: hidden;
-
   text-overflow: ellipsis;
 }
 
@@ -310,29 +301,28 @@
 ========================================================= */
 
 .collapseButton {
-
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
 
-  flex: 0 0 28px;
+  min-height: 30px;
 
-  margin-left: 6px;
+  flex: 0 0 30px;
 
-  border:
-    1px solid transparent;
+  margin-left: 5px;
 
-  border-radius:
-    var(--zy-radius-sm);
+  padding: 0;
 
-  color:
-    var(--zy-text-muted);
+  border: 1px solid transparent;
 
-  background:
-    transparent;
+  border-radius: var(--zy-radius-sm);
+
+  color: var(--zy-text-muted);
+
+  background: transparent;
 
   cursor: pointer;
 
@@ -344,34 +334,26 @@
 
 
 .collapseButton:hover {
+  color: var(--zy-text-primary);
 
-  color:
-    var(--zy-text-primary);
+  background: var(--zy-surface-3);
 
-  background:
-    var(--zy-surface-3);
-
-  border-color:
-    var(--zy-border);
+  border-color: var(--zy-border);
 }
 
 
 .collapseButton:focus-visible {
-
   outline: none;
 
-  box-shadow:
-    var(--zy-focus-ring);
+  box-shadow: var(--zy-focus-ring);
 }
 
 
 .chevron,
 .chevronCollapsed {
-
   display: block;
 
   font-size: 23px;
-
   line-height: 1;
 
   transition:
@@ -380,16 +362,36 @@
 
 
 .chevron {
-
-  transform:
-    rotate(0deg);
+  transform: rotate(0deg);
 }
 
 
 .chevronCollapsed {
+  transform: rotate(180deg);
+}
 
-  transform:
-    rotate(180deg);
+
+/* =========================================================
+   COLLAPSED BRAND
+========================================================= */
+
+.collapsed .brand {
+  justify-content: center;
+}
+
+
+.collapsed .brandMark {
+  margin-inline: auto;
+}
+
+
+.collapsed .brandContent {
+  display: none;
+}
+
+
+.collapsed .collapseButton {
+  display: none;
 }
 
 
@@ -398,7 +400,6 @@
 ========================================================= */
 
 .workspaceContext {
-
   display: flex;
   align-items: center;
 
@@ -408,99 +409,124 @@
 
   margin-bottom: 14px;
 
-  padding:
-    8px 9px;
+  padding: 8px;
 
-  border:
-    1px solid var(--zy-border);
+  border: 1px solid var(--zy-border);
 
-  border-radius:
-    var(--zy-radius-md);
+  border-radius: var(--zy-radius-md);
 
   background:
-    rgba(255, 255, 255, 0.018);
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.025),
+      rgba(255, 255, 255, 0.01)
+    );
 
   flex-shrink: 0;
+
+  transition:
+    background-color var(--zy-transition-fast),
+    border-color var(--zy-transition-fast);
+}
+
+
+.workspaceContext:hover {
+  border-color: var(--zy-border-strong);
+
+  background:
+    rgba(255, 255, 255, 0.035);
 }
 
 
 .workspaceIcon {
-
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
 
-  flex: 0 0 30px;
+  min-width: 32px;
 
-  border:
-    1px solid var(--zy-border);
+  flex: 0 0 32px;
 
-  border-radius:
-    var(--zy-radius-sm);
+  border: 1px solid var(--zy-border);
 
-  background:
-    var(--zy-surface-2);
+  border-radius: 9px;
 
-  color:
-    var(--zy-text-secondary);
+  background: var(--zy-surface-2);
+
+  color: var(--zy-text-secondary);
 }
 
 
 .workspaceContent {
-
   display: flex;
   flex-direction: column;
 
   min-width: 0;
+
+  overflow: hidden;
 }
 
 
 .eyebrow {
+  color: var(--zy-text-muted);
 
-  color:
-    var(--zy-text-muted);
+  font-size: 8px;
+  font-weight: var(--zy-font-semibold);
 
-  font-size: 9px;
+  letter-spacing: 0.11em;
 
-  font-weight:
-    var(--zy-font-semibold);
+  line-height: 1.2;
 
-  letter-spacing:
-    0.08em;
-
-  line-height: 1.3;
+  text-transform: uppercase;
 }
 
 
 .workspaceValue {
-
   margin-top: 3px;
 
-  color:
-    var(--zy-text-secondary);
+  color: var(--zy-text-secondary);
 
   font-size: 11px;
+  font-weight: var(--zy-font-medium);
 
-  font-weight:
-    var(--zy-font-medium);
+  line-height: 1.25;
 
   white-space: nowrap;
 
   overflow: hidden;
-
   text-overflow: ellipsis;
 }
 
 
 /* =========================================================
-   NAVIGATION
+   COLLAPSED WORKSPACE
+========================================================= */
+
+.collapsed .workspaceContext {
+  justify-content: center;
+
+  padding: 7px;
+}
+
+
+.collapsed .workspaceIcon {
+  margin-inline: auto;
+}
+
+
+.collapsed .workspaceContent {
+  display: none;
+}
+
+
+/* =========================================================
+   NAVIGATION WRAPPER
 ========================================================= */
 
 .navigation {
-
   display: flex;
   flex-direction: column;
 
@@ -510,43 +536,56 @@
 
   flex: 1;
 
+  overflow-x: hidden;
   overflow-y: auto;
+
+  padding-right: 1px;
+
+  scrollbar-width: thin;
 }
 
 
-.navigationSection {
+/* =========================================================
+   NAVIGATION SECTION
+========================================================= */
 
+.navigationSection {
   min-width: 0;
 }
 
 
-.sectionLabel {
+/* =========================================================
+   SECTION LABEL
+========================================================= */
 
+.sectionLabel {
   padding:
     0 10px 7px;
 
-  color:
-    var(--zy-text-disabled);
+  color: var(--zy-text-disabled);
 
-  font-size: 9px;
+  font-size: 8px;
+  font-weight: var(--zy-font-semibold);
 
-  font-weight:
-    var(--zy-font-semibold);
+  letter-spacing: 0.12em;
 
-  letter-spacing:
-    0.10em;
+  line-height: 1.2;
 
-  text-transform:
-    uppercase;
+  text-transform: uppercase;
 }
 
 
-.navigationItems {
+/* =========================================================
+   NAVIGATION ITEMS
+========================================================= */
 
+.navigationItems {
   display: flex;
   flex-direction: column;
 
   gap: 3px;
+
+  min-width: 0;
 }
 
 
@@ -555,67 +594,58 @@
 ========================================================= */
 
 .navItem {
-
   position: relative;
 
   display: flex;
   align-items: center;
 
-  min-height: 42px;
-
   width: 100%;
+  min-width: 0;
+
+  min-height: 44px;
 
   padding:
     0 10px;
 
-  border:
-    1px solid transparent;
+  border: 1px solid transparent;
 
-  border-radius:
-    var(--zy-radius-md);
+  border-radius: 11px;
 
-  color:
-    var(--zy-text-secondary);
+  color: var(--zy-text-secondary);
 
   text-decoration: none;
 
+  overflow: hidden;
+
   transition:
+    color var(--zy-transition-fast),
     background-color var(--zy-transition-fast),
     border-color var(--zy-transition-fast),
-    color var(--zy-transition-fast),
     transform var(--zy-transition-fast);
 }
 
 
 .navItem:hover {
-
-  color:
-    var(--zy-text-primary);
+  color: var(--zy-text-primary);
 
   background:
     rgba(255, 255, 255, 0.035);
 
-  border-color:
-    var(--zy-border);
+  border-color: var(--zy-border);
 
-  transform:
-    translateX(1px);
+  transform: translateX(1px);
 }
 
 
 .navItem:focus-visible {
-
   outline: none;
 
-  box-shadow:
-    var(--zy-focus-ring);
+  box-shadow: var(--zy-focus-ring);
 }
 
 
 .navItem:active {
-
-  transform:
-    translateX(1px) scale(0.995);
+  transform: translateX(1px) scale(0.995);
 }
 
 
@@ -624,26 +654,30 @@
 ========================================================= */
 
 .active {
-
-  color:
-    var(--zy-text-primary);
+  color: var(--zy-text-primary);
 
   background:
-    var(--zy-accent-soft);
+    linear-gradient(
+      90deg,
+      rgba(108, 99, 255, 0.14),
+      rgba(108, 99, 255, 0.055)
+    );
 
-  border-color:
-    var(--zy-border-brand);
+  border-color: var(--zy-border-brand);
 
   box-shadow:
-    inset 0 1px 0
-    rgba(255, 255, 255, 0.025);
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 4px 14px rgba(0, 0, 0, 0.10);
 }
 
 
 .active:hover {
-
   background:
-    var(--zy-accent-soft);
+    linear-gradient(
+      90deg,
+      rgba(108, 99, 255, 0.16),
+      rgba(108, 99, 255, 0.065)
+    );
 }
 
 
@@ -652,26 +686,27 @@
 ========================================================= */
 
 .activeIndicator {
-
   position: absolute;
 
   left: -1px;
-  top: 9px;
-  bottom: 9px;
+
+  top: 8px;
+  bottom: 8px;
 
   width: 3px;
 
   border-radius:
-    0 var(--zy-radius-pill)
-    var(--zy-radius-pill) 0;
+    0
+    var(--zy-radius-pill)
+    var(--zy-radius-pill)
+    0;
 
-  background:
-    var(--zy-brand);
-
-  opacity: 0;
+  background: var(--zy-brand-bright);
 
   box-shadow:
-    var(--zy-shadow-brand);
+    0 0 12px rgba(108, 99, 255, 0.45);
+
+  opacity: 0;
 
   transition:
     opacity var(--zy-transition-fast);
@@ -679,7 +714,6 @@
 
 
 .active .activeIndicator {
-
   opacity: 1;
 }
 
@@ -689,29 +723,34 @@
 ========================================================= */
 
 .navIcon {
-
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 
-  flex: 0 0 22px;
+  min-width: 24px;
 
-  color:
-    var(--zy-text-muted);
+  flex: 0 0 24px;
+
+  color: var(--zy-text-muted);
 
   transition:
-    color var(--zy-transition-fast);
+    color var(--zy-transition-fast),
+    transform var(--zy-transition-fast);
 }
 
 
-.navItem:hover .navIcon,
-.active .navIcon {
+.navItem:hover .navIcon {
+  color: var(--zy-text-secondary);
 
-  color:
-    var(--zy-brand-bright);
+  transform: scale(1.03);
+}
+
+
+.navItem.active .navIcon {
+  color: var(--zy-brand-bright);
 }
 
 
@@ -720,7 +759,6 @@
 ========================================================= */
 
 .navLabel {
-
   min-width: 0;
 
   margin-left: 10px;
@@ -732,45 +770,93 @@
   white-space: nowrap;
 
   font-size: 13px;
+  font-weight: var(--zy-font-medium);
 
-  font-weight:
-    var(--zy-font-medium);
-
-  line-height: 1;
+  line-height: 1.2;
 }
 
 
 /* =========================================================
-   BADGE
+   NAV BADGE
 ========================================================= */
 
 .navBadge {
-
-  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   min-width: 20px;
 
+  margin-left: auto;
   padding:
     2px 6px;
-
-  border-radius:
-    var(--zy-radius-pill);
-
-  background:
-    var(--zy-surface-3);
 
   border:
     1px solid var(--zy-border);
 
-  color:
-    var(--zy-text-muted);
+  border-radius: var(--zy-radius-pill);
+
+  background: var(--zy-surface-3);
+
+  color: var(--zy-text-muted);
 
   font-size: 9px;
+  font-weight: var(--zy-font-semibold);
 
-  font-weight:
-    var(--zy-font-semibold);
+  line-height: 1.2;
 
-  text-align: center;
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   COLLAPSED NAVIGATION
+========================================================= */
+
+.collapsed .navigation {
+  gap: 14px;
+}
+
+
+.collapsed .sectionLabel {
+  display: none;
+}
+
+
+.collapsed .navigationItems {
+  gap: 5px;
+}
+
+
+.collapsed .navItem {
+  justify-content: center;
+
+  min-height: 46px;
+
+  padding:
+    0 8px;
+}
+
+
+.collapsed .navIcon {
+  width: 24px;
+  height: 24px;
+
+  margin-inline: auto;
+}
+
+
+.collapsed .navLabel,
+.collapsed .navBadge {
+  display: none;
+}
+
+
+.collapsed .activeIndicator {
+  left: -1px;
+
+  top: 10px;
+  bottom: 10px;
 }
 
 
@@ -779,10 +865,9 @@
 ========================================================= */
 
 .bottomArea {
-
   margin-top: auto;
 
-  padding-top: 14px;
+  padding-top: 12px;
 
   flex-shrink: 0;
 }
@@ -793,9 +878,7 @@
 ========================================================= */
 
 .platformCard {
-
-  padding:
-    12px;
+  padding: 11px;
 
   border:
     1px solid var(--zy-border);
@@ -804,53 +887,54 @@
     var(--zy-radius-md);
 
   background:
-    var(--zy-surface-1);
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.025),
+      rgba(255, 255, 255, 0.012)
+    );
+
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.12);
 }
 
 
 .platformHeader {
-
   display: flex;
   align-items: center;
 
   gap: 7px;
 
-  color:
-    var(--zy-text-secondary);
+  color: var(--zy-text-secondary);
 
   font-size: 10px;
+  font-weight: var(--zy-font-semibold);
 
-  font-weight:
-    var(--zy-font-semibold);
+  line-height: 1.2;
 }
 
 
 .platformIndicator {
-
   width: 6px;
   height: 6px;
 
-  flex: 0 0 6px;
+  min-width: 6px;
 
   border-radius: 50%;
 
-  background:
-    var(--zy-success);
+  background: var(--zy-success);
 
   box-shadow:
-    0 0 0 3px
-    var(--zy-success-bg);
+    0 0 0 3px var(--zy-success-bg);
 }
 
 
 .platformDescription {
+  margin:
+    7px 0 0;
 
-  margin-top: 7px;
+  color: var(--zy-text-muted);
 
-  color:
-    var(--zy-text-muted);
-
-  font-size: 10px;
+  font-size: 9px;
 
   line-height: 1.45;
 }
@@ -861,34 +945,32 @@
 ========================================================= */
 
 .sidebarMeta {
-
   display: flex;
   align-items: center;
 
   gap: 6px;
 
-  margin-top: 10px;
+  min-height: 24px;
+
+  margin-top: 8px;
 
   padding:
     0 4px;
 
-  color:
-    var(--zy-text-disabled);
+  color: var(--zy-text-disabled);
 
-  font-size: 9px;
+  font-size: 8px;
 
   line-height: 1.3;
 }
 
 
 .metaSeparator {
-
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 
 .collapsedMeta {
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -896,106 +978,131 @@
   width: 30px;
   height: 30px;
 
+  margin-inline: auto;
+
   border:
     1px solid var(--zy-border);
 
-  border-radius:
-    var(--zy-radius-sm);
+  border-radius: 9px;
 
-  color:
-    var(--zy-text-muted);
+  background:
+    rgba(255, 255, 255, 0.018);
+
+  color: var(--zy-text-muted);
 
   font-size: 11px;
-
-  font-weight:
-    var(--zy-font-bold);
-
-  margin-inline: auto;
+  font-weight: var(--zy-font-bold);
 }
 
 
 /* =========================================================
-   MOBILE TRIGGER
+   COLLAPSED BOTTOM
+========================================================= */
+
+.collapsed .platformCard {
+  display: none;
+}
+
+
+.collapsed .sidebarMeta {
+  justify-content: center;
+
+  padding: 0;
+}
+
+
+/* =========================================================
+   MOBILE MENU BUTTON
 ========================================================= */
 
 .mobileMenuButton {
-
   display: none;
 
   position: fixed;
 
-  top: 12px;
-  left: 12px;
+  top: max(
+    12px,
+    env(safe-area-inset-top)
+  );
+
+  left: max(
+    12px,
+    env(safe-area-inset-left)
+  );
 
   z-index:
-    var(--zy-z-modal);
+    calc(var(--zy-z-modal, 1000) + 10);
 
-  width: 42px;
-  height: 42px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  width: 46px;
+  height: 46px;
+
+  min-height: 46px;
 
   padding: 9px;
 
   border:
     1px solid var(--zy-border-strong);
 
-  border-radius:
-    var(--zy-radius-md);
+  border-radius: 12px;
+
+  background:
+    rgba(15, 18, 32, 0.96);
+
+  color: var(--zy-text-primary);
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.30);
+
+  cursor: pointer;
+
+  -webkit-tap-highlight-color: transparent;
+
+  transition:
+    background-color var(--zy-transition-fast),
+    border-color var(--zy-transition-fast),
+    transform var(--zy-transition-fast);
+}
+
+
+.mobileMenuButton:hover {
+  border-color: var(--zy-border-interactive);
 
   background:
     var(--zy-surface-2);
+}
+
+
+.mobileMenuButton:active {
+  transform: scale(0.96);
+}
+
+
+.mobileMenuButton:focus-visible {
+  outline: none;
 
   box-shadow:
-    var(--zy-shadow-md);
-
-  cursor: pointer;
+    var(--zy-focus-ring),
+    0 10px 30px rgba(0, 0, 0, 0.30);
 }
 
 
 .mobileMenuButton span {
-
   display: block;
 
-  width: 100%;
+  width: 24px;
   height: 2px;
 
-  margin: 4px 0;
+  margin: 3px 0;
 
   border-radius:
     var(--zy-radius-pill);
 
   background:
     var(--zy-text-secondary);
-}
-
-
-/* =========================================================
-   MOBILE CLOSE
-========================================================= */
-
-.mobileCloseButton {
-
-  display: none;
-
-  width: 32px;
-  height: 32px;
-
-  border:
-    1px solid var(--zy-border);
-
-  border-radius:
-    var(--zy-radius-sm);
-
-  color:
-    var(--zy-text-secondary);
-
-  background:
-    transparent;
-
-  font-size: 22px;
-
-  line-height: 1;
-
-  cursor: pointer;
 }
 
 
@@ -1004,7 +1111,6 @@
 ========================================================= */
 
 .mobileBackdrop {
-
   display: none;
 
   position: fixed;
@@ -1012,24 +1118,36 @@
   inset: 0;
 
   z-index:
-    calc(var(--zy-z-modal) - 2);
+    calc(var(--zy-z-modal, 1000) - 2);
+
+  width: 100%;
+  height: 100%;
+
+  min-height: 0;
+
+  margin: 0;
+  padding: 0;
 
   border: 0;
 
   background:
-    rgba(0, 0, 0, 0.55);
+    rgba(2, 4, 10, 0.68);
 
   opacity: 0;
 
   pointer-events: none;
 
+  cursor: default;
+
   transition:
-    opacity var(--zy-transition-standard);
+    opacity var(--zy-transition-standard, 180ms ease);
+
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
 }
 
 
 .mobileBackdropVisible {
-
   opacity: 1;
 
   pointer-events: auto;
@@ -1037,180 +1155,439 @@
 
 
 /* =========================================================
-   SCROLLBAR
+   MOBILE CLOSE BUTTON
 ========================================================= */
 
-.sidebar::-webkit-scrollbar,
-.navigation::-webkit-scrollbar {
+.mobileCloseButton {
+  display: none;
 
-  width: 5px;
-}
+  align-items: center;
+  justify-content: center;
 
+  width: 38px;
+  height: 38px;
 
-.sidebar::-webkit-scrollbar-track,
-.navigation::-webkit-scrollbar-track {
+  min-height: 38px;
 
-  background: transparent;
-}
+  flex: 0 0 38px;
 
+  margin-left: 6px;
 
-.sidebar::-webkit-scrollbar-thumb,
-.navigation::-webkit-scrollbar-thumb {
+  padding: 0;
+
+  border:
+    1px solid var(--zy-border);
+
+  border-radius: 10px;
 
   background:
+    rgba(255, 255, 255, 0.025);
+
+  color: var(--zy-text-secondary);
+
+  font-size: 24px;
+  font-weight: 300;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  -webkit-tap-highlight-color: transparent;
+
+  transition:
+    color var(--zy-transition-fast),
+    background-color var(--zy-transition-fast),
+    border-color var(--zy-transition-fast);
+}
+
+
+.mobileCloseButton:hover {
+  color: var(--zy-text-primary);
+
+  background:
+    var(--zy-surface-3);
+
+  border-color:
     var(--zy-border-strong);
-
-  border-radius:
-    var(--zy-radius-pill);
 }
 
 
-.sidebar::-webkit-scrollbar-thumb:hover,
-.navigation::-webkit-scrollbar-thumb:hover {
+.mobileCloseButton:focus-visible {
+  outline: none;
 
-  background:
-    var(--zy-border-interactive);
+  box-shadow: var(--zy-focus-ring);
 }
 
 
 /* =========================================================
-   TABLET
+   DESKTOP — LARGE
 ========================================================= */
 
-@media (max-width: 1100px) {
-
+@media (min-width: 1201px) {
   .sidebar {
+    --sidebar-width: 272px;
+  }
+}
 
-    --sidebar-width: 244px;
+
+/* =========================================================
+   DESKTOP — STANDARD
+========================================================= */
+
+@media (max-width: 1200px) and (min-width: 769px) {
+  .sidebar {
+    --sidebar-width: 248px;
   }
 
+  .navLabel {
+    font-size: 12.5px;
+  }
 }
 
 
 /* =========================================================
-   MOBILE
+   MOBILE DRAWER
 ========================================================= */
 
 @media (max-width: 768px) {
 
-  .mobileMenuButton {
+  /* -----------------------------------------------
+     Mobile trigger
+  ----------------------------------------------- */
 
-    display: block;
+  .mobileMenuButton {
+    display: flex;
   }
 
+
+  /* -----------------------------------------------
+     Backdrop
+  ----------------------------------------------- */
 
   .mobileBackdrop {
-
     display: block;
   }
 
 
-  .sidebar {
+  /* -----------------------------------------------
+     Drawer
+     
+     IMPORTANT:
+     Do NOT use 86vw here.
+     On a 690px phone it creates a ~593px drawer.
+     Keep it compact and professional.
+  ----------------------------------------------- */
 
+  .sidebar {
     position: fixed;
 
     top: 0;
     left: 0;
 
-    width: min(
-      86vw,
-      300px
-    );
-
-    min-width: min(
-      86vw,
-      300px
-    );
+    width: min(88vw, 360px);
+    min-width: min(88vw, 360px);
 
     height: 100dvh;
 
+    max-height: 100dvh;
+
     z-index:
-      var(--zy-z-modal);
+      var(--zy-z-modal, 1000);
+
+    padding:
+      max(14px, env(safe-area-inset-top))
+      14px
+      max(14px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
 
     transform:
-      translateX(-105%);
-
-    transition:
-      transform var(--zy-transition-large);
+      translate3d(-105%, 0, 0);
 
     box-shadow:
-      var(--zy-shadow-lg);
+      18px 0 50px rgba(0, 0, 0, 0.38);
+
+    transition:
+      transform var(--zy-transition-large, 260ms ease);
+
+    overscroll-behavior: contain;
   }
 
+
+  /* -----------------------------------------------
+     Open drawer
+  ----------------------------------------------- */
 
   .sidebar.mobileOpen {
-
     transform:
-      translateX(0);
+      translate3d(0, 0, 0);
   }
 
 
-  .collapseButton {
+  /* -----------------------------------------------
+     Mobile header
+  ----------------------------------------------- */
 
+  .header {
+    min-height: 58px;
+
+    margin-bottom: 14px;
+
+    padding-bottom: 14px;
+  }
+
+
+  /* -----------------------------------------------
+     Mobile brand
+  ----------------------------------------------- */
+
+  .brandMark {
+    width: 34px;
+    height: 34px;
+
+    flex-basis: 34px;
+
+    padding: 7px;
+
+    border-radius: 10px;
+  }
+
+
+  .brandName {
+    font-size: 16px;
+  }
+
+
+  .brandTagline {
+    font-size: 10px;
+  }
+
+
+  /* -----------------------------------------------
+     Hide desktop collapse
+  ----------------------------------------------- */
+
+  .collapseButton {
     display: none;
   }
 
 
+  /* -----------------------------------------------
+     Show mobile close
+  ----------------------------------------------- */
+
   .mobileCloseButton {
-
     display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    flex: 0 0 32px;
-
-    margin-left: 6px;
   }
 
+
+  /* -----------------------------------------------
+     Workspace
+  ----------------------------------------------- */
+
+  .workspaceContext {
+    min-height: 52px;
+
+    margin-bottom: 16px;
+
+    padding: 9px;
+  }
+
+
+  .workspaceIcon {
+    width: 34px;
+    height: 34px;
+
+    min-width: 34px;
+
+    flex-basis: 34px;
+  }
+
+
+  /* -----------------------------------------------
+     Navigation
+  ----------------------------------------------- */
 
   .navigation {
+    gap: 18px;
 
-    overflow-y: auto;
+    padding-right: 2px;
   }
 
 
-  .collapsed {
+  .sectionLabel {
+    padding:
+      0 10px 8px;
 
-    width: min(
-      86vw,
-      300px
-    );
+    font-size: 9px;
+  }
 
-    min-width: min(
-      86vw,
-      300px
-    );
+
+  .navigationItems {
+    gap: 4px;
+  }
+
+
+  /* -----------------------------------------------
+     Mobile nav item
+  ----------------------------------------------- */
+
+  .navItem {
+    min-height: 48px;
 
     padding:
-      16px 12px;
+      0 12px;
+
+    border-radius: 12px;
   }
 
 
-  .collapsed .brandContent,
-  .collapsed .workspaceContent,
-  .collapsed .sectionLabel,
-  .collapsed .navLabel,
-  .collapsed .navBadge,
-  .collapsed .platformCard {
+  .navIcon {
+    width: 25px;
+    height: 25px;
 
+    min-width: 25px;
+
+    flex-basis: 25px;
+  }
+
+
+  .navLabel {
+    margin-left: 12px;
+
+    font-size: 14px;
+    font-weight: var(--zy-font-medium);
+  }
+
+
+  /* -----------------------------------------------
+     Bottom
+  ----------------------------------------------- */
+
+  .bottomArea {
+    padding-top: 14px;
+  }
+
+
+  .platformCard {
+    padding: 12px;
+  }
+
+
+  .platformDescription {
+    font-size: 10px;
+  }
+
+
+  .sidebarMeta {
+    min-height: 24px;
+
+    margin-top: 9px;
+
+    font-size: 9px;
+  }
+
+
+  /* -----------------------------------------------
+     IMPORTANT MOBILE OVERRIDE
+     
+     Mobile drawer must NEVER inherit
+     desktop collapsed presentation.
+  ----------------------------------------------- */
+
+  .sidebar.collapsed {
+    width: min(88vw, 360px);
+    min-width: min(88vw, 360px);
+
+    padding:
+      max(14px, env(safe-area-inset-top))
+      14px
+      max(14px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+  }
+
+
+  .sidebar.collapsed .brand {
+    justify-content: flex-start;
+  }
+
+
+  .sidebar.collapsed .brandContent,
+  .sidebar.collapsed .workspaceContent,
+  .sidebar.collapsed .sectionLabel,
+  .sidebar.collapsed .navLabel,
+  .sidebar.collapsed .navBadge,
+  .sidebar.collapsed .platformCard {
     display: block;
   }
 
 
-  .collapsed .navLabel {
-
-    margin-left: 10px;
+  .sidebar.collapsed .brandMark {
+    margin-inline: 0;
   }
 
 
-  .collapsed .brandContent,
-  .collapsed .workspaceContent,
-  .collapsed .navLabel {
+  .sidebar.collapsed .workspaceContext {
+    justify-content: flex-start;
+  }
 
+
+  .sidebar.collapsed .workspaceIcon {
+    margin-inline: 0;
+  }
+
+
+  .sidebar.collapsed .navigation {
+    gap: 18px;
+  }
+
+
+  .sidebar.collapsed .navigationItems {
+    gap: 4px;
+  }
+
+
+  .sidebar.collapsed .navItem {
+    justify-content: flex-start;
+
+    min-height: 48px;
+
+    padding:
+      0 12px;
+  }
+
+
+  .sidebar.collapsed .navIcon {
+    width: 25px;
+    height: 25px;
+
+    min-width: 25px;
+
+    flex-basis: 25px;
+
+    margin-inline: 0;
+  }
+
+
+  .sidebar.collapsed .navLabel {
+    margin-left: 12px;
+  }
+
+
+  .sidebar.collapsed .platformCard {
     display: block;
   }
 
+
+  .sidebar.collapsed .sidebarMeta {
+    justify-content: flex-start;
+
+    padding: 0 4px;
+  }
+
+
+  .sidebar.collapsed .collapsedMeta {
+    display: none;
+  }
 }
 
 
@@ -1221,22 +1598,82 @@
 @media (max-width: 480px) {
 
   .sidebar {
+    width: min(90vw, 340px);
+    min-width: min(90vw, 340px);
+  }
 
-    width: 88vw;
 
-    min-width: 88vw;
+  .sidebar.collapsed {
+    width: min(90vw, 340px);
+    min-width: min(90vw, 340px);
   }
 
 
   .mobileMenuButton {
+    top: max(
+      10px,
+      env(safe-area-inset-top)
+    );
 
-    top: 10px;
-    left: 10px;
+    left: max(
+      10px,
+      env(safe-area-inset-left)
+    );
 
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
 
+
+  .header {
+    min-height: 56px;
+  }
+
+
+  .navItem {
+    min-height: 46px;
+  }
+
+
+  .navLabel {
+    font-size: 13.5px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL DEVICES
+========================================================= */
+
+@media (max-width: 360px) {
+
+  .sidebar,
+  .sidebar.collapsed {
+    width: 92vw;
+    min-width: 92vw;
+  }
+
+
+  .sidebar {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+
+  .brand {
+    gap: 8px;
+  }
+
+
+  .brandName {
+    font-size: 15px;
+  }
+
+
+  .navItem {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
 }
 
 
@@ -1250,44 +1687,89 @@
   .brand,
   .navItem,
   .collapseButton,
-  .mobileBackdrop {
-
+  .mobileBackdrop,
+  .mobileMenuButton,
+  .mobileCloseButton,
+  .navIcon {
     transition: none;
   }
-
 }
 
 
 /* =========================================================
-   FORCED COLORS
+   FORCED COLORS / HIGH CONTRAST
 ========================================================= */
 
 @media (forced-colors: active) {
 
   .sidebar,
-  .navItem,
   .workspaceContext,
-  .platformCard {
-
-    border-color:
-      CanvasText;
+  .platformCard,
+  .navItem,
+  .mobileMenuButton,
+  .mobileCloseButton {
+    border-color: CanvasText;
   }
 
 
   .active {
+    background: Highlight;
 
-    background:
-      Highlight;
+    color: HighlightText;
+  }
 
-    color:
-      HighlightText;
+
+  .active .navIcon {
+    color: HighlightText;
   }
 
 
   .activeIndicator {
+    background: HighlightText;
+  }
+}
 
-    background:
-      Highlight;
+
+/* =========================================================
+   TOUCH DEVICE REFINEMENT
+========================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+
+  .navItem:hover {
+    transform: none;
   }
 
+
+  .navItem:active {
+    transform: scale(0.99);
+  }
+
+
+  .navItem {
+    min-height: 48px;
+  }
+
+
+  .mobileMenuButton,
+  .mobileCloseButton {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+
+/* =========================================================
+   SAFE AREA
+========================================================= */
+
+@supports (padding: env(safe-area-inset-bottom)) {
+
+  .sidebar {
+    padding-bottom:
+      max(
+        14px,
+        env(safe-area-inset-bottom)
+      );
+  }
 }

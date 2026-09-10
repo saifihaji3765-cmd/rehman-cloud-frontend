@@ -3,11 +3,46 @@ import styles from "./DashboardLayout.module.css";
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
 import Topbar from "../../components/Topbar/Topbar.jsx";
 
+/*
+|--------------------------------------------------------------------------
+| DASHBOARD APPLICATION SHELL
+|--------------------------------------------------------------------------
+|
+| Architecture
+|
+| DashboardLayout
+|   ├── Skip Link
+|   └── Application Shell
+|        ├── Sidebar
+|        └── Main Area
+|             ├── Topbar
+|             ├── Workspace Context
+|             └── Main Content
+|
+| Responsibilities
+| ----------------
+| - Global application shell
+| - Navigation placement
+| - Topbar placement
+| - Workspace context placement
+| - Main content scrolling
+| - Accessibility foundation
+|
+| This component does NOT own:
+| - Authentication
+| - Routing
+| - API calls
+| - Business logic
+| - Page-specific UI
+|
+|--------------------------------------------------------------------------
+*/
+
 function DashboardLayout({ children }) {
   return (
     <div className={styles.layout}>
       {/* =====================================================
-          ACCESSIBILITY
+          ACCESSIBILITY — SKIP NAVIGATION
       ====================================================== */}
 
       <a
@@ -18,28 +53,32 @@ function DashboardLayout({ children }) {
       </a>
 
       {/* =====================================================
-          ENTERPRISE APPLICATION SHELL
+          APPLICATION SHELL
       ====================================================== */}
 
       <div className={styles.appShell}>
+
         {/* ===================================================
-            GLOBAL NAVIGATION
+            PRIMARY NAVIGATION
+            Sidebar already provides its own <aside>.
+            Do NOT wrap it inside another <aside>.
         ==================================================== */}
 
-        <aside
-          className={styles.sidebar}
-          aria-label="ZyrionOS primary navigation"
+        <div
+          className={styles.sidebarSlot}
+          aria-label="ZyrionOS navigation region"
         >
           <Sidebar />
-        </aside>
+        </div>
 
         {/* ===================================================
             MAIN APPLICATION AREA
         ==================================================== */}
 
-        <section className={styles.mainArea}>
+        <div className={styles.mainArea}>
+
           {/* =================================================
-              GLOBAL TOPBAR
+              GLOBAL APPLICATION HEADER
           ================================================== */}
 
           <header
@@ -50,13 +89,15 @@ function DashboardLayout({ children }) {
           </header>
 
           {/* =================================================
-              WORKSPACE STATUS
+              WORKSPACE CONTEXT
+              
+              Presentation-only shell context.
+              No backend state is fabricated here.
           ================================================== */}
 
           <div
             className={styles.workspaceBar}
-            role="status"
-            aria-label="Workspace status"
+            aria-label="Current workspace context"
           >
             <div className={styles.workspaceIdentity}>
               <span
@@ -69,22 +110,19 @@ function DashboardLayout({ children }) {
               </span>
             </div>
 
-            <div className={styles.workspaceMeta}>
+            <div
+              className={styles.workspaceMeta}
+              aria-hidden="true"
+            >
               <span>Cloud</span>
 
-              <span
-                className={styles.separator}
-                aria-hidden="true"
-              >
+              <span className={styles.separator}>
                 /
               </span>
 
               <span>AI Infrastructure</span>
 
-              <span
-                className={styles.separator}
-                aria-hidden="true"
-              >
+              <span className={styles.separator}>
                 /
               </span>
 
@@ -93,7 +131,7 @@ function DashboardLayout({ children }) {
           </div>
 
           {/* =================================================
-              MAIN CONTENT
+              SCROLLABLE APPLICATION CONTENT
           ================================================== */}
 
           <main
@@ -105,7 +143,8 @@ function DashboardLayout({ children }) {
               {children}
             </div>
           </main>
-        </section>
+
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 /* =========================================================
    ZYRIONOS
    GLOBAL ENTERPRISE DESIGN FOUNDATION
+   =========================================================
 
    DOCUMENT 03
    Enterprise Design System
@@ -9,48 +10,69 @@
    Enterprise Component & Interaction Architecture
 
    VERSION
-   Enterprise Foundation v2
+   Enterprise Foundation v3
 
    RESPONSIBILITY
    ---------------------------------------------------------
-   Global visual foundations ONLY.
+   Global visual and interaction foundations ONLY.
 
-   Contains:
-   - Reset
+   Includes:
+   - Global reset
    - Design tokens
+   - Application shell tokens
    - Typography
-   - Global element defaults
-   - Accessibility foundations
-   - Responsive foundations
-   - Motion foundations
    - Form normalization
    - Media normalization
+   - Accessibility foundations
+   - Focus architecture
+   - Motion architecture
+   - Responsive foundations
+   - Safe-area support
+   - Scroll foundations
    - Overlay foundations
-   - Scroll behaviour
-   - Selection
-   - Global utilities
+   - Utility primitives
+   - Content sizing
+   - Enterprise interaction rules
 
    MUST NOT contain:
-   - Page-specific layouts
+   - Page-specific layout
    - Business logic
    - API calls
    - Authentication logic
    - Routing
-   - Feature-specific UI
-   - Page-specific colors
-   - Component-specific business behaviour
+   - Feature logic
+   - Dashboard-specific styling
+   - Sidebar-specific styling
+   - Topbar-specific styling
+   - Billing logic
+   - Project logic
+   - AI execution logic
+
+   ARCHITECTURE
+
+   GLOBAL TOKENS
+        ↓
+   GLOBAL FOUNDATION
+        ↓
+   UI PRIMITIVES
+        ↓
+   COMPOSITES
+        ↓
+   FEATURE COMPONENTS
+        ↓
+   PAGE LAYOUTS
+        ↓
+   APPLICATION
    ========================================================= */
 
 
 /* =========================================================
    01. GLOBAL RESET
-========================================================= */
+   ========================================================= */
 
 *,
 *::before,
 *::after {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
@@ -58,117 +80,164 @@ html,
 body,
 #root {
   width: 100%;
+  min-width: 0;
   min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
 }
 
 
 /* =========================================================
-   02. DESIGN TOKENS
-========================================================= */
+   02. ENTERPRISE DESIGN TOKENS
+   ========================================================= */
 
 :root {
 
   /* =======================================================
-     BACKGROUND SYSTEM
-  ======================================================= */
+     COLOR — BACKGROUND
+     ======================================================= */
 
-  --zy-bg-950: #060914;
-  --zy-bg-900: #080C18;
-  --zy-bg-850: #0B1020;
-  --zy-bg-800: #0F1526;
-  --zy-bg-750: #121A2D;
+  --zy-bg-950: #050810;
+  --zy-bg-925: #060914;
+  --zy-bg-900: #080c18;
+  --zy-bg-875: #0a0f1c;
+  --zy-bg-850: #0b1020;
+  --zy-bg-825: #0d1322;
+  --zy-bg-800: #0f1526;
+  --zy-bg-750: #121a2d;
 
 
   /* =======================================================
-     SURFACE SYSTEM
-  ======================================================= */
+     COLOR — SURFACES
+     ======================================================= */
 
-  --zy-surface-1: #0D1322;
-  --zy-surface-2: #11182A;
-  --zy-surface-3: #151D31;
+  --zy-surface-0: #080d18;
+  --zy-surface-1: #0d1322;
+  --zy-surface-2: #11182a;
+  --zy-surface-3: #151d31;
   --zy-surface-4: #192238;
 
-
-  /* =======================================================
-     BRAND SYSTEM
-  ======================================================= */
-
-  --zy-brand: #6C63FF;
-  --zy-brand-bright: #8179FF;
-  --zy-brand-deep: #5148D9;
+  --zy-surface-hover: #172033;
+  --zy-surface-active: #1b2540;
+  --zy-surface-selected: rgba(108, 99, 255, 0.10);
 
 
   /* =======================================================
-     AI ACCENTS
-  ======================================================= */
+     BRAND
+     ======================================================= */
 
-  --zy-ai-cyan: #35D7FF;
-  --zy-ai-blue: #4C8DFF;
+  --zy-brand: #6c63ff;
+  --zy-brand-bright: #8179ff;
+  --zy-brand-deep: #5148d9;
 
+  --zy-brand-soft: rgba(108, 99, 255, 0.10);
+  --zy-brand-soft-strong: rgba(108, 99, 255, 0.16);
 
-  /* =======================================================
-     SEMANTIC COLORS
-  ======================================================= */
+  --zy-brand-border: rgba(108, 99, 255, 0.42);
 
-  --zy-success: #20C77A;
-  --zy-success-bg: rgba(32, 199, 122, 0.10);
-
-  --zy-warning: #F4B740;
-  --zy-warning-bg: rgba(244, 183, 64, 0.10);
-
-  --zy-danger: #F05A67;
-  --zy-danger-bg: rgba(240, 90, 103, 0.10);
-
-  --zy-info: #45A3FF;
-  --zy-info-bg: rgba(69, 163, 255, 0.10);
+  --zy-brand-glow:
+    rgba(108, 99, 255, 0.22);
 
 
   /* =======================================================
-     TEXT SYSTEM
-  ======================================================= */
+     AI SYSTEM
+     ======================================================= */
 
-  --zy-text-primary: #F4F7FF;
-  --zy-text-secondary: #A8B1C7;
-  --zy-text-muted: #6F7890;
-  --zy-text-disabled: #4A5266;
+  --zy-ai-cyan: #35d7ff;
+  --zy-ai-blue: #4c8dff;
 
-
-  /* =======================================================
-     BORDER SYSTEM
-  ======================================================= */
-
-  --zy-border: #1B2438;
-  --zy-border-strong: #27324A;
-  --zy-border-interactive: #35436A;
-  --zy-border-brand: rgba(108, 99, 255, 0.45);
-
-
-  /* =======================================================
-     GRADIENT SYSTEM
-  ======================================================= */
-
-  --zy-gradient-brand:
-    linear-gradient(
-      135deg,
-      #5148D9 0%,
-      #6C63FF 55%,
-      #8179FF 100%
-    );
+  --zy-ai-soft: rgba(53, 215, 255, 0.10);
+  --zy-ai-border: rgba(53, 215, 255, 0.32);
 
   --zy-gradient-ai:
     linear-gradient(
       135deg,
-      #4C8DFF 0%,
-      #35D7FF 100%
+      #4c8dff 0%,
+      #35d7ff 100%
     );
 
 
   /* =======================================================
+     BRAND GRADIENT
+     ======================================================= */
+
+  --zy-gradient-brand:
+    linear-gradient(
+      135deg,
+      #5148d9 0%,
+      #6c63ff 55%,
+      #8179ff 100%
+    );
+
+
+  /* =======================================================
+     SEMANTIC COLORS
+     ======================================================= */
+
+  --zy-success: #20c77a;
+  --zy-success-bg: rgba(32, 199, 122, 0.10);
+  --zy-success-border: rgba(32, 199, 122, 0.28);
+
+  --zy-warning: #f4b740;
+  --zy-warning-bg: rgba(244, 183, 64, 0.10);
+  --zy-warning-border: rgba(244, 183, 64, 0.28);
+
+  --zy-danger: #f05a67;
+  --zy-danger-bg: rgba(240, 90, 103, 0.10);
+  --zy-danger-border: rgba(240, 90, 103, 0.30);
+
+  --zy-info: #45a3ff;
+  --zy-info-bg: rgba(69, 163, 255, 0.10);
+  --zy-info-border: rgba(69, 163, 255, 0.28);
+
+
+  /* =======================================================
+     TEXT
+     ======================================================= */
+
+  --zy-text-primary: #f4f7ff;
+  --zy-text-secondary: #a8b1c7;
+  --zy-text-muted: #6f7890;
+  --zy-text-disabled: #4a5266;
+  --zy-text-inverse: #050810;
+
+
+  /* =======================================================
+     BORDERS
+     ======================================================= */
+
+  --zy-border:
+    rgba(148, 163, 184, 0.12);
+
+  --zy-border-subtle:
+    rgba(148, 163, 184, 0.07);
+
+  --zy-border-strong:
+    rgba(148, 163, 184, 0.20);
+
+  --zy-border-interactive:
+    rgba(148, 163, 184, 0.32);
+
+  --zy-border-brand:
+    rgba(108, 99, 255, 0.45);
+
+
+  /* =======================================================
      TYPOGRAPHY
-  ======================================================= */
+     ======================================================= */
 
   --zy-font-sans:
     Inter,
+    ui-sans-serif,
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
@@ -177,27 +246,29 @@ body,
 
   --zy-font-mono:
     "JetBrains Mono",
-    ui-monospace,
-    SFMono-Regular,
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
     Menlo,
     Monaco,
-    Consolas,
+    ui-monospace,
     monospace;
 
 
   /* =======================================================
      FONT WEIGHTS
-  ======================================================= */
+     ======================================================= */
 
   --zy-font-regular: 400;
   --zy-font-medium: 500;
   --zy-font-semibold: 600;
   --zy-font-bold: 700;
+  --zy-font-extrabold: 800;
 
 
   /* =======================================================
      FONT SIZES
-  ======================================================= */
+     ======================================================= */
 
   --zy-text-xs: 11px;
   --zy-text-sm: 12px;
@@ -207,12 +278,14 @@ body,
   --zy-text-2xl: 20px;
   --zy-text-3xl: 24px;
   --zy-text-4xl: 32px;
+  --zy-text-5xl: 40px;
 
 
   /* =======================================================
-     LINE HEIGHTS
-  ======================================================= */
+     LINE HEIGHT
+     ======================================================= */
 
+  --zy-leading-none: 1;
   --zy-leading-tight: 1.15;
   --zy-leading-snug: 1.30;
   --zy-leading-normal: 1.55;
@@ -220,8 +293,18 @@ body,
 
 
   /* =======================================================
-     SPACING SYSTEM
-  ======================================================= */
+     LETTER SPACING
+     ======================================================= */
+
+  --zy-tracking-tight: -0.025em;
+  --zy-tracking-normal: 0;
+  --zy-tracking-wide: 0.025em;
+  --zy-tracking-wider: 0.06em;
+
+
+  /* =======================================================
+     SPACING
+     ======================================================= */
 
   --zy-space-1: 4px;
   --zy-space-2: 8px;
@@ -239,8 +322,8 @@ body,
 
 
   /* =======================================================
-     RADIUS SYSTEM
-  ======================================================= */
+     RADIUS
+     ======================================================= */
 
   --zy-radius-xs: 6px;
   --zy-radius-sm: 8px;
@@ -252,8 +335,11 @@ body,
 
 
   /* =======================================================
-     SHADOW SYSTEM
-  ======================================================= */
+     SHADOWS
+     ======================================================= */
+
+  --zy-shadow-xs:
+    0 2px 8px rgba(0, 0, 0, 0.12);
 
   --zy-shadow-sm:
     0 4px 12px rgba(0, 0, 0, 0.18);
@@ -264,6 +350,9 @@ body,
   --zy-shadow-lg:
     0 24px 64px rgba(0, 0, 0, 0.32);
 
+  --zy-shadow-xl:
+    0 32px 90px rgba(0, 0, 0, 0.42);
+
   --zy-shadow-brand:
     0 0 28px rgba(108, 99, 255, 0.18);
 
@@ -272,29 +361,102 @@ body,
 
 
   /* =======================================================
-     MOTION SYSTEM
-  ======================================================= */
+     MOTION
+     ======================================================= */
+
+  --zy-duration-instant: 80ms;
+  --zy-duration-fast: 150ms;
+  --zy-duration-standard: 180ms;
+  --zy-duration-medium: 220ms;
+  --zy-duration-slow: 300ms;
+
+  --zy-ease-standard:
+    cubic-bezier(0.4, 0, 0.2, 1);
+
+  --zy-ease-enter:
+    cubic-bezier(0.16, 1, 0.3, 1);
+
+  --zy-ease-exit:
+    cubic-bezier(0.7, 0, 0.84, 0);
+
 
   --zy-transition-fast:
-    150ms ease;
+    var(--zy-duration-fast) var(--zy-ease-standard);
 
   --zy-transition-standard:
-    180ms ease;
+    var(--zy-duration-standard) var(--zy-ease-standard);
 
   --zy-transition-medium:
-    220ms ease;
+    var(--zy-duration-medium) var(--zy-ease-standard);
 
   --zy-transition-large:
-    300ms ease;
+    var(--zy-duration-slow) var(--zy-ease-standard);
+
+
+  /* =======================================================
+     APPLICATION SHELL
+     IMPORTANT:
+     Shared contract for Sidebar / Topbar / Layout.
+     ======================================================= */
+
+  --zy-sidebar-width: 268px;
+  --zy-sidebar-collapsed-width: 76px;
+
+  --zy-topbar-height: 68px;
+  --zy-workspace-height: 40px;
+
+  --zy-shell-min-width: 320px;
+
+  --zy-content-max: 1600px;
+  --zy-content-wide: 1720px;
+
+  --zy-content-reading: 720px;
+  --zy-content-narrow: 960px;
+
+
+  /* =======================================================
+     CONTROL SIZES
+     ======================================================= */
+
+  --zy-control-height-xs: 28px;
+  --zy-control-height-sm: 32px;
+  --zy-control-height-md: 40px;
+  --zy-control-height-lg: 48px;
+  --zy-control-height-xl: 56px;
+
+  --zy-touch-target: 44px;
+
+
+  /* =======================================================
+     FOCUS
+     ======================================================= */
+
+  --zy-focus-color: #8179ff;
+
+  --zy-focus-ring:
+    0 0 0 3px rgba(108, 99, 255, 0.24);
+
+
+  /* =======================================================
+     SELECTION
+     ======================================================= */
+
+  --zy-selection-bg:
+    rgba(108, 99, 255, 0.30);
+
+  --zy-selection-text:
+    #f4f7ff;
 
 
   /* =======================================================
      Z-INDEX ARCHITECTURE
-  ======================================================= */
+     ======================================================= */
 
   --zy-z-base: 0;
+  --zy-z-content: 1;
   --zy-z-elevated: 10;
   --zy-z-sticky: 20;
+  --zy-z-navigation: 25;
   --zy-z-dropdown: 30;
   --zy-z-popover: 40;
   --zy-z-backdrop: 45;
@@ -304,58 +466,8 @@ body,
 
 
   /* =======================================================
-     LAYOUT TOKENS
-  ======================================================= */
-
-  --zy-sidebar-min: 240px;
-  --zy-sidebar-max: 280px;
-
-  --zy-topbar-min: 64px;
-  --zy-topbar-max: 72px;
-
-  --zy-content-max: 1600px;
-
-
-  /* =======================================================
-     INTERACTION
-  ======================================================= */
-
-  --zy-focus-ring:
-    0 0 0 3px rgba(108, 99, 255, 0.24);
-
-  --zy-selection-bg:
-    rgba(108, 99, 255, 0.30);
-
-  --zy-selection-text:
-    #F4F7FF;
-
-
-  /* =======================================================
-     INTERACTION SIZE
-  ======================================================= */
-
-  --zy-control-height-sm: 32px;
-  --zy-control-height-md: 40px;
-  --zy-control-height-lg: 48px;
-
-  --zy-touch-target:
-    44px;
-
-
-  /* =======================================================
-     CONTENT WIDTHS
-  ======================================================= */
-
-  --zy-content-reading:
-    720px;
-
-  --zy-content-narrow:
-    960px;
-
-
-  /* =======================================================
      SAFE AREA
-  ======================================================= */
+     ======================================================= */
 
   --zy-safe-top:
     env(safe-area-inset-top, 0px);
@@ -372,41 +484,51 @@ body,
 
 
 /* =========================================================
-   03. HTML FOUNDATION
-========================================================= */
+   03. ROOT HTML
+   ========================================================= */
 
 html {
-
+  width: 100%;
   min-height: 100%;
 
   background:
     var(--zy-bg-950);
 
-  scroll-behavior:
-    smooth;
+  color:
+    var(--zy-text-primary);
 
-  text-size-adjust:
-    100%;
+  color-scheme: dark;
 
-  -webkit-text-size-adjust:
-    100%;
+  scroll-behavior: smooth;
 
-  scrollbar-gutter:
-    stable;
+  scrollbar-gutter: stable;
+
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+
+  -webkit-font-smoothing: antialiased;
 }
 
 
 /* =========================================================
-   04. BODY FOUNDATION
-========================================================= */
+   04. BODY
+   ========================================================= */
 
 body {
+  width: 100%;
+  min-width: var(--zy-shell-min-width);
 
   min-height: 100vh;
-
   min-height: 100dvh;
 
+  margin: 0;
+
   background:
+    radial-gradient(
+      circle at 72% -12%,
+      rgba(108, 99, 255, 0.055),
+      transparent 32%
+    ),
     var(--zy-bg-950);
 
   color:
@@ -425,42 +547,52 @@ body {
     var(--zy-leading-normal);
 
   letter-spacing:
-    0;
+    var(--zy-tracking-normal);
 
-  -webkit-font-smoothing:
-    antialiased;
+  overflow-x: hidden;
 
-  -moz-osx-font-smoothing:
-    grayscale;
+  overflow-wrap: break-word;
 
-  text-rendering:
-    optimizeLegibility;
+  text-rendering: optimizeLegibility;
 
-  overflow-x:
-    hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 
 /* =========================================================
-   05. ROOT APPLICATION
-========================================================= */
+   05. APPLICATION ROOT
+   ========================================================= */
 
 #root {
-
   width: 100%;
+  min-width: 0;
 
   min-height: 100vh;
-
   min-height: 100dvh;
 
-  isolation:
-    isolate;
+  isolation: isolate;
 }
 
 
 /* =========================================================
-   06. HEADINGS
-========================================================= */
+   06. DOCUMENT FLOW
+   ========================================================= */
+
+main,
+section,
+article,
+aside,
+nav,
+header,
+footer {
+  min-width: 0;
+}
+
+
+/* =========================================================
+   07. TYPOGRAPHY
+   ========================================================= */
 
 h1,
 h2,
@@ -468,7 +600,6 @@ h3,
 h4,
 h5,
 h6 {
-
   margin: 0;
 
   color:
@@ -481,17 +612,17 @@ h6 {
     var(--zy-font-semibold);
 
   letter-spacing:
-    -0.01em;
+    var(--zy-tracking-tight);
 
-  text-wrap:
-    balance;
+  text-wrap: balance;
 }
 
-
 h1 {
-
-  font-size:
-    var(--zy-text-4xl);
+  font-size: clamp(
+    28px,
+    2.1vw,
+    40px
+  );
 
   line-height:
     var(--zy-leading-tight);
@@ -500,61 +631,42 @@ h1 {
     var(--zy-font-bold);
 }
 
-
 h2 {
-
-  font-size:
-    var(--zy-text-3xl);
+  font-size: clamp(
+    22px,
+    1.7vw,
+    32px
+  );
 
   line-height:
     1.20;
-
-  font-weight:
-    var(--zy-font-semibold);
 }
 
-
 h3 {
-
   font-size:
     var(--zy-text-xl);
 
   line-height:
     var(--zy-leading-snug);
-
-  font-weight:
-    var(--zy-font-semibold);
 }
 
-
 h4 {
-
   font-size:
     var(--zy-text-lg);
 
   line-height:
     1.40;
-
-  font-weight:
-    var(--zy-font-semibold);
 }
 
-
 h5 {
-
   font-size:
     var(--zy-text-md);
 
   line-height:
     1.45;
-
-  font-weight:
-    var(--zy-font-semibold);
 }
 
-
 h6 {
-
   font-size:
     13px;
 
@@ -565,13 +677,7 @@ h6 {
     var(--zy-font-medium);
 }
 
-
-/* =========================================================
-   07. PARAGRAPH
-========================================================= */
-
 p {
-
   margin: 0;
 
   color:
@@ -587,32 +693,26 @@ p {
 
 /* =========================================================
    08. LINKS
-========================================================= */
+   ========================================================= */
 
 a {
+  color: inherit;
+  text-decoration: none;
 
-  color:
-    inherit;
-
-  text-decoration:
-    none;
+  -webkit-tap-highlight-color: transparent;
 
   transition:
     color var(--zy-transition-fast);
 }
 
-
 a:hover {
-
   color:
     var(--zy-brand-bright);
 }
 
-
 a:focus-visible {
-
   outline:
-    2px solid var(--zy-brand);
+    2px solid var(--zy-focus-color);
 
   outline-offset:
     2px;
@@ -627,61 +727,49 @@ a:focus-visible {
 
 /* =========================================================
    09. BUTTON FOUNDATION
-========================================================= */
+   IMPORTANT:
+   Do NOT force 44px desktop height.
+   Components own their visual dimensions.
+   ========================================================= */
 
 button {
+  appearance: none;
 
-  appearance:
-    none;
+  margin: 0;
+  padding: 0;
 
-  border:
-    0;
+  border: 0;
 
-  background:
-    none;
+  background: transparent;
 
-  color:
-    inherit;
+  color: inherit;
 
-  font:
-    inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
 
-  cursor:
-    pointer;
+  cursor: pointer;
 
-  min-height:
-    var(--zy-touch-target);
+  -webkit-tap-highlight-color: transparent;
 
-  -webkit-tap-highlight-color:
-    transparent;
-
-  touch-action:
-    manipulation;
-
-  transition:
-    color var(--zy-transition-fast),
-    background-color var(--zy-transition-fast),
-    border-color var(--zy-transition-fast),
-    box-shadow var(--zy-transition-fast),
-    opacity var(--zy-transition-fast),
-    transform var(--zy-transition-fast);
+  touch-action: manipulation;
 }
 
-
-button:disabled {
-
-  cursor:
-    not-allowed;
-
-  opacity:
-    0.7;
+button:hover {
+  color: inherit;
 }
 
+button:disabled,
+button[aria-disabled="true"] {
+  cursor: not-allowed;
+
+  opacity: 0.65;
+}
 
 button:focus-visible {
-
   outline:
-    2px solid var(--zy-brand);
+    2px solid var(--zy-focus-color);
 
   outline-offset:
     2px;
@@ -692,18 +780,18 @@ button:focus-visible {
 
 
 /* =========================================================
-   10. FORM ELEMENT FOUNDATION
-========================================================= */
+   10. FORM FOUNDATION
+   ========================================================= */
 
 input,
 textarea,
 select {
+  min-width: 0;
 
-  width:
-    100%;
+  margin: 0;
 
-  min-width:
-    0;
+  color:
+    var(--zy-text-primary);
 
   font-family:
     inherit;
@@ -717,11 +805,7 @@ select {
   line-height:
     1.45;
 
-  color:
-    var(--zy-text-primary);
-
-  background:
-    var(--zy-bg-850);
+  outline: none;
 
   border:
     1px solid var(--zy-border);
@@ -729,31 +813,27 @@ select {
   border-radius:
     var(--zy-radius-md);
 
-  outline:
-    none;
+  background:
+    var(--zy-bg-850);
+
+  -webkit-appearance: none;
+  appearance: none;
 
   transition:
-    border-color var(--zy-transition-fast),
-    box-shadow var(--zy-transition-fast),
+    color var(--zy-transition-fast),
     background-color var(--zy-transition-fast),
-    color var(--zy-transition-fast);
-
-  -webkit-appearance:
-    none;
-
-  appearance:
-    none;
+    border-color var(--zy-transition-fast),
+    box-shadow var(--zy-transition-fast);
 }
 
 
 /* =========================================================
    11. FORM FOCUS
-========================================================= */
+   ========================================================= */
 
 input:focus,
 textarea:focus,
 select:focus {
-
   border-color:
     var(--zy-brand);
 
@@ -763,28 +843,25 @@ select:focus {
 
 
 /* =========================================================
-   12. PLACEHOLDER
-========================================================= */
+   12. FORM PLACEHOLDER
+   ========================================================= */
 
 input::placeholder,
 textarea::placeholder {
-
   color:
     var(--zy-text-muted);
 
-  opacity:
-    1;
+  opacity: 1;
 }
 
 
 /* =========================================================
-   13. DISABLED FORM CONTROLS
-========================================================= */
+   13. FORM DISABLED
+   ========================================================= */
 
 input:disabled,
 textarea:disabled,
 select:disabled {
-
   color:
     var(--zy-text-disabled);
 
@@ -798,54 +875,54 @@ select:disabled {
     not-allowed;
 
   opacity:
-    0.7;
+    0.70;
 }
 
 
 /* =========================================================
    14. READONLY
-========================================================= */
+   ========================================================= */
 
 input:read-only,
 textarea:read-only {
-
-  cursor:
-    default;
+  cursor: default;
 }
 
 
 /* =========================================================
-   15. INVALID FORM STATE
-========================================================= */
+   15. INVALID
+   ========================================================= */
 
 input[aria-invalid="true"],
 textarea[aria-invalid="true"],
 select[aria-invalid="true"] {
-
   border-color:
     var(--zy-danger);
 
   box-shadow:
-    0 0 0 3px rgba(240, 90, 103, 0.12);
+    0 0 0 3px
+      rgba(240, 90, 103, 0.12);
 }
 
 
 /* =========================================================
-   16. AUTOCOMPLETE / AUTOFILL
-========================================================= */
+   16. AUTOFILL
+   ========================================================= */
 
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
-textarea:-webkit-autofill:focus {
-
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill {
   -webkit-text-fill-color:
     var(--zy-text-primary);
 
   -webkit-box-shadow:
-    0 0 0 1000px var(--zy-bg-850) inset;
+    0 0 0 1000px
+    var(--zy-bg-850)
+    inset;
 
   transition:
     background-color 9999s ease-in-out 0s;
@@ -854,10 +931,9 @@ textarea:-webkit-autofill:focus {
 
 /* =========================================================
    17. TEXTAREA
-========================================================= */
+   ========================================================= */
 
 textarea {
-
   min-height:
     100px;
 
@@ -868,21 +944,18 @@ textarea {
 
 /* =========================================================
    18. SELECT
-========================================================= */
+   ========================================================= */
 
 select {
-
-  cursor:
-    pointer;
+  cursor: pointer;
 }
 
 
 /* =========================================================
    19. LABEL
-========================================================= */
+   ========================================================= */
 
 label {
-
   color:
     var(--zy-text-primary);
 
@@ -898,20 +971,27 @@ label {
 
 
 /* =========================================================
-   20. CHECKBOX / RADIO / SWITCH FOUNDATION
-========================================================= */
+   20. CHECKBOX / RADIO
+   ========================================================= */
 
 input[type="checkbox"],
 input[type="radio"] {
-
   width:
     18px;
 
   height:
     18px;
 
+  min-width:
+    18px;
+
+  min-height:
+    18px;
+
   flex:
     0 0 auto;
+
+  padding: 0;
 
   cursor:
     pointer;
@@ -919,118 +999,91 @@ input[type="radio"] {
 
 
 /* =========================================================
-   21. IMAGES
-========================================================= */
+   21. MEDIA NORMALIZATION
+   ========================================================= */
 
-img {
-
-  display:
-    block;
-
-  max-width:
-    100%;
-
-  height:
-    auto;
-}
-
-
-/* =========================================================
-   22. MEDIA
-========================================================= */
-
+img,
+picture,
 video,
 canvas,
 svg {
+  display: block;
 
-  display:
-    block;
-
-  max-width:
-    100%;
+  max-width: 100%;
 }
 
-
+img,
 video {
+  height: auto;
+}
 
-  height:
-    auto;
+iframe {
+  display: block;
+
+  max-width: 100%;
+
+  border: 0;
 }
 
 
 /* =========================================================
-   23. SVG
-========================================================= */
+   22. SVG
+   ========================================================= */
 
 svg {
+  flex-shrink: 0;
 
-  flex-shrink:
-    0;
+  overflow: visible;
 }
 
 
 /* =========================================================
-   24. LIST RESET
-========================================================= */
+   23. LISTS
+   ========================================================= */
 
 ul,
 ol {
+  margin: 0;
+  padding: 0;
 
-  margin:
-    0;
-
-  padding:
-    0;
-
-  list-style:
-    none;
+  list-style: none;
 }
 
 
 /* =========================================================
-   25. TABLE FOUNDATION
-========================================================= */
+   24. TABLES
+   ========================================================= */
 
 table {
+  width: 100%;
 
-  width:
-    100%;
-
-  border-collapse:
-    collapse;
-
-  border-spacing:
-    0;
+  border-collapse: collapse;
+  border-spacing: 0;
 }
-
 
 th,
 td {
+  padding: 0;
 
-  text-align:
-    left;
+  text-align: left;
 
-  vertical-align:
-    middle;
+  vertical-align: middle;
 }
 
 
 /* =========================================================
-   26. CODE FOUNDATION
-========================================================= */
+   25. CODE
+   ========================================================= */
 
 code,
 pre,
 kbd,
 samp {
-
   font-family:
     var(--zy-font-mono);
 }
 
-
 code {
-
   color:
     var(--zy-ai-cyan);
 
@@ -1038,17 +1091,12 @@ code {
     0.9em;
 }
 
-
 pre {
+  max-width: 100%;
 
-  margin:
-    0;
+  margin: 0;
 
-  max-width:
-    100%;
-
-  overflow-x:
-    auto;
+  overflow-x: auto;
 
   color:
     var(--zy-text-primary);
@@ -1062,27 +1110,19 @@ pre {
   border-radius:
     var(--zy-radius-lg);
 
-  tab-size:
-    2;
+  tab-size: 2;
 }
 
-
 kbd {
+  display: inline-flex;
 
-  display:
-    inline-flex;
+  align-items: center;
+  justify-content: center;
 
-  align-items:
-    center;
+  min-height: 24px;
 
-  justify-content:
-    center;
-
-  min-height:
-    24px;
-
-  padding-inline:
-    7px;
+  padding:
+    0 7px;
 
   color:
     var(--zy-text-secondary);
@@ -1102,19 +1142,15 @@ kbd {
 
 
 /* =========================================================
-   27. HORIZONTAL RULE
-========================================================= */
+   26. HR
+   ========================================================= */
 
 hr {
+  height: 1px;
 
-  height:
-    1px;
+  margin: 0;
 
-  margin:
-    0;
-
-  border:
-    0;
+  border: 0;
 
   background:
     var(--zy-border);
@@ -1122,33 +1158,29 @@ hr {
 
 
 /* =========================================================
-   28. FIELDSET
-========================================================= */
+   27. FIELDSET
+   ========================================================= */
 
 fieldset {
+  min-width: 0;
 
-  min-width:
-    0;
+  margin: 0;
+  padding: 0;
 
-  margin:
-    0;
-
-  padding:
-    0;
-
-  border:
-    0;
+  border: 0;
 }
 
 
 /* =========================================================
-   29. DIALOG FOUNDATION
-========================================================= */
+   28. DIALOG
+   ========================================================= */
 
 dialog {
-
   max-width:
     calc(100vw - 32px);
+
+  margin: auto;
+  padding: 0;
 
   color:
     var(--zy-text-primary);
@@ -1164,65 +1196,73 @@ dialog {
 
   box-shadow:
     var(--zy-shadow-lg);
-
-  padding:
-    0;
 }
 
-
 dialog::backdrop {
-
   background:
     rgba(0, 0, 0, 0.62);
 
   backdrop-filter:
-    blur(4px);
+    blur(5px);
 
   -webkit-backdrop-filter:
-    blur(4px);
+    blur(5px);
 }
 
 
 /* =========================================================
-   30. DETAILS / SUMMARY
-========================================================= */
+   29. DETAILS / SUMMARY
+   ========================================================= */
 
 summary {
+  cursor: pointer;
 
-  cursor:
-    pointer;
-
-  list-style:
-    none;
+  list-style: none;
 }
-
 
 summary::-webkit-details-marker {
-
-  display:
-    none;
+  display: none;
 }
 
-
 summary:focus-visible {
-
   outline:
-    2px solid var(--zy-brand);
+    2px solid var(--zy-focus-color);
 
   outline-offset:
     2px;
-
-  border-radius:
-    var(--zy-radius-xs);
 }
 
 
 /* =========================================================
-   31. TEXT SELECTION
-========================================================= */
+   30. GLOBAL FOCUS
+   ========================================================= */
+
+:focus-visible {
+  outline:
+    2px solid var(--zy-focus-color);
+
+  outline-offset:
+    2px;
+}
+
+
+/*
+  Programmatically focused containers such as:
+  <main tabIndex="-1">
+  should not receive a visible focus ring.
+*/
+
+[tabindex="-1"]:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+
+/* =========================================================
+   31. SELECTION
+   ========================================================= */
 
 ::selection {
-
   color:
     var(--zy-selection-text);
 
@@ -1232,43 +1272,448 @@ summary:focus-visible {
 
 
 /* =========================================================
-   32. GLOBAL FOCUS
-========================================================= */
+   32. SCROLLING
+   ========================================================= */
 
-:focus-visible {
+html {
+  scrollbar-width: thin;
 
+  scrollbar-color:
+    var(--zy-border-strong)
+    var(--zy-bg-900);
+}
+
+* {
+  scrollbar-width: thin;
+
+  scrollbar-color:
+    var(--zy-border-strong)
+    transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background:
+    transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background:
+    rgba(148, 163, 184, 0.18);
+
+  border:
+    2px solid transparent;
+
+  border-radius:
+    var(--zy-radius-pill);
+
+  background-clip:
+    padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background:
+    rgba(148, 163, 184, 0.30);
+
+  border:
+    2px solid transparent;
+
+  background-clip:
+    padding-box;
+}
+
+
+/* =========================================================
+   33. OVERFLOW SAFETY
+   ========================================================= */
+
+[aria-hidden="true"] {
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   34. ACCESSIBILITY STATES
+   ========================================================= */
+
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+[aria-busy="true"] {
+  cursor: progress;
+}
+
+
+/* =========================================================
+   35. RESPONSIVE TYPOGRAPHY
+   ========================================================= */
+
+@media (max-width: 1023px) {
+
+  h1 {
+    font-size: 30px;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+}
+
+
+@media (max-width: 639px) {
+
+  body {
+    font-size:
+      var(--zy-text-md);
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  h3 {
+    font-size: 17px;
+  }
+}
+
+
+/* =========================================================
+   36. MOBILE TOUCH FOUNDATION
+   ========================================================= */
+
+@media (max-width: 639px) {
+
+  /*
+    Only native interactive controls receive the
+    enterprise touch target.
+
+    Desktop component dimensions remain untouched.
+  */
+
+  button,
+  [role="button"],
+  input,
+  select {
+    min-height:
+      var(--zy-touch-target);
+  }
+
+  textarea {
+    min-height:
+      100px;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size:
+      16px;
+  }
+}
+
+
+/* =========================================================
+   37. SAFE AREA UTILITIES
+   ========================================================= */
+
+.zy-safe-area {
+  padding-top:
+    var(--zy-safe-top);
+
+  padding-right:
+    var(--zy-safe-right);
+
+  padding-bottom:
+    var(--zy-safe-bottom);
+
+  padding-left:
+    var(--zy-safe-left);
+}
+
+.zy-safe-top {
+  padding-top:
+    var(--zy-safe-top);
+}
+
+.zy-safe-right {
+  padding-right:
+    var(--zy-safe-right);
+}
+
+.zy-safe-bottom {
+  padding-bottom:
+    var(--zy-safe-bottom);
+}
+
+.zy-safe-left {
+  padding-left:
+    var(--zy-safe-left);
+}
+
+
+/* =========================================================
+   38. SCREEN READER ONLY
+   ========================================================= */
+
+.zy-sr-only {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  padding: 0;
+  margin: -1px;
+
+  overflow: hidden;
+
+  clip:
+    rect(0, 0, 0, 0);
+
+  clip-path:
+    inset(50%);
+
+  white-space: nowrap;
+
+  border: 0;
+}
+
+
+/* =========================================================
+   39. TEXT TRUNCATION
+   ========================================================= */
+
+.zy-truncate {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.zy-truncate-2 {
+  display: -webkit-box;
+
+  overflow: hidden;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.zy-truncate-3 {
+  display: -webkit-box;
+
+  overflow: hidden;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+
+/* =========================================================
+   40. CONTAINER SYSTEM
+   ========================================================= */
+
+.zy-container {
+  width: 100%;
+
+  max-width:
+    var(--zy-content-max);
+
+  margin-inline: auto;
+
+  padding-inline:
+    var(--zy-space-6);
+}
+
+
+.zy-container-wide {
+  width: 100%;
+
+  max-width:
+    var(--zy-content-wide);
+
+  margin-inline: auto;
+
+  padding-inline:
+    var(--zy-space-6);
+}
+
+
+/* =========================================================
+   41. READING WIDTH
+   ========================================================= */
+
+.zy-reading {
+  width: 100%;
+
+  max-width:
+    var(--zy-content-reading);
+}
+
+.zy-content-narrow {
+  width: 100%;
+
+  max-width:
+    var(--zy-content-narrow);
+}
+
+
+/* =========================================================
+   42. WIDTH / HEIGHT UTILITIES
+   ========================================================= */
+
+.zy-full-width {
+  width: 100%;
+}
+
+.zy-full-height {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.zy-min-width-0 {
+  min-width: 0;
+}
+
+.zy-min-height-0 {
+  min-height: 0;
+}
+
+
+/* =========================================================
+   43. TYPOGRAPHY UTILITIES
+   ========================================================= */
+
+.zy-mono {
+  font-family:
+    var(--zy-font-mono);
+}
+
+.zy-text-primary {
+  color:
+    var(--zy-text-primary);
+}
+
+.zy-text-secondary {
+  color:
+    var(--zy-text-secondary);
+}
+
+.zy-text-muted {
+  color:
+    var(--zy-text-muted);
+}
+
+.zy-text-success {
+  color:
+    var(--zy-success);
+}
+
+.zy-text-warning {
+  color:
+    var(--zy-warning);
+}
+
+.zy-text-danger {
+  color:
+    var(--zy-danger);
+}
+
+.zy-text-info {
+  color:
+    var(--zy-info);
+}
+
+
+/* =========================================================
+   44. INTERACTION UTILITIES
+   ========================================================= */
+
+.zy-no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.zy-pointer-none {
+  pointer-events: none;
+}
+
+.zy-focusable:focus-visible {
   outline:
-    2px solid var(--zy-brand);
+    2px solid var(--zy-focus-color);
 
   outline-offset:
     2px;
-}
-
-
-/* =========================================================
-   33. ACCESSIBILITY — FOCUS
-========================================================= */
-
-[tabindex="-1"]:focus-visible {
-
-  outline:
-    none;
 
   box-shadow:
-    none;
+    var(--zy-focus-ring);
 }
 
 
 /* =========================================================
-   34. GLOBAL MOTION
-========================================================= */
+   45. VISIBILITY
+   ========================================================= */
+
+.zy-hidden {
+  display: none !important;
+}
+
+
+/* =========================================================
+   46. COMPOSITING
+   ========================================================= */
+
+.zy-transform-layer {
+  transform:
+    translateZ(0);
+}
+
+
+/* =========================================================
+   47. CONTENT VISIBILITY
+   ========================================================= */
+
+.zy-content-auto {
+  content-visibility:
+    auto;
+
+  contain-intrinsic-size:
+    500px;
+}
+
+
+/* =========================================================
+   48. OBJECT FIT
+   ========================================================= */
+
+.zy-object-cover {
+  object-fit:
+    cover;
+}
+
+.zy-object-contain {
+  object-fit:
+    contain;
+}
+
+
+/* =========================================================
+   49. MOTION FOUNDATION
+   ========================================================= */
 
 @media (prefers-reduced-motion: no-preference) {
 
   html {
-
-    scroll-behavior:
-      smooth;
+    scroll-behavior: smooth;
   }
 }
 
@@ -1276,15 +1721,12 @@ summary:focus-visible {
 @media (prefers-reduced-motion: reduce) {
 
   html {
-
-    scroll-behavior:
-      auto !important;
+    scroll-behavior: auto !important;
   }
 
   *,
   *::before,
   *::after {
-
     animation-duration:
       0.01ms !important;
 
@@ -1301,316 +1743,99 @@ summary:focus-visible {
 
 
 /* =========================================================
-   35. GLOBAL SCROLLBAR
-========================================================= */
+   50. HIGH CONTRAST / FORCED COLORS
+   ========================================================= */
 
-* {
+@media (forced-colors: active) {
 
-  scrollbar-width:
-    thin;
-
-  scrollbar-color:
-    var(--zy-border-strong)
-    var(--zy-bg-900);
-}
-
-
-::-webkit-scrollbar {
-
-  width:
-    8px;
-
-  height:
-    8px;
-}
-
-
-::-webkit-scrollbar-track {
-
-  background:
-    var(--zy-bg-900);
-}
-
-
-::-webkit-scrollbar-thumb {
-
-  background:
-    var(--zy-border-strong);
-
-  border:
-    2px solid var(--zy-bg-900);
-
-  border-radius:
-    var(--zy-radius-pill);
-}
-
-
-::-webkit-scrollbar-thumb:hover {
-
-  background:
-    var(--zy-border-interactive);
-}
-
-
-/* =========================================================
-   36. APP SURFACE DEFAULTS
-========================================================= */
-
-main {
-
-  min-width:
-    0;
-}
-
-
-section,
-article,
-aside,
-nav,
-header,
-footer {
-
-  min-width:
-    0;
-}
-
-
-/* =========================================================
-   37. OVERFLOW SAFETY
-========================================================= */
-
-[style*="overflow"] {
-
-  scrollbar-width:
-    thin;
-}
-
-
-/* =========================================================
-   38. RESPONSIVE TYPOGRAPHY
-========================================================= */
-
-@media (min-width: 1440px) {
-
-  h1 {
-
-    font-size:
-      var(--zy-text-4xl);
-  }
-}
-
-
-@media (max-width: 1023px) {
-
-  h1 {
-
-    font-size:
-      30px;
+  *,
+  *::before,
+  *::after {
+    forced-color-adjust:
+      auto;
   }
 
-  h2 {
-
-    font-size:
-      22px;
+  :focus-visible {
+    outline:
+      2px solid CanvasText;
   }
-}
-
-
-@media (max-width: 639px) {
-
-  h1 {
-
-    font-size:
-      28px;
-  }
-
-  h2 {
-
-    font-size:
-      20px;
-  }
-
-  h3 {
-
-    font-size:
-      17px;
-  }
-
-  body {
-
-    font-size:
-      14px;
-  }
-}
-
-
-/* =========================================================
-   39. MOBILE INTERACTION
-========================================================= */
-
-@media (max-width: 639px) {
 
   button,
   input,
   textarea,
   select {
-
-    -webkit-tap-highlight-color:
-      transparent;
-  }
-
-  input,
-  textarea,
-  select {
-
-    font-size:
-      16px;
+    border-color:
+      CanvasText;
   }
 }
 
 
 /* =========================================================
-   40. SAFE AREA SUPPORT
-========================================================= */
+   51. LARGE DESKTOP
+   ========================================================= */
 
-.zy-safe-area {
+@media (min-width: 1440px) {
 
-  padding-top:
-    var(--zy-safe-top);
-
-  padding-right:
-    var(--zy-safe-right);
-
-  padding-bottom:
-    var(--zy-safe-bottom);
-
-  padding-left:
-    var(--zy-safe-left);
-}
-
-
-.zy-safe-bottom {
-
-  padding-bottom:
-    var(--zy-safe-bottom);
+  .zy-container,
+  .zy-container-wide {
+    padding-inline:
+      var(--zy-space-8);
+  }
 }
 
 
 /* =========================================================
-   41. VISUALLY HIDDEN
-========================================================= */
+   52. ULTRA-WIDE
+   ========================================================= */
 
-.zy-sr-only {
-
-  position:
-    absolute;
-
-  width:
-    1px;
-
-  height:
-    1px;
-
-  padding:
-    0;
-
-  margin:
-    -1px;
-
-  overflow:
-    hidden;
-
-  clip:
-    rect(0, 0, 0, 0);
-
-  clip-path:
-    inset(50%);
-
-  white-space:
-    nowrap;
-
-  border:
-    0;
-}
-
-
-/* =========================================================
-   42. TEXT TRUNCATION
-========================================================= */
-
-.zy-truncate {
-
-  overflow:
-    hidden;
-
-  text-overflow:
-    ellipsis;
-
-  white-space:
-    nowrap;
-}
-
-
-/* =========================================================
-   43. MULTI-LINE TRUNCATION
-========================================================= */
-
-.zy-truncate-2 {
-
-  display:
-    -webkit-box;
-
-  overflow:
-    hidden;
-
-  -webkit-box-orient:
-    vertical;
-
-  -webkit-line-clamp:
-    2;
-}
-
-
-.zy-truncate-3 {
-
-  display:
-    -webkit-box;
-
-  overflow:
-    hidden;
-
-  -webkit-box-orient:
-    vertical;
-
-  -webkit-line-clamp:
-    3;
-}
-
-
-/* =========================================================
-   44. CONTAINER
-========================================================= */
-
-.zy-container {
-
-  width:
-    100%;
-
-  max-width:
-    var(--zy-content-max);
-
-  margin-inline:
-    auto;
-
-  padding-inline:
-    var(--zy-space-6);
-}
-
-
-@media (max-width: 639px) {
+@media (min-width: 1920px) {
 
   .zy-container {
+    max-width:
+      var(--zy-content-max);
+  }
 
+  .zy-container-wide {
+    max-width:
+      var(--zy-content-wide);
+  }
+}
+
+
+/* =========================================================
+   53. TABLET
+   ========================================================= */
+
+@media (max-width: 1023px) {
+
+  :root {
+    --zy-sidebar-width: 240px;
+  }
+
+  .zy-container,
+  .zy-container-wide {
+    padding-inline:
+      var(--zy-space-5);
+  }
+}
+
+
+/* =========================================================
+   54. SMALL TABLET
+   ========================================================= */
+
+@media (max-width: 767px) {
+
+  :root {
+    --zy-sidebar-width: 100%;
+    --zy-sidebar-collapsed-width: 100%;
+
+    --zy-topbar-height: 58px;
+    --zy-workspace-height: 38px;
+  }
+
+  .zy-container,
+  .zy-container-wide {
     padding-inline:
       var(--zy-space-4);
   }
@@ -1618,422 +1843,143 @@ footer {
 
 
 /* =========================================================
-   45. READING WIDTH
-========================================================= */
+   55. SMALL PHONE
+   ========================================================= */
 
-.zy-reading {
+@media (max-width: 480px) {
 
-  width:
-    100%;
-
-  max-width:
-    var(--zy-content-reading);
-}
-
-
-.zy-content-narrow {
-
-  width:
-    100%;
-
-  max-width:
-    var(--zy-content-narrow);
+  .zy-container,
+  .zy-container-wide {
+    padding-inline:
+      var(--zy-space-3);
+  }
 }
 
 
 /* =========================================================
-   46. MONOSPACE
-========================================================= */
+   56. VERY SMALL DEVICES
+   ========================================================= */
 
-.zy-mono {
+@media (max-width: 360px) {
 
-  font-family:
-    var(--zy-font-mono);
+  .zy-container,
+  .zy-container-wide {
+    padding-inline:
+      10px;
+  }
 }
 
 
 /* =========================================================
-   47. NO SELECT
-========================================================= */
-
-.zy-no-select {
-
-  user-select:
-    none;
-
-  -webkit-user-select:
-    none;
-}
-
-
-/* =========================================================
-   48. FULL HEIGHT
-========================================================= */
-
-.zy-full-height {
-
-  min-height:
-    100vh;
-
-  min-height:
-    100dvh;
-}
-
-
-/* =========================================================
-   49. FULL WIDTH
-========================================================= */
-
-.zy-full-width {
-
-  width:
-    100%;
-}
-
-
-/* =========================================================
-   50. MIN WIDTH SAFETY
-========================================================= */
-
-.zy-min-width-0 {
-
-  min-width:
-    0;
-}
-
-
-/* =========================================================
-   51. FOCUSABLE UTILITY
-========================================================= */
-
-.zy-focusable:focus-visible {
-
-  outline:
-    2px solid var(--zy-brand);
-
-  outline-offset:
-    2px;
-
-  box-shadow:
-    var(--zy-focus-ring);
-}
-
-
-/* =========================================================
-   52. VISUAL HIDE
-========================================================= */
-
-.zy-hidden {
-
-  display:
-    none !important;
-}
-
-
-/* =========================================================
-   53. INTERACTION DISABLED
-========================================================= */
-
-.zy-pointer-none {
-
-  pointer-events:
-    none;
-}
-
-
-/* =========================================================
-   54. GPU / COMPOSITING FOUNDATION
-========================================================= */
-
-.zy-transform-layer {
-
-  transform:
-    translateZ(0);
-}
-
-
-/* =========================================================
-   55. CONTENT VISIBILITY
-========================================================= */
-
-.zy-content-auto {
-
-  content-visibility:
-    auto;
-
-  contain-intrinsic-size:
-    500px;
-}
-
-
-/* =========================================================
-   56. MEDIA SAFETY
-========================================================= */
-
-video,
-canvas,
-iframe {
-
-  max-width:
-    100%;
-}
-
-
-iframe {
-
-  border:
-    0;
-}
-
-
-/* =========================================================
-   57. OBJECT FIT UTILITIES
-========================================================= */
-
-.zy-object-cover {
-
-  object-fit:
-    cover;
-}
-
-
-.zy-object-contain {
-
-  object-fit:
-    contain;
-}
-
-
-/* =========================================================
-   58. PRINT SAFETY
-========================================================= */
+   57. PRINT
+   ========================================================= */
 
 @media print {
 
   html,
   body {
+    min-width: 0;
 
-    background:
-      #ffffff !important;
+    background: #ffffff !important;
 
-    color:
-      #000000 !important;
+    color: #000000 !important;
   }
 
   *,
   *::before,
   *::after {
+    box-shadow: none !important;
 
-    box-shadow:
-      none !important;
-
-    text-shadow:
-      none !important;
+    text-shadow: none !important;
   }
 
   a {
-
-    color:
-      #000000 !important;
+    color: #000000 !important;
   }
 }
 
 
 /* =========================================================
-   59. MOBILE SAFE INTERACTION
-========================================================= */
-
-@media (max-width: 639px) {
-
-  button,
-  [role="button"],
-  input,
-  select {
-
-    min-height:
-      var(--zy-touch-target);
-  }
-}
-
-
-/* =========================================================
-   60. ACCESSIBILITY — HIGH CONTRAST SUPPORT
-========================================================= */
-
-@media (forced-colors: active) {
-
-  *,
-  *::before,
-  *::after {
-
-    forced-color-adjust:
-      auto;
-  }
-
-  :focus-visible {
-
-    outline:
-      2px solid CanvasText;
-  }
-}
-
-
-/* =========================================================
-   61. DARK COLOR SCHEME DECLARATION
-========================================================= */
-
-:root {
-
-  color-scheme:
-    dark;
-}
-
-
-/* =========================================================
-   62. BODY TEXT WRAPPING
-========================================================= */
-
-body {
-
-  overflow-wrap:
-    break-word;
-}
-
-
-/* =========================================================
-   63. BUTTON TEXT SAFETY
-========================================================= */
-
-button,
-[role="button"] {
-
-  overflow-wrap:
-    anywhere;
-}
-
-
-/* =========================================================
-   64. INPUT TEXT SAFETY
-========================================================= */
-
-input,
-textarea {
-
-  overflow-wrap:
-    break-word;
-}
-
-
-/* =========================================================
-   65. DISABLED INTERACTION SAFETY
-========================================================= */
-
-[aria-disabled="true"] {
-
-  cursor:
-    not-allowed;
-}
-
-
-/* =========================================================
-   66. LOADING CURSOR FOUNDATION
-========================================================= */
-
-[aria-busy="true"] {
-
-  cursor:
-    progress;
-}
-
-
-/* =========================================================
-   67. IMAGE LOADING SAFETY
-========================================================= */
-
-img[loading="lazy"] {
-
-  content-visibility:
-    auto;
-}
-
-
-/* =========================================================
-   68. DEFAULT HR / BORDER CONSISTENCY
-========================================================= */
-
-hr,
-input,
-textarea,
-select {
-
-  border-color:
-    var(--zy-border);
-}
-
-
-/* =========================================================
-   69. INHERIT FORM FONT
-========================================================= */
-
-button,
-input,
-textarea,
-select,
-optgroup,
-option {
-
-  font-family:
-    inherit;
-
-  font-size:
-    inherit;
-
-  line-height:
-    inherit;
-}
-
-
-/* =========================================================
-   70. FINAL GLOBAL CONTRACT
-========================================================= */
+   58. FINAL GLOBAL CONTRACT
+   ========================================================= */
 
 /*
-  This stylesheet intentionally contains NO:
+  ZYRIONOS GLOBAL FOUNDATION CONTRACT
 
-  - Page layouts
-  - Feature layouts
-  - API calls
-  - Routing
-  - Authentication
-  - Business logic
-  - Deployment logic
-  - Billing logic
-  - Project logic
-  - AI execution logic
-  - Page-specific styling
+  This file owns:
 
-  Components must consume these foundations.
+  ✓ Global reset
+  ✓ Global tokens
+  ✓ Typography
+  ✓ Colors
+  ✓ Spacing
+  ✓ Radius
+  ✓ Shadows
+  ✓ Motion
+  ✓ Z-index architecture
+  ✓ Shell dimensions
+  ✓ Accessibility
+  ✓ Focus
+  ✓ Forms
+  ✓ Media
+  ✓ Scrollbars
+  ✓ Responsive foundations
+  ✓ Safe areas
+  ✓ Utility primitives
 
-  Architecture:
+  This file DOES NOT own:
 
-  DESIGN TOKENS
-        ↓
-  GLOBAL FOUNDATION
-        ↓
-  UI PRIMITIVES
-        ↓
-  COMPOSITES
-        ↓
-  PATTERNS
-        ↓
-  FEATURE COMPONENTS
-        ↓
-  PAGES
-        ↓
-  APPLICATION
+  ✗ Dashboard layout
+  ✗ Sidebar layout
+  ✗ Topbar layout
+  ✗ Workspace page layout
+  ✗ Project UI
+  ✗ Deployment UI
+  ✗ Billing UI
+  ✗ Settings UI
+  ✗ Authentication UI
+  ✗ API behaviour
+  ✗ Business logic
+  ✗ AI execution
+  ✗ Routing
+
+  Component hierarchy:
+
+       GLOBAL DESIGN TOKENS
+                ↓
+       GLOBAL FOUNDATION
+                ↓
+       UI PRIMITIVES
+                ↓
+       COMPOSITES
+                ↓
+       FEATURE COMPONENTS
+                ↓
+       PAGE COMPONENTS
+                ↓
+       DASHBOARD LAYOUT
+                ↓
+       APPLICATION
+
+
+  IMPORTANT SHELL CONTRACT:
+
+       Sidebar
+          ↓
+       DashboardLayout
+          ↓
+       Topbar
+          ↓
+       Workspace Bar
+          ↓
+       Scrollable Content
+
+  All shell components should consume the shared
+  --zy-* application tokens instead of inventing
+  independent dimensions wherever possible.
 */
 
 
 /* =========================================================
-   END OF ZYRIONOS GLOBAL ENTERPRISE FOUNDATION
+   END OF ZYRIONOS ENTERPRISE FOUNDATION v3
 ========================================================= */

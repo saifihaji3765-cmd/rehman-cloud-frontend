@@ -1,217 +1,1313 @@
-/* =========================
+/* =========================================================
+   ZYRIONOS — ENTERPRISE BILLING
+   Billing.module.css
+   ========================================================= */
+
+
+/* =========================================================
    PAGE
-========================= */
+   ========================================================= */
 
-.page{
+.page {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
 
-  display:flex;
+  box-sizing: border-box;
 
-  flex-direction:column;
+  color: var(--zy-text-primary);
 
-  gap:24px;
-
+  background:
+    radial-gradient(
+      circle at 82% 0%,
+      rgba(108, 99, 255, 0.06),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 0% 60%,
+      rgba(53, 215, 255, 0.018),
+      transparent 24%
+    );
 }
 
-/* =========================
+.container {
+  width: 100%;
+  max-width: 1680px;
+
+  margin: 0 auto;
+  padding: 30px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
    HEADER
-========================= */
+   ========================================================= */
 
-.header{
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
 
-  display:flex;
+  gap: 24px;
 
-  justify-content:space-between;
-
-  align-items:center;
-
+  margin-bottom: 22px;
 }
 
-.title{
-
-  font-size:32px;
-
-  font-weight:800;
-
-  color:#ffffff;
-
+.headerContent {
+  min-width: 0;
 }
 
-.subtitle{
+.eyebrow,
+.subscriptionEyebrow,
+.panelEyebrow,
+.controlEyebrow {
+  color: var(--zy-brand-secondary);
 
-  color:#94a3b8;
+  font-size: 8px;
+  font-weight: 800;
 
-  margin-top:6px;
+  letter-spacing: 0.12em;
 
+  text-transform: uppercase;
 }
 
-/* =========================
-   BUTTON
-========================= */
+.eyebrow {
+  display: flex;
+  align-items: center;
 
-.upgradeButton{
+  gap: 8px;
 
-  height:48px;
-
-  padding:0 20px;
-
-  border:none;
-
-  border-radius:12px;
-
-  background:#6366f1;
-
-  color:#ffffff;
-
-  font-weight:600;
-
-  cursor:pointer;
-
-  transition:0.3s;
-
+  margin-bottom: 9px;
 }
 
-.upgradeButton:hover{
+.eyebrowDot {
+  width: 7px;
+  height: 7px;
 
-  opacity:0.9;
+  flex: 0 0 7px;
 
+  border-radius: 50%;
+
+  background: var(--zy-brand-secondary);
+
+  box-shadow:
+    0 0 0 4px rgba(129, 121, 255, 0.08),
+    0 0 15px rgba(129, 121, 255, 0.34);
 }
 
-/* =========================
-   PLAN CARD
-========================= */
+.title {
+  margin: 0;
 
-.planCard{
+  color: var(--zy-text-primary);
 
-  background:#111827;
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1.1;
 
-  border:1px solid #1f2937;
+  font-weight: 800;
 
-  border-radius:20px;
-
-  padding:28px;
-
+  letter-spacing: -0.04em;
 }
 
-.planName{
+.subtitle {
+  max-width: 730px;
 
-  color:#ffffff;
+  margin: 9px 0 0;
 
-  font-size:24px;
+  color: var(--zy-text-secondary);
 
-  font-weight:700;
-
+  font-size: 12px;
+  line-height: 1.6;
 }
 
-.planPrice{
+.headerActions {
+  display: flex;
+  align-items: center;
 
-  color:#6366f1;
+  gap: 9px;
 
-  font-size:48px;
-
-  font-weight:900;
-
-  margin-top:12px;
-
+  flex: 0 0 auto;
 }
 
-.planDescription{
 
-  color:#94a3b8;
+/* =========================================================
+   BUTTONS
+   ========================================================= */
 
-  margin-top:12px;
+.refreshButton,
+.manageButton,
+.retryButton,
+.controlButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
-  line-height:1.7;
+  gap: 8px;
 
+  font: inherit;
+
+  cursor: pointer;
+
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
 }
 
-/* =========================
-   STATS GRID
-========================= */
+.refreshButton,
+.manageButton {
+  min-height: 42px;
 
-.statsGrid{
+  border-radius: 10px;
 
-  display:grid;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.refreshButton {
+  padding: 0 14px;
+
+  border: 1px solid var(--zy-border-default);
+
+  background: var(--zy-surface-secondary);
+
+  color: var(--zy-text-secondary);
+}
+
+.refreshButton:hover {
+  border-color: var(--zy-border-hover);
+
+  background: var(--zy-surface-tertiary);
+
+  color: var(--zy-text-primary);
+}
+
+.manageButton {
+  padding: 0 15px;
+
+  border: 1px solid rgba(129, 121, 255, 0.44);
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--zy-brand-secondary),
+      var(--zy-brand-primary-dark)
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 9px 25px rgba(81, 72, 217, 0.2);
+}
+
+.manageButton:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 13px 31px rgba(81, 72, 217, 0.3);
+}
+
+.refreshButton:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+.refreshIcon,
+.spin {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.spin {
+  display: inline-block;
+
+  animation:
+    billingSpin 800ms linear infinite;
+}
+
+@keyframes billingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   ALERT
+   ========================================================= */
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 11px;
+
+  margin-bottom: 18px;
+  padding: 13px 15px;
+
+  border: 1px solid rgba(244, 183, 64, 0.2);
+  border-radius: 12px;
+
+  background:
+    rgba(244, 183, 64, 0.045);
+}
+
+.alertIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 24px;
+
+  flex: 0 0 24px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(244, 183, 64, 0.1);
+
+  color: var(--zy-warning);
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.alertContent {
+  min-width: 0;
+
+  flex: 1;
+}
+
+.alertContent strong {
+  color: var(--zy-text-primary);
+
+  font-size: 11px;
+}
+
+.alertContent p {
+  margin: 3px 0 0;
+
+  color: var(--zy-text-secondary);
+
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.retryButton {
+  min-height: 30px;
+
+  padding: 0 10px;
+
+  border: 1px solid rgba(244, 183, 64, 0.22);
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: var(--zy-warning);
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   SUBSCRIPTION CARD
+   ========================================================= */
+
+.subscriptionCard {
+  position: relative;
+
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+
+  gap: 30px;
+
+  min-height: 190px;
+
+  margin-bottom: 17px;
+  padding: 25px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--zy-border-default);
+  border-radius: 17px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(16, 25, 43, 0.99),
+      rgba(8, 14, 28, 0.99)
+    );
+
+  box-shadow:
+    0 12px 35px rgba(0, 0, 0, 0.18);
+}
+
+.subscriptionCard::before {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: 8%;
+  right: 8%;
+
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(129, 121, 255, 0.8),
+      rgba(53, 215, 255, 0.35),
+      transparent
+    );
+}
+
+.subscriptionGlow {
+  position: absolute;
+
+  width: 330px;
+  height: 220px;
+
+  top: -130px;
+  right: 12%;
+
+  border-radius: 50%;
+
+  background:
+    rgba(108, 99, 255, 0.075);
+
+  filter: blur(35px);
+
+  pointer-events: none;
+}
+
+.subscriptionMain {
+  position: relative;
+
+  min-width: 0;
+  flex: 1;
+}
+
+.subscriptionEyebrow {
+  margin-bottom: 9px;
+
+  color: var(--zy-text-muted);
+}
+
+.subscriptionTop {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.planName {
+  margin: 0;
+
+  overflow: hidden;
+
+  color: var(--zy-text-primary);
+
+  font-size: 22px;
+  line-height: 1.2;
+
+  font-weight: 800;
+
+  letter-spacing: -0.025em;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 5px 8px;
+
+  border: 1px solid rgba(32, 199, 122, 0.17);
+  border-radius: 7px;
+
+  background:
+    rgba(32, 199, 122, 0.055);
+
+  color: var(--zy-success);
+
+  font-size: 8px;
+  font-weight: 750;
+
+  white-space: nowrap;
+}
+
+.statusBadge span {
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background: var(--zy-success);
+
+  box-shadow:
+    0 0 8px rgba(32, 199, 122, 0.45);
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+
+  gap: 5px;
+
+  margin-top: 13px;
+}
+
+.planPrice {
+  color: var(--zy-brand-secondary);
+
+  font-size: clamp(34px, 4vw, 48px);
+  line-height: 1;
+
+  font-weight: 900;
+
+  letter-spacing: -0.05em;
+
+  text-shadow:
+    0 0 28px rgba(108, 99, 255, 0.2);
+}
+
+.billingInterval {
+  color: var(--zy-text-muted);
+
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.planDescription {
+  max-width: 640px;
+
+  margin: 12px 0 0;
+
+  color: var(--zy-text-secondary);
+
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.subscriptionSide {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  min-width: 180px;
+
+  padding-left: 25px;
+
+  border-left: 1px solid var(--zy-border-default);
+}
+
+.sideLabel {
+  margin-bottom: 8px;
+
+  color: var(--zy-text-muted);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 0.1em;
+}
+
+.subscriptionSide strong {
+  color: var(--zy-text-primary);
+
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.subscriptionSide > span {
+  margin-top: 6px;
+
+  color: var(--zy-text-muted);
+
+  font-size: 8px;
+}
+
+
+/* =========================================================
+   RESOURCES
+   ========================================================= */
+
+.resourceGrid {
+  display: grid;
 
   grid-template-columns:
-  repeat(4,1fr);
+    repeat(4, minmax(0, 1fr));
 
-  gap:20px;
+  gap: 13px;
 
+  margin-bottom: 18px;
 }
 
-/* =========================
-   CARD
-========================= */
+.resourceCard {
+  position: relative;
 
-.statCard{
+  min-width: 0;
 
-  background:#111827;
+  padding: 17px;
 
-  border:1px solid #1f2937;
+  overflow: hidden;
 
-  border-radius:16px;
+  border: 1px solid var(--zy-border-default);
+  border-radius: 14px;
 
-  padding:22px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(14, 23, 40, 0.98),
+      rgba(8, 14, 27, 0.99)
+    );
 
+  transition:
+    transform 170ms ease,
+    border-color 170ms ease,
+    box-shadow 170ms ease;
 }
 
-.statLabel{
+.resourceCard:hover {
+  transform: translateY(-2px);
 
-  color:#94a3b8;
+  border-color: var(--zy-border-hover);
 
-  font-size:14px;
-
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.2);
 }
 
-.statValue{
+.resourceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-  color:#ffffff;
-
-  font-size:24px;
-
-  font-weight:800;
-
-  margin-top:10px;
-
+  gap: 8px;
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
+.resourceHeader > span {
+  color: var(--zy-text-muted);
 
-@media(max-width:1200px){
+  font-size: 8px;
+  font-weight: 800;
 
-  .statsGrid{
+  letter-spacing: 0.1em;
+}
 
+.resourceIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 29px;
+  height: 29px;
+
+  border: 1px solid rgba(108, 99, 255, 0.14);
+  border-radius: 8px;
+
+  background:
+    rgba(108, 99, 255, 0.06);
+
+  color: var(--zy-brand-secondary);
+
+  font-size: 7px;
+  font-weight: 800;
+}
+
+.resourceCard > strong {
+  display: block;
+
+  margin-top: 15px;
+
+  overflow: hidden;
+
+  color: var(--zy-text-primary);
+
+  font-size: 21px;
+  line-height: 1.1;
+
+  font-weight: 800;
+
+  letter-spacing: -0.025em;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourceCard > span {
+  display: block;
+
+  margin-top: 7px;
+
+  overflow: hidden;
+
+  color: var(--zy-text-muted);
+
+  font-size: 8px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   DETAILS GRID
+   ========================================================= */
+
+.detailsGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 17px;
+
+  margin-bottom: 18px;
+}
+
+
+/* =========================================================
+   PANEL
+   ========================================================= */
+
+.panel {
+  min-width: 0;
+
+  overflow: hidden;
+
+  border: 1px solid var(--zy-border-default);
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(13, 22, 38, 0.98),
+      rgba(7, 13, 25, 0.99)
+    );
+
+  box-shadow:
+    0 7px 23px rgba(0, 0, 0, 0.14);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 18px 20px 15px;
+
+  border-bottom: 1px solid var(--zy-border-default);
+}
+
+.panelEyebrow {
+  margin-bottom: 5px;
+}
+
+.panelTitle {
+  margin: 0;
+
+  color: var(--zy-text-primary);
+
+  font-size: 15px;
+  line-height: 1.25;
+
+  font-weight: 750;
+}
+
+.panelSubtitle {
+  max-width: 470px;
+
+  margin: 5px 0 0;
+
+  color: var(--zy-text-muted);
+
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.cardIcon,
+.creditIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 31px;
+  height: 31px;
+
+  flex: 0 0 31px;
+
+  border: 1px solid rgba(53, 215, 255, 0.13);
+  border-radius: 9px;
+
+  background:
+    rgba(53, 215, 255, 0.045);
+
+  color: var(--zy-ai-cyan);
+
+  font-size: 13px;
+}
+
+.creditIcon {
+  color: var(--zy-brand-secondary);
+
+  border-color:
+    rgba(108, 99, 255, 0.15);
+
+  background:
+    rgba(108, 99, 255, 0.06);
+
+  font-size: 8px;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   PAYMENT
+   ========================================================= */
+
+.paymentBody,
+.creditBody {
+  padding: 20px;
+}
+
+.paymentMethod {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-height: 68px;
+
+  padding: 13px;
+
+  border: 1px solid var(--zy-border-default);
+  border-radius: 11px;
+
+  background:
+    rgba(255, 255, 255, 0.012);
+}
+
+.paymentMethodIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 39px;
+  height: 39px;
+
+  flex: 0 0 39px;
+
+  border: 1px solid rgba(129, 121, 255, 0.15);
+  border-radius: 10px;
+
+  background:
+    rgba(108, 99, 255, 0.06);
+
+  font-size: 16px;
+}
+
+.paymentMethodInfo {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+.paymentMethodInfo strong {
+  overflow: hidden;
+
+  color: var(--zy-text-primary);
+
+  font-size: 11px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paymentMethodInfo span {
+  margin-top: 4px;
+
+  color: var(--zy-text-muted);
+
+  font-size: 8px;
+}
+
+.detailLoading {
+  display: flex;
+  align-items: center;
+
+  min-height: 68px;
+
+  color: var(--zy-text-muted);
+
+  font-size: 9px;
+}
+
+.detailEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  min-height: 68px;
+}
+
+.emptySmallIcon {
+  margin-bottom: 7px;
+
+  font-size: 17px;
+}
+
+.detailEmpty strong {
+  color: var(--zy-text-secondary);
+
+  font-size: 10px;
+}
+
+.detailEmpty p {
+  margin: 4px 0 0;
+
+  color: var(--zy-text-muted);
+
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   CREDITS
+   ========================================================= */
+
+.creditValues {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+.creditValues > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+
+  min-width: 0;
+
+  padding: 12px;
+
+  border: 1px solid var(--zy-border-default);
+  border-radius: 10px;
+
+  background:
+    rgba(255, 255, 255, 0.012);
+}
+
+.creditValues span {
+  color: var(--zy-text-muted);
+
+  font-size: 8px;
+  text-transform: uppercase;
+
+  letter-spacing: 0.06em;
+}
+
+.creditValues strong {
+  overflow: hidden;
+
+  color: var(--zy-text-primary);
+
+  font-size: 13px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 5px;
+
+  margin-top: 15px;
+
+  overflow: hidden;
+
+  border-radius: 99px;
+
+  background:
+    rgba(148, 163, 184, 0.09);
+}
+
+.progressBar {
+  display: block;
+
+  height: 100%;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--zy-brand-primary),
+      var(--zy-ai-cyan)
+    );
+
+  transition:
+    width 300ms ease;
+}
+
+
+/* =========================================================
+   CONTROL PANEL
+   ========================================================= */
+
+.controlPanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 25px;
+
+  padding: 22px 24px;
+
+  margin-bottom: 18px;
+
+  border: 1px solid rgba(108, 99, 255, 0.17);
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      110deg,
+      rgba(108, 99, 255, 0.07),
+      rgba(53, 215, 255, 0.025),
+      rgba(8, 14, 27, 0.85)
+    );
+}
+
+.controlContent {
+  min-width: 0;
+}
+
+.controlEyebrow {
+  margin-bottom: 7px;
+}
+
+.controlContent h2 {
+  margin: 0;
+
+  color: var(--zy-text-primary);
+
+  font-size: 19px;
+  font-weight: 800;
+
+  letter-spacing: -0.025em;
+}
+
+.controlContent p {
+  max-width: 720px;
+
+  margin: 6px 0 0;
+
+  color: var(--zy-text-secondary);
+
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.controlButton {
+  min-height: 40px;
+
+  flex: 0 0 auto;
+
+  padding: 0 14px;
+
+  border: 1px solid rgba(129, 121, 255, 0.38);
+  border-radius: 9px;
+
+  background:
+    rgba(108, 99, 255, 0.1);
+
+  color: var(--zy-brand-secondary);
+
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.controlButton:hover {
+  background:
+    rgba(108, 99, 255, 0.16);
+
+  border-color:
+    rgba(129, 121, 255, 0.55);
+
+  color: var(--zy-text-primary);
+}
+
+
+/* =========================================================
+   FOCUS
+   ========================================================= */
+
+.page
+  :global(button:focus-visible),
+.page
+  :global(a:focus-visible) {
+  outline: 2px solid var(--zy-brand-secondary);
+
+  outline-offset: 3px;
+}
+
+
+/* =========================================================
+   1200px
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .container {
+    max-width: 100%;
+  }
+
+  .resourceGrid {
     grid-template-columns:
-    repeat(2,1fr);
-
+      repeat(2, minmax(0, 1fr));
   }
-
 }
 
-@media(max-width:768px){
 
-  .statsGrid{
+/* =========================================================
+   900px
+   ========================================================= */
 
-    grid-template-columns:1fr;
-
+@media (max-width: 900px) {
+  .container {
+    padding: 24px;
   }
 
-  .header{
+  .header {
+    align-items: stretch;
 
-    flex-direction:column;
-
-    align-items:flex-start;
-
-    gap:16px;
-
+    flex-direction: column;
   }
 
-  .planPrice{
-
-    font-size:36px;
-
+  .headerActions {
+    width: 100%;
   }
 
+  .headerActions .refreshButton,
+  .headerActions .manageButton {
+    flex: 1;
+  }
+
+  .subscriptionCard {
+    flex-direction: column;
+  }
+
+  .subscriptionSide {
+    min-width: 0;
+
+    padding-top: 17px;
+    padding-left: 0;
+
+    border-top: 1px solid var(--zy-border-default);
+    border-left: 0;
+  }
+}
+
+
+/* =========================================================
+   768px
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 20px;
+  }
+
+  .detailsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .controlPanel {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .controlButton {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   600px
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .container {
+    padding: 16px;
+  }
+
+  .title {
+    font-size: 27px;
+  }
+
+  .subtitle {
+    font-size: 10px;
+  }
+
+  .headerActions {
+    flex-direction: column;
+  }
+
+  .headerActions .refreshButton,
+  .headerActions .manageButton {
+    width: 100%;
+  }
+
+  .resourceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .subscriptionCard {
+    padding: 19px;
+  }
+
+  .planName {
+    font-size: 19px;
+  }
+
+  .planPrice {
+    font-size: 35px;
+  }
+
+  .panelHeader {
+    padding: 16px;
+  }
+
+  .paymentBody,
+  .creditBody {
+    padding: 16px;
+  }
+}
+
+
+/* =========================================================
+   420px
+   ========================================================= */
+
+@media (max-width: 420px) {
+  .container {
+    padding: 13px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .subscriptionCard {
+    padding: 17px;
+  }
+
+  .planPrice {
+    font-size: 31px;
+  }
+
+  .creditValues {
+    grid-template-columns: 1fr;
+  }
+
+  .controlPanel {
+    padding: 18px;
+  }
+}
+
+
+/* =========================================================
+   360px
+   ========================================================= */
+
+@media (max-width: 360px) {
+  .container {
+    padding: 11px;
+  }
+
+  .resourceCard {
+    padding: 15px;
+  }
+
+  .panelTitle {
+    font-size: 14px;
+  }
+
+  .controlContent h2 {
+    font-size: 17px;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .resourceCard,
+  .manageButton,
+  .refreshButton,
+  .controlButton {
+    transition: none;
+  }
+
+  .resourceCard:hover,
+  .manageButton:hover {
+    transform: none;
+  }
+
+  .spin,
+  .progressBar {
+    animation: none;
+    transition: none;
+  }
+}
+
+
+/* =========================================================
+   PRINT
+   ========================================================= */
+
+@media print {
+  .page {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .headerActions,
+  .controlPanel {
+    display: none;
+  }
+
+  .subscriptionCard,
+  .resourceCard,
+  .panel {
+    box-shadow: none;
+  }
 }

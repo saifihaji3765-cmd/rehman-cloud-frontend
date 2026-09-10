@@ -1,221 +1,657 @@
 /* =========================================================
-   ZYRIONOS — ENTERPRISE SIDEBAR
-   File: src/components/Sidebar/Sidebar.module.css
-   ========================================================= */
+   ZYRIONOS
+   ENTERPRISE SIDEBAR
+
+   Document 03
+   Design System
+
+   Document 04
+   Component & Interaction Architecture
+========================================================= */
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
 
 .sidebar {
-  width: 272px;
-  min-width: 272px;
-  height: 100vh;
+
+  --sidebar-width: 264px;
+  --sidebar-collapsed-width: 76px;
+
+  position: relative;
 
   display: flex;
   flex-direction: column;
 
-  position: sticky;
-  top: 0;
-  z-index: 50;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
 
-  box-sizing: border-box;
+  height: 100vh;
+  height: 100dvh;
 
-  padding: 18px 14px;
+  padding: 16px 12px;
 
   background:
     linear-gradient(
       180deg,
-      #0b1220 0%,
-      #080e1a 52%,
-      #070c16 100%
+      var(--zy-bg-900),
+      var(--zy-bg-950)
     );
 
-  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  border-right:
+    1px solid var(--zy-border);
 
-  color: #e5e7eb;
+  color:
+    var(--zy-text-primary);
 
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 
   isolation: isolate;
+
+  transition:
+    width var(--zy-transition-standard),
+    min-width var(--zy-transition-standard);
+
+  scrollbar-width: thin;
 }
 
-/* ---------------------------------------------------------
-   SUBTLE ENTERPRISE LIGHT
-   --------------------------------------------------------- */
+
+/* =========================================================
+   SUBTLE AMBIENT LIGHT
+========================================================= */
 
 .sidebar::before {
+
   content: "";
+
   position: absolute;
 
-  width: 220px;
-  height: 220px;
+  top: -180px;
+  left: -140px;
 
-  top: -110px;
-  left: -100px;
+  width: 360px;
+  height: 360px;
 
-  background: radial-gradient(
-    circle,
-    rgba(99, 102, 241, 0.14) 0%,
-    rgba(99, 102, 241, 0.04) 38%,
-    transparent 72%
-  );
+  background:
+    radial-gradient(
+      circle,
+      rgba(108, 99, 255, 0.08),
+      transparent 68%
+    );
 
   pointer-events: none;
+
   z-index: -1;
 }
 
-/* =========================================================
-   BRAND
-   ========================================================= */
-
-.brand {
-  padding: 8px 10px 18px;
-
-  margin-bottom: 14px;
-
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-
-  color: #f8fafc;
-
-  font-size: 21px;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.035em;
-
-  white-space: nowrap;
-}
-
-.logo::before {
-  content: "";
-
-  width: 10px;
-  height: 10px;
-
-  flex: 0 0 10px;
-
-  border-radius: 3px;
-
-  background: #6366f1;
-
-  box-shadow:
-    0 0 0 4px rgba(99, 102, 241, 0.12),
-    0 0 18px rgba(99, 102, 241, 0.42);
-}
-
-.tagline {
-  margin-top: 6px;
-  padding-left: 19px;
-
-  color: #7f8da3;
-
-  font-size: 11px;
-  line-height: 1.4;
-  font-weight: 500;
-
-  letter-spacing: 0.025em;
-
-  white-space: nowrap;
-}
 
 /* =========================================================
-   NAVIGATION
-   ========================================================= */
+   COLLAPSED
+========================================================= */
 
-.menu {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.collapsed {
 
-  width: 100%;
+  width:
+    var(--sidebar-collapsed-width);
+
+  min-width:
+    var(--sidebar-collapsed-width);
+
+  padding-inline:
+    10px;
 }
 
-.link {
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header {
+
   position: relative;
 
   display: flex;
   align-items: center;
 
-  min-height: 44px;
-  width: 100%;
+  min-height: 54px;
 
-  box-sizing: border-box;
+  margin-bottom: 12px;
 
-  padding: 0 13px;
+  padding-bottom: 12px;
 
-  border: 1px solid transparent;
-  border-radius: 10px;
+  border-bottom:
+    1px solid var(--zy-border);
 
-  color: #9aa7ba;
+  flex-shrink: 0;
+}
 
-  background: transparent;
+
+/* =========================================================
+   BRAND
+========================================================= */
+
+.brand {
+
+  display: flex;
+  align-items: center;
+
+  min-width: 0;
+
+  flex: 1;
+
+  gap: 11px;
+
+  color:
+    var(--zy-text-primary);
 
   text-decoration: none;
 
-  font-size: 13px;
-  line-height: 1;
-  font-weight: 550;
-
-  letter-spacing: -0.005em;
+  border-radius:
+    var(--zy-radius-sm);
 
   transition:
-    background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease,
-    transform 160ms ease,
-    box-shadow 160ms ease;
+    opacity var(--zy-transition-fast);
 }
 
-.link:hover {
-  color: #e5e7eb;
 
-  background: rgba(148, 163, 184, 0.075);
+.brand:hover {
 
-  border-color: rgba(148, 163, 184, 0.08);
-
-  transform: translateX(1px);
+  opacity: 0.92;
 }
 
-.link:focus-visible {
+
+.brand:focus-visible {
+
   outline: none;
 
-  color: #ffffff;
-
-  border-color: rgba(129, 140, 248, 0.7);
-
   box-shadow:
-    0 0 0 3px rgba(99, 102, 241, 0.18);
+    var(--zy-focus-ring);
 }
 
-.link:active {
-  transform: translateX(1px) scale(0.995);
-}
 
 /* =========================================================
-   ACTIVE NAVIGATION
-   ========================================================= */
+   BRAND MARK
+========================================================= */
 
-.active {
-  color: #ffffff !important;
+.brandMark {
+
+  position: relative;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 7px);
+
+  grid-template-rows:
+    repeat(2, 7px);
+
+  gap: 2px;
+
+  width: 26px;
+  height: 26px;
+
+  flex: 0 0 26px;
+
+  padding: 5px;
+
+  border:
+    1px solid var(--zy-border-strong);
+
+  border-radius:
+    var(--zy-radius-sm);
 
   background:
-    linear-gradient(
-      90deg,
-      rgba(99, 102, 241, 0.22),
-      rgba(99, 102, 241, 0.09)
-    ) !important;
-
-  border-color: rgba(99, 102, 241, 0.24) !important;
+    var(--zy-surface-2);
 
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    0 4px 16px rgba(0, 0, 0, 0.12);
+    var(--zy-shadow-sm);
 }
 
-.active::before {
-  content: "";
+
+.brandMark span {
+
+  display: block;
+
+  border-radius: 2px;
+
+  background:
+    var(--zy-brand);
+
+}
+
+
+.brandMark span:nth-child(2) {
+
+  opacity: 0.72;
+
+}
+
+
+.brandMark span:nth-child(3) {
+
+  opacity: 0.45;
+
+}
+
+
+.brandMark span:nth-child(3) {
+
+  grid-column: 1 / 3;
+
+  width: 100%;
+
+}
+
+
+/* =========================================================
+   BRAND CONTENT
+========================================================= */
+
+.brandContent {
+
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  overflow: hidden;
+}
+
+
+.brandName {
+
+  color:
+    var(--zy-text-primary);
+
+  font-size: 15px;
+
+  font-weight:
+    var(--zy-font-bold);
+
+  line-height: 1.2;
+
+  letter-spacing:
+    -0.025em;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+
+.brandTagline {
+
+  margin-top: 3px;
+
+  color:
+    var(--zy-text-muted);
+
+  font-size: 10px;
+
+  font-weight:
+    var(--zy-font-medium);
+
+  line-height: 1.3;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   COLLAPSE BUTTON
+========================================================= */
+
+.collapseButton {
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 28px;
+
+  flex: 0 0 28px;
+
+  margin-left: 6px;
+
+  border:
+    1px solid transparent;
+
+  border-radius:
+    var(--zy-radius-sm);
+
+  color:
+    var(--zy-text-muted);
+
+  background:
+    transparent;
+
+  cursor: pointer;
+
+  transition:
+    color var(--zy-transition-fast),
+    background-color var(--zy-transition-fast),
+    border-color var(--zy-transition-fast);
+}
+
+
+.collapseButton:hover {
+
+  color:
+    var(--zy-text-primary);
+
+  background:
+    var(--zy-surface-3);
+
+  border-color:
+    var(--zy-border);
+}
+
+
+.collapseButton:focus-visible {
+
+  outline: none;
+
+  box-shadow:
+    var(--zy-focus-ring);
+}
+
+
+.chevron,
+.chevronCollapsed {
+
+  display: block;
+
+  font-size: 23px;
+
+  line-height: 1;
+
+  transition:
+    transform var(--zy-transition-standard);
+}
+
+
+.chevron {
+
+  transform:
+    rotate(0deg);
+}
+
+
+.chevronCollapsed {
+
+  transform:
+    rotate(180deg);
+}
+
+
+/* =========================================================
+   WORKSPACE CONTEXT
+========================================================= */
+
+.workspaceContext {
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-height: 48px;
+
+  margin-bottom: 14px;
+
+  padding:
+    8px 9px;
+
+  border:
+    1px solid var(--zy-border);
+
+  border-radius:
+    var(--zy-radius-md);
+
+  background:
+    rgba(255, 255, 255, 0.018);
+
+  flex-shrink: 0;
+}
+
+
+.workspaceIcon {
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 30px;
+
+  border:
+    1px solid var(--zy-border);
+
+  border-radius:
+    var(--zy-radius-sm);
+
+  background:
+    var(--zy-surface-2);
+
+  color:
+    var(--zy-text-secondary);
+}
+
+
+.workspaceContent {
+
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+
+.eyebrow {
+
+  color:
+    var(--zy-text-muted);
+
+  font-size: 9px;
+
+  font-weight:
+    var(--zy-font-semibold);
+
+  letter-spacing:
+    0.08em;
+
+  line-height: 1.3;
+}
+
+
+.workspaceValue {
+
+  margin-top: 3px;
+
+  color:
+    var(--zy-text-secondary);
+
+  font-size: 11px;
+
+  font-weight:
+    var(--zy-font-medium);
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+.navigation {
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 18px;
+
+  min-width: 0;
+
+  flex: 1;
+
+  overflow-y: auto;
+}
+
+
+.navigationSection {
+
+  min-width: 0;
+}
+
+
+.sectionLabel {
+
+  padding:
+    0 10px 7px;
+
+  color:
+    var(--zy-text-disabled);
+
+  font-size: 9px;
+
+  font-weight:
+    var(--zy-font-semibold);
+
+  letter-spacing:
+    0.10em;
+
+  text-transform:
+    uppercase;
+}
+
+
+.navigationItems {
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+
+/* =========================================================
+   NAV ITEM
+========================================================= */
+
+.navItem {
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  min-height: 42px;
+
+  width: 100%;
+
+  padding:
+    0 10px;
+
+  border:
+    1px solid transparent;
+
+  border-radius:
+    var(--zy-radius-md);
+
+  color:
+    var(--zy-text-secondary);
+
+  text-decoration: none;
+
+  transition:
+    background-color var(--zy-transition-fast),
+    border-color var(--zy-transition-fast),
+    color var(--zy-transition-fast),
+    transform var(--zy-transition-fast);
+}
+
+
+.navItem:hover {
+
+  color:
+    var(--zy-text-primary);
+
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  border-color:
+    var(--zy-border);
+
+  transform:
+    translateX(1px);
+}
+
+
+.navItem:focus-visible {
+
+  outline: none;
+
+  box-shadow:
+    var(--zy-focus-ring);
+}
+
+
+.navItem:active {
+
+  transform:
+    translateX(1px) scale(0.995);
+}
+
+
+/* =========================================================
+   ACTIVE NAV ITEM
+========================================================= */
+
+.active {
+
+  color:
+    var(--zy-text-primary);
+
+  background:
+    var(--zy-accent-soft);
+
+  border-color:
+    var(--zy-border-brand);
+
+  box-shadow:
+    inset 0 1px 0
+    rgba(255, 255, 255, 0.025);
+}
+
+
+.active:hover {
+
+  background:
+    var(--zy-accent-soft);
+}
+
+
+/* =========================================================
+   ACTIVE INDICATOR
+========================================================= */
+
+.activeIndicator {
 
   position: absolute;
 
@@ -225,224 +661,633 @@
 
   width: 3px;
 
-  border-radius: 0 4px 4px 0;
+  border-radius:
+    0 var(--zy-radius-pill)
+    var(--zy-radius-pill) 0;
 
-  background: #818cf8;
+  background:
+    var(--zy-brand);
+
+  opacity: 0;
 
   box-shadow:
-    0 0 12px rgba(129, 140, 248, 0.5);
+    var(--zy-shadow-brand);
+
+  transition:
+    opacity var(--zy-transition-fast);
 }
 
-/* =========================================================
-   FOOTER
-   ========================================================= */
 
-.footer {
+.active .activeIndicator {
+
+  opacity: 1;
+}
+
+
+/* =========================================================
+   NAV ICON
+========================================================= */
+
+.navIcon {
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 22px;
+
+  flex: 0 0 22px;
+
+  color:
+    var(--zy-text-muted);
+
+  transition:
+    color var(--zy-transition-fast);
+}
+
+
+.navItem:hover .navIcon,
+.active .navIcon {
+
+  color:
+    var(--zy-brand-bright);
+}
+
+
+/* =========================================================
+   NAV LABEL
+========================================================= */
+
+.navLabel {
+
+  min-width: 0;
+
+  margin-left: 10px;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  font-size: 13px;
+
+  font-weight:
+    var(--zy-font-medium);
+
+  line-height: 1;
+}
+
+
+/* =========================================================
+   BADGE
+========================================================= */
+
+.navBadge {
+
+  margin-left: auto;
+
+  min-width: 20px;
+
+  padding:
+    2px 6px;
+
+  border-radius:
+    var(--zy-radius-pill);
+
+  background:
+    var(--zy-surface-3);
+
+  border:
+    1px solid var(--zy-border);
+
+  color:
+    var(--zy-text-muted);
+
+  font-size: 9px;
+
+  font-weight:
+    var(--zy-font-semibold);
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   BOTTOM AREA
+========================================================= */
+
+.bottomArea {
+
   margin-top: auto;
 
   padding-top: 14px;
+
+  flex-shrink: 0;
 }
+
 
 /* =========================================================
-   SUBSCRIPTION / PLAN CARD
-   ========================================================= */
+   PLATFORM CARD
+========================================================= */
 
-.planCard {
-  position: relative;
+.platformCard {
 
-  padding: 14px;
+  padding:
+    12px;
 
-  border: 1px solid rgba(148, 163, 184, 0.11);
-  border-radius: 12px;
+  border:
+    1px solid var(--zy-border);
+
+  border-radius:
+    var(--zy-radius-md);
 
   background:
-    linear-gradient(
-      145deg,
-      rgba(17, 27, 45, 0.94),
-      rgba(10, 17, 29, 0.96)
-    );
+    var(--zy-surface-1);
+}
+
+
+.platformHeader {
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  color:
+    var(--zy-text-secondary);
+
+  font-size: 10px;
+
+  font-weight:
+    var(--zy-font-semibold);
+}
+
+
+.platformIndicator {
+
+  width: 6px;
+  height: 6px;
+
+  flex: 0 0 6px;
+
+  border-radius: 50%;
+
+  background:
+    var(--zy-success);
 
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.025),
-    0 8px 24px rgba(0, 0, 0, 0.16);
-
-  overflow: hidden;
+    0 0 0 3px
+    var(--zy-success-bg);
 }
 
-.planCard::after {
-  content: "";
 
-  position: absolute;
-
-  top: 0;
-  right: 0;
-
-  width: 90px;
-  height: 90px;
-
-  background: radial-gradient(
-    circle at top right,
-    rgba(99, 102, 241, 0.1),
-    transparent 68%
-  );
-
-  pointer-events: none;
-}
-
-.planTitle {
-  position: relative;
-  z-index: 1;
-
-  color: #e2e8f0;
-
-  font-size: 11px;
-  line-height: 1.3;
-
-  font-weight: 700;
-
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.planText {
-  position: relative;
-  z-index: 1;
+.platformDescription {
 
   margin-top: 7px;
 
-  color: #728197;
+  color:
+    var(--zy-text-muted);
+
+  font-size: 10px;
+
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   SIDEBAR META
+========================================================= */
+
+.sidebarMeta {
+
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  margin-top: 10px;
+
+  padding:
+    0 4px;
+
+  color:
+    var(--zy-text-disabled);
+
+  font-size: 9px;
+
+  line-height: 1.3;
+}
+
+
+.metaSeparator {
+
+  opacity: 0.5;
+}
+
+
+.collapsedMeta {
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+
+  border:
+    1px solid var(--zy-border);
+
+  border-radius:
+    var(--zy-radius-sm);
+
+  color:
+    var(--zy-text-muted);
 
   font-size: 11px;
-  line-height: 1.5;
 
-  font-weight: 450;
+  font-weight:
+    var(--zy-font-bold);
+
+  margin-inline: auto;
 }
+
+
+/* =========================================================
+   MOBILE TRIGGER
+========================================================= */
+
+.mobileMenuButton {
+
+  display: none;
+
+  position: fixed;
+
+  top: 12px;
+  left: 12px;
+
+  z-index:
+    var(--zy-z-modal);
+
+  width: 42px;
+  height: 42px;
+
+  padding: 9px;
+
+  border:
+    1px solid var(--zy-border-strong);
+
+  border-radius:
+    var(--zy-radius-md);
+
+  background:
+    var(--zy-surface-2);
+
+  box-shadow:
+    var(--zy-shadow-md);
+
+  cursor: pointer;
+}
+
+
+.mobileMenuButton span {
+
+  display: block;
+
+  width: 100%;
+  height: 2px;
+
+  margin: 4px 0;
+
+  border-radius:
+    var(--zy-radius-pill);
+
+  background:
+    var(--zy-text-secondary);
+}
+
+
+/* =========================================================
+   MOBILE CLOSE
+========================================================= */
+
+.mobileCloseButton {
+
+  display: none;
+
+  width: 32px;
+  height: 32px;
+
+  border:
+    1px solid var(--zy-border);
+
+  border-radius:
+    var(--zy-radius-sm);
+
+  color:
+    var(--zy-text-secondary);
+
+  background:
+    transparent;
+
+  font-size: 22px;
+
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   MOBILE BACKDROP
+========================================================= */
+
+.mobileBackdrop {
+
+  display: none;
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index:
+    calc(var(--zy-z-modal) - 2);
+
+  border: 0;
+
+  background:
+    rgba(0, 0, 0, 0.55);
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  transition:
+    opacity var(--zy-transition-standard);
+}
+
+
+.mobileBackdropVisible {
+
+  opacity: 1;
+
+  pointer-events: auto;
+}
+
 
 /* =========================================================
    SCROLLBAR
-   ========================================================= */
+========================================================= */
 
-.sidebar::-webkit-scrollbar {
+.sidebar::-webkit-scrollbar,
+.navigation::-webkit-scrollbar {
+
   width: 5px;
 }
 
-.sidebar::-webkit-scrollbar-track {
+
+.sidebar::-webkit-scrollbar-track,
+.navigation::-webkit-scrollbar-track {
+
   background: transparent;
 }
 
-.sidebar::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.25);
 
-  border-radius: 999px;
+.sidebar::-webkit-scrollbar-thumb,
+.navigation::-webkit-scrollbar-thumb {
+
+  background:
+    var(--zy-border-strong);
+
+  border-radius:
+    var(--zy-radius-pill);
 }
 
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(129, 140, 248, 0.45);
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.navigation::-webkit-scrollbar-thumb:hover {
+
+  background:
+    var(--zy-border-interactive);
 }
+
 
 /* =========================================================
    TABLET
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 1100px) {
+
   .sidebar {
-    width: 248px;
-    min-width: 248px;
 
-    padding: 16px 12px;
+    --sidebar-width: 244px;
   }
 
-  .link {
-    min-height: 42px;
-  }
 }
+
 
 /* =========================================================
    MOBILE
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 768px) {
+
+  .mobileMenuButton {
+
+    display: block;
+  }
+
+
+  .mobileBackdrop {
+
+    display: block;
+  }
+
+
   .sidebar {
-    position: relative;
 
-    width: 100%;
-    min-width: 100%;
+    position: fixed;
 
-    height: auto;
-    min-height: auto;
+    top: 0;
+    left: 0;
 
-    padding: 12px;
-
-    border-right: none;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-  }
-
-  .brand {
-    padding: 7px 8px 14px;
-
-    margin-bottom: 10px;
-  }
-
-  .menu {
-    display: grid;
-
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(145px, 1fr)
+    width: min(
+      86vw,
+      300px
     );
 
-    gap: 5px;
+    min-width: min(
+      86vw,
+      300px
+    );
+
+    height: 100dvh;
+
+    z-index:
+      var(--zy-z-modal);
+
+    transform:
+      translateX(-105%);
+
+    transition:
+      transform var(--zy-transition-large);
+
+    box-shadow:
+      var(--zy-shadow-lg);
   }
 
-  .link {
-    min-height: 42px;
+
+  .sidebar.mobileOpen {
+
+    transform:
+      translateX(0);
   }
 
-  .footer {
-    margin-top: 12px;
+
+  .collapseButton {
+
+    display: none;
   }
 
-  .planCard {
-    padding: 12px;
+
+  .mobileCloseButton {
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 32px;
+
+    margin-left: 6px;
   }
+
+
+  .navigation {
+
+    overflow-y: auto;
+  }
+
+
+  .collapsed {
+
+    width: min(
+      86vw,
+      300px
+    );
+
+    min-width: min(
+      86vw,
+      300px
+    );
+
+    padding:
+      16px 12px;
+  }
+
+
+  .collapsed .brandContent,
+  .collapsed .workspaceContent,
+  .collapsed .sectionLabel,
+  .collapsed .navLabel,
+  .collapsed .navBadge,
+  .collapsed .platformCard {
+
+    display: block;
+  }
+
+
+  .collapsed .navLabel {
+
+    margin-left: 10px;
+  }
+
+
+  .collapsed .brandContent,
+  .collapsed .workspaceContent,
+  .collapsed .navLabel {
+
+    display: block;
+  }
+
 }
+
 
 /* =========================================================
    SMALL MOBILE
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 480px) {
+
   .sidebar {
-    padding: 10px;
+
+    width: 88vw;
+
+    min-width: 88vw;
   }
 
-  .logo {
-    font-size: 19px;
+
+  .mobileMenuButton {
+
+    top: 10px;
+    left: 10px;
+
+    width: 40px;
+    height: 40px;
   }
 
-  .tagline {
-    font-size: 10px;
-  }
-
-  .menu {
-    grid-template-columns: 1fr;
-  }
-
-  .link {
-    min-height: 43px;
-
-    padding: 0 12px;
-
-    font-size: 13px;
-  }
 }
+
 
 /* =========================================================
    REDUCED MOTION
-   ========================================================= */
+========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-  .link {
+
+  .sidebar,
+  .brand,
+  .navItem,
+  .collapseButton,
+  .mobileBackdrop {
+
     transition: none;
   }
+
+}
+
+
+/* =========================================================
+   FORCED COLORS
+========================================================= */
+
+@media (forced-colors: active) {
+
+  .sidebar,
+  .navItem,
+  .workspaceContext,
+  .platformCard {
+
+    border-color:
+      CanvasText;
+  }
+
+
+  .active {
+
+    background:
+      Highlight;
+
+    color:
+      HighlightText;
+  }
+
+
+  .activeIndicator {
+
+    background:
+      Highlight;
+  }
+
 }

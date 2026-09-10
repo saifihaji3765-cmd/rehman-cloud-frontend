@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
@@ -9,143 +9,259 @@ import { getSubscription } from "../../../services/billingService";
 
 import styles from "./Dashboard.module.css";
 
+/* =========================================================
+   RESPONSE NORMALIZATION
+   ========================================================= */
+
+function normalizeProjects(response) {
+  const payload = response?.data;
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload?.projects)) {
+    return payload.projects;
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+
+  return [];
+}
+
+function normalizeSubscriptions(response) {
+  const payload = response?.data;
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload?.subscriptions)) {
+    return payload.subscriptions;
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+
+  /*
+   * Some billing APIs return one subscription object
+   * instead of an array.
+   */
+  if (
+    payload &&
+    typeof payload === "object" &&
+    !Array.isArray(payload) &&
+    (payload.planName ||
+      payload.plan ||
+      payload.subscriptionPlan ||
+      payload.status)
+  ) {
+    return [payload];
+  }
+
+  return [];
+}
+
+/* =========================================================
+   SAFE DISPLAY HELPERS
+   ========================================================= */
+
+function getProjectName(project) {
+  return (
+    project?.projectName ||
+    project?.name ||
+    "Unnamed Project"
+  );
+}
+
+function getProjectId(project) {
+  return project?._id || project?.id || null;
+}
+
+function getProjectStatus(project) {
+  const status =
+    project?.deploymentStatus ||
+    project?.status ||
+    project?.state;
+
+  if (!status) {
+    return null;
+  }
+
+  return String(status)
+    .replace(/[_-]/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getInitial(name) {
+  const value = String(name || "").trim();
+
+  return value ? value.charAt(0).toUpperCase() : "U";
+}
+
+/* =========================================================
+   COMPONENT
+   ========================================================= */
+
 function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const [projects, setProjects] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
+
+  const [projectsError, setProjectsError] = useState("");
+  const [subscriptionError, setSubscriptionError] = useState("");
+
+  /* =======================================================
+     LOAD DASHBOARD DATA
+     ======================================================= */
+
+  const loadDashboard = useCallback(
+    async ({ refresh = false } = {}) => {
+      if (refresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      setProjectsError("");
+      setSubscriptionError("");
+
+      const [projectsResult, subscriptionResult] =
+        await Promise.allSettled([
+          getProjects(),
+          getSubscription(),
+        ]);
+
+      /* ---------------------------------------------------
+         PROJECTS
+         --------------------------------------------------- */
+
+      if (projectsResult.status === "fulfilled") {
+        setProjects(
+          normalizeProjects(projectsResult.value)
+        );
+      } else {
+        console.error(
+          "Dashboard projects loading error:",
+          projectsResult.reason
+        );
+
+        setProjectsError(
+          "Project data could not be loaded."
+        );
+      }
+
+      /* ---------------------------------------------------
+         SUBSCRIPTION
+         --------------------------------------------------- */
+
+      if (subscriptionResult.status === "fulfilled") {
+        setSubscriptions(
+          normalizeSubscriptions(
+            subscriptionResult.value
+          )
+        );
+      } else {
+        console.error(
+          "Dashboard subscription loading error:",
+          subscriptionResult.reason
+        );
+
+        setSubscriptionError(
+          "Subscription data could not be loaded."
+        );
+      }
+
+      if (refresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadDashboard() {
-      try {
-        setError("");
+    async function initialLoad() {
+      if (!mounted) return;
 
-        const [projectsResponse, subscriptionResponse] =
-          await Promise.all([
-            getProjects(),
-            getSubscription()
-          ]);
-
-        if (!mounted) return;
-
-        /*
-        ========================================
-        PROJECT RESPONSE NORMALIZATION
-        ========================================
-        */
-
-        const projectsData = projectsResponse?.data;
-
-        let normalizedProjects = [];
-
-        if (Array.isArray(projectsData)) {
-          normalizedProjects = projectsData;
-        } else if (Array.isArray(projectsData?.projects)) {
-          normalizedProjects = projectsData.projects;
-        } else if (Array.isArray(projectsData?.data)) {
-          normalizedProjects = projectsData.data;
-        }
-
-        /*
-        ========================================
-        SUBSCRIPTION RESPONSE NORMALIZATION
-        ========================================
-        */
-
-        const subscriptionData = subscriptionResponse?.data;
-
-        let normalizedSubscriptions = [];
-
-        if (Array.isArray(subscriptionData)) {
-          normalizedSubscriptions = subscriptionData;
-        } else if (
-          Array.isArray(subscriptionData?.subscriptions)
-        ) {
-          normalizedSubscriptions =
-            subscriptionData.subscriptions;
-        } else if (
-          Array.isArray(subscriptionData?.data)
-        ) {
-          normalizedSubscriptions =
-            subscriptionData.data;
-        }
-
-        setProjects(normalizedProjects);
-        setSubscriptions(normalizedSubscriptions);
-      } catch (err) {
-        console.error("Dashboard loading error:", err);
-
-        if (mounted) {
-          setProjects([]);
-          setSubscriptions([]);
-          setError(
-            "Some workspace data could not be loaded."
-          );
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      }
+      await loadDashboard();
     }
 
-    loadDashboard();
+    initialLoad();
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [loadDashboard]);
 
-  /*
-  ========================================
-  SAFE USER DATA
-  ========================================
-  */
+  /* =======================================================
+     SAFE USER DATA
+     ======================================================= */
 
-  const userName = user?.name || "User";
-  const userEmail = user?.email || "Loading...";
-  const userRole = user?.role || "User";
+  const userName =
+    user?.name ||
+    user?.fullName ||
+    user?.displayName ||
+    "User";
+
+  const userEmail =
+    user?.email ||
+    "—";
+
+  const userRole =
+    user?.role ||
+    "User";
+
+  const deploymentsValue =
+    user?.deploymentsUsed ??
+    user?.deploymentCount ??
+    user?.deployments ??
+    null;
 
   const deploymentsUsed =
-    Number(user?.deploymentsUsed) || 0;
+    deploymentsValue === null ||
+    deploymentsValue === undefined
+      ? null
+      : Number.isFinite(Number(deploymentsValue))
+        ? Number(deploymentsValue)
+        : null;
 
-  /*
-  ========================================
-  CURRENT PLAN
-  ========================================
-  */
+  /* =======================================================
+     SUBSCRIPTION
+     ======================================================= */
+
+  const currentSubscription = subscriptions[0] || null;
 
   const currentPlan =
-    subscriptions[0]?.planName ||
-    subscriptions[0]?.plan ||
+    currentSubscription?.planName ||
+    currentSubscription?.plan ||
+    currentSubscription?.subscriptionPlan ||
     user?.subscriptionPlan ||
-    "Free";
+    user?.plan ||
+    null;
 
-  /*
-  ========================================
-  PLAN DISPLAY
-  ========================================
-  */
+  const planLabel = currentPlan
+    ? String(currentPlan)
+        .replace(/[_-]/g, " ")
+        .replace(/\b\w/g, (letter) =>
+          letter.toUpperCase()
+        )
+    : "—";
 
-  const normalizedPlan = String(currentPlan).toLowerCase();
-
-  const planLabel =
-    normalizedPlan === "free"
-      ? "Free"
-      : String(currentPlan);
-
-  /*
-  ========================================
-  PROJECT STATS
-  ========================================
-  */
+  /* =======================================================
+     PROJECT DATA
+     ======================================================= */
 
   const projectCount = projects.length;
 
@@ -153,787 +269,974 @@ function Dashboard() {
     return projects.slice(0, 5);
   }, [projects]);
 
-  /*
-  ========================================
-  REFRESH
-  ========================================
-  */
+  /* =======================================================
+     DATA STATE
+     ======================================================= */
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
+  const hasProjectError = Boolean(projectsError);
+  const hasSubscriptionError = Boolean(subscriptionError);
 
-    try {
-      const [projectsResponse, subscriptionResponse] =
-        await Promise.all([
-          getProjects(),
-          getSubscription()
-        ]);
+  const hasAnyError =
+    hasProjectError || hasSubscriptionError;
 
-      const projectsData = projectsResponse?.data;
-      const subscriptionData = subscriptionResponse?.data;
+  const dataConnectionState = hasAnyError
+    ? "Partial data"
+    : "Connected";
 
-      let nextProjects = [];
+  const dataConnectionDescription = hasAnyError
+    ? "Some workspace services need attention."
+    : "Workspace data is synchronized with ZyrionOS.";
 
-      if (Array.isArray(projectsData)) {
-        nextProjects = projectsData;
-      } else if (Array.isArray(projectsData?.projects)) {
-        nextProjects = projectsData.projects;
-      } else if (Array.isArray(projectsData?.data)) {
-        nextProjects = projectsData.data;
-      }
+  /* =======================================================
+     HANDLERS
+     ======================================================= */
 
-      let nextSubscriptions = [];
+  const handleRefresh = useCallback(() => {
+    return loadDashboard({ refresh: true });
+  }, [loadDashboard]);
 
-      if (Array.isArray(subscriptionData)) {
-        nextSubscriptions = subscriptionData;
-      } else if (
-        Array.isArray(subscriptionData?.subscriptions)
-      ) {
-        nextSubscriptions =
-          subscriptionData.subscriptions;
-      } else if (
-        Array.isArray(subscriptionData?.data)
-      ) {
-        nextSubscriptions =
-          subscriptionData.data;
-      }
+  const handleProjectOpen = (project) => {
+    const projectId = getProjectId(project);
 
-      setProjects(nextProjects);
-      setSubscriptions(nextSubscriptions);
-      setError("");
-    } catch (err) {
-      console.error("Dashboard refresh error:", err);
-      setError(
-        "Unable to refresh workspace data right now."
+    if (projectId) {
+      navigate(
+        `/workspace?project=${encodeURIComponent(
+          projectId
+        )}`
       );
-    } finally {
-      setRefreshing(false);
+
+      return;
     }
+
+    navigate("/workspace");
   };
+
+  /* =======================================================
+     RENDER
+     ======================================================= */
 
   return (
     <DashboardLayout>
       <main className={styles.page}>
+        <div className={styles.container}>
 
-        {/* ========================================
-            TOP HEADER
-        ======================================== */}
+          {/* =================================================
+              HERO
+          ================================================= */}
 
-        <section className={styles.hero}>
+          <section className={styles.hero}>
+            <div className={styles.heroContent}>
+              <div className={styles.eyebrow}>
+                <span
+                  className={styles.eyebrowDot}
+                  aria-hidden="true"
+                />
 
-          <div className={styles.heroLeft}>
-
-            <div className={styles.eyebrow}>
-              <span className={styles.eyebrowDot} />
-              ZYRIONOS WORKSPACE
-            </div>
-
-            <h1 className={styles.title}>
-              Welcome back,{" "}
-              <span>{userName}</span>
-            </h1>
-
-            <p className={styles.subtitle}>
-              Manage your AI infrastructure, projects,
-              deployments and cloud operations from one
-              centralized workspace.
-            </p>
-
-          </div>
-
-          <div className={styles.heroActions}>
-
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <span className={styles.buttonIcon}>
-                ↻
-              </span>
-
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </button>
-
-            <button
-              type="button"
-              className={styles.primaryButton}
-              onClick={() => navigate("/workspace")}
-            >
-              <span>＋</span>
-              New Project
-            </button>
-
-          </div>
-
-        </section>
-
-        {/* ========================================
-            ERROR NOTICE
-        ======================================== */}
-
-        {error && (
-          <div className={styles.alert}>
-            <div className={styles.alertIcon}>!</div>
-
-            <div>
-              <strong>Workspace data notice</strong>
-              <p>{error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================
-            PLATFORM STATUS
-        ======================================== */}
-
-        <section className={styles.statusBar}>
-
-          <div className={styles.statusMain}>
-
-            <div className={styles.statusPulse}>
-              <span />
-            </div>
-
-            <div>
-              <div className={styles.statusTitle}>
-                All Systems Operational
+                ZYRIONOS WORKSPACE
               </div>
 
-              <div className={styles.statusDescription}>
-                ZyrionOS cloud platform is operating normally
-              </div>
+              <h1 className={styles.title}>
+                Welcome back,{" "}
+                <span>{userName}</span>
+              </h1>
+
+              <p className={styles.subtitle}>
+                Manage your projects, deployments,
+                subscription and workspace operations
+                from one centralized environment.
+              </p>
             </div>
 
-          </div>
-
-          <div className={styles.statusMeta}>
-            <span>Infrastructure</span>
-            <strong>Healthy</strong>
-          </div>
-
-          <div className={styles.statusMeta}>
-            <span>AI Services</span>
-            <strong>Active</strong>
-          </div>
-
-          <div className={styles.statusMeta}>
-            <span>Deployments</span>
-            <strong>Stable</strong>
-          </div>
-
-        </section>
-
-        {/* ========================================
-            KPI CARDS
-        ======================================== */}
-
-        <section className={styles.statsGrid}>
-
-          <article className={styles.statCard}>
-
-            <div className={styles.statTop}>
-              <span>WORKSPACE</span>
-
-              <div className={styles.statIcon}>
-                ◈
-              </div>
-            </div>
-
-            <div className={styles.statValue}>
-              {loading ? "—" : projectCount}
-            </div>
-
-            <div className={styles.statName}>
-              Active Projects
-            </div>
-
-            <div className={styles.statFooter}>
-              <span className={styles.positive}>
-                Workspace
-              </span>
-
-              <span>
-                projects managed
-              </span>
-            </div>
-
-          </article>
-
-          <article className={styles.statCard}>
-
-            <div className={styles.statTop}>
-              <span>DEPLOYMENTS</span>
-
-              <div className={styles.statIcon}>
-                ↑
-              </div>
-            </div>
-
-            <div className={styles.statValue}>
-              {deploymentsUsed}
-            </div>
-
-            <div className={styles.statName}>
-              Deployments Used
-            </div>
-
-            <div className={styles.statFooter}>
-              <span className={styles.positive}>
-                Stable
-              </span>
-
-              <span>
-                deployment activity
-              </span>
-            </div>
-
-          </article>
-
-          <article className={styles.statCard}>
-
-            <div className={styles.statTop}>
-              <span>SUBSCRIPTION</span>
-
-              <div className={styles.statIcon}>
-                ◆
-              </div>
-            </div>
-
-            <div className={styles.planValue}>
-              {planLabel}
-            </div>
-
-            <div className={styles.statName}>
-              Current Plan
-            </div>
-
-            <div className={styles.statFooter}>
-              <span className={styles.info}>
-                Billing
-              </span>
-
+            <div className={styles.heroActions}>
               <button
                 type="button"
-                className={styles.inlineButton}
-                onClick={() => navigate("/billing")}
+                className={styles.secondaryButton}
+                onClick={handleRefresh}
+                disabled={refreshing}
               >
-                Manage →
+                <span
+                  className={
+                    refreshing
+                      ? styles.refreshIconSpinning
+                      : styles.buttonIcon
+                  }
+                  aria-hidden="true"
+                >
+                  ↻
+                </span>
+
+                {refreshing
+                  ? "Refreshing..."
+                  : "Refresh"}
               </button>
-            </div>
-
-          </article>
-
-          <article className={styles.statCard}>
-
-            <div className={styles.statTop}>
-              <span>ACCESS</span>
-
-              <div className={styles.statIcon}>
-                ◉
-              </div>
-            </div>
-
-            <div className={styles.planValue}>
-              {userRole}
-            </div>
-
-            <div className={styles.statName}>
-              Account Role
-            </div>
-
-            <div className={styles.statFooter}>
-              <span className={styles.positive}>
-                Verified
-              </span>
-
-              <span>
-                workspace access
-              </span>
-            </div>
-
-          </article>
-
-        </section>
-
-        {/* ========================================
-            MAIN GRID
-        ======================================== */}
-
-        <section className={styles.mainGrid}>
-
-          {/* PROJECTS */}
-
-          <article className={styles.panel}>
-
-            <div className={styles.panelHeader}>
-
-              <div>
-                <div className={styles.panelEyebrow}>
-                  WORKSPACE
-                </div>
-
-                <h2 className={styles.panelTitle}>
-                  Recent Projects
-                </h2>
-
-                <p className={styles.panelSubtitle}>
-                  Your latest workspace activity
-                </p>
-              </div>
 
               <button
                 type="button"
-                className={styles.textButton}
+                className={styles.primaryButton}
                 onClick={() => navigate("/workspace")}
               >
-                View Workspace →
+                <span aria-hidden="true">＋</span>
+                New Project
               </button>
-
             </div>
+          </section>
 
-            <div className={styles.projectList}>
+          {/* =================================================
+              DATA NOTICE
+          ================================================= */}
 
-              {loading ? (
-                <>
-                  <div className={styles.loadingRow}>
-                    Loading workspace data...
-                  </div>
+          {hasAnyError && (
+            <section
+              className={styles.alert}
+              role="status"
+              aria-live="polite"
+            >
+              <div
+                className={styles.alertIcon}
+                aria-hidden="true"
+              >
+                !
+              </div>
 
-                  <div className={styles.loadingRow}>
-                    Preparing projects...
-                  </div>
-                </>
-              ) : recentProjects.length === 0 ? (
-                <div className={styles.emptyState}>
+              <div className={styles.alertContent}>
+                <strong>
+                  Workspace data notice
+                </strong>
 
-                  <div className={styles.emptyIcon}>
-                    ◇
-                  </div>
+                {projectsError && (
+                  <p>{projectsError}</p>
+                )}
 
-                  <h3>
-                    No projects yet
-                  </h3>
+                {subscriptionError && (
+                  <p>{subscriptionError}</p>
+                )}
+              </div>
 
-                  <p>
-                    Create your first project and
-                    start building with ZyrionOS.
-                  </p>
+              <button
+                type="button"
+                className={styles.alertAction}
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                Retry
+              </button>
+            </section>
+          )}
 
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={() =>
-                      navigate("/workspace")
-                    }
-                  >
-                    Create First Project
-                  </button>
+          {/* =================================================
+              REAL DATA CONNECTION STATUS
+          ================================================= */}
 
-                </div>
-              ) : (
-                recentProjects.map((project, index) => {
-
-                  const projectName =
-                    project?.projectName ||
-                    project?.name ||
-                    "Unnamed Project";
-
-                  const projectId =
-                    project?._id ||
-                    project?.id ||
-                    index;
-
-                  return (
-                    <div
-                      key={projectId}
-                      className={styles.projectRow}
-                    >
-
-                      <div className={styles.projectIdentity}>
-
-                        <div className={styles.projectAvatar}>
-                          {projectName
-                            .charAt(0)
-                            .toUpperCase()}
-                        </div>
-
-                        <div>
-                          <div className={styles.projectName}>
-                            {projectName}
-                          </div>
-
-                          <div className={styles.projectMeta}>
-                            ZyrionOS Workspace
-                          </div>
-                        </div>
-
-                      </div>
-
-                      <div className={styles.projectStatus}>
-                        <span />
-                        Active
-                      </div>
-
-                      <div className={styles.projectArrow}>
-                        →
-                      </div>
-
-                    </div>
-                  );
-                })
-              )}
-
-            </div>
-
-          </article>
-
-          {/* PLATFORM */}
-
-          <article className={styles.panel}>
-
-            <div className={styles.panelHeader}>
+          <section
+            className={
+              hasAnyError
+                ? `${styles.connectionBar} ${styles.connectionPartial}`
+                : styles.connectionBar
+            }
+          >
+            <div className={styles.connectionMain}>
+              <span
+                className={styles.connectionIndicator}
+                aria-hidden="true"
+              />
 
               <div>
-                <div className={styles.panelEyebrow}>
-                  PLATFORM
-                </div>
+                <strong>
+                  {dataConnectionState}
+                </strong>
 
-                <h2 className={styles.panelTitle}>
-                  Infrastructure
-                </h2>
-
-                <p className={styles.panelSubtitle}>
-                  Core ZyrionOS services
-                </p>
+                <span>
+                  {dataConnectionDescription}
+                </span>
               </div>
-
-              <div className={styles.liveBadge}>
-                <span />
-                LIVE
-              </div>
-
             </div>
 
-            <div className={styles.infrastructureList}>
+            <div className={styles.connectionMeta}>
+              <span>Projects</span>
+              <strong>
+                {hasProjectError
+                  ? "Unavailable"
+                  : "Connected"}
+              </strong>
+            </div>
 
-              <div className={styles.infrastructureRow}>
+            <div className={styles.connectionMeta}>
+              <span>Billing</span>
+              <strong>
+                {hasSubscriptionError
+                  ? "Unavailable"
+                  : "Connected"}
+              </strong>
+            </div>
 
-                <div className={styles.infrastructureInfo}>
-                  <div className={styles.serviceIcon}>
-                    CPU
+            <div className={styles.connectionMeta}>
+              <span>Account</span>
+              <strong>
+                {user ? "Authenticated" : "—"}
+              </strong>
+            </div>
+          </section>
+
+          {/* =================================================
+              KPI CARDS
+          ================================================= */}
+
+          <section
+            className={styles.statsGrid}
+            aria-label="Workspace overview"
+          >
+            {/* PROJECTS */}
+
+            <article className={styles.statCard}>
+              <div className={styles.statTop}>
+                <span>WORKSPACE</span>
+
+                <div
+                  className={styles.statIcon}
+                  aria-hidden="true"
+                >
+                  ◈
+                </div>
+              </div>
+
+              <div className={styles.statValue}>
+                {loading
+                  ? "—"
+                  : hasProjectError
+                    ? "—"
+                    : projectCount}
+              </div>
+
+              <div className={styles.statName}>
+                Active Projects
+              </div>
+
+              <div className={styles.statFooter}>
+                <span className={styles.info}>
+                  Workspace
+                </span>
+
+                <span>
+                  {hasProjectError
+                    ? "data unavailable"
+                    : "projects managed"}
+                </span>
+              </div>
+            </article>
+
+            {/* DEPLOYMENTS */}
+
+            <article className={styles.statCard}>
+              <div className={styles.statTop}>
+                <span>DEPLOYMENTS</span>
+
+                <div
+                  className={styles.statIcon}
+                  aria-hidden="true"
+                >
+                  ↑
+                </div>
+              </div>
+
+              <div className={styles.statValue}>
+                {deploymentsUsed === null
+                  ? "—"
+                  : deploymentsUsed}
+              </div>
+
+              <div className={styles.statName}>
+                Deployments Used
+              </div>
+
+              <div className={styles.statFooter}>
+                <span className={styles.info}>
+                  Account
+                </span>
+
+                <span>
+                  {deploymentsUsed === null
+                    ? "data unavailable"
+                    : "recorded usage"}
+                </span>
+              </div>
+            </article>
+
+            {/* SUBSCRIPTION */}
+
+            <article className={styles.statCard}>
+              <div className={styles.statTop}>
+                <span>SUBSCRIPTION</span>
+
+                <div
+                  className={styles.statIcon}
+                  aria-hidden="true"
+                >
+                  ◆
+                </div>
+              </div>
+
+              <div className={styles.planValue}>
+                {loading
+                  ? "—"
+                  : planLabel}
+              </div>
+
+              <div className={styles.statName}>
+                Current Plan
+              </div>
+
+              <div className={styles.statFooter}>
+                <span className={styles.info}>
+                  Billing
+                </span>
+
+                <button
+                  type="button"
+                  className={styles.inlineButton}
+                  onClick={() =>
+                    navigate("/billing")
+                  }
+                >
+                  Manage →
+                </button>
+              </div>
+            </article>
+
+            {/* ACCESS */}
+
+            <article className={styles.statCard}>
+              <div className={styles.statTop}>
+                <span>ACCESS</span>
+
+                <div
+                  className={styles.statIcon}
+                  aria-hidden="true"
+                >
+                  ◉
+                </div>
+              </div>
+
+              <div className={styles.planValue}>
+                {userRole}
+              </div>
+
+              <div className={styles.statName}>
+                Account Role
+              </div>
+
+              <div className={styles.statFooter}>
+                <span className={styles.info}>
+                  Account
+                </span>
+
+                <span>
+                  authenticated access
+                </span>
+              </div>
+            </article>
+          </section>
+
+          {/* =================================================
+              MAIN GRID
+          ================================================= */}
+
+          <section className={styles.mainGrid}>
+
+            {/* =================================================
+                RECENT PROJECTS
+            ================================================= */}
+
+            <article className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <div>
+                  <div className={styles.panelEyebrow}>
+                    WORKSPACE
                   </div>
 
-                  <div>
+                  <h2 className={styles.panelTitle}>
+                    Recent Projects
+                  </h2>
+
+                  <p className={styles.panelSubtitle}>
+                    Your latest workspace projects
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.textButton}
+                  onClick={() =>
+                    navigate("/workspace")
+                  }
+                >
+                  View Workspace →
+                </button>
+              </div>
+
+              <div className={styles.projectList}>
+                {loading ? (
+                  <div className={styles.loadingState}>
+                    <div
+                      className={styles.loadingSpinner}
+                      aria-hidden="true"
+                    />
+
+                    <span>
+                      Loading workspace data...
+                    </span>
+                  </div>
+                ) : hasProjectError ? (
+                  <div className={styles.emptyState}>
+                    <div
+                      className={styles.emptyIcon}
+                      aria-hidden="true"
+                    >
+                      !
+                    </div>
+
+                    <h3>
+                      Projects unavailable
+                    </h3>
+
+                    <p>
+                      ZyrionOS could not retrieve
+                      your project data.
+                    </p>
+
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={handleRefresh}
+                      disabled={refreshing}
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : recentProjects.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <div
+                      className={styles.emptyIcon}
+                      aria-hidden="true"
+                    >
+                      ◇
+                    </div>
+
+                    <h3>
+                      No projects yet
+                    </h3>
+
+                    <p>
+                      Create your first project and
+                      start building inside ZyrionOS.
+                    </p>
+
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() =>
+                        navigate("/workspace")
+                      }
+                    >
+                      Create First Project
+                    </button>
+                  </div>
+                ) : (
+                  recentProjects.map((project) => {
+                    const projectName =
+                      getProjectName(project);
+
+                    const projectId =
+                      getProjectId(project);
+
+                    const projectStatus =
+                      getProjectStatus(project);
+
+                    return (
+                      <button
+                        type="button"
+                        key={
+                          projectId ||
+                          projectName
+                        }
+                        className={styles.projectRow}
+                        onClick={() =>
+                          handleProjectOpen(
+                            project
+                          )
+                        }
+                      >
+                        <div
+                          className={
+                            styles.projectIdentity
+                          }
+                        >
+                          <div
+                            className={
+                              styles.projectAvatar
+                            }
+                            aria-hidden="true"
+                          >
+                            {getInitial(
+                              projectName
+                            )}
+                          </div>
+
+                          <div
+                            className={
+                              styles.projectText
+                            }
+                          >
+                            <div
+                              className={
+                                styles.projectName
+                              }
+                            >
+                              {projectName}
+                            </div>
+
+                            <div
+                              className={
+                                styles.projectMeta
+                              }
+                            >
+                              {project?.framework ||
+                                project?.description ||
+                                "ZyrionOS Workspace"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          className={
+                            projectStatus
+                              ? styles.projectStatus
+                              : styles.projectStatusMuted
+                          }
+                        >
+                          {projectStatus || "—"}
+                        </div>
+
+                        <div
+                          className={
+                            styles.projectArrow
+                          }
+                          aria-hidden="true"
+                        >
+                          →
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </article>
+
+            {/* =================================================
+                WORKSPACE SUMMARY
+            ================================================= */}
+
+            <article className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <div>
+                  <div className={styles.panelEyebrow}>
+                    PLATFORM
+                  </div>
+
+                  <h2 className={styles.panelTitle}>
+                    Workspace Summary
+                  </h2>
+
+                  <p className={styles.panelSubtitle}>
+                    Live account data available to
+                    this workspace
+                  </p>
+                </div>
+
+                <div
+                  className={
+                    hasAnyError
+                      ? styles.stateBadgePartial
+                      : styles.stateBadge
+                  }
+                >
+                  <span />
+                  {hasAnyError
+                    ? "PARTIAL"
+                    : "SYNCED"}
+                </div>
+              </div>
+
+              <div className={styles.summaryList}>
+
+                <div className={styles.summaryRow}>
+                  <div
+                    className={styles.summaryIcon}
+                    aria-hidden="true"
+                  >
+                    PR
+                  </div>
+
+                  <div
+                    className={styles.summaryInfo}
+                  >
                     <strong>
-                      Compute Infrastructure
+                      Projects
                     </strong>
 
                     <span>
-                      Cloud compute services
+                      Workspace project records
                     </span>
                   </div>
+
+                  <b>
+                    {hasProjectError
+                      ? "—"
+                      : projectCount}
+                  </b>
                 </div>
 
-                <div className={styles.healthy}>
-                  Healthy
-                </div>
-
-              </div>
-
-              <div className={styles.infrastructureRow}>
-
-                <div className={styles.infrastructureInfo}>
-                  <div className={styles.serviceIcon}>
+                <div className={styles.summaryRow}>
+                  <div
+                    className={styles.summaryIcon}
+                    aria-hidden="true"
+                  >
                     AI
                   </div>
 
-                  <div>
+                  <div
+                    className={styles.summaryInfo}
+                  >
                     <strong>
-                      AI Services
+                      AI Workspace
                     </strong>
 
                     <span>
-                      AI processing infrastructure
+                      AI building environment
                     </span>
                   </div>
+
+                  <b>
+                    {user
+                      ? "Ready"
+                      : "—"}
+                  </b>
                 </div>
 
-                <div className={styles.healthy}>
-                  Active
-                </div>
-
-              </div>
-
-              <div className={styles.infrastructureRow}>
-
-                <div className={styles.infrastructureInfo}>
-                  <div className={styles.serviceIcon}>
+                <div className={styles.summaryRow}>
+                  <div
+                    className={styles.summaryIcon}
+                    aria-hidden="true"
+                  >
                     DB
                   </div>
 
-                  <div>
+                  <div
+                    className={styles.summaryInfo}
+                  >
                     <strong>
-                      Data Services
+                      Account Data
                     </strong>
 
                     <span>
-                      Workspace data systems
+                      Authenticated workspace
+                      context
                     </span>
                   </div>
+
+                  <b>
+                    {user
+                      ? "Available"
+                      : "—"}
+                  </b>
                 </div>
 
-                <div className={styles.healthy}>
-                  Healthy
-                </div>
-
-              </div>
-
-              <div className={styles.infrastructureRow}>
-
-                <div className={styles.infrastructureInfo}>
-                  <div className={styles.serviceIcon}>
+                <div className={styles.summaryRow}>
+                  <div
+                    className={styles.summaryIcon}
+                    aria-hidden="true"
+                  >
                     API
                   </div>
 
-                  <div>
+                  <div
+                    className={styles.summaryInfo}
+                  >
                     <strong>
-                      API Gateway
+                      Workspace API
                     </strong>
 
                     <span>
-                      Platform connectivity
+                      Dashboard data connection
                     </span>
                   </div>
-                </div>
 
-                <div className={styles.healthy}>
-                  Operational
+                  <b
+                    className={
+                      hasAnyError
+                        ? styles.summaryWarning
+                        : styles.summarySuccess
+                    }
+                  >
+                    {hasAnyError
+                      ? "Check"
+                      : "Connected"}
+                  </b>
                 </div>
 
               </div>
+            </article>
+          </section>
 
-            </div>
+          {/* =================================================
+              LOWER GRID
+          ================================================= */}
 
-          </article>
+          <section className={styles.lowerGrid}>
 
-        </section>
+            {/* QUICK ACTIONS */}
 
-        {/* ========================================
-            LOWER GRID
-        ======================================== */}
+            <article className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <div>
+                  <div className={styles.panelEyebrow}>
+                    OPERATIONS
+                  </div>
 
-        <section className={styles.lowerGrid}>
+                  <h2 className={styles.panelTitle}>
+                    Quick Actions
+                  </h2>
 
-          {/* QUICK ACTIONS */}
+                  <p className={styles.panelSubtitle}>
+                    Jump directly into workspace
+                    operations.
+                  </p>
+                </div>
+              </div>
 
-          <article className={styles.panel}>
+              <div className={styles.quickActions}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/workspace")
+                  }
+                  className={styles.quickAction}
+                >
+                  <div
+                    className={styles.quickIcon}
+                    aria-hidden="true"
+                  >
+                    ＋
+                  </div>
 
-            <div className={styles.panelHeader}>
-              <div>
+                  <div>
+                    <strong>
+                      Create Project
+                    </strong>
 
-                <div className={styles.panelEyebrow}>
-                  OPERATIONS
+                    <span>
+                      Start a new workspace
+                    </span>
+                  </div>
+
+                  <b aria-hidden="true">
+                    →
+                  </b>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/deployments")
+                  }
+                  className={styles.quickAction}
+                >
+                  <div
+                    className={styles.quickIcon}
+                    aria-hidden="true"
+                  >
+                    ↑
+                  </div>
+
+                  <div>
+                    <strong>
+                      Deployments
+                    </strong>
+
+                    <span>
+                      Manage production releases
+                    </span>
+                  </div>
+
+                  <b aria-hidden="true">
+                    →
+                  </b>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/billing")
+                  }
+                  className={styles.quickAction}
+                >
+                  <div
+                    className={styles.quickIcon}
+                    aria-hidden="true"
+                  >
+                    $
+                  </div>
+
+                  <div>
+                    <strong>
+                      Billing
+                    </strong>
+
+                    <span>
+                      Manage your subscription
+                    </span>
+                  </div>
+
+                  <b aria-hidden="true">
+                    →
+                  </b>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/settings")
+                  }
+                  className={styles.quickAction}
+                >
+                  <div
+                    className={styles.quickIcon}
+                    aria-hidden="true"
+                  >
+                    ⚙
+                  </div>
+
+                  <div>
+                    <strong>
+                      Settings
+                    </strong>
+
+                    <span>
+                      Configure your account
+                    </span>
+                  </div>
+
+                  <b aria-hidden="true">
+                    →
+                  </b>
+                </button>
+              </div>
+            </article>
+
+            {/* ACCOUNT */}
+
+            <article className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <div>
+                  <div className={styles.panelEyebrow}>
+                    ACCOUNT
+                  </div>
+
+                  <h2 className={styles.panelTitle}>
+                    Workspace Identity
+                  </h2>
+                </div>
+              </div>
+
+              <div className={styles.accountCard}>
+                <div
+                  className={styles.accountAvatar}
+                  aria-hidden="true"
+                >
+                  {getInitial(userName)}
                 </div>
 
-                <h2 className={styles.panelTitle}>
-                  Quick Actions
-                </h2>
+                <div className={styles.accountMain}>
+                  <h3>{userName}</h3>
 
+                  <p>{userEmail}</p>
+                </div>
               </div>
-            </div>
 
-            <div className={styles.quickActions}>
-
-              <button
-                type="button"
-                onClick={() => navigate("/workspace")}
-                className={styles.quickAction}
-              >
-                <div className={styles.quickIcon}>
-                  ＋
+              <div className={styles.accountDetails}>
+                <div>
+                  <span>Role</span>
+                  <strong>
+                    {userRole}
+                  </strong>
                 </div>
 
                 <div>
+                  <span>Plan</span>
                   <strong>
-                    Create Project
+                    {planLabel}
                   </strong>
-
-                  <span>
-                    Start a new workspace
-                  </span>
-                </div>
-
-                <b>→</b>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate("/deployments")}
-                className={styles.quickAction}
-              >
-                <div className={styles.quickIcon}>
-                  ↑
                 </div>
 
                 <div>
+                  <span>Projects</span>
                   <strong>
-                    Deployments
+                    {hasProjectError
+                      ? "—"
+                      : projectCount}
                   </strong>
-
-                  <span>
-                    Manage production releases
-                  </span>
-                </div>
-
-                <b>→</b>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate("/billing")}
-                className={styles.quickAction}
-              >
-                <div className={styles.quickIcon}>
-                  $
                 </div>
 
                 <div>
+                  <span>Deployments</span>
                   <strong>
-                    Billing
+                    {deploymentsUsed === null
+                      ? "—"
+                      : deploymentsUsed}
                   </strong>
-
-                  <span>
-                    Manage subscription
-                  </span>
                 </div>
-
-                <b>→</b>
-              </button>
+              </div>
 
               <button
                 type="button"
-                onClick={() => navigate("/settings")}
-                className={styles.quickAction}
+                className={styles.manageAccount}
+                onClick={() =>
+                  navigate("/settings")
+                }
               >
-                <div className={styles.quickIcon}>
-                  ⚙
-                </div>
-
-                <div>
-                  <strong>
-                    Settings
-                  </strong>
-
-                  <span>
-                    Configure your account
-                  </span>
-                </div>
-
-                <b>→</b>
+                Manage Account
+                <span aria-hidden="true">
+                  →
+                </span>
               </button>
+            </article>
+          </section>
 
+          {/* =================================================
+              FOOTER
+          ================================================= */}
+
+          <footer className={styles.footer}>
+            <div>
+              <span
+                className={
+                  hasAnyError
+                    ? styles.footerDotWarning
+                    : styles.footerDot
+                }
+                aria-hidden="true"
+              />
+
+              {hasAnyError
+                ? "Workspace requires attention"
+                : "ZyrionOS workspace connected"}
             </div>
 
-          </article>
+            <span>
+              {userEmail}
+            </span>
+          </footer>
 
-          {/* ACCOUNT */}
-
-          <article className={styles.panel}>
-
-            <div className={styles.panelHeader}>
-
-              <div>
-
-                <div className={styles.panelEyebrow}>
-                  ACCOUNT
-                </div>
-
-                <h2 className={styles.panelTitle}>
-                  Workspace Identity
-                </h2>
-
-              </div>
-
-            </div>
-
-            <div className={styles.accountCard}>
-
-              <div className={styles.accountAvatar}>
-                {userName
-                  .charAt(0)
-                  .toUpperCase()}
-              </div>
-
-              <div className={styles.accountMain}>
-
-                <h3>
-                  {userName}
-                </h3>
-
-                <p>
-                  {userEmail}
-                </p>
-
-              </div>
-
-            </div>
-
-            <div className={styles.accountDetails}>
-
-              <div>
-                <span>Role</span>
-                <strong>{userRole}</strong>
-              </div>
-
-              <div>
-                <span>Plan</span>
-                <strong>{planLabel}</strong>
-              </div>
-
-              <div>
-                <span>Projects</span>
-                <strong>{projectCount}</strong>
-              </div>
-
-              <div>
-                <span>Deployments</span>
-                <strong>{deploymentsUsed}</strong>
-              </div>
-
-            </div>
-
-            <button
-              type="button"
-              className={styles.manageAccount}
-              onClick={() => navigate("/settings")}
-            >
-              Manage Account
-              <span>→</span>
-            </button>
-
-          </article>
-
-        </section>
-
-        {/* ========================================
-            FOOTER STATUS
-        ======================================== */}
-
-        <footer className={styles.footer}>
-
-          <div>
-            <span className={styles.footerDot} />
-            ZyrionOS Platform Operational
-          </div>
-
-          <span>
-            Secure workspace environment
-          </span>
-
-        </footer>
-
+        </div>
       </main>
     </DashboardLayout>
   );

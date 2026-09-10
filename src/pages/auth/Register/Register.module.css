@@ -1,389 +1,2042 @@
-.container{
+/* =========================================================
+   ZYRIONOS
+   REGISTER EXPERIENCE
+   ENTERPRISE AUTH DESIGN SYSTEM
 
-  min-height:100vh;
+   Compatible with:
+   Register.jsx
+   Document 03 — Design System
+   Document 04 — Component & Interaction Architecture
+   Document 08 — Frontend Engineering
+   Document 09 — Backend Integration
+   Document 10 — Release Governance
+========================================================= */
 
-  display:grid;
 
-  grid-template-columns:1fr 520px;
+/* =========================================================
+   PAGE / ROOT CONTAINER
+========================================================= */
 
-  background:#0b1120;
+.container {
+  position: relative;
 
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(430px, 520px);
+
+  width: 100%;
+  min-height: 100dvh;
+
+  overflow: hidden;
+
+  color: var(--zy-text-primary);
+
+  background:
+    radial-gradient(
+      circle at 8% 12%,
+      rgba(108, 99, 255, 0.14),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 92% 88%,
+      rgba(53, 215, 255, 0.055),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      var(--zy-bg-950),
+      var(--zy-bg-900)
+    );
 }
 
-/* =========================
-   LEFT
-========================= */
 
-.left{
+/* =========================================================
+   SUBTLE ENTERPRISE GRID
+========================================================= */
 
-  display:flex;
+.container::before {
+  content: "";
 
-  flex-direction:column;
+  position: absolute;
 
-  justify-content:center;
+  inset: 0;
 
-  padding:80px;
+  pointer-events: none;
 
+  opacity: 0.42;
+
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px
+    );
+
+  background-size:
+    48px 48px;
+
+  mask-image:
+    radial-gradient(
+      ellipse at center,
+      black 0%,
+      transparent 76%
+    );
+
+  -webkit-mask-image:
+    radial-gradient(
+      ellipse at center,
+      black 0%,
+      transparent 76%
+    );
 }
 
-.brand{
 
-  color:#6366f1;
+/* =========================================================
+   AMBIENT LIGHT
+========================================================= */
 
-  font-size:20px;
+.container::after {
+  content: "";
 
-  font-weight:800;
+  position: absolute;
 
-  margin-bottom:24px;
+  width: 520px;
+  height: 520px;
 
+  right: -240px;
+  top: -220px;
+
+  border-radius: 50%;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(108, 99, 255, 0.09),
+      transparent 70%
+    );
+
+  filter: blur(14px);
 }
 
-.heading{
 
-  color:#ffffff;
+/* =========================================================
+   LEFT PRODUCT PANEL
+========================================================= */
 
-  font-size:54px;
+.left {
+  position: relative;
 
-  line-height:1.1;
+  z-index: 1;
 
-  font-weight:900;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 
-  max-width:700px;
+  min-width: 0;
 
+  padding:
+    72px clamp(42px, 7vw, 104px);
+
+  border-right:
+    1px solid var(--zy-border);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(108, 99, 255, 0.055),
+      rgba(255, 255, 255, 0.008) 48%,
+      rgba(53, 215, 255, 0.018)
+    );
 }
 
-.description{
 
-  margin-top:24px;
+/* =========================================================
+   BRAND
+========================================================= */
 
-  color:#94a3b8;
+.brand {
+  display: inline-flex;
+  align-items: center;
 
-  font-size:18px;
+  align-self: flex-start;
 
-  line-height:1.8;
+  margin-bottom: 34px;
 
-  max-width:600px;
+  color:
+    var(--zy-text-primary);
 
+  font-size: 18px;
+
+  font-weight:
+    var(--zy-font-bold);
+
+  line-height: 1.2;
+
+  letter-spacing:
+    -0.035em;
 }
 
-/* =========================
-   CARD
-========================= */
 
-.card{
+/* =========================================================
+   HERO BADGE
+========================================================= */
 
-  background:#111827;
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
 
-  border-left:1px solid #1f2937;
+  align-self: flex-start;
 
-  padding:48px;
+  gap: 9px;
 
-  display:flex;
+  margin-bottom: 22px;
 
-  flex-direction:column;
+  color:
+    var(--zy-ai-cyan);
 
-  justify-content:center;
+  font-size: 9px;
 
+  font-weight:
+    var(--zy-font-bold);
+
+  letter-spacing:
+    0.14em;
 }
 
-.title{
 
-  color:#ffffff;
+.heroBadgeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  font-size:34px;
+  width: 28px;
+  height: 28px;
 
-  font-weight:800;
+  flex: 0 0 28px;
 
-}
+  border:
+    1px solid rgba(53, 215, 255, 0.24);
 
-.subtitle{
+  border-radius:
+    8px;
 
-  color:#94a3b8;
+  color:
+    var(--zy-ai-cyan);
 
-  margin-top:8px;
-
-  margin-bottom:30px;
-
-}
-
-/* =========================
-   INPUTS
-========================= */
-
-.input{
-
-  width:100%;
-
-  height:54px;
-
-  background:#0f172a;
-
-  border:1px solid #1f2937;
-
-  border-radius:12px;
-
-  color:#ffffff;
-
-  padding:0 16px;
-
-  margin-bottom:16px;
-
-  outline:none;
-
-}
-
-.input:focus{
-
-  border-color:#6366f1;
-
-}
-
-/* =========================
-   PASSWORD
-========================= */
-
-.passwordWrapper{
-
-  position:relative;
-
-  margin-bottom:16px;
-
-}
-
-.passwordWrapper .input{
-
-  margin-bottom:0;
-
-}
-
-.eyeButton{
-
-  position:absolute;
-
-  right:12px;
-
-  top:50%;
-
-  transform:translateY(-50%);
-
-  background:none;
-
-  border:none;
-
-  color:#94a3b8;
-
-  cursor:pointer;
-
-}
-
-/* =========================
-   TERMS
-========================= */
-
-.checkboxLabel{
-
-  display:flex;
-
-  gap:10px;
-
-  align-items:flex-start;
-
-  color:#cbd5e1;
-
-  font-size:14px;
-
-  margin-bottom:18px;
-
-}
-
-/* =========================
-   BUTTONS
-========================= */
-
-.primaryButton{
-
-  width:100%;
-
-  height:54px;
-
-  border:none;
-
-  border-radius:12px;
-
-  background:#6366f1;
-
-  color:#ffffff;
-
-  font-weight:700;
-
-  cursor:pointer;
-
-}
-
-.primaryButton:hover{
-
-  opacity:0.95;
-
-}
-
-.divider{
-
-  text-align:center;
-
-  color:#64748b;
-
-  margin:24px 0;
-
-}
-
-.oauthButton{
-
-  width:100%;
-
-  height:52px;
-
-  border:1px solid #1f2937;
-
-  background:#0f172a;
-
-  color:#ffffff;
-
-  border-radius:12px;
-
-  cursor:pointer;
-
-  margin-bottom:12px;
-
-}
-
-.oauthButton:hover{
-
-  border-color:#334155;
-
-}
-
-/* =========================
-   FOOTER
-========================= */
-
-.footer{
-
-  margin-top:24px;
-
-  display:flex;
-
-  justify-content:center;
-
-  gap:8px;
-
-  color:#94a3b8;
-
-}
-
-.link{
-
-  color:#6366f1;
-
-  text-decoration:none;
-
-  font-weight:600;
-
-}
-
-/* =========================
-   MOBILE
-========================= */
-
-@media(max-width:1024px){
-
-  .container{
-
-    grid-template-columns:1fr;
-
-  }
-
-  .left{
-
-    display:none;
-
-  }
-
-}
-
-@media(max-width:768px){
-
-  .card{
-
-    padding:24px;
-
-  }
-
-  .title{
-
-    font-size:28px;
-
-  }
-
-}
-.card{
-
-  background:rgba(17,24,39,0.85);
-
-  backdrop-filter:blur(20px);
-
-  -webkit-backdrop-filter:blur(20px);
+  background:
+    rgba(53, 215, 255, 0.06);
 
   box-shadow:
-  0 20px 60px rgba(0,0,0,0.35);
+    0 0 24px rgba(53, 215, 255, 0.06);
+}
+
+
+/* =========================================================
+   HERO HEADING
+========================================================= */
+
+.heading {
+  max-width: 720px;
+
+  margin: 0;
+
+  color:
+    var(--zy-text-primary);
+
+  font-size:
+    clamp(42px, 5vw, 68px);
+
+  font-weight:
+    var(--zy-font-bold);
+
+  line-height:
+    1.02;
+
+  letter-spacing:
+    -0.052em;
+}
+
+
+/* =========================================================
+   DESCRIPTION
+========================================================= */
+
+.description {
+  max-width: 610px;
+
+  margin:
+    25px 0 0;
+
+  color:
+    var(--zy-text-secondary);
+
+  font-size:
+    14px;
+
+  font-weight:
+    var(--zy-font-regular);
+
+  line-height:
+    1.8;
+}
+
+
+/* =========================================================
+   FEATURE LIST
+========================================================= */
+
+.featureList {
+  display: flex;
+  flex-direction: column;
+
+  gap: 13px;
+
+  max-width: 570px;
+
+  margin-top: 34px;
+}
+
+
+/* =========================================================
+   FEATURE ITEM
+========================================================= */
+
+.featureItem {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  color:
+    var(--zy-text-secondary);
+
+  font-size:
+    11px;
+
+  font-weight:
+    var(--zy-font-medium);
+
+  line-height:
+    1.45;
+}
+
+
+/* =========================================================
+   FEATURE ICON
+========================================================= */
+
+.featureIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 25px;
+  height: 25px;
+
+  flex: 0 0 25px;
+
+  border:
+    1px solid rgba(32, 199, 122, 0.20);
+
+  border-radius:
+    7px;
+
+  color:
+    var(--zy-success);
+
+  background:
+    var(--zy-success-bg);
+}
+
+
+/* =========================================================
+   PRODUCT META
+========================================================= */
+
+.productMeta {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-top: 42px;
+
+  color:
+    var(--zy-text-disabled);
+
+  font-size:
+    9px;
+
+  font-weight:
+    var(--zy-font-medium);
+}
+
+
+/* =========================================================
+   STATUS DOT
+========================================================= */
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+
+  flex: 0 0 6px;
+
+  border-radius: 50%;
+
+  background:
+    var(--zy-success);
+
+  box-shadow:
+    0 0 0 4px var(--zy-success-bg),
+    0 0 16px rgba(32, 199, 122, 0.25);
+}
+
+
+/* =========================================================
+   REGISTER CARD
+========================================================= */
+
+.card {
+  position: relative;
+
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  min-height: 100dvh;
+
+  padding:
+    52px clamp(34px, 4vw, 58px) 34px;
+
+  border-left:
+    1px solid rgba(255, 255, 255, 0.018);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(9, 15, 29, 0.92),
+      rgba(6, 11, 22, 0.96)
+    );
+
+  box-shadow:
+    -20px 0 80px rgba(0, 0, 0, 0.16);
+
+  backdrop-filter:
+    blur(26px);
+
+  -webkit-backdrop-filter:
+    blur(26px);
+}
+
+
+/* =========================================================
+   CARD TOP
+========================================================= */
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 38px;
+
+  margin-bottom: 27px;
+}
+
+
+/* =========================================================
+   MOBILE BRAND MARK
+========================================================= */
+
+.mobileBrandMark {
+  display: none;
+
+  position: relative;
+
+  grid-template-columns:
+    repeat(2, 6px);
+
+  grid-template-rows:
+    repeat(2, 6px);
+
+  gap: 2px;
+
+  width: 31px;
+  height: 31px;
+
+  padding: 6px;
+
+  border:
+    1px solid var(--zy-border-brand);
+
+  border-radius:
+    9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--zy-brand),
+      var(--zy-brand-bright)
+    );
+
+  box-shadow:
+    0 8px 24px rgba(108, 99, 255, 0.18);
+}
+
+
+.mobileBrandMark span {
+  display: block;
+
+  border-radius: 2px;
+
+  background:
+    rgba(255, 255, 255, 0.94);
+}
+
+
+.mobileBrandMark span:nth-child(2) {
+  opacity: 0.72;
+}
+
+
+.mobileBrandMark span:nth-child(3) {
+  grid-column: 1 / 3;
+
+  opacity: 0.48;
+}
+
+
+/* =========================================================
+   HEADER ICON
+========================================================= */
+
+.headerIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 39px;
+  height: 39px;
+
+  margin-left: auto;
+
+  border:
+    1px solid rgba(53, 215, 255, 0.16);
+
+  border-radius:
+    11px;
+
+  color:
+    var(--zy-ai-cyan);
+
+  background:
+    rgba(53, 215, 255, 0.045);
+}
+
+
+/* =========================================================
+   TITLE BLOCK
+========================================================= */
+
+.titleBlock {
+  min-width: 0;
+
+  margin-bottom: 26px;
+}
+
+
+/* =========================================================
+   EYEBROW
+========================================================= */
+
+.eyebrow {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color:
+    var(--zy-brand-bright);
+
+  font-size:
+    9px;
+
+  font-weight:
+    var(--zy-font-bold);
+
+  letter-spacing:
+    0.14em;
+}
+
+
+/* =========================================================
+   TITLE
+========================================================= */
+
+.title {
+  margin: 0;
+
+  color:
+    var(--zy-text-primary);
+
+  font-size:
+    clamp(26px, 2.4vw, 31px);
+
+  font-weight:
+    var(--zy-font-bold);
+
+  line-height:
+    1.14;
+
+  letter-spacing:
+    -0.04em;
+}
+
+
+/* =========================================================
+   SUBTITLE
+========================================================= */
+
+.subtitle {
+  max-width: 370px;
+
+  margin:
+    9px 0 0;
+
+  color:
+    var(--zy-text-muted);
+
+  font-size:
+    11px;
+
+  line-height:
+    1.6;
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.error {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 9px;
+
+  margin-bottom: 17px;
+
+  padding:
+    11px 12px;
+
+  border:
+    1px solid rgba(240, 90, 103, 0.24);
+
+  border-radius:
+    var(--zy-radius-md);
+
+  color:
+    #f3a0a8;
+
+  background:
+    rgba(240, 90, 103, 0.055);
+
+  font-size:
+    10px;
+
+  line-height:
+    1.5;
+
+  animation:
+    registerErrorIn
+    180ms
+    ease-out;
+}
+
+
+.errorIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+
+  flex: 0 0 18px;
+
+  border-radius: 50%;
+
+  color:
+    #ffffff;
+
+  background:
+    var(--zy-danger);
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 16px;
+}
+
+
+/* =========================================================
+   FIELD
+========================================================= */
+
+.field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+
+  min-width: 0;
+}
+
+
+/* =========================================================
+   LABEL ROW
+========================================================= */
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+
+/* =========================================================
+   LABEL
+========================================================= */
+
+.label {
+  color:
+    var(--zy-text-secondary);
+
+  font-size:
+    10px;
+
+  font-weight:
+    var(--zy-font-semibold);
+
+  line-height:
+    1.3;
+}
+
+
+/* =========================================================
+   INPUT SHELL
+========================================================= */
+
+.inputShell {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 51px;
+
+  border:
+    1px solid var(--zy-border-strong);
+
+  border-radius:
+    11px;
+
+  background:
+    rgba(255, 255, 255, 0.018);
+
+  transition:
+    border-color var(--zy-transition-fast),
+    background-color var(--zy-transition-fast),
+    box-shadow var(--zy-transition-fast),
+    transform var(--zy-transition-fast);
+}
+
+
+.inputShell:hover {
+  border-color:
+    var(--zy-border-interactive);
+
+  background:
+    rgba(255, 255, 255, 0.025);
+}
+
+
+.inputShell:focus-within {
+  border-color:
+    var(--zy-border-brand);
+
+  background:
+    rgba(108, 99, 255, 0.025);
+
+  box-shadow:
+    0 0 0 3px rgba(108, 99, 255, 0.075);
+}
+
+
+.inputShellSuccess {
+  border-color:
+    rgba(32, 199, 122, 0.42);
+}
+
+
+.inputShellSuccess:focus-within {
+  border-color:
+    var(--zy-success);
+
+  box-shadow:
+    0 0 0 3px rgba(32, 199, 122, 0.075);
+}
+
+
+/* =========================================================
+   INPUT ICON
+========================================================= */
+
+.inputIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 43px;
+
+  flex: 0 0 43px;
+
+  color:
+    var(--zy-text-muted);
+
+  transition:
+    color var(--zy-transition-fast);
+}
+
+
+.inputShell:focus-within .inputIcon {
+  color:
+    var(--zy-brand-bright);
+}
+
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+.input,
+.inputWithAction {
+  min-width: 0;
+
+  width: 100%;
+  height: 49px;
+
+  padding:
+    0 12px 0 0;
+
+  border: 0;
+  outline: 0;
+
+  color:
+    var(--zy-text-primary);
+
+  background:
+    transparent;
+
+  font-family:
+    inherit;
+
+  font-size:
+    12px;
+
+  font-weight:
+    var(--zy-font-medium);
+
+  line-height:
+    1;
+}
+
+
+.inputWithAction {
+  padding-right:
+    43px;
+}
+
+
+.input::placeholder,
+.inputWithAction::placeholder {
+  color:
+    var(--zy-text-disabled);
+
+  opacity: 1;
+}
+
+
+.input:disabled,
+.inputWithAction:disabled {
+  cursor:
+    not-allowed;
+
+  opacity:
+    0.58;
+}
+
+
+/* =========================================================
+   PASSWORD EYE
+========================================================= */
+
+.eyeButton {
+  position: absolute;
+
+  top: 50%;
+  right: 7px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 35px;
+  height: 35px;
+
+  transform:
+    translateY(-50%);
+
+  border:
+    1px solid transparent;
+
+  border-radius:
+    8px;
+
+  color:
+    var(--zy-text-muted);
+
+  background:
+    transparent;
+
+  cursor:
+    pointer;
+
+  transition:
+    color var(--zy-transition-fast),
+    background-color var(--zy-transition-fast),
+    border-color var(--zy-transition-fast);
+}
+
+
+.eyeButton:hover:not(:disabled) {
+  color:
+    var(--zy-text-primary);
+
+  background:
+    var(--zy-surface-2);
+
+  border-color:
+    var(--zy-border);
+}
+
+
+.eyeButton:focus-visible {
+  outline: none;
+
+  box-shadow:
+    var(--zy-focus-ring);
+}
+
+
+.eyeButton:disabled {
+  cursor:
+    not-allowed;
+
+  opacity:
+    0.45;
+}
+
+
+/* =========================================================
+   PASSWORD STRENGTH
+========================================================= */
+
+.passwordStrength {
+  font-size:
+    9px;
+
+  font-weight:
+    var(--zy-font-semibold);
+}
+
+
+.passwordWeak {
+  color:
+    var(--zy-danger);
+}
+
+
+.passwordGood {
+  color:
+    var(--zy-warning);
+}
+
+
+.passwordStrong {
+  color:
+    var(--zy-success);
+}
+
+
+/* =========================================================
+   PASSWORD HINTS
+========================================================= */
+
+.passwordHint {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 12px;
+
+  color:
+    var(--zy-text-disabled);
+
+  font-size:
+    8px;
+
+  line-height:
+    1.4;
+}
+
+
+.passwordHint span {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 4px;
+}
+
+
+.passwordHint svg {
+  color:
+    var(--zy-text-disabled);
+}
+
+
+.hintPassed {
+  color:
+    var(--zy-success);
+}
+
+
+.hintPassed svg {
+  color:
+    var(--zy-success);
+}
+
+
+/* =========================================================
+   PASSWORD MATCH
+========================================================= */
+
+.matchSuccess,
+.matchError {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 5px;
+
+  font-size:
+    8px;
+
+  font-weight:
+    var(--zy-font-semibold);
+}
+
+
+.matchSuccess {
+  color:
+    var(--zy-success);
+}
+
+
+.matchError {
+  color:
+    var(--zy-danger);
+}
+
+
+/* =========================================================
+   TERMS CHECKBOX
+========================================================= */
+
+.checkboxLabel {
+  position: relative;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 9px;
+
+  margin-top: 1px;
+
+  color:
+    var(--zy-text-muted);
+
+  font-size:
+    9px;
+
+  line-height:
+    1.5;
+
+  cursor:
+    pointer;
+
+  user-select:
+    none;
+}
+
+
+.checkboxLabel input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+
+.checkboxVisual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 17px;
+  height: 17px;
+
+  flex: 0 0 17px;
+
+  margin-top: 1px;
+
+  border:
+    1px solid var(--zy-border-strong);
+
+  border-radius:
+    5px;
+
+  color:
+    transparent;
+
+  background:
+    var(--zy-surface-1);
+
+  transition:
+    background-color var(--zy-transition-fast),
+    border-color var(--zy-transition-fast),
+    color var(--zy-transition-fast),
+    box-shadow var(--zy-transition-fast);
+}
+
+
+.checkboxLabel:hover .checkboxVisual {
+  border-color:
+    var(--zy-border-interactive);
+}
+
+
+.checkboxLabel input:checked + .checkboxVisual {
+  border-color:
+    var(--zy-brand);
+
+  color:
+    #ffffff;
+
+  background:
+    var(--zy-brand);
+
+  box-shadow:
+    0 4px 14px rgba(108, 99, 255, 0.18);
+}
+
+
+.checkboxLabel input:focus-visible + .checkboxVisual {
+  box-shadow:
+    var(--zy-focus-ring);
+}
+
+
+.termsText {
+  min-width: 0;
+}
+
+
+/* =========================================================
+   PRIMARY BUTTON
+========================================================= */
+
+.primaryButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 51px;
+
+  gap: 9px;
+
+  margin-top: 2px;
+
+  padding:
+    0 16px;
+
+  border:
+    1px solid rgba(129, 121, 255, 0.72);
+
+  border-radius:
+    11px;
+
+  color:
+    #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--zy-brand),
+      var(--zy-brand-bright)
+    );
+
+  box-shadow:
+    0 11px 30px rgba(108, 99, 255, 0.19);
+
+  font-family:
+    inherit;
+
+  font-size:
+    12px;
+
+  font-weight:
+    var(--zy-font-bold);
+
+  cursor:
+    pointer;
+
+  transition:
+    transform var(--zy-transition-fast),
+    box-shadow var(--zy-transition-fast),
+    filter var(--zy-transition-fast),
+    opacity var(--zy-transition-fast);
+}
+
+
+.primaryButton:hover:not(:disabled) {
+  transform:
+    translateY(-1px);
+
+  filter:
+    brightness(1.045);
+
+  box-shadow:
+    0 15px 38px rgba(108, 99, 255, 0.28);
+}
+
+
+.primaryButton:active:not(:disabled) {
+  transform:
+    translateY(0);
+}
+
+
+.primaryButton:focus-visible {
+  outline: none;
+
+  box-shadow:
+    var(--zy-focus-ring),
+    0 11px 30px rgba(108, 99, 255, 0.19);
+}
+
+
+.primaryButton:disabled {
+  cursor:
+    not-allowed;
+
+  opacity:
+    0.62;
+}
+
+
+/* =========================================================
+   SPINNER
+========================================================= */
+
+.spinner,
+.oauthSpinner {
+  width: 15px;
+  height: 15px;
+
+  flex: 0 0 15px;
+
+  border:
+    2px solid rgba(255, 255, 255, 0.30);
+
+  border-top-color:
+    #ffffff;
+
+  border-radius:
+    50%;
+
+  animation:
+    registerSpin
+    0.75s
+    linear
+    infinite;
+}
+
+
+/* =========================================================
+   DIVIDER
+========================================================= */
+
+.divider {
+  display: grid;
+
+  grid-template-columns:
+    1fr auto 1fr;
+
+  align-items: center;
+
+  gap: 11px;
+
+  margin:
+    24px 0 16px;
+
+  color:
+    var(--zy-text-disabled);
+
+  font-size:
+    8px;
+
+  font-weight:
+    var(--zy-font-bold);
+
+  letter-spacing:
+    0.10em;
+
+  white-space:
+    nowrap;
+}
+
+
+.divider span:first-child,
+.divider span:last-child {
+  width: 100%;
+  height: 1px;
+
+  background:
+    var(--zy-border);
+}
+
+
+/* =========================================================
+   OAUTH GRID
+========================================================= */
+
+.oauthGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 9px;
+}
+
+
+/* =========================================================
+   OAUTH BUTTON
+========================================================= */
+
+.oauthButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 0;
+  min-height: 46px;
+
+  gap: 8px;
+
+  padding:
+    0 12px;
+
+  border:
+    1px solid var(--zy-border-strong);
+
+  border-radius:
+    10px;
+
+  color:
+    var(--zy-text-secondary);
+
+  background:
+    rgba(255, 255, 255, 0.018);
+
+  font-family:
+    inherit;
+
+  font-size:
+    10px;
+
+  font-weight:
+    var(--zy-font-semibold);
+
+  cursor:
+    pointer;
+
+  transition:
+    border-color var(--zy-transition-fast),
+    background-color var(--zy-transition-fast),
+    color var(--zy-transition-fast),
+    transform var(--zy-transition-fast);
+}
+
+
+.oauthButton:hover:not(:disabled) {
+  color:
+    var(--zy-text-primary);
+
+  border-color:
+    var(--zy-border-interactive);
+
+  background:
+    rgba(255, 255, 255, 0.04);
+
+  transform:
+    translateY(-1px);
+}
+
+
+.oauthButton:active:not(:disabled) {
+  transform:
+    translateY(0);
+}
+
+
+.oauthButton:focus-visible {
+  outline: none;
+
+  box-shadow:
+    var(--zy-focus-ring);
+}
+
+
+.oauthButton:disabled {
+  cursor:
+    not-allowed;
+
+  opacity:
+    0.52;
+}
+
+
+.oauthButton svg {
+  flex: 0 0 auto;
+
+  color:
+    currentColor;
+}
+
+
+/* =========================================================
+   OAUTH SPINNER
+========================================================= */
+
+.oauthSpinner {
+  width: 14px;
+  height: 14px;
+
+  flex-basis: 14px;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  margin-top: 21px;
+
+  color:
+    var(--zy-text-muted);
+
+  font-size:
+    9px;
+
+  line-height:
+    1.5;
+
+  text-align:
+    center;
+}
+
+
+/* =========================================================
+   FOOTER LINK
+========================================================= */
+
+.link {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 4px;
+
+  color:
+    var(--zy-brand-bright);
+
+  font-size:
+    9px;
+
+  font-weight:
+    var(--zy-font-semibold);
+
+  text-decoration:
+    none;
+
+  transition:
+    color var(--zy-transition-fast);
+}
+
+
+.link:hover {
+  color:
+    var(--zy-text-primary);
+}
+
+
+.link:focus-visible {
+  outline: none;
+
+  border-radius:
+    4px;
+
+  box-shadow:
+    var(--zy-focus-ring);
+}
+
+
+/* =========================================================
+   SECURITY FOOTER
+========================================================= */
+
+.securityFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  margin-top: auto;
+  padding-top: 23px;
+
+  color:
+    var(--zy-text-disabled);
+
+  font-size:
+    8px;
+
+  line-height:
+    1.5;
+
+  text-align:
+    center;
+}
+
+
+.securityIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color:
+    var(--zy-success);
+}
+
+
+/* =========================================================
+   ERROR ANIMATION
+========================================================= */
+
+@keyframes registerErrorIn {
+
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 
 }
 
-.brand{
 
-  position:relative;
+/* =========================================================
+   SPINNER ANIMATION
+========================================================= */
 
-}
+@keyframes registerSpin {
 
-.brand::after{
-
-  content:"";
-
-  position:absolute;
-
-  left:0;
-
-  bottom:-8px;
-
-  width:80px;
-
-  height:3px;
-
-  border-radius:999px;
-
-  background:#6366f1;
+  to {
+    transform: rotate(360deg);
+  }
 
 }
 
-.primaryButton{
 
-  transition:all .25s ease;
+/* =========================================================
+   LARGE DESKTOP
+========================================================= */
+
+@media (min-width: 1440px) {
+
+  .left {
+    padding-left:
+      clamp(72px, 8vw, 140px);
+
+    padding-right:
+      clamp(72px, 8vw, 140px);
+  }
 
 }
 
-.primaryButton:hover{
 
-  transform:translateY(-2px);
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .container {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(390px, 460px);
+  }
+
+
+  .left {
+    padding:
+      54px 46px;
+  }
+
+
+  .heading {
+    font-size:
+      clamp(40px, 5vw, 54px);
+  }
+
+
+  .card {
+    padding:
+      44px 36px 30px;
+  }
 
 }
 
-.oauthButton{
 
-  transition:all .25s ease;
+/* =========================================================
+   TABLET / MOBILE
+========================================================= */
+
+@media (max-width: 820px) {
+
+  .container {
+    display: block;
+
+    min-height:
+      100dvh;
+
+    overflow-y:
+      auto;
+
+    overflow-x:
+      hidden;
+
+    background:
+      radial-gradient(
+        circle at 50% 0%,
+        rgba(108, 99, 255, 0.12),
+        transparent 42%
+      ),
+      var(--zy-bg-950);
+  }
+
+
+  .container::before {
+    opacity:
+      0.26;
+  }
+
+
+  .container::after {
+    width:
+      380px;
+
+    height:
+      380px;
+
+    right:
+      -190px;
+
+    top:
+      -150px;
+  }
+
+
+  .left {
+    display:
+      none;
+  }
+
+
+  .card {
+    display:
+      flex;
+
+    width:
+      min(100%, 540px);
+
+    min-height:
+      100dvh;
+
+    margin:
+      0 auto;
+
+    padding:
+      30px 28px 24px;
+
+    border:
+      0;
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(9, 15, 29, 0.86),
+        rgba(6, 11, 22, 0.98)
+      );
+
+    box-shadow:
+      none;
+  }
+
+
+  .mobileBrandMark {
+    display:
+      grid;
+  }
+
+
+  .cardTop {
+    margin-bottom:
+      23px;
+  }
 
 }
 
-.oauthButton:hover{
 
-  transform:translateY(-2px);
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 560px) {
+
+  .card {
+    width:
+      100%;
+
+    padding:
+      23px 18px 20px;
+  }
+
+
+  .cardTop {
+    min-height:
+      34px;
+
+    margin-bottom:
+      20px;
+  }
+
+
+  .mobileBrandMark {
+    width:
+      30px;
+
+    height:
+      30px;
+  }
+
+
+  .headerIcon {
+    width:
+      35px;
+
+    height:
+      35px;
+  }
+
+
+  .titleBlock {
+    margin-bottom:
+      22px;
+  }
+
+
+  .eyebrow {
+    font-size:
+      8px;
+  }
+
+
+  .title {
+    font-size:
+      24px;
+  }
+
+
+  .subtitle {
+    font-size:
+      10px;
+  }
+
+
+  .form {
+    gap:
+      15px;
+  }
+
+
+  .inputShell {
+    min-height:
+      51px;
+  }
+
+
+  .input,
+  .inputWithAction {
+    height:
+      49px;
+
+    font-size:
+      12px;
+  }
+
+
+  .passwordHint {
+    gap:
+      8px;
+
+    font-size:
+      8px;
+  }
+
+
+  .primaryButton {
+    min-height:
+      51px;
+  }
+
+
+  .oauthGrid {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .oauthButton {
+    min-height:
+      47px;
+  }
+
+
+  .divider {
+    margin:
+      22px 0 15px;
+  }
+
+
+  .footer {
+    margin-top:
+      19px;
+  }
+
+
+  .securityFooter {
+    padding-top:
+      20px;
+  }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .card {
+    padding:
+      20px 14px 18px;
+  }
+
+
+  .title {
+    font-size:
+      22px;
+  }
+
+
+  .subtitle {
+    max-width:
+      290px;
+  }
+
+
+  .label {
+    font-size:
+      9px;
+  }
+
+
+  .passwordHint {
+    display:
+      grid;
+
+    grid-template-columns:
+      1fr;
+
+    gap:
+      5px;
+  }
+
+
+  .checkboxLabel {
+    font-size:
+      8px;
+  }
+
+
+  .divider {
+    font-size:
+      7px;
+  }
+
+
+  .footer {
+    font-size:
+      8px;
+  }
+
+
+  .link {
+    font-size:
+      8px;
+  }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .inputShell,
+  .eyeButton,
+  .primaryButton,
+  .oauthButton,
+  .checkboxVisual,
+  .link {
+    transition:
+      none;
+  }
+
+
+  .spinner,
+  .oauthSpinner,
+  .error {
+    animation:
+      none;
+  }
+
+}
+
+
+/* =========================================================
+   FORCED COLORS
+========================================================= */
+
+@media (forced-colors: active) {
+
+  .container,
+  .left,
+  .card,
+  .inputShell,
+  .oauthButton {
+    border-color:
+      CanvasText;
+  }
+
+
+  .primaryButton {
+    border-color:
+      CanvasText;
+
+    background:
+      Highlight;
+
+    color:
+      HighlightText;
+  }
+
+
+  .oauthButton {
+    background:
+      Canvas;
+
+    color:
+      CanvasText;
+  }
+
+
+  .checkboxLabel input:checked + .checkboxVisual {
+    background:
+      Highlight;
+
+    color:
+      HighlightText;
+  }
 
 }

@@ -1,83 +1,60 @@
 /* =========================================================
-   ZYRIONOS — LOGIN EXPERIENCE
-   Enterprise Authentication Surface
-   1:1 contract with Login.jsx
-========================================================= */
-
-
-/* =========================================================
-   LOCAL DESIGN TOKENS
+   ZYRIONOS
+   ENTERPRISE LOGIN
+   Premium 3D Earth Authentication Experience
 ========================================================= */
 
 .page {
-  --login-bg: #050711;
-  --login-bg-deep: #02040a;
+  --bg: #03050c;
+  --surface: #080c18;
 
-  --login-surface: rgba(10, 14, 28, 0.82);
-  --login-surface-strong: rgba(12, 17, 34, 0.94);
-  --login-surface-soft: rgba(255, 255, 255, 0.035);
+  --text: #f4f7ff;
+  --text-secondary: #a8b1c7;
+  --text-muted: #6f7890;
 
-  --login-border: rgba(255, 255, 255, 0.09);
-  --login-border-strong: rgba(255, 255, 255, 0.15);
+  --purple: #6c63ff;
+  --purple-light: #8179ff;
+  --purple-deep: #5148d9;
 
-  --login-text: #f4f7ff;
-  --login-text-secondary: #a8b1c7;
-  --login-text-muted: #6f7890;
+  --cyan: #35d7ff;
+  --blue: #4c8dff;
 
-  --login-purple: #6c63ff;
-  --login-purple-light: #8179ff;
-  --login-purple-deep: #5148d9;
-
-  --login-cyan: #35d7ff;
-  --login-blue: #4c8dff;
-
-  --login-success: #20c77a;
-  --login-danger: #f05a67;
+  --success: #20c77a;
+  --danger: #f05a67;
 
   position: relative;
 
-  display: block;
-
-  width: 100%;
-  min-width: 100%;
-  max-width: none;
-
+  width: 100vw;
+  min-width: 100vw;
   min-height: 100svh;
 
-  margin: 0;
-  padding: 0;
+  margin-left: calc(50% - 50vw);
 
   overflow-x: hidden;
 
-  color: var(--login-text);
+  color: var(--text);
 
   background:
     radial-gradient(
-      ellipse 80% 70% at 15% 15%,
-      rgba(108, 99, 255, 0.15),
+      ellipse 80% 80% at 8% 25%,
+      rgba(108, 99, 255, 0.16),
       transparent 60%
     ),
     radial-gradient(
-      ellipse 70% 60% at 85% 80%,
-      rgba(53, 215, 255, 0.075),
-      transparent 62%
+      ellipse 65% 70% at 90% 80%,
+      rgba(53, 215, 255, 0.07),
+      transparent 65%
     ),
     linear-gradient(
       135deg,
       #02040a 0%,
-      #050711 45%,
+      #050914 48%,
       #070b18 100%
     );
 
   isolation: isolate;
-
-  box-sizing: border-box;
 }
 
-
-/* =========================================================
-   BOX SIZING
-========================================================= */
 
 .page *,
 .page *::before,
@@ -87,495 +64,500 @@
 
 
 /* =========================================================
-   BACKGROUND SYSTEM
+   BACKGROUND
 ========================================================= */
 
 .background {
   position: fixed;
+
   inset: 0;
 
   z-index: 0;
 
-  width: 100%;
-  height: 100%;
+  pointer-events: none;
 
   overflow: hidden;
-
-  pointer-events: none;
 }
 
 
-/* =========================================================
-   DEEP SPACE VIGNETTE
-========================================================= */
-
-.background::before {
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  background:
-    radial-gradient(
-      ellipse at center,
-      transparent 0%,
-      rgba(1, 3, 9, 0.08) 48%,
-      rgba(1, 3, 9, 0.72) 100%
-    );
-
-  pointer-events: none;
-}
-
-
-/* =========================================================
-   GRID
-========================================================= */
-
-.grid {
+.backgroundGrid {
   position: absolute;
 
-  left: -15%;
-  right: -15%;
-  top: 25%;
-  bottom: -30%;
+  inset: -15%;
 
-  opacity: 0.28;
+  opacity: 0.15;
 
   background-image:
     linear-gradient(
-      rgba(108, 99, 255, 0.065) 1px,
+      rgba(108, 99, 255, 0.06) 1px,
       transparent 1px
     ),
     linear-gradient(
       90deg,
-      rgba(108, 99, 255, 0.065) 1px,
+      rgba(108, 99, 255, 0.06) 1px,
       transparent 1px
     );
 
-  background-size: 52px 52px;
+  background-size: 58px 58px;
 
   transform:
-    perspective(900px)
-    rotateX(62deg);
+    perspective(1000px)
+    rotateX(58deg)
+    translateY(14%);
 
   transform-origin: center top;
 
   mask-image:
     linear-gradient(
       to bottom,
-      transparent 0%,
-      black 18%,
-      black 68%,
-      transparent 100%
+      transparent,
+      black 25%,
+      black 70%,
+      transparent
     );
 
   -webkit-mask-image:
     linear-gradient(
       to bottom,
-      transparent 0%,
-      black 18%,
-      black 68%,
-      transparent 100%
+      transparent,
+      black 25%,
+      black 70%,
+      transparent
     );
-
-  animation: gridDrift 28s ease-in-out infinite;
 }
 
 
-/* =========================================================
-   PRIMARY GLOW
-========================================================= */
-
-.glowPrimary {
+.backgroundGlowOne {
   position: absolute;
 
-  width: 900px;
-  height: 900px;
+  width: 850px;
+  height: 850px;
 
-  left: -350px;
-  top: -360px;
+  left: -420px;
+  top: -380px;
 
   border-radius: 50%;
 
   background:
     radial-gradient(
       circle,
-      rgba(108, 99, 255, 0.23) 0%,
-      rgba(108, 99, 255, 0.10) 27%,
-      rgba(108, 99, 255, 0.035) 50%,
-      transparent 73%
+      rgba(108, 99, 255, 0.22),
+      transparent 68%
     );
 
-  filter: blur(22px);
-
-  animation:
-    primaryGlow 11s ease-in-out infinite;
+  filter: blur(20px);
 }
 
 
-/* =========================================================
-   SECONDARY GLOW
-========================================================= */
-
-.glowSecondary {
+.backgroundGlowTwo {
   position: absolute;
 
-  width: 780px;
-  height: 780px;
+  width: 700px;
+  height: 700px;
 
-  right: -320px;
-  bottom: -320px;
+  right: -300px;
+  bottom: -350px;
 
   border-radius: 50%;
 
   background:
     radial-gradient(
       circle,
-      rgba(53, 215, 255, 0.13) 0%,
-      rgba(76, 141, 255, 0.065) 30%,
-      transparent 72%
+      rgba(53, 215, 255, 0.10),
+      transparent 68%
     );
 
-  filter: blur(24px);
-
-  animation:
-    secondaryGlow 13s ease-in-out infinite;
+  filter: blur(25px);
 }
 
 
-/* =========================================================
-   ORBIT SCENE
-========================================================= */
-
-.orbitScene {
+.backgroundNoise {
   position: absolute;
 
   inset: 0;
 
-  display: block;
+  opacity: 0.02;
 
-  pointer-events: none;
-
-  perspective: 1400px;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 
 /* =========================================================
-   EARTH / PLANET CORE
-   CSS-generated — no external asset required
+   3D EARTH SCENE
 ========================================================= */
 
-.orbitScene::before {
-  content: "";
+.earthScene {
+  position: fixed;
 
-  position: absolute;
+  z-index: 1;
 
-  left: 50%;
-  top: 47%;
+  width: min(70vw, 900px);
+  height: min(70vw, 900px);
 
-  width: clamp(260px, 28vw, 430px);
-  height: clamp(260px, 28vw, 430px);
+  left: -6vw;
+  top: 50%;
 
   transform:
-    translate(-50%, -50%)
-    translateZ(0);
+    translateY(-50%);
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   EARTH GLOW
+========================================================= */
+
+.earthGlow {
+  position: absolute;
+
+  width: 100%;
+  height: 100%;
 
   border-radius: 50%;
 
   background:
     radial-gradient(
-      circle at 32% 27%,
-      rgba(129, 121, 255, 0.52) 0%,
-      transparent 18%
-    ),
-    radial-gradient(
-      ellipse at 62% 43%,
-      rgba(53, 215, 255, 0.32) 0%,
-      transparent 33%
-    ),
-    radial-gradient(
-      ellipse at 35% 68%,
-      rgba(76, 141, 255, 0.27) 0%,
-      transparent 38%
-    ),
-    radial-gradient(
-      circle at 50% 45%,
-      #18255a 0%,
-      #101a42 35%,
-      #080d27 66%,
-      #030612 100%
+      circle,
+      rgba(76, 141, 255, 0.10),
+      rgba(53, 215, 255, 0.055) 38%,
+      transparent 70%
     );
 
-  box-shadow:
-    inset -45px -20px 80px rgba(0, 0, 0, 0.65),
-    inset 35px 10px 60px rgba(108, 99, 255, 0.12),
-    0 0 50px rgba(76, 141, 255, 0.14),
-    0 0 120px rgba(108, 99, 255, 0.13);
+  filter: blur(35px);
 
-  opacity: 0.72;
+  transform: scale(1.08);
 
   animation:
-    planetFloat 9s ease-in-out infinite;
-
-  filter: saturate(1.12);
+    earthGlowPulse 7s ease-in-out infinite;
 }
 
 
 /* =========================================================
-   PLANET ATMOSPHERE
+   EARTH
 ========================================================= */
 
-.orbitScene::after {
-  content: "";
-
+.earth {
   position: absolute;
 
   left: 50%;
-  top: 47%;
+  top: 50%;
 
-  width: clamp(290px, 31vw, 470px);
-  height: clamp(290px, 31vw, 470px);
+  width: 68%;
+  height: 68%;
 
   transform:
     translate(-50%, -50%);
 
   border-radius: 50%;
 
-  border:
-    1px solid rgba(53, 215, 255, 0.20);
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 32% 27%,
+      #4b8cff 0%,
+      #173d91 20%,
+      #092052 46%,
+      #030a20 74%,
+      #01030c 100%
+    );
 
   box-shadow:
-    0 0 22px rgba(53, 215, 255, 0.12),
-    0 0 70px rgba(76, 141, 255, 0.08),
-    inset 0 0 35px rgba(108, 99, 255, 0.07);
-
-  opacity: 0.65;
+    inset -55px -30px 90px rgba(0, 0, 0, 0.76),
+    inset 30px 15px 65px rgba(108, 99, 255, 0.20),
+    0 0 35px rgba(76, 141, 255, 0.22),
+    0 0 110px rgba(53, 215, 255, 0.13);
 
   animation:
-    atmospherePulse 6s ease-in-out infinite;
+    earthFloat 9s ease-in-out infinite;
 }
 
 
 /* =========================================================
-   ORBIT
+   EARTH SURFACE / CONTINENT-LIKE FORMS
 ========================================================= */
 
-.orbit {
+.earthSurface {
   position: absolute;
 
-  left: 50%;
-  top: 47%;
-
-  border:
-    1px solid rgba(108, 99, 255, 0.16);
-
-  border-radius: 50%;
-
-  transform-style: preserve-3d;
-
-  opacity: 0.78;
-
-  pointer-events: none;
-}
-
-
-/* =========================================================
-   ORBIT ONE
-========================================================= */
-
-.orbitOne {
-  width: 720px;
-  height: 300px;
-
-  margin-left: -360px;
-  margin-top: -150px;
-
-  transform:
-    rotateX(67deg)
-    rotateZ(-18deg);
-
-  animation:
-    orbitRotateOne 25s linear infinite;
-}
-
-
-/* =========================================================
-   ORBIT TWO
-========================================================= */
-
-.orbitTwo {
-  width: 560px;
-  height: 240px;
-
-  margin-left: -280px;
-  margin-top: -120px;
-
-  border-color:
-    rgba(53, 215, 255, 0.15);
-
-  transform:
-    rotateX(68deg)
-    rotateZ(48deg);
-
-  animation:
-    orbitRotateTwo 21s linear infinite reverse;
-}
-
-
-/* =========================================================
-   ORBIT THREE
-========================================================= */
-
-.orbitThree {
-  width: 900px;
-  height: 390px;
-
-  margin-left: -450px;
-  margin-top: -195px;
-
-  border-color:
-    rgba(76, 141, 255, 0.09);
-
-  transform:
-    rotateX(73deg)
-    rotateZ(105deg);
-
-  animation:
-    orbitRotateThree 31s linear infinite;
-}
-
-
-/* =========================================================
-   ORBIT NODE
-========================================================= */
-
-.orbitNode {
-  position: absolute;
-
-  left: 50%;
-  top: -4px;
-
-  width: 7px;
-  height: 7px;
-
-  margin-left: -3.5px;
+  inset: -12%;
 
   border-radius: 50%;
 
   background:
     radial-gradient(
-      circle,
-      #ffffff 0%,
-      var(--login-cyan) 38%,
-      #2388ff 100%
+      ellipse 28% 16% at 29% 31%,
+      rgba(44, 193, 144, 0.70),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 34% 18% at 48% 47%,
+      rgba(40, 174, 132, 0.55),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 18% 28% at 68% 32%,
+      rgba(50, 190, 145, 0.58),
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 30% 14% at 63% 68%,
+      rgba(38, 158, 124, 0.45),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 20% 15% at 78% 53%,
+      rgba(44, 176, 132, 0.42),
+      transparent 70%
     );
 
-  box-shadow:
-    0 0 0 4px rgba(53, 215, 255, 0.06),
-    0 0 14px rgba(53, 215, 255, 0.75),
-    0 0 34px rgba(53, 215, 255, 0.32);
+  filter:
+    blur(2px);
+
+  opacity: 0.78;
+
+  transform:
+    rotate(-12deg);
+
+  animation:
+    surfaceMove 24s linear infinite;
 }
 
 
 /* =========================================================
-   DEPTH RINGS
+   LATITUDE / LONGITUDE
 ========================================================= */
 
-.depthRing {
+.latitudeGrid {
   position: absolute;
 
-  left: 50%;
-  top: 47%;
+  inset: 4%;
 
   border-radius: 50%;
 
-  border:
-    1px solid rgba(255, 255, 255, 0.035);
+  background:
+    repeating-radial-gradient(
+      ellipse at center,
+      transparent 0 9%,
+      rgba(90, 196, 255, 0.13) 9.5% 10%,
+      transparent 10.5% 19%
+    );
+
+  opacity: 0.42;
+
+  transform:
+    scaleY(0.72);
+
+  mix-blend-mode: screen;
+}
+
+
+.longitudeGrid {
+  position: absolute;
+
+  inset: 2%;
+
+  border-radius: 50%;
+
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      transparent 0deg 18deg,
+      rgba(83, 185, 255, 0.11) 18.5deg 19deg,
+      transparent 19.5deg 36deg
+    );
+
+  opacity: 0.45;
+
+  transform:
+    rotateY(68deg);
+
+  mix-blend-mode: screen;
+
+  animation:
+    longitudeRotate 18s linear infinite;
+}
+
+
+/* =========================================================
+   EARTH HIGHLIGHT
+========================================================= */
+
+.earthHighlight {
+  position: absolute;
+
+  width: 70%;
+  height: 65%;
+
+  left: -4%;
+  top: -8%;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      ellipse,
+      rgba(255, 255, 255, 0.19),
+      rgba(129, 121, 255, 0.06) 42%,
+      transparent 70%
+    );
+
+  filter: blur(7px);
+
+  transform:
+    rotate(-25deg);
+}
+
+
+/* =========================================================
+   EARTH SHADOW
+========================================================= */
+
+.earthShadow {
+  position: absolute;
+
+  inset: 0;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      110deg,
+      transparent 30%,
+      rgba(1, 4, 14, 0.08) 42%,
+      rgba(0, 1, 7, 0.70) 82%,
+      rgba(0, 0, 4, 0.92) 100%
+    );
+}
+
+
+/* =========================================================
+   ATMOSPHERE
+========================================================= */
+
+.earthAtmosphere {
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: 72%;
+  height: 72%;
+
+  transform:
+    translate(-50%, -50%);
+
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 0 2px rgba(53, 215, 255, 0.10),
+    0 0 20px rgba(53, 215, 255, 0.20),
+    0 0 55px rgba(76, 141, 255, 0.12);
 
   pointer-events: none;
 }
 
 
-.ringOne {
-  width: 1080px;
-  height: 470px;
-
-  margin-left: -540px;
-  margin-top: -235px;
-
-  transform:
-    perspective(800px)
-    rotateX(73deg)
-    rotateZ(-20deg);
-}
-
-
-.ringTwo {
-  width: 1240px;
-  height: 540px;
-
-  margin-left: -620px;
-  margin-top: -270px;
-
-  border-color:
-    rgba(108, 99, 255, 0.055);
-
-  transform:
-    perspective(800px)
-    rotateX(73deg)
-    rotateZ(32deg);
-}
-
-
 /* =========================================================
-   NOISE
+   ORBITS
 ========================================================= */
 
-.backgroundNoise {
+.earthOrbit {
   position: absolute;
-  inset: 0;
 
-  opacity: 0.025;
+  left: 50%;
+  top: 50%;
 
-  background-image:
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
+  width: 88%;
+  height: 25%;
 
-  mix-blend-mode: soft-light;
+  border:
+    1px solid rgba(53, 215, 255, 0.16);
+
+  border-radius: 50%;
+
+  transform-origin: center;
+
+  pointer-events: none;
+}
+
+
+.orbitOne {
+  transform:
+    translate(-50%, -50%)
+    rotate(-20deg);
+
+  animation:
+    orbitSpinOne 17s linear infinite;
+}
+
+
+.orbitTwo {
+  width: 92%;
+  height: 40%;
+
+  transform:
+    translate(-50%, -50%)
+    rotate(38deg);
+
+  border-color:
+    rgba(108, 99, 255, 0.13);
+
+  animation:
+    orbitSpinTwo 22s linear infinite reverse;
+}
+
+
+.orbitThree {
+  width: 82%;
+  height: 65%;
+
+  transform:
+    translate(-50%, -50%)
+    rotate(-58deg);
+
+  border-color:
+    rgba(76, 141, 255, 0.09);
+
+  animation:
+    orbitSpinThree 27s linear infinite;
 }
 
 
 /* =========================================================
-   TOP BAR
+   TOPBAR
 ========================================================= */
 
 .topbar {
   position: relative;
 
-  z-index: 5;
+  z-index: 10;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
 
   width: 100%;
-  min-height: 78px;
+
+  min-height: 76px;
 
   padding:
-    17px
-    clamp(18px, 4vw, 56px);
+    15px
+    clamp(18px, 4vw, 58px);
 
   border-bottom:
     1px solid rgba(255, 255, 255, 0.055);
 
   background:
-    linear-gradient(
-      to bottom,
-      rgba(3, 5, 12, 0.88),
-      rgba(3, 5, 12, 0.44)
-    );
+    rgba(3, 5, 12, 0.50);
 
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter:
+    blur(24px);
+
+  -webkit-backdrop-filter:
+    blur(24px);
 }
 
 
@@ -587,49 +569,36 @@
   display: inline-flex;
   align-items: center;
 
-  min-width: 0;
-
   gap: 11px;
 
-  color: var(--login-text);
+  color: var(--text);
 
   text-decoration: none;
 
-  outline: none;
+  min-width: 0;
 }
 
-
-.brand:focus-visible {
-  border-radius: 12px;
-
-  box-shadow:
-    0 0 0 3px rgba(108, 99, 255, 0.25);
-}
-
-
-/* =========================================================
-   BRAND MARK
-========================================================= */
 
 .brandMark {
-  position: relative;
-
   display: grid;
-  align-content: center;
-  justify-content: center;
 
   width: 40px;
   height: 40px;
 
   flex: 0 0 40px;
 
-  grid-template-columns: repeat(2, 8px);
-  grid-template-rows: repeat(2, 8px);
+  place-content: center;
+
+  grid-template-columns:
+    repeat(2, 8px);
+
+  grid-template-rows:
+    repeat(2, 8px);
 
   gap: 4px;
 
   border:
-    1px solid rgba(129, 121, 255, 0.40);
+    1px solid rgba(129, 121, 255, 0.42);
 
   border-radius: 12px;
 
@@ -641,14 +610,11 @@
     );
 
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.13),
-    0 8px 32px rgba(81, 72, 217, 0.18);
+    0 10px 35px rgba(81, 72, 217, 0.20);
 }
 
 
 .brandMark span {
-  display: block;
-
   width: 8px;
   height: 8px;
 
@@ -657,172 +623,176 @@
   background:
     linear-gradient(
       135deg,
-      var(--login-purple-light),
-      var(--login-cyan)
+      var(--purple-light),
+      var(--cyan)
     );
 }
 
 
-.brandMark span:nth-child(2) {
-  opacity: 0.82;
-}
-
-
-.brandMark span:nth-child(3) {
-  opacity: 0.64;
-}
-
-
-.brandMark span:nth-child(4) {
-  opacity: 0.46;
-}
-
-
-/* =========================================================
-   BRAND TEXT
-========================================================= */
-
 .brandText {
   display: flex;
   flex-direction: column;
-
-  min-width: 0;
-
-  line-height: 1.05;
 }
 
 
 .brandText strong {
-  color: var(--login-text);
-
   font-size: 15px;
   font-weight: 750;
-
-  letter-spacing: -0.01em;
 }
 
 
 .brandText small {
-  margin-top: 5px;
+  margin-top: 4px;
 
-  color: var(--login-text-muted);
+  color: var(--text-muted);
 
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 8px;
+  font-weight: 650;
 
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 
-  white-space: nowrap;
+  text-transform: uppercase;
 }
 
 
 /* =========================================================
-   TOPBAR RIGHT
+   TOP RIGHT
 ========================================================= */
 
 .topbarRight {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
 
-  min-width: 0;
+  gap: 9px;
 }
 
-
-/* =========================================================
-   SECURE BADGE
-========================================================= */
 
 .secureBadge {
   display: inline-flex;
   align-items: center;
 
-  min-height: 31px;
+  gap: 6px;
 
-  gap: 7px;
+  min-height: 30px;
 
   padding:
-    0 12px;
+    0
+    11px;
 
-  color: var(--login-text-secondary);
+  color: var(--text-secondary);
 
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 600;
 
   border:
-    1px solid rgba(32, 199, 122, 0.15);
+    1px solid rgba(32, 199, 122, 0.16);
 
   border-radius: 999px;
 
   background:
     rgba(32, 199, 122, 0.045);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 
-.secureBadgeIcon {
+.secureBadge svg {
+  color: var(--success);
+}
+
+
+.signupButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  color: var(--login-success);
+  min-height: 35px;
+
+  padding:
+    0
+    15px;
+
+  color: #fff;
+
+  border:
+    1px solid rgba(129, 121, 255, 0.40);
+
+  border-radius: 9px;
+
+  background:
+    rgba(108, 99, 255, 0.14);
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-decoration: none;
+
+  transition:
+    160ms ease;
+}
+
+
+.signupButton:hover {
+  background:
+    rgba(108, 99, 255, 0.25);
+
+  border-color:
+    rgba(129, 121, 255, 0.65);
+
+  transform:
+    translateY(-1px);
 }
 
 
 /* =========================================================
-   MAIN AUTH FRAME
+   AUTH FRAME
 ========================================================= */
 
 .authFrame {
   position: relative;
 
-  z-index: 2;
+  z-index: 5;
 
   display: grid;
 
-  width: min(
-    1320px,
-    calc(100% - 48px)
-  );
+  width:
+    min(
+      1320px,
+      calc(100% - 48px)
+    );
 
-  min-width: 0;
-  min-height: 690px;
+  min-height: 650px;
 
   margin:
     clamp(28px, 5vh, 62px)
     auto
-    34px;
+    32px;
 
   grid-template-columns:
     minmax(0, 1.08fr)
-    minmax(410px, 0.92fr);
-
-  align-items: stretch;
+    minmax(410px, 0.82fr);
 
   overflow: hidden;
 
   border:
-    1px solid var(--login-border);
+    1px solid rgba(255, 255, 255, 0.08);
 
   border-radius: 28px;
 
   background:
     linear-gradient(
       135deg,
-      rgba(17, 21, 40, 0.84),
-      rgba(7, 10, 21, 0.94)
+      rgba(8, 12, 27, 0.72),
+      rgba(5, 8, 17, 0.90)
     );
 
   box-shadow:
     0 40px 120px rgba(0, 0, 0, 0.50),
-    0 0 80px rgba(81, 72, 217, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
 
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  backdrop-filter:
+    blur(24px);
+
+  -webkit-backdrop-filter:
+    blur(24px);
 }
 
 
@@ -831,13 +801,9 @@
 ========================================================= */
 
 .productPanel {
-  position: relative;
-
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
 
-  width: 100%;
   min-width: 0;
 
   padding:
@@ -847,53 +813,41 @@
     1px solid rgba(255, 255, 255, 0.055);
 
   background:
-    radial-gradient(
-      circle at 25% 25%,
-      rgba(108, 99, 255, 0.095),
-      transparent 38%
-    ),
     linear-gradient(
       145deg,
-      rgba(108, 99, 255, 0.055),
-      rgba(53, 215, 255, 0.012) 50%,
-      rgba(0, 0, 0, 0.08)
+      rgba(108, 99, 255, 0.045),
+      transparent 60%
     );
 }
 
 
-/* =========================================================
-   PRODUCT INNER
-========================================================= */
-
-.productInner {
+.productContent {
   width: 100%;
-  min-width: 0;
-  max-width: 680px;
+  max-width: 650px;
 
-  margin:
-    auto
-    0;
+  min-width: 0;
 }
 
 
 /* =========================================================
-   PRODUCT EYEBROW
+   PRODUCT TEXT
 ========================================================= */
 
 .productEyebrow {
-  display: inline-flex;
+  display: flex;
   align-items: center;
 
   gap: 8px;
 
-  margin-bottom: 22px;
+  margin-bottom: 19px;
 
-  color: #929bb3;
+  color: #8993aa;
 
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 750;
 
-  letter-spacing: 0.14em;
+  letter-spacing: 0.15em;
+
   text-transform: uppercase;
 }
 
@@ -906,41 +860,35 @@
 
   border-radius: 50%;
 
-  background: var(--login-success);
+  background:
+    var(--success);
 
   box-shadow:
     0 0 0 4px rgba(32, 199, 122, 0.08),
-    0 0 14px rgba(32, 199, 122, 0.46);
-
-  animation:
-    livePulse 2.2s ease-in-out infinite;
+    0 0 14px rgba(32, 199, 122, 0.45);
 }
 
 
-/* =========================================================
-   HERO TITLE
-========================================================= */
-
 .heroTitle {
-  display: block;
-
   width: 100%;
-  max-width: 680px;
-  min-width: 0;
 
   margin: 0;
 
-  color: var(--login-text);
+  color: var(--text);
 
   font-size:
-    clamp(42px, 4.7vw, 68px);
+    clamp(40px, 4.7vw, 67px);
 
   font-weight: 760;
 
-  line-height: 1;
+  line-height: 1.02;
 
   letter-spacing: -0.055em;
 
+  /*
+   * Critical:
+   * prevents the previous letter-by-letter wrapping.
+   */
   word-break: normal;
   overflow-wrap: normal;
   white-space: normal;
@@ -948,71 +896,56 @@
 
 
 .heroTitle span {
-  display: inline;
-
   background:
     linear-gradient(
       100deg,
-      var(--login-purple-light) 0%,
-      #9a92ff 38%,
-      var(--login-cyan) 100%
+      var(--purple-light),
+      #9d96ff 35%,
+      var(--cyan)
     );
+
+  color: transparent;
 
   -webkit-background-clip: text;
   background-clip: text;
-
-  color: transparent;
 }
 
 
-/* =========================================================
-   HERO DESCRIPTION
-========================================================= */
-
 .heroDescription {
-  display: block;
-
   width: 100%;
-  max-width: 600px;
+  max-width: 610px;
 
   margin:
-    24px
+    22px
     0
-    32px;
+    28px;
 
-  color: var(--login-text-secondary);
+  color: var(--text-secondary);
 
-  font-size: 15px;
+  font-size: 14px;
 
-  line-height: 1.72;
+  line-height: 1.7;
 
-  letter-spacing: -0.01em;
-
+  word-break: normal;
   overflow-wrap: normal;
 }
 
 
 /* =========================================================
-   CAPABILITY GRID
+   CAPABILITIES
 ========================================================= */
 
 .capabilityGrid {
   display: grid;
 
   width: 100%;
-  max-width: 680px;
-  min-width: 0;
 
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
 
-  gap: 10px;
+  gap: 9px;
 }
 
-
-/* =========================================================
-   CAPABILITY CARD
-========================================================= */
 
 .capabilityCard {
   display: flex;
@@ -1020,177 +953,121 @@
 
   min-width: 0;
 
-  gap: 11px;
+  gap: 10px;
 
-  padding: 14px;
+  padding: 13px;
 
   border:
-    1px solid rgba(255, 255, 255, 0.065);
+    1px solid rgba(255, 255, 255, 0.06);
 
-  border-radius: 14px;
+  border-radius: 13px;
 
   background:
     rgba(255, 255, 255, 0.025);
-
-  transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease,
-    box-shadow 180ms ease;
 }
 
-
-.capabilityCard:hover {
-  transform: translateY(-2px);
-
-  border-color:
-    rgba(129, 121, 255, 0.22);
-
-  background:
-    rgba(108, 99, 255, 0.045);
-
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.14);
-}
-
-
-/* =========================================================
-   CAPABILITY ICON
-========================================================= */
 
 .capabilityIcon {
-  width: 34px;
-  height: 34px;
-
-  flex: 0 0 34px;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  color: var(--login-purple-light);
+  width: 32px;
+  height: 32px;
+
+  flex: 0 0 32px;
+
+  color: var(--purple-light);
 
   border:
     1px solid rgba(108, 99, 255, 0.17);
 
-  border-radius: 10px;
+  border-radius: 9px;
 
   background:
-    rgba(108, 99, 255, 0.075);
+    rgba(108, 99, 255, 0.07);
 }
 
 
-/* =========================================================
-   CAPABILITY CONTENT
-========================================================= */
-
-.capabilityContent {
-  display: flex;
-  flex-direction: column;
-
+.capabilityCard div {
   min-width: 0;
-
-  gap: 4px;
 }
 
 
 .capabilityCard strong {
   display: block;
 
-  color: var(--login-text);
+  color: var(--text);
 
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-
-  line-height: 1.35;
 }
 
 
-.capabilityCard span:not(.capabilityIcon) {
+.capabilityCard div span {
   display: block;
 
-  color: var(--login-text-muted);
+  margin-top: 4px;
 
-  font-size: 10px;
+  color: var(--text-muted);
+
+  font-size: 9px;
 
   line-height: 1.45;
 }
 
 
 /* =========================================================
-   PRODUCT PRINCIPLE
+   PRINCIPLE
 ========================================================= */
 
 .productPrinciple {
   display: flex;
   align-items: flex-start;
 
-  width: 100%;
-  max-width: 600px;
-  min-width: 0;
+  gap: 10px;
 
-  gap: 11px;
+  margin-top: 20px;
 
-  margin-top: 24px;
-
-  padding:
-    13px
-    14px;
+  padding: 12px;
 
   border:
-    1px solid rgba(53, 215, 255, 0.10);
+    1px solid rgba(53, 215, 255, 0.09);
 
-  border-radius: 14px;
+  border-radius: 12px;
 
   background:
-    linear-gradient(
-      90deg,
-      rgba(53, 215, 255, 0.035),
-      rgba(108, 99, 255, 0.025)
-    );
+    rgba(53, 215, 255, 0.025);
 }
 
 
 .principleIcon {
-  width: 30px;
-  height: 30px;
-
-  flex: 0 0 30px;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  color: var(--login-cyan);
+  width: 29px;
+  height: 29px;
 
-  border:
-    1px solid rgba(53, 215, 255, 0.11);
+  flex: 0 0 29px;
 
-  border-radius: 9px;
+  color: var(--cyan);
+
+  border-radius: 8px;
 
   background:
-    rgba(53, 215, 255, 0.07);
+    rgba(53, 215, 255, 0.06);
 }
 
 
-.principleContent {
-  min-width: 0;
-}
-
-
-.productPrinciple > div:last-child {
-  min-width: 0;
-}
-
-
-.productPrinciple > div:last-child > span {
+.productPrinciple small {
   display: block;
 
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 
-  color: var(--login-text-muted);
+  color: var(--text-muted);
 
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 750;
 
   letter-spacing: 0.14em;
@@ -1200,38 +1077,11 @@
 .productPrinciple p {
   margin: 0;
 
-  color: var(--login-text-secondary);
+  color: var(--text-secondary);
 
-  font-size: 11px;
+  font-size: 10px;
 
-  line-height: 1.5;
-}
-
-
-/* =========================================================
-   PRODUCT FOOTER
-========================================================= */
-
-.productFooter {
-  display: flex;
-  align-items: center;
-
-  gap: 9px;
-
-  padding-top: 30px;
-
-  color: var(--login-text-muted);
-
-  font-size: 9px;
-  font-weight: 650;
-
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-
-.footerSeparator {
-  color: rgba(255, 255, 255, 0.20);
+  line-height: 1.45;
 }
 
 
@@ -1244,33 +1094,21 @@
   align-items: center;
   justify-content: center;
 
-  width: 100%;
   min-width: 0;
 
   padding:
     clamp(38px, 5vw, 68px);
 
   background:
-    linear-gradient(
-      145deg,
-      rgba(5, 8, 17, 0.36),
-      rgba(10, 14, 28, 0.70)
-    );
+    rgba(3, 6, 14, 0.38);
 }
 
 
-/* =========================================================
-   LOGIN CONTAINER
-========================================================= */
-
 .loginContainer {
   width: 100%;
-  min-width: 0;
   max-width: 430px;
 
-  margin:
-    0
-    auto;
+  min-width: 0;
 }
 
 
@@ -1282,77 +1120,38 @@
   display: flex;
   align-items: flex-start;
 
-  min-width: 0;
+  gap: 12px;
 
-  gap: 13px;
-
-  margin-bottom: 28px;
+  margin-bottom: 25px;
 }
 
 
-.loginHeadingContent {
-  min-width: 0;
-}
-
-
-.mobileProductMark {
+.mobileIcon {
   display: none;
-  align-items: center;
-  justify-content: center;
-
-  width: 38px;
-  height: 38px;
-
-  flex: 0 0 38px;
-
-  color: var(--login-purple-light);
-
-  border:
-    1px solid rgba(108, 99, 255, 0.20);
-
-  border-radius: 11px;
-
-  background:
-    rgba(108, 99, 255, 0.075);
 }
 
-
-/* =========================================================
-   LOGIN EYEBROW
-========================================================= */
 
 .eyebrow {
   display: block;
 
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 
-  color: var(--login-purple-light);
+  color: var(--purple-light);
 
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
 
   letter-spacing: 0.15em;
-
-  text-transform: uppercase;
 }
 
 
-/* =========================================================
-   LOGIN TITLE
-========================================================= */
-
-.title {
-  display: block;
-
-  max-width: 100%;
-  min-width: 0;
-
+.loginHeader h2 {
   margin: 0;
 
-  color: var(--login-text);
+  color: var(--text);
 
   font-size:
-    clamp(27px, 3vw, 34px);
+    clamp(26px, 3vw, 34px);
 
   font-weight: 750;
 
@@ -1360,27 +1159,21 @@
 
   letter-spacing: -0.04em;
 
-  overflow-wrap: normal;
+  word-break: normal;
 }
 
 
-/* =========================================================
-   SUBTITLE
-========================================================= */
-
-.subtitle {
-  max-width: 390px;
-
+.loginHeader p {
   margin:
-    9px
+    8px
     0
     0;
 
-  color: var(--login-text-muted);
+  color: var(--text-muted);
 
-  font-size: 12px;
+  font-size: 11px;
 
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 
@@ -1392,58 +1185,52 @@
   display: flex;
   align-items: flex-start;
 
-  min-width: 0;
+  gap: 9px;
 
-  gap: 10px;
+  margin-bottom: 16px;
 
-  margin-bottom: 18px;
-
-  padding:
-    11px
-    12px;
-
-  color: #ffc1c7;
-
-  font-size: 11px;
-
-  line-height: 1.45;
+  padding: 10px 11px;
 
   border:
-    1px solid rgba(240, 90, 103, 0.22);
+    1px solid rgba(240, 90, 103, 0.20);
 
-  border-radius: 11px;
+  border-radius: 10px;
 
   background:
-    rgba(240, 90, 103, 0.065);
+    rgba(240, 90, 103, 0.06);
+
+  color: #ffc2c8;
+
+  font-size: 10px;
+
+  line-height: 1.45;
 }
 
 
-.errorIcon {
-  width: 18px;
-  height: 18px;
-
-  flex: 0 0 18px;
-
+.error > span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  color: #fff;
+  width: 17px;
+  height: 17px;
 
-  font-size: 11px;
-  font-weight: 800;
+  flex: 0 0 17px;
 
   border-radius: 50%;
 
   background:
     rgba(240, 90, 103, 0.75);
+
+  color: #fff;
+
+  font-size: 10px;
+  font-weight: 800;
 }
 
 
-.errorMessage {
-  min-width: 0;
-
-  overflow-wrap: anywhere;
+.error p {
+  margin: 0;
 }
 
 
@@ -1456,1837 +1243,19 @@
   flex-direction: column;
 
   width: 100%;
-  min-width: 0;
-
-  gap: 17px;
-}
-
-
-/* =========================================================
-   FIELD
-========================================================= */
-
-.field {
-  width: 100%;
-  min-width: 0;
-}
-
-
-/* =========================================================
-   LABEL ROW
-========================================================= */
-
-.labelRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  gap: 12px;
-
-  margin-bottom: 8px;
-}
-
-
-/* =========================================================
-   LABEL
-========================================================= */
-
-.label {
-  display: block;
-
-  margin-bottom: 8px;
-
-  color: #cbd2e3;
-
-  font-size: 11px;
-  font-weight: 650;
-
-  line-height: 1.3;
-}
-
-
-.labelRow .label {
-  margin-bottom: 0;
-}
-
-
-/* =========================================================
-   FORGOT LINK
-========================================================= */
-
-.forgotLink {
-  flex: 0 0 auto;
-
-  color: var(--login-purple-light);
-
-  font-size: 10px;
-  font-weight: 650;
-
-  text-decoration: none;
-
-  white-space: nowrap;
-
-  transition:
-    color 160ms ease;
-}
-
-
-.forgotLink:hover {
-  color: var(--login-cyan);
-}
-
-
-.forgotLink:focus-visible {
-  outline:
-    2px solid rgba(108, 99, 255, 0.45);
-
-  outline-offset: 3px;
-
-  border-radius: 4px;
-}
-
-
-/* =========================================================
-   INPUT SHELL
-========================================================= */
-
-.inputShell {
-  position: relative;
-
-  display: flex;
-  align-items: center;
-
-  width: 100%;
-  min-width: 0;
-  min-height: 50px;
-
-  border:
-    1px solid rgba(255, 255, 255, 0.085);
-
-  border-radius: 13px;
-
-  background:
-    rgba(255, 255, 255, 0.035);
-
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background-color 160ms ease;
-}
-
-
-.inputShell:focus-within {
-  border-color:
-    rgba(108, 99, 255, 0.58);
-
-  background:
-    rgba(108, 99, 255, 0.035);
-
-  box-shadow:
-    0 0 0 3px rgba(108, 99, 255, 0.09),
-    0 8px 30px rgba(0, 0, 0, 0.10);
-}
-
-
-/* =========================================================
-   INPUT ICON
-========================================================= */
-
-.inputIcon {
-  width: 46px;
-
-  flex: 0 0 46px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  color: #69738c;
-
-  pointer-events: none;
-}
-
-
-/* =========================================================
-   INPUT
-========================================================= */
-
-.input,
-.inputWithAction {
-  min-width: 0;
-
-  border: 0;
-  outline: 0;
-
-  color: var(--login-text);
-
-  background: transparent;
-
-  font-family: inherit;
-  font-size: 12px;
-}
-
-
-.input {
-  width: 100%;
-  height: 48px;
-
-  padding:
-    0
-    13px
-    0
-    0;
-}
-
-
-.inputWithAction {
-  width: 100%;
-  height: 48px;
-
-  padding:
-    0
-    48px
-    0
-    0;
-}
-
-
-.input::placeholder,
-.inputWithAction::placeholder {
-  color: #555e73;
-
-  opacity: 1;
-}
-
-
-.input:disabled,
-.inputWithAction:disabled {
-  cursor: not-allowed;
-
-  opacity: 0.55;
-}
-
-
-/* =========================================================
-   PASSWORD TOGGLE
-========================================================= */
-
-.passwordToggle {
-  position: absolute;
-
-  right: 5px;
-  top: 50%;
-
-  width: 38px;
-  height: 38px;
-
-  transform:
-    translateY(-50%);
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  margin: 0;
-  padding: 0;
-
-  color: #707a92;
-
-  border: 0;
-  border-radius: 9px;
-
-  background: transparent;
-
-  cursor: pointer;
-
-  transition:
-    color 160ms ease,
-    background-color 160ms ease;
-}
-
-
-.passwordToggle:hover:not(:disabled) {
-  color: var(--login-text);
-
-  background:
-    rgba(255, 255, 255, 0.055);
-}
-
-
-.passwordToggle:focus-visible {
-  outline:
-    2px solid rgba(108, 99, 255, 0.45);
-
-  outline-offset: 1px;
-}
-
-
-.passwordToggle:disabled {
-  cursor: not-allowed;
-
-  opacity: 0.45;
-}
-
-
-/* =========================================================
-   REMEMBER
-========================================================= */
-
-.remember {
-  position: relative;
-
-  display: inline-flex;
-  align-items: center;
-
-  width: fit-content;
-  max-width: 100%;
-
-  gap: 9px;
-
-  color: var(--login-text-muted);
-
-  font-size: 10px;
-  font-weight: 550;
-
-  cursor: pointer;
-
-  user-select: none;
-}
-
-
-.remember input {
-  position: absolute;
-
-  width: 1px;
-  height: 1px;
-
-  margin: -1px;
-  padding: 0;
-
-  opacity: 0;
-
-  pointer-events: none;
-}
-
-
-.checkbox {
-  width: 16px;
-  height: 16px;
-
-  flex: 0 0 16px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  color: transparent;
-
-  border:
-    1px solid rgba(255, 255, 255, 0.16);
-
-  border-radius: 5px;
-
-  background:
-    rgba(255, 255, 255, 0.025);
-
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    color 150ms ease;
-}
-
-
-.remember input:checked + .checkbox {
-  color: #fff;
-
-  border-color:
-    var(--login-purple);
-
-  background:
-    var(--login-purple);
-}
-
-
-.remember input:focus-visible + .checkbox {
-  outline:
-    2px solid rgba(108, 99, 255, 0.45);
-
-  outline-offset: 2px;
-}
-
-
-/* =========================================================
-   PRIMARY BUTTON
-========================================================= */
-
-.primaryButton {
-  position: relative;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  min-height: 50px;
-
-  gap: 9px;
-
-  margin:
-    2px
-    0
-    0;
-
-  padding:
-    0
-    18px;
-
-  color: #fff;
-
-  border:
-    1px solid rgba(129, 121, 255, 0.48);
-
-  border-radius: 13px;
-
-  background:
-    linear-gradient(
-      105deg,
-      var(--login-purple-deep) 0%,
-      var(--login-purple) 48%,
-      #6e78ff 100%
-    );
-
-  box-shadow:
-    0 12px 34px rgba(81, 72, 217, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-
-  cursor: pointer;
-
-  overflow: hidden;
-
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    filter 160ms ease;
-}
-
-
-.primaryButton::before {
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  background:
-    linear-gradient(
-      105deg,
-      transparent 20%,
-      rgba(255, 255, 255, 0.15) 50%,
-      transparent 80%
-    );
-
-  transform:
-    translateX(-120%);
-
-  transition:
-    transform 550ms ease;
-}
-
-
-.primaryButton > * {
-  position: relative;
-  z-index: 1;
-}
-
-
-.primaryButton:hover:not(:disabled) {
-  transform:
-    translateY(-1px);
-
-  filter:
-    brightness(1.05);
-
-  box-shadow:
-    0 16px 42px rgba(81, 72, 217, 0.33),
-    0 0 28px rgba(108, 99, 255, 0.13),
-    inset 0 1px 0 rgba(255, 255, 255, 0.17);
-}
-
-
-.primaryButton:hover:not(:disabled)::before {
-  transform:
-    translateX(120%);
-}
-
-
-.primaryButton:active:not(:disabled) {
-  transform:
-    translateY(0);
-}
-
-
-.primaryButton:focus-visible {
-  outline:
-    2px solid rgba(53, 215, 255, 0.55);
-
-  outline-offset: 3px;
-}
-
-
-.primaryButton:disabled {
-  cursor: not-allowed;
-
-  opacity: 0.62;
-
-  box-shadow: none;
-}
-
-
-/* =========================================================
-   SPINNERS
-========================================================= */
-
-.spinner,
-.oauthSpinner {
-  width: 16px;
-  height: 16px;
-
-  flex: 0 0 16px;
-
-  border:
-    2px solid rgba(255, 255, 255, 0.28);
-
-  border-top-color: #fff;
-
-  border-radius: 50%;
-
-  animation:
-    spinnerRotate 700ms linear infinite;
-}
-
-
-.oauthSpinner {
-  border-color:
-    rgba(255, 255, 255, 0.18);
-
-  border-top-color:
-    var(--login-purple-light);
-}
-
-
-/* =========================================================
-   DIVIDER
-========================================================= */
-
-.divider {
-  display: grid;
-  align-items: center;
-
-  grid-template-columns:
-    minmax(0, 1fr)
-    auto
-    minmax(0, 1fr);
-
-  gap: 11px;
-
-  width: 100%;
-
-  margin:
-    25px
-    0
-    16px;
-
-  color: #555f75;
-
-  font-size: 8px;
-  font-weight: 750;
-
-  letter-spacing: 0.13em;
-
-  white-space: nowrap;
-}
-
-
-.divider span {
-  display: block;
-
-  min-width: 0;
-}
-
-
-.divider span:first-child,
-.divider span:last-child {
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.08)
-    );
-}
-
-
-.divider span:last-child {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.08),
-      transparent
-    );
-}
-
-
-/* =========================================================
-   OAUTH GRID
-========================================================= */
-
-.oauthGrid {
-  display: grid;
-
-  width: 100%;
-  min-width: 0;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 10px;
-}
-
-
-/* =========================================================
-   OAUTH BUTTON
-========================================================= */
-
-.oauthButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  min-width: 0;
-  min-height: 48px;
-
-  gap: 8px;
-
-  margin: 0;
-  padding:
-    0
-    13px;
-
-  color: #d9dfed;
-
-  border:
-    1px solid rgba(255, 255, 255, 0.085);
-
-  border-radius: 12px;
-
-  background:
-    rgba(255, 255, 255, 0.032);
-
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 650;
-
-  cursor: pointer;
-
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    background-color 160ms ease,
-    color 160ms ease;
-}
-
-
-.oauthButton:hover:not(:disabled) {
-  transform:
-    translateY(-1px);
-
-  color: #fff;
-
-  border-color:
-    rgba(129, 121, 255, 0.24);
-
-  background:
-    rgba(108, 99, 255, 0.055);
-}
-
-
-.oauthButton:active:not(:disabled) {
-  transform:
-    translateY(0);
-}
-
-
-.oauthButton:focus-visible {
-  outline:
-    2px solid rgba(108, 99, 255, 0.45);
-
-  outline-offset: 2px;
-}
-
-
-.oauthButton:disabled {
-  cursor: not-allowed;
-
-  opacity: 0.52;
-}
-
-
-/* =========================================================
-   REGISTER PROMPT
-========================================================= */
-
-.registerPrompt {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  flex-wrap: wrap;
-
-  width: 100%;
-  min-width: 0;
-
-  gap: 5px;
-
-  margin-top: 24px;
-
-  color: var(--login-text-muted);
-
-  font-size: 10px;
-
-  line-height: 1.5;
-
-  text-align: center;
-}
-
-
-/* =========================================================
-   REGISTER LINK
-========================================================= */
-
-.registerLink {
-  display: inline-flex;
-  align-items: center;
-
-  gap: 4px;
-
-  color: var(--login-purple-light);
-
-  font-weight: 700;
-
-  text-decoration: none;
-
-  white-space: nowrap;
-
-  transition:
-    color 160ms ease;
-}
-
-
-.registerLink:hover {
-  color: var(--login-cyan);
-}
-
-
-.registerLink:focus-visible {
-  outline:
-    2px solid rgba(108, 99, 255, 0.45);
-
-  outline-offset: 3px;
-
-  border-radius: 4px;
-}
-
-
-/* =========================================================
-   SECURITY NOTICE
-========================================================= */
-
-.securityNotice {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  min-width: 0;
-
-  gap: 7px;
-
-  margin-top: 18px;
-
-  color: #5f6980;
-
-  font-size: 9px;
-
-  line-height: 1.45;
-
-  text-align: center;
-}
-
-
-.securityNotice > span:last-child {
-  min-width: 0;
-}
-
-
-.securityIcon {
-  width: 23px;
-  height: 23px;
-
-  flex: 0 0 23px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  color: #68738b;
-
-  border:
-    1px solid rgba(255, 255, 255, 0.065);
-
-  border-radius: 7px;
-
-  background:
-    rgba(255, 255, 255, 0.025);
-}
-
-
-/* =========================================================
-   PAGE FOOTER
-========================================================= */
-
-.pageFooter {
-  position: relative;
-
-  z-index: 3;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  width: min(
-    1320px,
-    calc(100% - 48px)
-  );
-
-  min-width: 0;
-
-  margin:
-    0
-    auto
-    26px;
-
-  gap: 20px;
-
-  color: #555e73;
-
-  font-size: 9px;
-}
-
-
-/* =========================================================
-   FOOTER LINKS
-========================================================= */
-
-.footerLinks {
-  display: inline-flex;
-  align-items: center;
 
   gap: 16px;
 }
 
 
-.footerLinks a {
-  color: #69738a;
-
-  text-decoration: none;
-
-  transition:
-    color 160ms ease;
+.field {
+  width: 100%;
 }
 
 
-.footerLinks a:hover {
-  color: var(--login-text-secondary);
-}
+.field label {
+  display: block;
 
+  margin-bottom: 7px;
 
-.footerLinks a:focus-visible {
-  outline:
-    2px solid rgba(108, 99, 255, 0.45);
-
-  outline-offset: 3px;
-
-  border-radius: 3px;
-}
-
-
-/* =========================================================
-   LARGE TABLET
-========================================================= */
-
-@media (max-width: 1100px) {
-
-  .authFrame {
-    grid-template-columns:
-      minmax(0, 1fr)
-      minmax(390px, 0.82fr);
-  }
-
-
-  .productPanel {
-    padding:
-      44px;
-  }
-
-
-  .loginPanel {
-    padding:
-      44px;
-  }
-
-
-  .heroTitle {
-    font-size:
-      clamp(38px, 5vw, 56px);
-  }
-
-
-  .capabilityGrid {
-    grid-template-columns:
-      1fr;
-  }
-
-}
-
-
-/* =========================================================
-   TABLET
-========================================================= */
-
-@media (max-width: 900px) {
-
-  .authFrame {
-    display: flex;
-    flex-direction: column;
-
-    width:
-      min(
-        720px,
-        calc(100% - 32px)
-      );
-
-    min-height: auto;
-
-    margin:
-      28px
-      auto
-      28px;
-  }
-
-
-  .productPanel {
-    padding:
-      40px;
-  }
-
-
-  .productInner {
-    max-width: none;
-  }
-
-
-  .productFooter {
-    display: none;
-  }
-
-
-  .loginPanel {
-    padding:
-      44px
-      40px;
-  }
-
-
-  .loginContainer {
-    max-width: 500px;
-  }
-
-
-  .capabilityGrid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-
-  .orbitScene::before {
-    opacity: 0.38;
-  }
-
-
-  .orbitScene::after {
-    opacity: 0.38;
-  }
-
-}
-
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-@media (max-width: 640px) {
-
-  .page {
-    min-width: 100%;
-
-    overflow-x: hidden;
-  }
-
-
-  .background {
-    position: fixed;
-  }
-
-
-  .grid {
-    left: -50%;
-    right: -50%;
-    top: 30%;
-
-    opacity: 0.15;
-
-    background-size:
-      38px 38px;
-
-    transform:
-      perspective(650px)
-      rotateX(62deg);
-  }
-
-
-  .glowPrimary {
-    width: 500px;
-    height: 500px;
-
-    left: -270px;
-    top: -200px;
-  }
-
-
-  .glowSecondary {
-    width: 430px;
-    height: 430px;
-
-    right: -240px;
-    bottom: -200px;
-  }
-
-
-  .orbitScene::before {
-    width: 270px;
-    height: 270px;
-
-    left: 50%;
-    top: 30%;
-
-    opacity: 0.28;
-  }
-
-
-  .orbitScene::after {
-    width: 300px;
-    height: 300px;
-
-    left: 50%;
-    top: 30%;
-
-    opacity: 0.30;
-  }
-
-
-  .orbit {
-    top: 30%;
-  }
-
-
-  .orbitOne {
-    width: 520px;
-    height: 220px;
-
-    margin-left: -260px;
-    margin-top: -110px;
-  }
-
-
-  .orbitTwo {
-    width: 410px;
-    height: 175px;
-
-    margin-left: -205px;
-    margin-top: -87px;
-  }
-
-
-  .orbitThree {
-    width: 620px;
-    height: 270px;
-
-    margin-left: -310px;
-    margin-top: -135px;
-  }
-
-
-  .depthRing {
-    top: 30%;
-  }
-
-
-  .ringOne {
-    width: 700px;
-    height: 320px;
-
-    margin-left: -350px;
-    margin-top: -160px;
-  }
-
-
-  .ringTwo {
-    width: 780px;
-    height: 350px;
-
-    margin-left: -390px;
-    margin-top: -175px;
-  }
-
-
-  /* TOP BAR */
-
-  .topbar {
-    min-height: 64px;
-
-    padding:
-      12px
-      14px;
-  }
-
-
-  .brand {
-    gap: 9px;
-  }
-
-
-  .brandMark {
-    width: 35px;
-    height: 35px;
-
-    flex-basis: 35px;
-
-    border-radius: 10px;
-  }
-
-
-  .brandMark span {
-    width: 7px;
-    height: 7px;
-  }
-
-
-  .brandText strong {
-    font-size: 14px;
-  }
-
-
-  .brandText small {
-    display: none;
-  }
-
-
-  .secureBadge {
-    min-height: 28px;
-
-    padding:
-      0
-      9px;
-
-    font-size: 9px;
-  }
-
-
-  /* AUTH FRAME */
-
-  .authFrame {
-    width:
-      calc(100% - 20px);
-
-    margin:
-      14px
-      auto
-      20px;
-
-    border-radius: 20px;
-  }
-
-
-  /* PRODUCT */
-
-  .productPanel {
-    padding:
-      30px
-      20px
-      24px;
-
-    border-right: 0;
-
-    border-bottom:
-      1px solid rgba(255, 255, 255, 0.055);
-  }
-
-
-  .productEyebrow {
-    margin-bottom: 14px;
-
-    font-size: 8px;
-  }
-
-
-  .heroTitle {
-    width: 100%;
-    max-width: none;
-
-    font-size:
-      clamp(34px, 9vw, 46px);
-
-    line-height: 1.02;
-
-    letter-spacing: -0.05em;
-  }
-
-
-  .heroDescription {
-    margin:
-      16px
-      0
-      20px;
-
-    font-size: 12px;
-
-    line-height: 1.6;
-  }
-
-
-  .capabilityGrid {
-    grid-template-columns:
-      1fr;
-
-    gap: 8px;
-  }
-
-
-  .capabilityCard {
-    padding: 11px;
-
-    border-radius: 11px;
-  }
-
-
-  .capabilityIcon {
-    width: 30px;
-    height: 30px;
-
-    flex-basis: 30px;
-
-    border-radius: 8px;
-  }
-
-
-  .capabilityCard strong {
-    font-size: 11px;
-  }
-
-
-  .capabilityCard span:not(.capabilityIcon) {
-    font-size: 9px;
-  }
-
-
-  .productPrinciple {
-    margin-top: 16px;
-
-    padding: 11px;
-
-    border-radius: 11px;
-  }
-
-
-  .productFooter {
-    display: none;
-  }
-
-
-  /* LOGIN */
-
-  .loginPanel {
-    padding:
-      30px
-      20px
-      32px;
-  }
-
-
-  .loginContainer {
-    width: 100%;
-    max-width: none;
-  }
-
-
-  .loginHeader {
-    margin-bottom: 22px;
-  }
-
-
-  .mobileProductMark {
-    display: inline-flex;
-  }
-
-
-  .eyebrow {
-    font-size: 8px;
-  }
-
-
-  .title {
-    font-size:
-      clamp(25px, 7vw, 31px);
-  }
-
-
-  .subtitle {
-    font-size: 10px;
-  }
-
-
-  .form {
-    gap: 15px;
-  }
-
-
-  .inputShell {
-    min-height: 48px;
-  }
-
-
-  .input,
-  .inputWithAction {
-    height: 46px;
-
-    font-size: 11px;
-  }
-
-
-  .primaryButton {
-    min-height: 48px;
-  }
-
-
-  .oauthButton {
-    min-height: 46px;
-  }
-
-
-  .divider {
-    margin-top: 22px;
-  }
-
-
-  .registerPrompt {
-    margin-top: 21px;
-
-    font-size: 9px;
-  }
-
-
-  .securityNotice {
-    margin-top: 15px;
-
-    font-size: 8px;
-  }
-
-
-  /* FOOTER */
-
-  .pageFooter {
-    width:
-      calc(100% - 24px);
-
-    margin-bottom: 18px;
-
-    font-size: 8px;
-  }
-
-
-  .footerLinks {
-    gap: 11px;
-  }
-
-}
-
-
-/* =========================================================
-   SMALL MOBILE
-========================================================= */
-
-@media (max-width: 420px) {
-
-  .topbar {
-    padding:
-      11px
-      12px;
-  }
-
-
-  .secureBadge {
-    padding:
-      0
-      8px;
-  }
-
-
-  .secureBadgeIcon {
-    display: none;
-  }
-
-
-  .authFrame {
-    width:
-      calc(100% - 14px);
-
-    margin-top: 9px;
-
-    border-radius: 17px;
-  }
-
-
-  .productPanel {
-    padding:
-      24px
-      16px
-      20px;
-  }
-
-
-  .loginPanel {
-    padding:
-      24px
-      16px
-      27px;
-  }
-
-
-  .mobileProductMark {
-    width: 34px;
-    height: 34px;
-
-    flex-basis: 34px;
-  }
-
-
-  .heroTitle {
-    font-size: 31px;
-  }
-
-
-  .heroDescription {
-    font-size: 11px;
-  }
-
-
-  .capabilityCard {
-    gap: 9px;
-  }
-
-
-  .capabilityIcon {
-    width: 28px;
-    height: 28px;
-
-    flex-basis: 28px;
-  }
-
-
-  .title {
-    font-size: 24px;
-  }
-
-
-  .label {
-    font-size: 10px;
-  }
-
-
-  .forgotLink {
-    font-size: 9px;
-  }
-
-
-  .oauthGrid {
-    gap: 7px;
-  }
-
-
-  .oauthButton {
-    gap: 6px;
-
-    padding:
-      0
-      8px;
-
-    font-size: 10px;
-  }
-
-
-  .pageFooter {
-    align-items: flex-start;
-
-    flex-direction: column;
-
-    gap: 7px;
-  }
-
-}
-
-
-/* =========================================================
-   VERY SHORT DESKTOP VIEWPORT
-========================================================= */
-
-@media (max-height: 720px) and (min-width: 641px) {
-
-  .topbar {
-    min-height: 64px;
-
-    padding-top: 12px;
-    padding-bottom: 12px;
-  }
-
-
-  .authFrame {
-    min-height: 620px;
-
-    margin-top: 20px;
-  }
-
-
-  .productPanel {
-    padding:
-      32px
-      44px;
-  }
-
-
-  .loginPanel {
-    padding:
-      30px
-      40px;
-  }
-
-
-  .heroDescription {
-    margin-top: 17px;
-    margin-bottom: 22px;
-  }
-
-
-  .capabilityCard {
-    padding: 11px;
-  }
-
-
-  .productPrinciple {
-    margin-top: 16px;
-  }
-
-
-  .loginHeader {
-    margin-bottom: 20px;
-  }
-
-
-  .form {
-    gap: 13px;
-  }
-
-
-  .divider {
-    margin-top: 19px;
-    margin-bottom: 12px;
-  }
-
-
-  .registerPrompt {
-    margin-top: 16px;
-  }
-
-
-  .securityNotice {
-    margin-top: 12px;
-  }
-
-}
-
-
-/* =========================================================
-   ACCESSIBILITY — REDUCED MOTION
-========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-  .grid,
-  .glowPrimary,
-  .glowSecondary,
-  .orbitScene::before,
-  .orbitScene::after,
-  .orbitOne,
-  .orbitTwo,
-  .orbitThree,
-  .liveDot,
-  .spinner,
-  .oauthSpinner {
-    animation: none;
-  }
-
-
-  .capabilityCard,
-  .primaryButton,
-  .oauthButton,
-  .passwordToggle {
-    transition: none;
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — GRID
-========================================================= */
-
-@keyframes gridDrift {
-
-  0% {
-    transform:
-      perspective(900px)
-      rotateX(62deg)
-      translateY(0);
-  }
-
-  50% {
-    transform:
-      perspective(900px)
-      rotateX(62deg)
-      translateY(22px);
-  }
-
-  100% {
-    transform:
-      perspective(900px)
-      rotateX(62deg)
-      translateY(0);
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — PRIMARY GLOW
-========================================================= */
-
-@keyframes primaryGlow {
-
-  0%,
-  100% {
-    transform: scale(1);
-
-    opacity: 0.80;
-  }
-
-  50% {
-    transform: scale(1.08);
-
-    opacity: 1;
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — SECONDARY GLOW
-========================================================= */
-
-@keyframes secondaryGlow {
-
-  0%,
-  100% {
-    transform: scale(1);
-
-    opacity: 0.62;
-  }
-
-  50% {
-    transform: scale(1.10);
-
-    opacity: 0.90;
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — PLANET
-========================================================= */
-
-@keyframes planetFloat {
-
-  0%,
-  100% {
-    transform:
-      translate(-50%, -50%)
-      scale(1);
-  }
-
-  50% {
-    transform:
-      translate(-50%, calc(-50% - 7px))
-      scale(1.018);
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — ATMOSPHERE
-========================================================= */
-
-@keyframes atmospherePulse {
-
-  0%,
-  100% {
-    opacity: 0.48;
-
-    transform:
-      translate(-50%, -50%)
-      scale(1);
-  }
-
-  50% {
-    opacity: 0.78;
-
-    transform:
-      translate(-50%, -50%)
-      scale(1.025);
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — ORBIT ONE
-========================================================= */
-
-@keyframes orbitRotateOne {
-
-  from {
-    transform:
-      rotateX(67deg)
-      rotateZ(-18deg);
-  }
-
-  to {
-    transform:
-      rotateX(67deg)
-      rotateZ(342deg);
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — ORBIT TWO
-========================================================= */
-
-@keyframes orbitRotateTwo {
-
-  from {
-    transform:
-      rotateX(68deg)
-      rotateZ(48deg);
-  }
-
-  to {
-    transform:
-      rotateX(68deg)
-      rotateZ(-312deg);
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — ORBIT THREE
-========================================================= */
-
-@keyframes orbitRotateThree {
-
-  from {
-    transform:
-      rotateX(73deg)
-      rotateZ(105deg);
-  }
-
-  to {
-    transform:
-      rotateX(73deg)
-      rotateZ(465deg);
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — LIVE DOT
-========================================================= */
-
-@keyframes livePulse {
-
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 4px rgba(32, 199, 122, 0.08),
-      0 0 14px rgba(32, 199, 122, 0.46);
-  }
-
-  50% {
-    box-shadow:
-      0 0 0 6px rgba(32, 199, 122, 0.035),
-      0 0 20px rgba(32, 199, 122, 0.62);
-  }
-
-}
-
-
-/* =========================================================
-   KEYFRAMES — SPINNER
-========================================================= */
-
-@keyframes spinnerRotate {
-
-  to {
-    transform:
-      rotate(360deg);
-  }
-
-}
+  color:

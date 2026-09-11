@@ -5,34 +5,23 @@ import api from "./api";
 | ZYRIONOS — AUTHENTICATION SERVICE
 |--------------------------------------------------------------------------
 |
-| Enterprise Authentication API Layer
+| Enterprise Authentication Service
 |
 | Responsibilities:
-| - Login
+| - Email/password login
 | - Registration
-| - Current-session verification
+| - Current session verification
 | - Logout
 | - Google OAuth
 | - GitHub OAuth
-| - Local user profile cache
-| - Authentication error normalization
+| - Safe user-profile cache
 |
-| IMPORTANT SECURITY RULE:
+| SECURITY:
+| Authentication credentials are handled by the backend
+| through the HttpOnly session cookie.
 |
-| Authentication tokens / JWTs must NEVER be stored in localStorage.
+| JWT / access tokens are NEVER persisted in localStorage.
 |
-| The backend is responsible for establishing the authenticated
-| session using a secure HttpOnly cookie.
-|
-| Axios credentials are enabled through the centralized API client.
-|
-|--------------------------------------------------------------------------
-*/
-
-
-/*
-|--------------------------------------------------------------------------
-| CONFIGURATION
 |--------------------------------------------------------------------------
 */
 
@@ -40,20 +29,30 @@ const API_PREFIX = "/api/auth";
 
 const USER_STORAGE_KEY = "zyrions_user";
 
+const DEFAULT_API_URL = "https://api.zyrionos.com";
 
 /*
 |--------------------------------------------------------------------------
-| INTERNAL HELPERS
+| API BASE URL
 |--------------------------------------------------------------------------
 */
 
+function getApiBaseUrl() {
+  const configuredUrl =
+    import.meta.env.VITE_API_URL;
 
-/**
- * Normalize an authentication error into a safe Error object.
- *
- * The original Axios error is intentionally not exposed directly
- * to presentation components.
- */
+  return (
+    configuredUrl ||
+    DEFAULT_API_URL
+  ).replace(/\/+$/, "");
+}
+
+/*
+|--------------------------------------------------------------------------
+| ERROR NORMALIZATION
+|--------------------------------------------------------------------------
+*/
+
 function normalizeAuthError(
   error,
   fallbackMessage = "Authentication request failed."
@@ -76,16 +75,20 @@ function normalizeAuthError(
     error?.message ||
     fallbackMessage;
 
-  /*
-   * Authentication-specific messages.
-   */
+  if (
+    status === 400 &&
+    !backendMessage
+  ) {
+    message =
+      "The authentication request could not be processed.";
+  }
 
   if (
     status === 401 &&
     !backendMessage
   ) {
     message =
-      "Authentication required. Please sign in again.";
+      "Invalid credentials or authentication session.";
   }
 
   if (
@@ -94,6 +97,14 @@ function normalizeAuthError(
   ) {
     message =
       "You do not have permission to perform this action.";
+  }
+
+  if (
+    status === 404 &&
+    !backendMessage
+  ) {
+    message =
+      "The requested authentication service was not found.";
   }
 
   if (
@@ -121,16 +132,17 @@ function normalizeAuthError(
   }
 
   /*
-   * Network / connection failure.
+   * Network / timeout handling.
    */
-
   if (!error?.response) {
     if (
       error?.code === "ECONNABORTED"
     ) {
       message =
         "The request timed out. Please try again.";
-    } else {
+    } else if (
+      error?.code === "ERR_NETWORK"
+    ) {
       message =
         "Unable to connect to the authentication service. Please check your internet connection.";
     }
@@ -155,13 +167,12 @@ function normalizeAuthError(
   return normalizedError;
 }
 
+/*
+|--------------------------------------------------------------------------
+| VALIDATION
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Validate an email address.
- *
- * This is lightweight client-side validation only.
- * Backend validation remains authoritative.
- */
 function validateEmail(email) {
   if (
     typeof email !== "string" ||
@@ -173,7 +184,7 @@ function validateEmail(email) {
   }
 
   const normalizedEmail =
-    email.trim();
+    email.trim().toLowerCase();
 
   const emailPattern =
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -191,15 +202,6 @@ function validateEmail(email) {
   return normalizedEmail;
 }
 
-
-/**
- * Validate password input.
- *
- * This does not impose product-specific password rules
- * beyond requiring a non-empty value.
- *
- * The backend remains authoritative for password policy.
- */
 function validatePassword(password) {
   if (
     typeof password !== "string" ||
@@ -213,10 +215,6 @@ function validatePassword(password) {
   return password;
 }
 
-
-/**
- * Validate registration payload.
- */
 function validateRegisterData(
   userData
 ) {
@@ -231,17 +229,23 @@ function validateRegisterData(
   }
 }
 
+/*
+|--------------------------------------------------------------------------
+| USER PROFILE CACHE
+|--------------------------------------------------------------------------
+|
+| ONLY non-sensitive profile information may be cached.
+|
+| Never store:
+| - JWT
+| - access token
+| - refresh token
+| - session token
+| - authorization header
+|
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Safely store only the user profile.
- *
- * NEVER stores:
- * - JWT
- * - access token
- * - refresh token
- * - session token
- * - authorization header
- */
 function storeUserProfile(user) {
   if (!user) {
     return;
@@ -254,7 +258,7 @@ function storeUserProfile(user) {
     );
   } catch (error) {
     /*
-     * Storage failure must not break authentication.
+     * Storage failure must never break authentication.
      */
     console.warn(
       "Unable to cache user profile:",
@@ -263,10 +267,6 @@ function storeUserProfile(user) {
   }
 }
 
-
-/**
- * Remove cached user profile.
- */
 function clearStoredUserProfile() {
   try {
     localStorage.removeItem(
@@ -280,7 +280,6 @@ function clearStoredUserProfile() {
   }
 }
 
-
 /*
 |--------------------------------------------------------------------------
 | LOGIN
@@ -288,7 +287,7 @@ function clearStoredUserProfile() {
 |
 | POST /api/auth/login
 |
-| Backend establishes the authenticated HttpOnly cookie.
+| Backend establishes the HttpOnly authentication cookie.
 |
 |--------------------------------------------------------------------------
 */
@@ -316,10 +315,6 @@ export async function login(
         }
       );
 
-    /*
-     * Cache profile information only when the backend
-     * actually returns it.
-     */
     const user =
       response?.data?.user ||
       response?.data?.data?.user;
@@ -337,6 +332,36 @@ export async function login(
   }
 }
 
+/*
+|--------------------------------------------------------------------------
+| LOGIN USER — FRONTEND COMPATIBILITY EXPORT
+|--------------------------------------------------------------------------
+|
+| Login.jsx currently imports loginUser().
+|
+| Keep login() as the canonical service function while exposing
+| loginUser() for existing frontend consumers.
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function loginUser(
+  credentials
+) {
+  if (
+    !credentials ||
+    typeof credentials !== "object"
+  ) {
+    throw new Error(
+      "Login credentials are required."
+    );
+  }
+
+  return login(
+    credentials.email,
+    credentials.password
+  );
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -360,9 +385,6 @@ export async function register(
       ...userData,
     };
 
-    /*
-     * Normalize email when supplied.
-     */
     if (
       Object.prototype.hasOwnProperty.call(
         payload,
@@ -375,9 +397,6 @@ export async function register(
         );
     }
 
-    /*
-     * Validate password when supplied.
-     */
     if (
       Object.prototype.hasOwnProperty.call(
         payload,
@@ -399,10 +418,6 @@ export async function register(
         }
       );
 
-    /*
-     * Some backends authenticate the user immediately
-     * after registration and return the profile.
-     */
     const user =
       response?.data?.user ||
       response?.data?.data?.user;
@@ -420,18 +435,14 @@ export async function register(
   }
 }
 
-
 /*
 |--------------------------------------------------------------------------
-| CURRENT USER / SESSION
+| CURRENT USER
 |--------------------------------------------------------------------------
 |
 | GET /api/auth/me
 |
-| This is the authoritative authentication check.
-|
-| The frontend must not consider the user authenticated
-| merely because a localStorage profile exists.
+| Server remains the authoritative source of authentication.
 |
 |--------------------------------------------------------------------------
 */
@@ -456,10 +467,6 @@ export async function getCurrentUser() {
 
     return response;
   } catch (error) {
-    /*
-     * If the server confirms that the session is invalid,
-     * the cached profile must not be treated as authoritative.
-     */
     if (
       error?.response?.status === 401
     ) {
@@ -473,15 +480,12 @@ export async function getCurrentUser() {
   }
 }
 
-
 /*
 |--------------------------------------------------------------------------
 | LOGOUT
 |--------------------------------------------------------------------------
 |
 | POST /api/auth/logout
-|
-| Backend should invalidate / clear the HttpOnly session cookie.
 |
 |--------------------------------------------------------------------------
 */
@@ -497,18 +501,13 @@ export async function logout() {
         }
       );
 
-    /*
-     * Clear local profile only after the logout request
-     * has completed successfully.
-     */
     clearStoredUserProfile();
 
     return response.data;
   } catch (error) {
     /*
-     * Even if the backend logout endpoint fails,
-     * remove the local cached profile so stale UI state
-     * is not presented as current user information.
+     * Remove stale local profile even when backend
+     * logout reports an error.
      */
     clearStoredUserProfile();
 
@@ -519,14 +518,9 @@ export async function logout() {
   }
 }
 
-
 /*
 |--------------------------------------------------------------------------
 | AUTHENTICATION STATUS
-|--------------------------------------------------------------------------
-|
-| The server is the source of truth.
-|
 |--------------------------------------------------------------------------
 */
 
@@ -538,7 +532,7 @@ export async function isAuthenticated() {
     const responseData =
       response?.data;
 
-    return !!(
+    return Boolean(
       responseData?.success &&
       (
         responseData?.user ||
@@ -550,15 +544,12 @@ export async function isAuthenticated() {
   }
 }
 
-
 /*
 |--------------------------------------------------------------------------
 | STORED USER PROFILE
 |--------------------------------------------------------------------------
 |
-| This is only a cached profile.
-|
-| It must NEVER be used as proof of authentication.
+| Cached profile ≠ authentication proof.
 |
 |--------------------------------------------------------------------------
 */
@@ -577,56 +568,77 @@ export function getStoredUser() {
     return JSON.parse(
       storedUser
     );
-  } catch (error) {
+  } catch {
     clearStoredUserProfile();
 
     return null;
   }
 }
 
-
 /*
 |--------------------------------------------------------------------------
-| SAVE AUTH — LEGACY COMPATIBILITY
+| SAVE AUTH
 |--------------------------------------------------------------------------
 |
-| Existing frontend code may still call:
+| Supports BOTH existing calling conventions:
 |
-| saveAuth(token, user)
+| 1. saveAuth(user, token)
+| 2. saveAuth(token, user)
 |
-| The token parameter is intentionally ignored.
+| The token is ALWAYS ignored.
 |
-| JWT/session credentials must remain inside the secure
-| backend-controlled HttpOnly cookie.
+| This gives us compatibility while keeping the
+| HttpOnly-cookie security architecture intact.
 |
 |--------------------------------------------------------------------------
 */
 
 export function saveAuth(
-  _token,
-  user
+  first,
+  second
 ) {
+  let user = null;
+
+  /*
+   * Current Login.jsx convention:
+   *
+   * saveAuth(data.user, data.token)
+   */
+  if (
+    first &&
+    typeof first === "object" &&
+    !Array.isArray(first)
+  ) {
+    user = first;
+  }
+
+  /*
+   * Legacy convention:
+   *
+   * saveAuth(token, user)
+   */
+  else if (
+    second &&
+    typeof second === "object" &&
+    !Array.isArray(second)
+  ) {
+    user = second;
+  }
+
   if (user) {
     storeUserProfile(user);
   }
 }
 
-
 /*
 |--------------------------------------------------------------------------
-| CLEAR LOCAL AUTH PROFILE
-|--------------------------------------------------------------------------
-|
-| Useful when the application needs to discard cached
-| profile information without making a server request.
-|
+| CLEAR LOCAL PROFILE
 |--------------------------------------------------------------------------
 */
 
 export function clearAuthProfile() {
   clearStoredUserProfile();
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -635,23 +647,19 @@ export function clearAuthProfile() {
 |
 | GET /api/auth/google
 |
-| OAuth authentication is handled by the backend.
-|
-| The browser is redirected to the backend OAuth route.
+| Browser is redirected to backend OAuth.
 |
 |--------------------------------------------------------------------------
 */
 
 export function loginWithGoogle() {
   const apiBaseUrl =
-    import.meta.env.VITE_API_URL ||
-    "https://api.zyrionos.com";
+    getApiBaseUrl();
 
   window.location.assign(
     `${apiBaseUrl}${API_PREFIX}/google`
   );
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -659,28 +667,42 @@ export function loginWithGoogle() {
 |--------------------------------------------------------------------------
 |
 | GET /api/auth/github
+|
 |--------------------------------------------------------------------------
 */
 
 export function loginWithGithub() {
   const apiBaseUrl =
-    import.meta.env.VITE_API_URL ||
-    "https://api.zyrionos.com";
+    getApiBaseUrl();
 
   window.location.assign(
     `${apiBaseUrl}${API_PREFIX}/github`
   );
 }
 
+/*
+|--------------------------------------------------------------------------
+| GITHUB OAUTH — FRONTEND COMPATIBILITY EXPORT
+|--------------------------------------------------------------------------
+|
+| Login.jsx uses the capital-H spelling.
+|
+|--------------------------------------------------------------------------
+*/
+
+export function loginWithGitHub() {
+  return loginWithGithub();
+}
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT SERVICE EXPORT
+| DEFAULT SERVICE
 |--------------------------------------------------------------------------
 */
 
 const authService = {
   login,
+  loginUser,
   register,
   getCurrentUser,
   logout,
@@ -690,6 +712,7 @@ const authService = {
   clearAuthProfile,
   loginWithGoogle,
   loginWithGithub,
+  loginWithGitHub,
 };
 
 export default authService;

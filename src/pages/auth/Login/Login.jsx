@@ -12,25 +12,23 @@ import {
 } from "../../../services/authService";
 
 import { useAuth } from "../../../context/AuthContext";
-
 import { APP_NAME } from "../../../config/constants";
-
 
 /* =========================================================
    ICON SYSTEM
 ========================================================= */
 
-function Icon({ name, size = 18 }) {
+function Icon({ name, size = 18, strokeWidth = 1.8 }) {
   const common = {
     width: size,
     height: size,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 1.8,
+    strokeWidth,
     strokeLinecap: "round",
     strokeLinejoin: "round",
-    "aria-hidden": "true",
+    ariaHidden: true,
     focusable: "false",
   };
 
@@ -96,6 +94,30 @@ function Icon({ name, size = 18 }) {
       return (
         <svg {...common}>
           <path d="m5 12 4 4L19 6" />
+        </svg>
+      );
+
+    case "layers":
+      return (
+        <svg {...common}>
+          <path d="m12 3 9 5-9 5-9-5 9-5Z" />
+          <path d="m3 12 9 5 9-5" />
+          <path d="m3 16 9 5 9-5" />
+        </svg>
+      );
+
+    case "cloud":
+      return (
+        <svg {...common}>
+          <path d="M17.5 19H8a5 5 0 1 1 1.1-9.88A6 6 0 0 1 20 11a4 4 0 0 1-2.5 8Z" />
+        </svg>
+      );
+
+    case "terminal":
+      return (
+        <svg {...common}>
+          <path d="m5 7 4 5-4 5" />
+          <path d="M12 17h7" />
         </svg>
       );
 
@@ -177,18 +199,17 @@ function Login() {
 
 
   /* =======================================================
-     LOGIN
+     EMAIL LOGIN
   ======================================================= */
 
   async function handleLogin(event) {
     event.preventDefault();
 
-    if (loading) return;
+    if (loading || oauthLoading) return;
 
     setError("");
 
-    const cleanEmail =
-      email.trim();
+    const cleanEmail = email.trim();
 
     if (!cleanEmail) {
       setError("Please enter your email address.");
@@ -203,35 +224,42 @@ function Login() {
     try {
       setLoading(true);
 
-      const response =
-        await login(
-          cleanEmail,
-          password
-        );
+      const response = await login(
+        cleanEmail,
+        password
+      );
 
       /*
-       * Preserve the existing working
-       * authentication contract.
+       * Existing auth service contract:
+       * saveAuth(user, token)
+       *
+       * The token must not be persisted
+       * by the frontend. Backend authentication
+       * remains the source of truth.
        */
       saveAuth(
-        response.token,
-        response.user
+        response?.user,
+        response?.token
       );
 
-      setUser(
-        response.user
-      );
+      if (!response?.user) {
+        throw new Error(
+          "Authentication succeeded, but the account could not be loaded."
+        );
+      }
 
+      setUser(response.user);
       setAuthenticated(true);
 
       navigate(
         "/dashboard",
         { replace: true }
       );
+
     } catch (loginError) {
       setError(
-        loginError?.message ||
         loginError?.response?.data?.message ||
+        loginError?.message ||
         "Unable to sign in. Please check your credentials and try again."
       );
     } finally {
@@ -274,24 +302,44 @@ function Login() {
       <main className={styles.page}>
 
         {/* =================================================
-            BACKGROUND
+            3D BACKGROUND
         ================================================= */}
 
         <div
           className={styles.background}
           aria-hidden="true"
         >
-          <div className={styles.glowOne} />
-          <div className={styles.glowTwo} />
-          <div className={styles.gridGlow} />
+
+          <div className={styles.grid} />
+
+          <div className={styles.glowPrimary} />
+          <div className={styles.glowSecondary} />
+
+          <div className={styles.orbit orbitOne}>
+            <span className={styles.orbitNode} />
+          </div>
+
+          <div className={styles.orbit orbitTwo}>
+            <span className={styles.orbitNode} />
+          </div>
+
+          <div className={styles.orbit orbitThree}>
+            <span className={styles.orbitNode} />
+          </div>
+
+          <div className={styles.depthRing ringOne} />
+          <div className={styles.depthRing ringTwo} />
+
+          <div className={styles.backgroundNoise} />
+
         </div>
 
 
         {/* =================================================
-            BRAND
+            TOP NAV
         ================================================= */}
 
-        <header className={styles.topBrand}>
+        <header className={styles.topbar}>
 
           <Link
             to="/"
@@ -303,108 +351,210 @@ function Login() {
               <span />
               <span />
               <span />
+              <span />
             </span>
 
-            <span className={styles.brandName}>
-              {APP_NAME}
+            <span className={styles.brandText}>
+
+              <strong>
+                {APP_NAME}
+              </strong>
+
+              <small>
+                AI Cloud Operating System
+              </small>
+
             </span>
 
           </Link>
 
-          <div className={styles.secureBadge}>
-            <Icon
-              name="shield"
-              size={13}
-            />
-            Secure workspace
+
+          <div className={styles.topbarRight}>
+
+            <span className={styles.secureBadge}>
+
+              <Icon
+                name="shield"
+                size={13}
+              />
+
+              Secure workspace
+
+            </span>
+
           </div>
 
         </header>
 
 
         {/* =================================================
-            AUTH SHELL
+            MAIN AUTH FRAME
         ================================================= */}
 
-        <section className={styles.authShell}>
+        <section
+          className={styles.authFrame}
+          aria-label="ZyrionOS authentication"
+        >
 
           {/* =================================================
-              PRODUCT PANEL
+              PRODUCT SIDE
           ================================================= */}
 
-          <div className={styles.productPanel}>
+          <aside className={styles.productPanel}>
 
-            <div className={styles.productContent}>
+            <div className={styles.productInner}>
 
-              <div className={styles.aiBadge}>
+              <div className={styles.productEyebrow}>
 
-                <span className={styles.aiBadgeIcon}>
-                  <Icon
-                    name="spark"
-                    size={14}
-                  />
-                </span>
+                <span className={styles.liveDot} />
 
-                AI CLOUD OPERATING SYSTEM
+                THE ZYRIONOS PLATFORM
 
               </div>
 
 
               <h1 className={styles.heroTitle}>
+
                 Build software.
                 <br />
-                <span>Operate it with AI.</span>
+
+                <span>
+                  Operate it with AI.
+                </span>
+
               </h1>
 
 
               <p className={styles.heroDescription}>
-                Build SaaS products, AI applications,
-                cloud infrastructure and business systems
-                from one intelligent workspace.
+
+                ZyrionOS brings application building,
+                AI assistance, cloud deployment and
+                project operations into one intelligent
+                workspace.
+
               </p>
 
 
-              <div className={styles.featureList}>
+              {/* =================================================
+                  CAPABILITY CARDS
+              ================================================= */}
 
-                <div className={styles.featureItem}>
-                  <span className={styles.featureIcon}>
+              <div className={styles.capabilityGrid}>
+
+                <article className={styles.capabilityCard}>
+
+                  <span className={styles.capabilityIcon}>
                     <Icon
-                      name="check"
-                      size={14}
+                      name="spark"
+                      size={17}
                     />
                   </span>
 
-                  <span>
-                    AI-assisted application building
+                  <div>
+                    <strong>
+                      Build with AI
+                    </strong>
+
+                    <span>
+                      Turn goals into working software.
+                    </span>
+                  </div>
+
+                </article>
+
+
+                <article className={styles.capabilityCard}>
+
+                  <span className={styles.capabilityIcon}>
+                    <Icon
+                      name="cloud"
+                      size={17}
+                    />
                   </span>
+
+                  <div>
+                    <strong>
+                      Deploy to Cloud
+                    </strong>
+
+                    <span>
+                      Move projects from workspace to deployment.
+                    </span>
+                  </div>
+
+                </article>
+
+
+                <article className={styles.capabilityCard}>
+
+                  <span className={styles.capabilityIcon}>
+                    <Icon
+                      name="layers"
+                      size={17}
+                    />
+                  </span>
+
+                  <div>
+                    <strong>
+                      One Project Workspace
+                    </strong>
+
+                    <span>
+                      Keep code, configuration and operations together.
+                    </span>
+                  </div>
+
+                </article>
+
+
+                <article className={styles.capabilityCard}>
+
+                  <span className={styles.capabilityIcon}>
+                    <Icon
+                      name="terminal"
+                      size={17}
+                    />
+                  </span>
+
+                  <div>
+                    <strong>
+                      Operate & Iterate
+                    </strong>
+
+                    <span>
+                      Build, improve and ship from one place.
+                    </span>
+                  </div>
+
+                </article>
+
+              </div>
+
+
+              {/* =================================================
+                  PRODUCT PRINCIPLE
+              ================================================= */}
+
+              <div className={styles.productPrinciple}>
+
+                <div className={styles.principleIcon}>
+                  <Icon
+                    name="spark"
+                    size={15}
+                  />
                 </div>
 
-
-                <div className={styles.featureItem}>
-                  <span className={styles.featureIcon}>
-                    <Icon
-                      name="check"
-                      size={14}
-                    />
-                  </span>
+                <div>
 
                   <span>
-                    Cloud deployment and operations
-                  </span>
-                </div>
-
-
-                <div className={styles.featureItem}>
-                  <span className={styles.featureIcon}>
-                    <Icon
-                      name="check"
-                      size={14}
-                    />
+                    THE CORE IDEA
                   </span>
 
-                  <span>
-                    One workspace for your projects
-                  </span>
+                  <p>
+                    Give ZyrionOS the outcome.
+                    Work happens inside the workspace.
+                  </p>
+
                 </div>
 
               </div>
@@ -415,404 +565,437 @@ function Login() {
             <div className={styles.productFooter}>
 
               <span>
-                {APP_NAME} Platform
+                {APP_NAME}
               </span>
 
-              <span className={styles.footerDot} />
+              <span className={styles.footerSeparator}>
+                /
+              </span>
 
               <span>
-                Secure by design
+                Build · Deploy · Operate
               </span>
 
             </div>
 
-          </div>
+          </aside>
 
 
           {/* =================================================
-              LOGIN PANEL
+              LOGIN SIDE
           ================================================= */}
 
-          <div className={styles.loginPanel}>
+          <section className={styles.loginPanel}>
 
-            <div className={styles.loginHeader}>
+            <div className={styles.loginContainer}>
 
-              <div className={styles.mobileLogo}>
-                <span>
+              {/* =================================================
+                  LOGIN INTRO
+              ================================================= */}
+
+              <div className={styles.loginHeader}>
+
+                <div className={styles.mobileProductMark}>
+
                   <Icon
                     name="spark"
-                    size={16}
+                    size={17}
                   />
-                </span>
-              </div>
 
-              <div>
-
-                <span className={styles.eyebrow}>
-                  WELCOME BACK
-                </span>
-
-                <h2 className={styles.title}>
-                  Sign in to {APP_NAME}
-                </h2>
-
-                <p className={styles.subtitle}>
-                  Continue to your workspace and projects.
-                </p>
-
-              </div>
-
-            </div>
+                </div>
 
 
-            {/* =================================================
-                ERROR
-            ================================================= */}
+                <div>
 
-            {error && (
-
-              <div
-                className={styles.error}
-                role="alert"
-              >
-
-                <span className={styles.errorIcon}>
-                  !
-                </span>
-
-                <span>
-                  {error}
-                </span>
-
-              </div>
-
-            )}
-
-
-            {/* =================================================
-                FORM
-            ================================================= */}
-
-            <form
-              className={styles.form}
-              onSubmit={handleLogin}
-              noValidate
-            >
-
-              {/* EMAIL */}
-
-              <div className={styles.field}>
-
-                <label
-                  htmlFor="login-email"
-                  className={styles.label}
-                >
-                  Email address
-                </label>
-
-                <div className={styles.inputShell}>
-
-                  <span className={styles.inputIcon}>
-                    <Icon
-                      name="mail"
-                      size={17}
-                    />
+                  <span className={styles.eyebrow}>
+                    WELCOME BACK
                   </span>
 
-                  <input
-                    id="login-email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    inputMode="email"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(event) =>
-                      setEmail(
-                        event.target.value
-                      )
-                    }
-                    className={styles.input}
-                    disabled={loading}
-                    aria-invalid={
-                      Boolean(error)
-                    }
-                  />
+                  <h2 className={styles.title}>
+                    Sign in to {APP_NAME}
+                  </h2>
+
+                  <p className={styles.subtitle}>
+                    Continue to your workspace and projects.
+                  </p>
 
                 </div>
 
               </div>
 
 
-              {/* PASSWORD */}
+              {/* =================================================
+                  ERROR
+              ================================================= */}
 
-              <div className={styles.field}>
+              {error && (
 
-                <div className={styles.labelRow}>
+                <div
+                  className={styles.error}
+                  role="alert"
+                >
+
+                  <span className={styles.errorIcon}>
+                    !
+                  </span>
+
+                  <span>
+                    {error}
+                  </span>
+
+                </div>
+
+              )}
+
+
+              {/* =================================================
+                  LOGIN FORM
+              ================================================= */}
+
+              <form
+                className={styles.form}
+                onSubmit={handleLogin}
+                noValidate
+              >
+
+                {/* EMAIL */}
+
+                <div className={styles.field}>
 
                   <label
-                    htmlFor="login-password"
+                    htmlFor="login-email"
                     className={styles.label}
                   >
-                    Password
+                    Email address
                   </label>
 
-                  <Link
-                    to="/forgot-password"
-                    className={styles.forgotLink}
-                  >
-                    Forgot password?
-                  </Link>
+                  <div className={styles.inputShell}>
+
+                    <span className={styles.inputIcon}>
+                      <Icon
+                        name="mail"
+                        size={17}
+                      />
+                    </span>
+
+                    <input
+                      id="login-email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      inputMode="email"
+                      placeholder="you@company.com"
+                      value={email}
+                      onChange={(event) =>
+                        setEmail(event.target.value)
+                      }
+                      className={styles.input}
+                      disabled={
+                        loading ||
+                        Boolean(oauthLoading)
+                      }
+                      aria-invalid={Boolean(error)}
+                    />
+
+                  </div>
 
                 </div>
 
 
-                <div className={styles.inputShell}>
+                {/* PASSWORD */}
 
-                  <span className={styles.inputIcon}>
+                <div className={styles.field}>
+
+                  <div className={styles.labelRow}>
+
+                    <label
+                      htmlFor="login-password"
+                      className={styles.label}
+                    >
+                      Password
+                    </label>
+
+                    <Link
+                      to="/forgot-password"
+                      className={styles.forgotLink}
+                    >
+                      Forgot password?
+                    </Link>
+
+                  </div>
+
+
+                  <div className={styles.inputShell}>
+
+                    <span className={styles.inputIcon}>
+                      <Icon
+                        name="lock"
+                        size={17}
+                      />
+                    </span>
+
+                    <input
+                      id="login-password"
+                      name="password"
+                      type={
+                        showPassword
+                          ? "text"
+                          : "password"
+                      }
+                      autoComplete="current-password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(event) =>
+                        setPassword(event.target.value)
+                      }
+                      className={styles.input}
+                      disabled={
+                        loading ||
+                        Boolean(oauthLoading)
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      className={styles.passwordToggle}
+                      onClick={() =>
+                        setShowPassword(
+                          (current) => !current
+                        )
+                      }
+                      aria-label={
+                        showPassword
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                      aria-pressed={showPassword}
+                      disabled={
+                        loading ||
+                        Boolean(oauthLoading)
+                      }
+                    >
+                      <Icon
+                        name={
+                          showPassword
+                            ? "eyeOff"
+                            : "eye"
+                        }
+                        size={17}
+                      />
+                    </button>
+
+                  </div>
+
+                </div>
+
+
+                {/* REMEMBER */}
+
+                <label className={styles.remember}>
+
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(event) =>
+                      setRememberMe(
+                        event.target.checked
+                      )
+                    }
+                    disabled={
+                      loading ||
+                      Boolean(oauthLoading)
+                    }
+                  />
+
+                  <span className={styles.checkbox}>
                     <Icon
-                      name="lock"
-                      size={17}
+                      name="check"
+                      size={11}
                     />
                   </span>
 
-                  <input
-                    id="login-password"
-                    name="password"
-                    type={
-                      showPassword
-                        ? "text"
-                        : "password"
-                    }
-                    autoComplete="current-password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(event) =>
-                      setPassword(
-                        event.target.value
-                      )
-                    }
-                    className={
-                      styles.inputWithAction
-                    }
-                    disabled={loading}
-                  />
+                  <span>
+                    Keep me signed in
+                  </span>
 
-                  <button
-                    type="button"
-                    className={styles.passwordToggle}
-                    onClick={() =>
-                      setShowPassword(
-                        (current) => !current
-                      )
-                    }
-                    aria-label={
-                      showPassword
-                        ? "Hide password"
-                        : "Show password"
-                    }
-                    aria-pressed={showPassword}
-                    disabled={loading}
-                  >
-                    <Icon
-                      name={
-                        showPassword
-                          ? "eyeOff"
-                          : "eye"
-                      }
-                      size={17}
-                    />
-                  </button>
+                </label>
 
-                </div>
+
+                {/* SUBMIT */}
+
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={
+                    loading ||
+                    Boolean(oauthLoading)
+                  }
+                >
+
+                  {loading ? (
+                    <>
+                      <span
+                        className={styles.spinner}
+                        aria-hidden="true"
+                      />
+
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      <span>
+                        Sign in
+                      </span>
+
+                      <Icon
+                        name="arrow"
+                        size={17}
+                      />
+                    </>
+                  )}
+
+                </button>
+
+              </form>
+
+
+              {/* =================================================
+                  OAUTH DIVIDER
+              ================================================= */}
+
+              <div className={styles.divider}>
+
+                <span />
+
+                <span>
+                  OR CONTINUE WITH
+                </span>
+
+                <span />
 
               </div>
 
 
-              {/* REMEMBER */}
+              {/* =================================================
+                  OAUTH
+              ================================================= */}
 
-              <label className={styles.remember}>
+              <div className={styles.oauthGrid}>
 
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(event) =>
-                    setRememberMe(
-                      event.target.checked
-                    )
+                <button
+                  type="button"
+                  className={styles.oauthButton}
+                  onClick={handleGoogleLogin}
+                  disabled={
+                    loading ||
+                    Boolean(oauthLoading)
                   }
-                  disabled={loading}
-                />
+                >
 
-                <span className={styles.checkbox}>
-                  <Icon
-                    name="check"
-                    size={12}
-                  />
-                </span>
-
-                <span>
-                  Keep me signed in
-                </span>
-
-              </label>
-
-
-              {/* SUBMIT */}
-
-              <button
-                type="submit"
-                className={styles.primaryButton}
-                disabled={loading}
-              >
-
-                {loading ? (
-                  <>
-                    <span
-                      className={styles.spinner}
-                      aria-hidden="true"
-                    />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    Sign in
+                  {oauthLoading === "google" ? (
+                    <span className={styles.oauthSpinner} />
+                  ) : (
                     <Icon
-                      name="arrow"
-                      size={17}
+                      name="google"
+                      size={18}
                     />
-                  </>
-                )}
+                  )}
 
-              </button>
+                  <span>
+                    Google
+                  </span>
 
-            </form>
-
-
-            {/* =================================================
-                DIVIDER
-            ================================================= */}
-
-            <div className={styles.divider}>
-              <span />
-              <span>OR CONTINUE WITH</span>
-              <span />
-            </div>
+                </button>
 
 
-            {/* =================================================
-                OAUTH
-            ================================================= */}
+                <button
+                  type="button"
+                  className={styles.oauthButton}
+                  onClick={handleGithubLogin}
+                  disabled={
+                    loading ||
+                    Boolean(oauthLoading)
+                  }
+                >
 
-            <div className={styles.oauthGrid}>
+                  {oauthLoading === "github" ? (
+                    <span className={styles.oauthSpinner} />
+                  ) : (
+                    <Icon
+                      name="github"
+                      size={18}
+                    />
+                  )}
 
-              <button
-                type="button"
-                className={styles.oauthButton}
-                onClick={handleGoogleLogin}
-                disabled={
-                  loading ||
-                  Boolean(oauthLoading)
-                }
-              >
+                  <span>
+                    GitHub
+                  </span>
 
-                {oauthLoading === "google" ? (
-                  <span
-                    className={styles.oauthSpinner}
-                  />
-                ) : (
-                  <Icon
-                    name="google"
-                    size={17}
-                  />
-                )}
+                </button>
+
+              </div>
+
+
+              {/* =================================================
+                  REGISTER
+              ================================================= */}
+
+              <div className={styles.registerPrompt}>
 
                 <span>
-                  Google
+                  Don't have a {APP_NAME} account?
                 </span>
 
-              </button>
+                <Link
+                  to="/register"
+                  className={styles.registerLink}
+                >
 
+                  <span>
+                    Create an account
+                  </span>
 
-              <button
-                type="button"
-                className={styles.oauthButton}
-                onClick={handleGithubLogin}
-                disabled={
-                  loading ||
-                  Boolean(oauthLoading)
-                }
-              >
-
-                {oauthLoading === "github" ? (
-                  <span
-                    className={styles.oauthSpinner}
-                  />
-                ) : (
                   <Icon
-                    name="github"
-                    size={17}
+                    name="arrow"
+                    size={14}
                   />
-                )}
+
+                </Link>
+
+              </div>
+
+
+              {/* =================================================
+                  SECURITY
+              ================================================= */}
+
+              <div className={styles.securityNotice}>
+
+                <span className={styles.securityIcon}>
+
+                  <Icon
+                    name="shield"
+                    size={13}
+                  />
+
+                </span>
 
                 <span>
-                  GitHub
+                  Authentication is handled through
+                  the ZyrionOS backend.
                 </span>
 
-              </button>
+              </div>
 
             </div>
 
-
-            {/* =================================================
-                REGISTER
-            ================================================= */}
-
-            <div className={styles.registerPrompt}>
-
-              <span>
-                Don't have a {APP_NAME} account?
-              </span>
-
-              <Link
-                to="/register"
-                className={styles.registerLink}
-              >
-                Create an account
-                <Icon
-                  name="arrow"
-                  size={14}
-                />
-              </Link>
-
-            </div>
-
-
-            {/* =================================================
-                SECURITY FOOTER
-            ================================================= */}
-
-            <div className={styles.securityFooter}>
-
-              <Icon
-                name="shield"
-                size={13}
-              />
-
-              <span>
-                Your authentication is protected by
-                secure server-side sessions.
-              </span>
-
-            </div>
-
-          </div>
+          </section>
 
         </section>
 
 
         {/* =================================================
-            PAGE FOOTER
+            FOOTER
         ================================================= */}
 
         <footer className={styles.pageFooter}>

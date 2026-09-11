@@ -327,32 +327,40 @@ function Login() {
         ===================================================== */}
 
         <div
-          className={styles.earthScene}
-          aria-hidden="true"
-        >
+  className={styles.earthScene}
+  aria-hidden="true"
+>
+  <div className={styles.earthGlow} />
 
-          <div className={styles.earthGlow} />
+  <div
+    className={`${styles.earthOrbit} ${styles.orbitOne}`}
+    aria-hidden="true"
+  />
 
-          <div className={styles.earthOrbit orbitOne} />
-          <div className={styles.earthOrbit orbitTwo} />
-          <div className={styles.earthOrbit orbitThree} />
+  <div
+    className={`${styles.earthOrbit} ${styles.orbitTwo}`}
+    aria-hidden="true"
+  />
 
-          <div className={styles.earth}>
+  <div
+    className={`${styles.earthOrbit} ${styles.orbitThree}`}
+    aria-hidden="true"
+  />
 
-            <div className={styles.earthSurface} />
+  <div className={styles.earth}>
+    <div className={styles.earthSurface} />
 
-            <div className={styles.latitudeGrid} />
-            <div className={styles.longitudeGrid} />
+    <div className={styles.latitudeGrid} />
 
-            <div className={styles.earthHighlight} />
+    <div className={styles.longitudeGrid} />
 
-            <div className={styles.earthShadow} />
+    <div className={styles.earthHighlight} />
 
-          </div>
+    <div className={styles.earthShadow} />
+  </div>
 
-          <div className={styles.earthAtmosphere} />
-
-        </div>
+  <div className={styles.earthAtmosphere} />
+</div>
 
 
         {/* =====================================================

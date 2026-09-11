@@ -2,55 +2,106 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState
+  useRef,
+  useState,
 } from "react";
 
 import {
   getCurrentUser,
-  logout
+  logout,
 } from "../services/authService";
 
-/* =========================
+/* =========================================================
    AUTH CONTEXT
-========================= */
+========================================================= */
 
 const AuthContext = createContext(null);
 
-/* =========================
+const USER_STORAGE_KEY = "zyrions_user";
+
+/* =========================================================
    AUTH PROVIDER
-========================= */
+========================================================= */
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
-  /* =========================
+  /*
+   * Protects authentication state from stale
+   * initialization requests.
+   */
+  const authRequestId = useRef(0);
+
+  /*
+   * Tracks whether an explicit login/logout action
+   * has happened after initialization started.
+   */
+  const authActionVersion = useRef(0);
+
+  /* =======================================================
      INITIAL AUTH CHECK
-  ========================= */
+  ======================================================= */
 
   useEffect(() => {
     let mounted = true;
 
+    const requestId =
+      ++authRequestId.current;
+
+    const actionVersionAtStart =
+      authActionVersion.current;
+
     async function initializeAuth() {
       try {
         /*
-         * IMPORTANT:
          * Backend HttpOnly cookie is the
-         * source of truth.
+         * authoritative authentication source.
          */
 
-        const response = await getCurrentUser();
-
-        const currentUser =
-          response?.data?.success &&
-          response?.data?.user
-            ? response.data.user
-            : null;
+        const response =
+          await getCurrentUser();
 
         if (!mounted) {
           return;
         }
+
+        /*
+         * Ignore stale authentication checks.
+         *
+         * Example:
+         *
+         * /me started before login
+         * login completed
+         * old /me returns afterward
+         *
+         * That old response must NOT log
+         * the newly authenticated user out.
+         */
+
+        if (
+          requestId !==
+          authRequestId.current
+        ) {
+          return;
+        }
+
+        if (
+          actionVersionAtStart !==
+          authActionVersion.current
+        ) {
+          return;
+        }
+
+        const responseData =
+          response?.data;
+
+        const currentUser =
+          responseData?.success &&
+          responseData?.user
+            ? responseData.user
+            : null;
 
         if (currentUser) {
           /*
@@ -61,35 +112,77 @@ export function AuthProvider({ children }) {
           setAuthenticated(true);
 
           /*
-           * Store profile only.
-           * JWT is NEVER stored here.
+           * Cache profile information only.
+           *
+           * No JWT/token is stored.
            */
 
-          localStorage.setItem(
-            "zyrions_user",
-            JSON.stringify(currentUser)
-          );
-        } else {
-          /*
-           * NOT AUTHENTICATED
-           */
+          try {
+            localStorage.setItem(
+              USER_STORAGE_KEY,
+              JSON.stringify(
+                currentUser
+              )
+            );
+          } catch (storageError) {
+            console.warn(
+              "Unable to cache user profile:",
+              storageError
+            );
+          }
 
-          setUser(null);
-          setAuthenticated(false);
-
-          localStorage.removeItem(
-            "zyrions_user"
-          );
+          return;
         }
 
+        /*
+         * Backend responded successfully but
+         * did not provide an authenticated user.
+         */
+
+        setUser(null);
+        setAuthenticated(false);
+
+        try {
+          localStorage.removeItem(
+            USER_STORAGE_KEY
+          );
+        } catch {
+          // Ignore storage errors.
+        }
       } catch (error) {
         if (!mounted) {
           return;
         }
 
         /*
-         * /me failed.
-         * Do NOT trust stale localStorage.
+         * Ignore stale requests.
+         */
+
+        if (
+          requestId !==
+          authRequestId.current
+        ) {
+          return;
+        }
+
+        /*
+         * If an explicit auth action happened
+         * while this request was running, this
+         * response is no longer authoritative.
+         */
+
+        if (
+          actionVersionAtStart !==
+          authActionVersion.current
+        ) {
+          return;
+        }
+
+        /*
+         * A failed /me check means the current
+         * server session could not be verified.
+         *
+         * Do not trust localStorage as authentication.
          */
 
         console.error(
@@ -100,12 +193,27 @@ export function AuthProvider({ children }) {
         setUser(null);
         setAuthenticated(false);
 
-        localStorage.removeItem(
-          "zyrions_user"
-        );
-
+        try {
+          localStorage.removeItem(
+            USER_STORAGE_KEY
+          );
+        } catch {
+          // Ignore storage errors.
+        }
       } finally {
-        if (mounted) {
+        if (!mounted) {
+          return;
+        }
+
+        /*
+         * Only the active initialization request
+         * can finish the initial loading state.
+         */
+
+        if (
+          requestId ===
+          authRequestId.current
+        ) {
           setLoading(false);
         }
       }
@@ -118,11 +226,62 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  /* =========================
+  /* =======================================================
+     AUTHENTICATE AFTER SUCCESSFUL LOGIN
+  ======================================================= */
+
+  function establishSession(currentUser) {
+    /*
+     * Invalidate any older /me request.
+     */
+
+    authActionVersion.current += 1;
+
+    authRequestId.current += 1;
+
+    if (!currentUser) {
+      setUser(null);
+      setAuthenticated(false);
+      return;
+    }
+
+    setUser(currentUser);
+    setAuthenticated(true);
+
+    /*
+     * Cache profile only.
+     *
+     * JWT remains inside backend-controlled
+     * HttpOnly cookie.
+     */
+
+    try {
+      localStorage.setItem(
+        USER_STORAGE_KEY,
+        JSON.stringify(currentUser)
+      );
+    } catch (error) {
+      console.warn(
+        "Unable to cache user profile:",
+        error
+      );
+    }
+  }
+
+  /* =======================================================
      SIGN OUT
-  ========================= */
+  ======================================================= */
 
   async function signOut() {
+    /*
+     * Invalidate all previous auth checks
+     * before making the logout request.
+     */
+
+    authActionVersion.current += 1;
+
+    authRequestId.current += 1;
+
     try {
       await logout();
     } catch (error) {
@@ -134,39 +293,61 @@ export function AuthProvider({ children }) {
       setUser(null);
       setAuthenticated(false);
 
-      localStorage.removeItem(
-        "zyrions_user"
-      );
+      try {
+        localStorage.removeItem(
+          USER_STORAGE_KEY
+        );
+      } catch {
+        // Ignore storage errors.
+      }
     }
   }
 
-  /* =========================
+  /* =======================================================
      AUTH VALUE
-  ========================= */
+  ======================================================= */
 
   const value = {
     user,
     loading,
     authenticated,
+
+    /*
+     * Existing compatibility API.
+     */
+
     setUser,
     setAuthenticated,
-    signOut
+
+    /*
+     * Preferred API for successful login.
+     */
+
+    establishSession,
+
+    /*
+     * Logout.
+     */
+
+    signOut,
   };
 
-  /* =========================
+  /* =======================================================
      PROVIDER
-  ========================= */
+  ======================================================= */
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={value}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-/* =========================
+/* =========================================================
    USE AUTH
-========================= */
+========================================================= */
 
 export function useAuth() {
   const context =

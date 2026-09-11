@@ -14,6 +14,7 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import { APP_NAME } from "../../../config/constants";
 
+
 /* =========================================================
    ICON SYSTEM
 ========================================================= */
@@ -28,7 +29,7 @@ function Icon({ name, size = 18, strokeWidth = 1.8 }) {
     strokeWidth,
     strokeLinecap: "round",
     strokeLinejoin: "round",
-    ariaHidden: true,
+    "aria-hidden": "true",
     focusable: "false",
   };
 
@@ -121,6 +122,18 @@ function Icon({ name, size = 18, strokeWidth = 1.8 }) {
         </svg>
       );
 
+    case "network":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="5" r="2.2" />
+          <circle cx="5" cy="18" r="2.2" />
+          <circle cx="19" cy="18" r="2.2" />
+          <path d="M10.8 6.9 6.2 16" />
+          <path d="M13.2 6.9 17.8 16" />
+          <path d="M7.3 18h9.4" />
+        </svg>
+      );
+
     case "google":
       return (
         <svg
@@ -168,7 +181,7 @@ function Icon({ name, size = 18, strokeWidth = 1.8 }) {
 
 
 /* =========================================================
-   LOGIN
+   LOGIN PAGE
 ========================================================= */
 
 function Login() {
@@ -198,44 +211,51 @@ function Login() {
     useState("");
 
 
-  /* =======================================================
-     EMAIL LOGIN
-  ======================================================= */
+  /* =========================================================
+     EMAIL / PASSWORD LOGIN
+  ========================================================= */
 
   async function handleLogin(event) {
     event.preventDefault();
 
-    if (loading || oauthLoading) return;
+    if (loading || oauthLoading) {
+      return;
+    }
 
     setError("");
 
-    const cleanEmail = email.trim();
+    const cleanEmail =
+      email.trim().toLowerCase();
 
     if (!cleanEmail) {
-      setError("Please enter your email address.");
+      setError(
+        "Please enter your email address."
+      );
       return;
     }
 
     if (!password) {
-      setError("Please enter your password.");
+      setError(
+        "Please enter your password."
+      );
       return;
     }
 
     try {
       setLoading(true);
 
-      const response = await login(
-        cleanEmail,
-        password
-      );
+      const response =
+        await login(
+          cleanEmail,
+          password
+        );
 
       /*
-       * Existing auth service contract:
-       * saveAuth(user, token)
+       * Authentication is owned by the backend.
        *
-       * The token must not be persisted
-       * by the frontend. Backend authentication
-       * remains the source of truth.
+       * saveAuth must never persist the JWT/token
+       * in localStorage. The backend HttpOnly cookie
+       * remains the secure authentication mechanism.
        */
       saveAuth(
         response?.user,
@@ -244,16 +264,21 @@ function Login() {
 
       if (!response?.user) {
         throw new Error(
-          "Authentication succeeded, but the account could not be loaded."
+          "Authentication succeeded, but your account could not be loaded."
         );
       }
 
-      setUser(response.user);
+      setUser(
+        response.user
+      );
+
       setAuthenticated(true);
 
       navigate(
         "/dashboard",
-        { replace: true }
+        {
+          replace: true,
+        }
       );
 
     } catch (loginError) {
@@ -268,12 +293,17 @@ function Login() {
   }
 
 
-  /* =======================================================
-     GOOGLE
-  ======================================================= */
+  /* =========================================================
+     GOOGLE AUTH
+  ========================================================= */
 
   function handleGoogleLogin() {
-    if (loading || oauthLoading) return;
+    if (
+      loading ||
+      oauthLoading
+    ) {
+      return;
+    }
 
     setError("");
     setOauthLoading("google");
@@ -282,12 +312,17 @@ function Login() {
   }
 
 
-  /* =======================================================
-     GITHUB
-  ======================================================= */
+  /* =========================================================
+     GITHUB AUTH
+  ========================================================= */
 
   function handleGithubLogin() {
-    if (loading || oauthLoading) return;
+    if (
+      loading ||
+      oauthLoading
+    ) {
+      return;
+    }
 
     setError("");
     setOauthLoading("github");
@@ -296,14 +331,21 @@ function Login() {
   }
 
 
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
   return (
     <AuthLayout>
 
-      <main className={styles.page}>
+      <main
+        className={styles.page}
+        aria-label={`${APP_NAME} authentication`}
+      >
 
-        {/* =================================================
-            3D BACKGROUND
-        ================================================= */}
+        {/* =====================================================
+            3D ENTERPRISE BACKGROUND
+        ===================================================== */}
 
         <div
           className={styles.background}
@@ -315,29 +357,44 @@ function Login() {
           <div className={styles.glowPrimary} />
           <div className={styles.glowSecondary} />
 
-          <div className={styles.orbit orbitOne}>
-            <span className={styles.orbitNode} />
+          <div className={styles.orbitScene}>
+
+            <div
+              className={`${styles.orbit} ${styles.orbitOne}`}
+            >
+              <span className={styles.orbitNode} />
+            </div>
+
+            <div
+              className={`${styles.orbit} ${styles.orbitTwo}`}
+            >
+              <span className={styles.orbitNode} />
+            </div>
+
+            <div
+              className={`${styles.orbit} ${styles.orbitThree}`}
+            >
+              <span className={styles.orbitNode} />
+            </div>
+
           </div>
 
-          <div className={styles.orbit orbitTwo}>
-            <span className={styles.orbitNode} />
-          </div>
+          <div
+            className={`${styles.depthRing} ${styles.ringOne}`}
+          />
 
-          <div className={styles.orbit orbitThree}>
-            <span className={styles.orbitNode} />
-          </div>
-
-          <div className={styles.depthRing ringOne} />
-          <div className={styles.depthRing ringTwo} />
+          <div
+            className={`${styles.depthRing} ${styles.ringTwo}`}
+          />
 
           <div className={styles.backgroundNoise} />
 
         </div>
 
 
-        {/* =================================================
-            TOP NAV
-        ================================================= */}
+        {/* =====================================================
+            TOP NAVIGATION
+        ===================================================== */}
 
         <header className={styles.topbar}>
 
@@ -373,12 +430,16 @@ function Login() {
 
             <span className={styles.secureBadge}>
 
-              <Icon
-                name="shield"
-                size={13}
-              />
+              <span className={styles.secureBadgeIcon}>
+                <Icon
+                  name="shield"
+                  size={13}
+                />
+              </span>
 
-              Secure workspace
+              <span>
+                Secure workspace
+              </span>
 
             </span>
 
@@ -387,18 +448,18 @@ function Login() {
         </header>
 
 
-        {/* =================================================
+        {/* =====================================================
             MAIN AUTH FRAME
-        ================================================= */}
+        ===================================================== */}
 
         <section
           className={styles.authFrame}
-          aria-label="ZyrionOS authentication"
+          aria-label={`${APP_NAME} sign in`}
         >
 
-          {/* =================================================
-              PRODUCT SIDE
-          ================================================= */}
+          {/* ===================================================
+              PRODUCT EXPERIENCE
+          =================================================== */}
 
           <aside className={styles.productPanel}>
 
@@ -408,7 +469,7 @@ function Login() {
 
                 <span className={styles.liveDot} />
 
-                THE ZYRIONOS PLATFORM
+                THE {APP_NAME.toUpperCase()} PLATFORM
 
               </div>
 
@@ -427,16 +488,16 @@ function Login() {
 
               <p className={styles.heroDescription}>
 
-                ZyrionOS brings application building,
-                AI assistance, cloud deployment and
-                project operations into one intelligent
-                workspace.
+                {APP_NAME} brings AI-assisted
+                application building, cloud deployment,
+                project operations and intelligent
+                workflows into one workspace.
 
               </p>
 
 
               {/* =================================================
-                  CAPABILITY CARDS
+                  CAPABILITIES
               ================================================= */}
 
               <div className={styles.capabilityGrid}>
@@ -450,14 +511,17 @@ function Login() {
                     />
                   </span>
 
-                  <div>
+                  <div className={styles.capabilityContent}>
+
                     <strong>
                       Build with AI
                     </strong>
 
                     <span>
-                      Turn goals into working software.
+                      Turn an outcome into a working
+                      application inside your workspace.
                     </span>
+
                   </div>
 
                 </article>
@@ -472,14 +536,17 @@ function Login() {
                     />
                   </span>
 
-                  <div>
+                  <div className={styles.capabilityContent}>
+
                     <strong>
                       Deploy to Cloud
                     </strong>
 
                     <span>
-                      Move projects from workspace to deployment.
+                      Move validated projects toward
+                      real cloud deployment.
                     </span>
+
                   </div>
 
                 </article>
@@ -494,14 +561,17 @@ function Login() {
                     />
                   </span>
 
-                  <div>
+                  <div className={styles.capabilityContent}>
+
                     <strong>
                       One Project Workspace
                     </strong>
 
                     <span>
-                      Keep code, configuration and operations together.
+                      Keep project code, configuration
+                      and operations together.
                     </span>
+
                   </div>
 
                 </article>
@@ -511,19 +581,22 @@ function Login() {
 
                   <span className={styles.capabilityIcon}>
                     <Icon
-                      name="terminal"
+                      name="network"
                       size={17}
                     />
                   </span>
 
-                  <div>
+                  <div className={styles.capabilityContent}>
+
                     <strong>
                       Operate & Iterate
                     </strong>
 
                     <span>
-                      Build, improve and ship from one place.
+                      Improve, test and ship from one
+                      intelligent operating environment.
                     </span>
+
                   </div>
 
                 </article>
@@ -532,26 +605,29 @@ function Login() {
 
 
               {/* =================================================
-                  PRODUCT PRINCIPLE
+                  CORE PRINCIPLE
               ================================================= */}
 
               <div className={styles.productPrinciple}>
 
                 <div className={styles.principleIcon}>
+
                   <Icon
                     name="spark"
                     size={15}
                   />
+
                 </div>
 
-                <div>
+                <div className={styles.principleContent}>
 
                   <span>
                     THE CORE IDEA
                   </span>
 
                   <p>
-                    Give ZyrionOS the outcome.
+                    Give {APP_NAME} the outcome.
+                    <br />
                     Work happens inside the workspace.
                   </p>
 
@@ -561,6 +637,10 @@ function Login() {
 
             </div>
 
+
+            {/* =================================================
+                PRODUCT FOOTER
+            ================================================= */}
 
             <div className={styles.productFooter}>
 
@@ -581,16 +661,16 @@ function Login() {
           </aside>
 
 
-          {/* =================================================
-              LOGIN SIDE
-          ================================================= */}
+          {/* ===================================================
+              LOGIN PANEL
+          =================================================== */}
 
           <section className={styles.loginPanel}>
 
             <div className={styles.loginContainer}>
 
               {/* =================================================
-                  LOGIN INTRO
+                  LOGIN HEADER
               ================================================= */}
 
               <div className={styles.loginHeader}>
@@ -605,7 +685,7 @@ function Login() {
                 </div>
 
 
-                <div>
+                <div className={styles.loginHeadingContent}>
 
                   <span className={styles.eyebrow}>
                     WELCOME BACK
@@ -616,7 +696,8 @@ function Login() {
                   </h2>
 
                   <p className={styles.subtitle}>
-                    Continue to your workspace and projects.
+                    Continue to your workspace,
+                    projects and AI tools.
                   </p>
 
                 </div>
@@ -633,13 +714,14 @@ function Login() {
                 <div
                   className={styles.error}
                   role="alert"
+                  aria-live="polite"
                 >
 
                   <span className={styles.errorIcon}>
                     !
                   </span>
 
-                  <span>
+                  <span className={styles.errorMessage}>
                     {error}
                   </span>
 
@@ -684,17 +766,26 @@ function Login() {
                       type="email"
                       autoComplete="email"
                       inputMode="email"
+                      spellCheck="false"
                       placeholder="you@company.com"
                       value={email}
-                      onChange={(event) =>
-                        setEmail(event.target.value)
-                      }
+                      onChange={(event) => {
+                        setEmail(
+                          event.target.value
+                        );
+
+                        if (error) {
+                          setError("");
+                        }
+                      }}
                       className={styles.input}
                       disabled={
                         loading ||
                         Boolean(oauthLoading)
                       }
-                      aria-invalid={Boolean(error)}
+                      aria-invalid={
+                        Boolean(error)
+                      }
                     />
 
                   </div>
@@ -745,10 +836,18 @@ function Login() {
                       autoComplete="current-password"
                       placeholder="Enter your password"
                       value={password}
-                      onChange={(event) =>
-                        setPassword(event.target.value)
+                      onChange={(event) => {
+                        setPassword(
+                          event.target.value
+                        );
+
+                        if (error) {
+                          setError("");
+                        }
+                      }}
+                      className={
+                        styles.inputWithAction
                       }
-                      className={styles.input}
                       disabled={
                         loading ||
                         Boolean(oauthLoading)
@@ -760,7 +859,8 @@ function Login() {
                       className={styles.passwordToggle}
                       onClick={() =>
                         setShowPassword(
-                          (current) => !current
+                          (current) =>
+                            !current
                         )
                       }
                       aria-label={
@@ -768,12 +868,15 @@ function Login() {
                           ? "Hide password"
                           : "Show password"
                       }
-                      aria-pressed={showPassword}
+                      aria-pressed={
+                        showPassword
+                      }
                       disabled={
                         loading ||
                         Boolean(oauthLoading)
                       }
                     >
+
                       <Icon
                         name={
                           showPassword
@@ -782,6 +885,7 @@ function Login() {
                         }
                         size={17}
                       />
+
                     </button>
 
                   </div>
@@ -789,7 +893,7 @@ function Login() {
                 </div>
 
 
-                {/* REMEMBER */}
+                {/* REMEMBER ME */}
 
                 <label className={styles.remember}>
 
@@ -808,10 +912,12 @@ function Login() {
                   />
 
                   <span className={styles.checkbox}>
+
                     <Icon
                       name="check"
                       size={11}
                     />
+
                   </span>
 
                   <span>
@@ -839,7 +945,9 @@ function Login() {
                         aria-hidden="true"
                       />
 
-                      Signing in...
+                      <span>
+                        Signing in...
+                      </span>
                     </>
                   ) : (
                     <>
@@ -863,7 +971,10 @@ function Login() {
                   OAUTH DIVIDER
               ================================================= */}
 
-              <div className={styles.divider}>
+              <div
+                className={styles.divider}
+                aria-hidden="true"
+              >
 
                 <span />
 
@@ -890,10 +1001,14 @@ function Login() {
                     loading ||
                     Boolean(oauthLoading)
                   }
+                  aria-label="Continue with Google"
                 >
 
                   {oauthLoading === "google" ? (
-                    <span className={styles.oauthSpinner} />
+                    <span
+                      className={styles.oauthSpinner}
+                      aria-hidden="true"
+                    />
                   ) : (
                     <Icon
                       name="google"
@@ -916,10 +1031,14 @@ function Login() {
                     loading ||
                     Boolean(oauthLoading)
                   }
+                  aria-label="Continue with GitHub"
                 >
 
                   {oauthLoading === "github" ? (
-                    <span className={styles.oauthSpinner} />
+                    <span
+                      className={styles.oauthSpinner}
+                      aria-hidden="true"
+                    />
                   ) : (
                     <Icon
                       name="github"
@@ -966,7 +1085,7 @@ function Login() {
 
 
               {/* =================================================
-                  SECURITY
+                  SECURITY NOTICE
               ================================================= */}
 
               <div className={styles.securityNotice}>
@@ -981,8 +1100,8 @@ function Login() {
                 </span>
 
                 <span>
-                  Authentication is handled through
-                  the ZyrionOS backend.
+                  Authentication is handled securely
+                  by the {APP_NAME} backend.
                 </span>
 
               </div>
@@ -994,9 +1113,9 @@ function Login() {
         </section>
 
 
-        {/* =================================================
-            FOOTER
-        ================================================= */}
+        {/* =====================================================
+            PAGE FOOTER
+        ===================================================== */}
 
         <footer className={styles.pageFooter}>
 

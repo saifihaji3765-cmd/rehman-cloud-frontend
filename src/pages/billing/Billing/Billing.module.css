@@ -4,10 +4,13 @@
 
    Compatible with:
    Billing.jsx
-   Real subscription API
-   Real payment initialization
-   Real billing history
-   Real credits
+
+   Real:
+   - Subscription API
+   - Payment initialization
+   - Billing history
+   - AI credits
+   - Provider state
 ========================================================= */
 
 
@@ -139,7 +142,7 @@
 
 
 /* =========================================================
-   GENERAL BUTTON SYSTEM
+   BUTTON SYSTEM
 ========================================================= */
 
 .refreshButton,
@@ -152,7 +155,8 @@
 .providerButton,
 .providerActive,
 .toggleButton,
-.toggleActive {
+.toggleActive,
+.creditRetryButton {
   font: inherit;
 
   cursor: pointer;
@@ -174,7 +178,8 @@
 .secondaryAction:disabled,
 .cancelButton:disabled,
 .providerButton:disabled,
-.providerActive:disabled {
+.providerActive:disabled,
+.creditRetryButton:disabled {
   opacity: 0.5;
 
   cursor: not-allowed;
@@ -534,9 +539,6 @@
   font-weight: 900;
 
   letter-spacing: -0.05em;
-
-  text-shadow:
-    0 0 28px rgba(108, 99, 255, 0.2);
 }
 
 .billingInterval {
@@ -646,7 +648,7 @@
 
 
 /* =========================================================
-   BILLING CYCLE TOGGLE
+   BILLING TOGGLE
 ========================================================= */
 
 .billingToggle {
@@ -846,7 +848,7 @@
 
 
 /* =========================================================
-   PROVIDER SECTION
+   PROVIDER
 ========================================================= */
 
 .providerSection {
@@ -957,9 +959,9 @@
 .providerDisabled span {
   margin-top: 5px;
 
-  font-size: 7px;
-
   color: var(--zy-text-muted);
+
+  font-size: 7px;
 }
 
 
@@ -980,7 +982,7 @@
   border-top: 1px solid var(--zy-border-default);
 }
 
-.planAction > div:first-child {
+.selectedSummary {
   display: flex;
   align-items: baseline;
 
@@ -998,13 +1000,13 @@
   letter-spacing: 0.1em;
 }
 
-.planAction > div:first-child strong {
+.selectedSummary strong {
   color: var(--zy-text-primary);
 
   font-size: 12px;
 }
 
-.planAction > div:first-child span:last-child {
+.selectedSummary > span:last-child {
   color: var(--zy-text-secondary);
 
   font-size: 9px;
@@ -1076,6 +1078,105 @@
     rgba(255, 255, 255, 0.04);
 
   color: var(--zy-text-primary);
+}
+
+
+/* =========================================================
+   PANEL
+========================================================= */
+
+.panel {
+  min-width: 0;
+
+  overflow: hidden;
+
+  margin-bottom: 18px;
+
+  border: 1px solid var(--zy-border-default);
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(13, 22, 38, 0.98),
+      rgba(7, 13, 25, 0.99)
+    );
+
+  box-shadow:
+    0 7px 23px rgba(0, 0, 0, 0.14);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 18px 20px 15px;
+
+  border-bottom: 1px solid var(--zy-border-default);
+}
+
+.panelEyebrow {
+  margin-bottom: 5px;
+}
+
+.panelTitle {
+  margin: 0;
+
+  color: var(--zy-text-primary);
+
+  font-size: 15px;
+  line-height: 1.25;
+
+  font-weight: 750;
+}
+
+.panelSubtitle {
+  max-width: 470px;
+
+  margin: 5px 0 0;
+
+  color: var(--zy-text-muted);
+
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.cardIcon,
+.creditIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 31px;
+  height: 31px;
+
+  flex: 0 0 31px;
+
+  border: 1px solid rgba(53, 215, 255, 0.13);
+  border-radius: 9px;
+
+  background:
+    rgba(53, 215, 255, 0.045);
+
+  color: var(--zy-ai-cyan);
+
+  font-size: 13px;
+}
+
+.creditIcon {
+  color: var(--zy-brand-secondary);
+
+  border-color:
+    rgba(108, 99, 255, 0.15);
+
+  background:
+    rgba(108, 99, 255, 0.06);
+
+  font-size: 8px;
+  font-weight: 800;
 }
 
 
@@ -1288,115 +1389,17 @@
 
   gap: 17px;
 
+  margin-bottom: 0;
+}
+
+.detailsGrid .panel {
   margin-bottom: 18px;
-}
-
-
-/* =========================================================
-   PANEL
-========================================================= */
-
-.panel {
-  min-width: 0;
-
-  overflow: hidden;
-
-  border: 1px solid var(--zy-border-default);
-  border-radius: 16px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(13, 22, 38, 0.98),
-      rgba(7, 13, 25, 0.99)
-    );
-
-  box-shadow:
-    0 7px 23px rgba(0, 0, 0, 0.14);
-}
-
-.panelHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-
-  gap: 15px;
-
-  padding: 18px 20px 15px;
-
-  border-bottom: 1px solid var(--zy-border-default);
-}
-
-.panelEyebrow {
-  margin-bottom: 5px;
-}
-
-.panelTitle {
-  margin: 0;
-
-  color: var(--zy-text-primary);
-
-  font-size: 15px;
-  line-height: 1.25;
-
-  font-weight: 750;
-}
-
-.panelSubtitle {
-  max-width: 470px;
-
-  margin: 5px 0 0;
-
-  color: var(--zy-text-muted);
-
-  font-size: 9px;
-  line-height: 1.5;
-}
-
-.cardIcon,
-.creditIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 31px;
-  height: 31px;
-
-  flex: 0 0 31px;
-
-  border: 1px solid rgba(53, 215, 255, 0.13);
-  border-radius: 9px;
-
-  background:
-    rgba(53, 215, 255, 0.045);
-
-  color: var(--zy-ai-cyan);
-
-  font-size: 13px;
-}
-
-.creditIcon {
-  color: var(--zy-brand-secondary);
-
-  border-color:
-    rgba(108, 99, 255, 0.15);
-
-  background:
-    rgba(108, 99, 255, 0.06);
-
-  font-size: 8px;
-  font-weight: 800;
 }
 
 
 /* =========================================================
    PAYMENT METHOD
 ========================================================= */
-
-.paymentBody,
-.creditBody {
-  padding: 20px;
-}
 
 .paymentMethod {
   display: flex;
@@ -1405,6 +1408,8 @@
   gap: 12px;
 
   min-height: 68px;
+
+  margin: 20px;
 
   padding: 13px;
 
@@ -1460,16 +1465,10 @@
   font-size: 8px;
 }
 
-.detailLoading {
-  display: flex;
-  align-items: center;
 
-  min-height: 68px;
-
-  color: var(--zy-text-muted);
-
-  font-size: 9px;
-}
+/* =========================================================
+   EMPTY STATES
+========================================================= */
 
 .detailEmpty {
   display: flex;
@@ -1477,12 +1476,8 @@
   align-items: flex-start;
 
   min-height: 68px;
-}
 
-.emptySmallIcon {
-  margin-bottom: 7px;
-
-  font-size: 17px;
+  margin: 20px;
 }
 
 .detailEmpty strong {
@@ -1502,8 +1497,12 @@
 
 
 /* =========================================================
-   CREDITS
+   AI CREDITS
 ========================================================= */
+
+.creditBody {
+  padding: 20px;
+}
 
 .creditValues {
   display: grid;
@@ -1535,6 +1534,7 @@
   color: var(--zy-text-muted);
 
   font-size: 8px;
+
   text-transform: uppercase;
 
   letter-spacing: 0.06em;
@@ -1549,6 +1549,57 @@
 
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.creditUnavailable {
+  min-height: 90px;
+
+  padding: 14px;
+
+  border: 1px solid var(--zy-border-default);
+  border-radius: 10px;
+
+  background:
+    rgba(255, 255, 255, 0.012);
+}
+
+.creditUnavailable strong {
+  display: block;
+
+  color: var(--zy-text-secondary);
+
+  font-size: 10px;
+}
+
+.creditUnavailable p {
+  margin: 5px 0 12px;
+
+  color: var(--zy-text-muted);
+
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.creditRetryButton {
+  min-height: 30px;
+
+  padding: 0 10px;
+
+  border: 1px solid rgba(129, 121, 255, 0.25);
+  border-radius: 7px;
+
+  background:
+    rgba(108, 99, 255, 0.07);
+
+  color: var(--zy-brand-secondary);
+
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.creditRetryButton:hover:not(:disabled) {
+  background:
+    rgba(108, 99, 255, 0.13);
 }
 
 .progressTrack {
@@ -1714,6 +1765,12 @@
 }
 
 .controlButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
   min-height: 40px;
 
   padding: 0 14px;
@@ -1770,10 +1827,8 @@
    FOCUS
 ========================================================= */
 
-.page
-  :global(button:focus-visible),
-.page
-  :global(a:focus-visible) {
+.page :global(button:focus-visible),
+.page :global(a:focus-visible) {
   outline: 2px solid var(--zy-brand-secondary);
 
   outline-offset: 3px;
@@ -1785,7 +1840,6 @@
 ========================================================= */
 
 @media (max-width: 1200px) {
-
   .container {
     max-width: 100%;
   }
@@ -1812,7 +1866,6 @@
 ========================================================= */
 
 @media (max-width: 1000px) {
-
   .providerSection {
     align-items: flex-start;
 
@@ -1847,7 +1900,6 @@
 ========================================================= */
 
 @media (max-width: 900px) {
-
   .container {
     padding: 24px;
   }
@@ -1862,8 +1914,10 @@
     width: 100%;
   }
 
-  .headerActions .refreshButton,
-  .headerActions .manageButton {
+  .headerActions
+    .refreshButton,
+  .headerActions
+    .manageButton {
     flex: 1;
   }
 
@@ -1907,7 +1961,6 @@
 ========================================================= */
 
 @media (max-width: 768px) {
-
   .container {
     padding: 20px;
   }
@@ -1943,7 +1996,6 @@
 ========================================================= */
 
 @media (max-width: 600px) {
-
   .container {
     padding: 16px;
   }
@@ -1960,8 +2012,10 @@
     flex-direction: column;
   }
 
-  .headerActions .refreshButton,
-  .headerActions .manageButton {
+  .headerActions
+    .refreshButton,
+  .headerActions
+    .manageButton {
     width: 100%;
   }
 
@@ -1997,7 +2051,6 @@
     padding: 16px;
   }
 
-  .paymentBody,
   .creditBody {
     padding: 16px;
   }
@@ -2037,7 +2090,6 @@
 ========================================================= */
 
 @media (max-width: 420px) {
-
   .container {
     padding: 13px;
   }
@@ -2062,7 +2114,7 @@
     padding: 18px;
   }
 
-  .planAction > div:first-child {
+  .selectedSummary {
     align-items: flex-start;
 
     flex-direction: column;
@@ -2077,7 +2129,6 @@
 ========================================================= */
 
 @media (max-width: 360px) {
-
   .container {
     padding: 11px;
   }
@@ -2105,7 +2156,6 @@
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
   .resourceCard,
   .manageButton,
   .refreshButton,
@@ -2118,7 +2168,8 @@
   .providerButton,
   .providerActive,
   .toggleButton,
-  .toggleActive {
+  .toggleActive,
+  .creditRetryButton {
     transition: none;
   }
 
@@ -2143,7 +2194,6 @@
 ========================================================= */
 
 @media print {
-
   .page {
     background: #ffffff;
     color: #000000;

@@ -5,30 +5,25 @@ import api from "./api";
  * ZYRIONOS — AI SERVICE
  * Enterprise AI API Layer
  *
- * Responsibilities:
- * - AI chat
- * - AI code generation
- * - AI deployment agent
- * - AI thumbnail generation
- *
  * Architecture:
  *
- * UI / Page
- *    ↓
+ * Workspace / UI
+ *      ↓
  * aiService
- *    ↓
+ *      ↓
  * api.js
- *    ↓
- * Backend
- *    ↓
- * AI provider
+ *      ↓
+ * ZyrionOS Backend
+ *      ↓
+ * Master Agent
+ *      ↓
+ * AI Agents
  *
  * IMPORTANT:
  * - Real backend only
- * - No mock/fake AI responses
+ * - No mock/fake responses
  * - No API keys in frontend
- * - No direct axios instance
- * - Centralized API communication through api.js
+ * - Centralized API communication
  * =========================================================
  */
 
@@ -38,8 +33,7 @@ import api from "./api";
 ========================================================= */
 
 /**
- * Normalize backend errors without exposing
- * unnecessary implementation details to the UI.
+ * Normalize backend errors into a predictable Error object.
  */
 function normalizeAIError(
   error,
@@ -88,8 +82,7 @@ function normalizeAIError(
 
 
 /**
- * Execute an AI API request through the
- * centralized api.js client.
+ * Execute an API request through api.js.
  */
 async function executeAIRequest(
   request,
@@ -97,17 +90,20 @@ async function executeAIRequest(
 ) {
   try {
     return await request();
+
   } catch (error) {
+
     throw normalizeAIError(
       error,
       fallbackMessage
     );
+
   }
 }
 
 
 /**
- * Validate a required text value.
+ * Validate required prompt.
  */
 function validatePrompt(
   value,
@@ -127,7 +123,7 @@ function validatePrompt(
 
 
 /**
- * Validate a project ID.
+ * Validate project ID.
  */
 function validateProjectId(
   projectId
@@ -154,12 +150,11 @@ function validateProjectId(
 
 /**
  * POST /api/ai/chat
- *
- * Used for general AI conversation.
  */
 export async function aiChat(
   prompt
 ) {
+
   const normalizedPrompt =
     validatePrompt(
       prompt,
@@ -187,24 +182,25 @@ export async function aiChat(
 /**
  * POST /api/ai/generate-code
  *
- * Used by:
- * Workspace.jsx
+ * Request:
  *
- * Arguments:
- * - prompt
- * - framework
+ * {
+ *   prompt,
+ *   framework
+ * }
  *
- * Example:
+ * Response:
  *
- * generateCode(
- *   "Build an AI SaaS dashboard",
- *   "React"
- * );
+ * Backend response is returned
+ * unchanged so Workspace can
+ * consume the real orchestration
+ * and generated files.
  */
 export async function generateCode(
   prompt,
   framework = "React"
 ) {
+
   const normalizedPrompt =
     validatePrompt(
       prompt,
@@ -240,13 +236,11 @@ export async function generateCode(
 
 /**
  * POST /api/ai/deploy-agent
- *
- * Sends a real project deployment request
- * to the backend AI deployment agent.
  */
 export async function aiDeploy(
   projectId
 ) {
+
   const normalizedProjectId =
     validateProjectId(
       projectId
@@ -272,13 +266,11 @@ export async function aiDeploy(
 
 /**
  * POST /api/ai/thumbnail
- *
- * Generates thumbnail data through the
- * real backend AI service.
  */
 export async function generateThumbnail(
   prompt
 ) {
+
   const normalizedPrompt =
     validatePrompt(
       prompt,
@@ -300,31 +292,175 @@ export async function generateThumbnail(
 
 
 /* =========================================================
-   AI RESPONSE NORMALIZER
+   RESPONSE HELPERS
 ========================================================= */
 
 /**
- * Safely convert a backend AI response to text
- * when a UI component specifically needs text.
+ * Get the actual Master Agent result
+ * from the standardized API response.
  *
- * IMPORTANT:
- * This never invents an AI response.
+ * Current backend structure:
+ *
+ * formatResponse({
+ *   success,
+ *   message,
+ *   data: result
+ * })
+ *
+ * Axios:
+ *
+ * response.data
+ *
+ * Therefore:
+ *
+ * response.data.data
+ *
+ * contains the Master Agent result.
+ */
+export function getAIResult(
+  response
+) {
+
+  if (
+    response === undefined ||
+    response === null
+  ) {
+    return null;
+  }
+
+  if (
+    response?.data?.data !==
+    undefined
+  ) {
+    return response.data.data;
+  }
+
+  if (
+    response?.data !== undefined
+  ) {
+    return response.data;
+  }
+
+  return response;
+}
+
+
+/**
+ * Extract generated project files
+ * from the current Master Agent structure.
+ *
+ * Current expected path:
+ *
+ * result
+ *   ↓
+ * orchestration
+ *   ↓
+ * buildResult
+ *   ↓
+ * data
+ *   ↓
+ * files
+ */
+export function getGeneratedFiles(
+  response
+) {
+
+  const result =
+    getAIResult(
+      response
+    );
+
+  const possibleFileCollections = [
+
+    result?.orchestration
+      ?.buildResult
+      ?.data
+      ?.files,
+
+    result?.orchestration
+      ?.buildResult
+      ?.files,
+
+    result?.buildResult
+      ?.data
+      ?.files,
+
+    result?.buildResult
+      ?.files,
+
+    result?.data
+      ?.orchestration
+      ?.buildResult
+      ?.data
+      ?.files,
+
+    result?.data
+      ?.orchestration
+      ?.buildResult
+      ?.files,
+
+    result?.files,
+
+    result?.data?.files,
+
+  ];
+
+  for (
+    const files
+    of possibleFileCollections
+  ) {
+
+    if (
+      Array.isArray(files)
+    ) {
+      return files;
+    }
+
+  }
+
+  return [];
+}
+
+
+/**
+ * Convert an AI response into text
+ * for UI display.
+ *
+ * This never creates fake content.
  */
 export function normalizeAIResponse(
-  result
+  response
 ) {
+
   if (
-    result === undefined ||
-    result === null
+    response === undefined ||
+    response === null
   ) {
     return "";
   }
 
+
+  const result =
+    getAIResult(
+      response
+    );
+
+
   if (
-    typeof result === "string"
+    typeof result ===
+    "string"
   ) {
     return result;
   }
+
+
+  if (
+    typeof result?.reply ===
+    "string"
+  ) {
+    return result.reply;
+  }
+
 
   if (
     typeof result?.text ===
@@ -333,12 +469,14 @@ export function normalizeAIResponse(
     return result.text;
   }
 
+
   if (
     typeof result?.content ===
     "string"
   ) {
     return result.content;
   }
+
 
   if (
     typeof result?.message ===
@@ -347,36 +485,31 @@ export function normalizeAIResponse(
     return result.message;
   }
 
-  if (
-    typeof result?.data?.text ===
-    "string"
-  ) {
-    return result.data.text;
-  }
 
   if (
-    typeof result?.data?.content ===
+    typeof response?.data?.message ===
     "string"
   ) {
-    return result.data.content;
+    return response.data.message;
   }
 
-  if (
-    typeof result?.data?.message ===
-    "string"
-  ) {
-    return result.data.message;
-  }
 
   try {
+
     return JSON.stringify(
       result,
       null,
       2
     );
+
   } catch {
-    return String(result);
+
+    return String(
+      result
+    );
+
   }
+
 }
 
 
@@ -385,11 +518,22 @@ export function normalizeAIResponse(
 ========================================================= */
 
 const aiService = {
+
   aiChat,
+
   generateCode,
+
   aiDeploy,
+
   generateThumbnail,
+
+  getAIResult,
+
+  getGeneratedFiles,
+
   normalizeAIResponse,
+
 };
+
 
 export default aiService;

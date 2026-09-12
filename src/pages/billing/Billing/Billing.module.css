@@ -1,12 +1,19 @@
 /* =========================================================
    ZYRIONOS — ENTERPRISE BILLING
    Billing.module.css
-   ========================================================= */
+
+   Compatible with:
+   Billing.jsx
+   Real subscription API
+   Real payment initialization
+   Real billing history
+   Real credits
+========================================================= */
 
 
 /* =========================================================
    PAGE
-   ========================================================= */
+========================================================= */
 
 .page {
   width: 100%;
@@ -43,7 +50,7 @@
 
 /* =========================================================
    HEADER
-   ========================================================= */
+========================================================= */
 
 .header {
   display: flex;
@@ -132,19 +139,20 @@
 
 
 /* =========================================================
-   BUTTONS
-   ========================================================= */
+   GENERAL BUTTON SYSTEM
+========================================================= */
 
 .refreshButton,
 .manageButton,
 .retryButton,
-.controlButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 8px;
-
+.controlButton,
+.primaryAction,
+.secondaryAction,
+.cancelButton,
+.providerButton,
+.providerActive,
+.toggleButton,
+.toggleActive {
   font: inherit;
 
   cursor: pointer;
@@ -158,8 +166,35 @@
     opacity 160ms ease;
 }
 
+.refreshButton:disabled,
+.manageButton:disabled,
+.retryButton:disabled,
+.controlButton:disabled,
+.primaryAction:disabled,
+.secondaryAction:disabled,
+.cancelButton:disabled,
+.providerButton:disabled,
+.providerActive:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+
+/* =========================================================
+   HEADER BUTTONS
+========================================================= */
+
 .refreshButton,
 .manageButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
   min-height: 42px;
 
   border-radius: 10px;
@@ -178,7 +213,7 @@
   color: var(--zy-text-secondary);
 }
 
-.refreshButton:hover {
+.refreshButton:hover:not(:disabled) {
   border-color: var(--zy-border-hover);
 
   background: var(--zy-surface-tertiary);
@@ -204,17 +239,11 @@
     0 9px 25px rgba(81, 72, 217, 0.2);
 }
 
-.manageButton:hover {
+.manageButton:hover:not(:disabled) {
   transform: translateY(-1px);
 
   box-shadow:
     0 13px 31px rgba(81, 72, 217, 0.3);
-}
-
-.refreshButton:disabled {
-  opacity: 0.55;
-
-  cursor: not-allowed;
 }
 
 .refreshIcon,
@@ -238,10 +267,11 @@
 
 
 /* =========================================================
-   ALERT
-   ========================================================= */
+   ALERTS
+========================================================= */
 
-.alert {
+.alert,
+.successAlert {
   display: flex;
   align-items: flex-start;
 
@@ -250,11 +280,21 @@
   margin-bottom: 18px;
   padding: 13px 15px;
 
-  border: 1px solid rgba(244, 183, 64, 0.2);
   border-radius: 12px;
+}
+
+.alert {
+  border: 1px solid rgba(244, 183, 64, 0.2);
 
   background:
     rgba(244, 183, 64, 0.045);
+}
+
+.successAlert {
+  border: 1px solid rgba(32, 199, 122, 0.2);
+
+  background:
+    rgba(32, 199, 122, 0.045);
 }
 
 .alertIcon {
@@ -276,6 +316,13 @@
 
   font-size: 11px;
   font-weight: 800;
+}
+
+.successAlert .alertIcon {
+  background:
+    rgba(32, 199, 122, 0.1);
+
+  color: var(--zy-success);
 }
 
 .alertContent {
@@ -315,10 +362,15 @@
   font-weight: 700;
 }
 
+.retryButton:hover:not(:disabled) {
+  background:
+    rgba(244, 183, 64, 0.06);
+}
+
 
 /* =========================================================
-   SUBSCRIPTION CARD
-   ========================================================= */
+   CURRENT SUBSCRIPTION
+========================================================= */
 
 .subscriptionCard {
   position: relative;
@@ -547,8 +599,564 @@
 
 
 /* =========================================================
-   RESOURCES
-   ========================================================= */
+   PLAN SECTION
+========================================================= */
+
+.planSection {
+  margin-bottom: 18px;
+
+  padding: 21px;
+
+  border: 1px solid var(--zy-border-default);
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(13, 22, 38, 0.98),
+      rgba(7, 13, 25, 0.99)
+    );
+
+  box-shadow:
+    0 7px 23px rgba(0, 0, 0, 0.14);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 17px;
+}
+
+.sectionTitle {
+  margin: 0;
+
+  color: var(--zy-text-primary);
+
+  font-size: 18px;
+  line-height: 1.25;
+
+  font-weight: 800;
+
+  letter-spacing: -0.025em;
+}
+
+
+/* =========================================================
+   BILLING CYCLE TOGGLE
+========================================================= */
+
+.billingToggle {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px;
+
+  border: 1px solid var(--zy-border-default);
+  border-radius: 9px;
+
+  background:
+    rgba(255, 255, 255, 0.025);
+
+  flex: 0 0 auto;
+}
+
+.toggleButton,
+.toggleActive {
+  min-height: 31px;
+
+  padding: 0 12px;
+
+  border-radius: 7px;
+
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.toggleButton {
+  border: 1px solid transparent;
+
+  background: transparent;
+
+  color: var(--zy-text-muted);
+}
+
+.toggleButton:hover {
+  color: var(--zy-text-primary);
+}
+
+.toggleActive {
+  border: 1px solid rgba(129, 121, 255, 0.25);
+
+  background:
+    rgba(108, 99, 255, 0.13);
+
+  color: var(--zy-brand-secondary);
+
+  box-shadow:
+    0 4px 12px rgba(108, 99, 255, 0.1);
+}
+
+
+/* =========================================================
+   PLAN GRID
+========================================================= */
+
+.planGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin-bottom: 20px;
+}
+
+.planCard,
+.planCardActive {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  min-width: 0;
+
+  padding: 15px;
+
+  text-align: left;
+
+  border-radius: 13px;
+
+  cursor: pointer;
+
+  transition:
+    transform 170ms ease,
+    border-color 170ms ease,
+    background 170ms ease,
+    box-shadow 170ms ease;
+}
+
+.planCard {
+  border: 1px solid var(--zy-border-default);
+
+  background:
+    rgba(255, 255, 255, 0.012);
+
+  color: var(--zy-text-secondary);
+}
+
+.planCard:hover {
+  transform: translateY(-2px);
+
+  border-color: var(--zy-border-hover);
+
+  background:
+    rgba(255, 255, 255, 0.02);
+}
+
+.planCardActive {
+  border: 1px solid rgba(129, 121, 255, 0.48);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(108, 99, 255, 0.1),
+      rgba(53, 215, 255, 0.025)
+    );
+
+  color: var(--zy-text-primary);
+
+  box-shadow:
+    0 9px 25px rgba(81, 72, 217, 0.13);
+}
+
+.planCardActive:hover {
+  transform: translateY(-2px);
+
+  border-color:
+    rgba(129, 121, 255, 0.65);
+}
+
+.planCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+
+  gap: 6px;
+
+  color: var(--zy-text-primary);
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.currentBadge {
+  padding: 3px 5px;
+
+  border: 1px solid rgba(32, 199, 122, 0.18);
+  border-radius: 5px;
+
+  background:
+    rgba(32, 199, 122, 0.06);
+
+  color: var(--zy-success);
+
+  font-size: 6px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+}
+
+.planCardPrice {
+  margin-top: 13px;
+
+  color: var(--zy-brand-secondary);
+
+  font-size: 25px;
+  line-height: 1;
+
+  font-weight: 900;
+
+  letter-spacing: -0.04em;
+}
+
+.planCardInterval {
+  margin-top: 4px;
+
+  color: var(--zy-text-muted);
+
+  font-size: 8px;
+}
+
+.planCardDescription {
+  min-height: 42px;
+
+  margin: 10px 0 0;
+
+  color: var(--zy-text-muted);
+
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   PROVIDER SECTION
+========================================================= */
+
+.providerSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding-top: 17px;
+
+  border-top: 1px solid var(--zy-border-default);
+}
+
+.providerTitle {
+  margin: 0;
+
+  color: var(--zy-text-primary);
+
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.providerGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(150px, 1fr));
+
+  gap: 9px;
+
+  min-width: 330px;
+}
+
+.providerButton,
+.providerActive,
+.providerDisabled {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  min-height: 62px;
+
+  padding: 11px 13px;
+
+  border-radius: 10px;
+
+  text-align: left;
+}
+
+.providerButton,
+.providerActive {
+  cursor: pointer;
+}
+
+.providerButton {
+  border: 1px solid var(--zy-border-default);
+
+  background:
+    rgba(255, 255, 255, 0.012);
+
+  color: var(--zy-text-secondary);
+}
+
+.providerButton:hover {
+  border-color: var(--zy-border-hover);
+
+  background:
+    rgba(255, 255, 255, 0.025);
+
+  color: var(--zy-text-primary);
+}
+
+.providerActive {
+  border: 1px solid rgba(129, 121, 255, 0.42);
+
+  background:
+    rgba(108, 99, 255, 0.09);
+
+  color: var(--zy-text-primary);
+
+  box-shadow:
+    0 7px 20px rgba(81, 72, 217, 0.1);
+}
+
+.providerDisabled {
+  border: 1px solid var(--zy-border-default);
+
+  background:
+    rgba(255, 255, 255, 0.008);
+
+  color: var(--zy-text-muted);
+
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+.providerButton strong,
+.providerActive strong,
+.providerDisabled strong {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.providerButton span,
+.providerActive span,
+.providerDisabled span {
+  margin-top: 5px;
+
+  font-size: 7px;
+
+  color: var(--zy-text-muted);
+}
+
+
+/* =========================================================
+   PLAN ACTION
+========================================================= */
+
+.planAction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-top: 19px;
+  padding-top: 18px;
+
+  border-top: 1px solid var(--zy-border-default);
+}
+
+.planAction > div:first-child {
+  display: flex;
+  align-items: baseline;
+
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.actionLabel {
+  color: var(--zy-text-muted);
+
+  font-size: 7px;
+  font-weight: 800;
+
+  letter-spacing: 0.1em;
+}
+
+.planAction > div:first-child strong {
+  color: var(--zy-text-primary);
+
+  font-size: 12px;
+}
+
+.planAction > div:first-child span:last-child {
+  color: var(--zy-text-secondary);
+
+  font-size: 9px;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  flex: 0 0 auto;
+}
+
+.primaryAction,
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  min-height: 39px;
+
+  padding: 0 14px;
+
+  border-radius: 9px;
+
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.primaryAction {
+  border: 1px solid rgba(129, 121, 255, 0.4);
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--zy-brand-secondary),
+      var(--zy-brand-primary-dark)
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 8px 22px rgba(81, 72, 217, 0.18);
+}
+
+.primaryAction:hover:not(:disabled) {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 11px 27px rgba(81, 72, 217, 0.27);
+}
+
+.secondaryAction {
+  border: 1px solid var(--zy-border-default);
+
+  background:
+    rgba(255, 255, 255, 0.02);
+
+  color: var(--zy-text-secondary);
+}
+
+.secondaryAction:hover:not(:disabled) {
+  border-color: var(--zy-border-hover);
+
+  background:
+    rgba(255, 255, 255, 0.04);
+
+  color: var(--zy-text-primary);
+}
+
+
+/* =========================================================
+   PAYMENT SESSION
+========================================================= */
+
+.paymentSession {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 10px;
+
+  padding: 18px 20px;
+}
+
+.paymentSession > div {
+  min-width: 0;
+
+  padding: 11px;
+
+  border: 1px solid var(--zy-border-default);
+  border-radius: 9px;
+
+  background:
+    rgba(255, 255, 255, 0.012);
+}
+
+.paymentSession span {
+  display: block;
+
+  color: var(--zy-text-muted);
+
+  font-size: 7px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.07em;
+}
+
+.paymentSession strong {
+  display: block;
+
+  margin-top: 6px;
+
+  overflow: hidden;
+
+  color: var(--zy-text-primary);
+
+  font-size: 9px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paymentNotice {
+  margin: 0 20px 18px;
+
+  padding: 11px 13px;
+
+  border: 1px solid rgba(244, 183, 64, 0.16);
+  border-radius: 9px;
+
+  background:
+    rgba(244, 183, 64, 0.035);
+
+  color: var(--zy-text-secondary);
+
+  font-size: 8px;
+}
+
+.paymentNotice strong {
+  color: var(--zy-warning);
+}
+
+
+/* =========================================================
+   RESOURCE GRID
+========================================================= */
 
 .resourceGrid {
   display: grid;
@@ -670,7 +1278,7 @@
 
 /* =========================================================
    DETAILS GRID
-   ========================================================= */
+========================================================= */
 
 .detailsGrid {
   display: grid;
@@ -686,7 +1294,7 @@
 
 /* =========================================================
    PANEL
-   ========================================================= */
+========================================================= */
 
 .panel {
   min-width: 0;
@@ -782,8 +1390,8 @@
 
 
 /* =========================================================
-   PAYMENT
-   ========================================================= */
+   PAYMENT METHOD
+========================================================= */
 
 .paymentBody,
 .creditBody {
@@ -895,7 +1503,7 @@
 
 /* =========================================================
    CREDITS
-   ========================================================= */
+========================================================= */
 
 .creditValues {
   display: grid;
@@ -977,8 +1585,71 @@
 
 
 /* =========================================================
+   BILLING HISTORY
+========================================================= */
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+
+  padding: 0 20px 20px;
+}
+
+.historyRow {
+  display: grid;
+
+  grid-template-columns:
+    1.1fr
+    1fr
+    0.8fr
+    1.2fr;
+
+  gap: 12px;
+
+  padding: 13px 0;
+
+  border-bottom: 1px solid var(--zy-border-default);
+}
+
+.historyRow:last-child {
+  border-bottom: 0;
+}
+
+.historyRow > div {
+  min-width: 0;
+}
+
+.historyRow span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--zy-text-muted);
+
+  font-size: 7px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.07em;
+}
+
+.historyRow strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: var(--zy-text-primary);
+
+  font-size: 9px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
    CONTROL PANEL
-   ========================================================= */
+========================================================= */
 
 .controlPanel {
   display: flex;
@@ -1033,10 +1704,17 @@
   line-height: 1.6;
 }
 
-.controlButton {
-  min-height: 40px;
+.controlActions {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
 
   flex: 0 0 auto;
+}
+
+.controlButton {
+  min-height: 40px;
 
   padding: 0 14px;
 
@@ -1052,7 +1730,7 @@
   font-weight: 750;
 }
 
-.controlButton:hover {
+.controlButton:hover:not(:disabled) {
   background:
     rgba(108, 99, 255, 0.16);
 
@@ -1062,10 +1740,35 @@
   color: var(--zy-text-primary);
 }
 
+.cancelButton {
+  min-height: 40px;
+
+  padding: 0 13px;
+
+  border: 1px solid rgba(239, 91, 91, 0.22);
+  border-radius: 9px;
+
+  background:
+    rgba(239, 91, 91, 0.045);
+
+  color: #ef8b8b;
+
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.cancelButton:hover:not(:disabled) {
+  border-color:
+    rgba(239, 91, 91, 0.4);
+
+  background:
+    rgba(239, 91, 91, 0.08);
+}
+
 
 /* =========================================================
    FOCUS
-   ========================================================= */
+========================================================= */
 
 .page
   :global(button:focus-visible),
@@ -1079,14 +1782,25 @@
 
 /* =========================================================
    1200px
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 1200px) {
+
   .container {
     max-width: 100%;
   }
 
+  .planGrid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
   .resourceGrid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .paymentSession {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
   }
@@ -1094,10 +1808,46 @@
 
 
 /* =========================================================
+   1000px
+========================================================= */
+
+@media (max-width: 1000px) {
+
+  .providerSection {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .providerGrid {
+    width: 100%;
+
+    min-width: 0;
+  }
+
+  .planAction {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .actionButtons {
+    width: 100%;
+  }
+
+  .primaryAction,
+  .secondaryAction {
+    flex: 1;
+  }
+}
+
+
+/* =========================================================
    900px
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 900px) {
+
   .container {
     padding: 24px;
   }
@@ -1130,20 +1880,41 @@
     border-top: 1px solid var(--zy-border-default);
     border-left: 0;
   }
+
+  .detailsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionHeader {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+  .billingToggle {
+    align-self: flex-start;
+  }
+
+  .historyRow {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
 }
 
 
 /* =========================================================
    768px
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 768px) {
+
   .container {
     padding: 20px;
   }
 
-  .detailsGrid {
-    grid-template-columns: 1fr;
+  .planGrid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 
   .controlPanel {
@@ -1152,17 +1923,27 @@
     flex-direction: column;
   }
 
-  .controlButton {
+  .controlActions {
     width: 100%;
+  }
+
+  .controlButton,
+  .cancelButton {
+    flex: 1;
+  }
+
+  .paymentSession {
+    grid-template-columns: 1fr;
   }
 }
 
 
 /* =========================================================
    600px
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 600px) {
+
   .container {
     padding: 16px;
   }
@@ -1200,6 +1981,18 @@
     font-size: 35px;
   }
 
+  .planSection {
+    padding: 17px;
+  }
+
+  .planGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .providerGrid {
+    grid-template-columns: 1fr;
+  }
+
   .panelHeader {
     padding: 16px;
   }
@@ -1208,14 +2001,43 @@
   .creditBody {
     padding: 16px;
   }
+
+  .historyList {
+    padding: 0 16px 16px;
+  }
+
+  .historyRow {
+    grid-template-columns: 1fr;
+
+    gap: 9px;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .primaryAction,
+  .secondaryAction {
+    width: 100%;
+  }
+
+  .controlActions {
+    flex-direction: column;
+  }
+
+  .controlButton,
+  .cancelButton {
+    width: 100%;
+  }
 }
 
 
 /* =========================================================
    420px
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 420px) {
+
   .container {
     padding: 13px;
   }
@@ -1239,14 +2061,23 @@
   .controlPanel {
     padding: 18px;
   }
+
+  .planAction > div:first-child {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 4px;
+  }
 }
 
 
 /* =========================================================
    360px
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 360px) {
+
   .container {
     padding: 11px;
   }
@@ -1262,23 +2093,40 @@
   .controlContent h2 {
     font-size: 17px;
   }
+
+  .planSection {
+    padding: 14px;
+  }
 }
 
 
 /* =========================================================
    REDUCED MOTION
-   ========================================================= */
+========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
+
   .resourceCard,
   .manageButton,
   .refreshButton,
-  .controlButton {
+  .controlButton,
+  .primaryAction,
+  .secondaryAction,
+  .cancelButton,
+  .planCard,
+  .planCardActive,
+  .providerButton,
+  .providerActive,
+  .toggleButton,
+  .toggleActive {
     transition: none;
   }
 
   .resourceCard:hover,
-  .manageButton:hover {
+  .manageButton:hover,
+  .primaryAction:hover,
+  .planCard:hover,
+  .planCardActive:hover {
     transform: none;
   }
 
@@ -1292,22 +2140,27 @@
 
 /* =========================================================
    PRINT
-   ========================================================= */
+========================================================= */
 
 @media print {
+
   .page {
     background: #ffffff;
     color: #000000;
   }
 
   .headerActions,
+  .billingToggle,
+  .providerSection,
+  .planAction,
   .controlPanel {
     display: none;
   }
 
   .subscriptionCard,
   .resourceCard,
-  .panel {
+  .panel,
+  .planSection {
     box-shadow: none;
   }
 }

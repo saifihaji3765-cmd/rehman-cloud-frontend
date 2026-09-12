@@ -9,16 +9,147 @@ import { useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
 
-import { getSubscription } from "../../../services/billingService";
+import {
+  createPaymentOrder,
+  createSubscription,
+  upgradeSubscription,
+  cancelSubscription,
+  getSubscription,
+  getBillingHistory,
+  getCredits,
+} from "../../../services/billingService";
 
 import styles from "./Billing.module.css";
 
 /* =========================================================
+   ZYRIONOS BILLING
+   =========================================================
+
+   REAL BACKEND CONTRACT
+
+   Subscription:
+   GET  /api/subscription/me
+   POST /api/subscription/create
+   POST /api/subscription/upgrade
+   POST /api/subscription/cancel
+
+   Payment:
+   POST /api/payment/create-order
+   POST /api/payment/verify-payment
+
+   Billing:
+   GET /api/payment/billing-history
+   GET /api/payment/credits
+
+   Current provider configuration:
+   - Stripe: USD
+   - Razorpay: intentionally unavailable for current
+     USD catalog until verified INR pricing is configured.
+
+   IMPORTANT:
+   The frontend never decides the final price.
+   The backend validates the catalog price.
+========================================================= */
+
+
+/* =========================================================
+   SERVER CATALOG DISPLAY
+========================================================= */
+
+const PLANS = Object.freeze([
+  {
+    name: "Starter",
+    monthly: 19,
+    yearly: 190,
+    description:
+      "A practical starting plan for individual projects.",
+  },
+
+  {
+    name: "Pro",
+    monthly: 99,
+    yearly: 990,
+    description:
+      "More capacity for serious AI-powered work.",
+  },
+
+  {
+    name: "Business",
+    monthly: 199,
+    yearly: 1990,
+    description:
+      "Designed for growing production workloads.",
+  },
+
+  {
+    name: "Scale",
+    monthly: 299,
+    yearly: 2990,
+    description:
+      "Higher capacity for larger workloads.",
+  },
+
+  {
+    name: "Enterprise",
+    monthly: 499,
+    yearly: 4990,
+    description:
+      "Maximum configured plan in the current catalog.",
+  },
+]);
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function firstValue(...values) {
+  return values.find(
+    (value) =>
+      value !== undefined &&
+      value !== null &&
+      value !== ""
+  );
+}
+
+
+function displayValue(value) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return "—";
+  }
+
+  return String(value);
+}
+
+
+/* =========================================================
    RESPONSE NORMALIZATION
-   ========================================================= */
+========================================================= */
+
+function unwrapResponse(response) {
+  const payload = response?.data;
+
+  if (!payload) {
+    return null;
+  }
+
+  if (
+    payload?.data !== undefined &&
+    payload?.data !== null
+  ) {
+    return payload.data;
+  }
+
+  return payload;
+}
+
 
 function normalizeSubscription(response) {
-  const payload = response?.data;
+  const payload = unwrapResponse(response);
 
   if (!payload) {
     return null;
@@ -36,37 +167,13 @@ function normalizeSubscription(response) {
     return payload.data.subscription;
   }
 
-  if (payload?.data && !Array.isArray(payload.data)) {
-    return payload.data;
-  }
-
   return payload;
 }
 
+
 /* =========================================================
-   SAFE VALUE HELPERS
-   ========================================================= */
-
-function firstValue(...values) {
-  return values.find(
-    (value) =>
-      value !== undefined &&
-      value !== null &&
-      value !== ""
-  );
-}
-
-function displayValue(value) {
-  if (
-    value === undefined ||
-    value === null ||
-    value === ""
-  ) {
-    return "—";
-  }
-
-  return String(value);
-}
+   SUBSCRIPTION DATA
+========================================================= */
 
 function normalizePlanName(subscription) {
   return firstValue(
@@ -78,6 +185,7 @@ function normalizePlanName(subscription) {
   );
 }
 
+
 function normalizeCurrency(subscription) {
   return firstValue(
     subscription?.currency,
@@ -85,6 +193,7 @@ function normalizeCurrency(subscription) {
     subscription?.price?.currency
   );
 }
+
 
 function normalizePrice(subscription) {
   return firstValue(
@@ -95,6 +204,7 @@ function normalizePrice(subscription) {
   );
 }
 
+
 function normalizeBillingInterval(subscription) {
   return firstValue(
     subscription?.billingInterval,
@@ -102,6 +212,7 @@ function normalizeBillingInterval(subscription) {
     subscription?.price?.interval
   );
 }
+
 
 function normalizeStatus(subscription) {
   return firstValue(
@@ -111,6 +222,7 @@ function normalizeStatus(subscription) {
   );
 }
 
+
 function normalizePaymentMethod(subscription) {
   return (
     subscription?.paymentMethod ||
@@ -119,6 +231,7 @@ function normalizePaymentMethod(subscription) {
     null
   );
 }
+
 
 function normalizeInfrastructure(subscription) {
   const infrastructure =
@@ -153,48 +266,10 @@ function normalizeInfrastructure(subscription) {
   };
 }
 
-function normalizeCredits(subscription) {
-  const credits =
-    subscription?.credits ||
-    subscription?.usage?.credits ||
-    subscription?.aiCredits ||
-    null;
 
-  if (!credits) {
-    return {
-      used: null,
-      limit: null,
-      remaining: null,
-    };
-  }
-
-  return {
-    used: firstValue(
-      credits?.used,
-      credits?.consumed
-    ),
-
-    limit: firstValue(
-      credits?.limit,
-      credits?.included,
-      credits?.total
-    ),
-
-    remaining: firstValue(
-      credits?.remaining,
-      credits?.available
-    ),
-  };
-}
-
-function normalizeManageUrl(subscription) {
-  return firstValue(
-    subscription?.manageUrl,
-    subscription?.billingPortalUrl,
-    subscription?.portalUrl,
-    subscription?.customerPortalUrl
-  );
-}
+/* =========================================================
+   PAYMENT METHOD
+========================================================= */
 
 function normalizePaymentLabel(paymentMethod) {
   if (!paymentMethod) {
@@ -227,14 +302,21 @@ function normalizePaymentLabel(paymentMethod) {
   return "Payment method on file";
 }
 
+
 /* =========================================================
    COMPONENT
-   ========================================================= */
+========================================================= */
 
 function Billing() {
   const navigate = useNavigate();
 
   const [subscription, setSubscription] =
+    useState(null);
+
+  const [billingHistory, setBillingHistory] =
+    useState([]);
+
+  const [credits, setCredits] =
     useState(null);
 
   const [loading, setLoading] =
@@ -243,12 +325,31 @@ function Billing() {
   const [refreshing, setRefreshing] =
     useState(false);
 
+  const [processing, setProcessing] =
+    useState(false);
+
+  const [selectedPlan, setSelectedPlan] =
+    useState("Pro");
+
+  const [billingCycle, setBillingCycle] =
+    useState("monthly");
+
+  const [provider, setProvider] =
+    useState("stripe");
+
   const [error, setError] =
     useState("");
 
+  const [successMessage, setSuccessMessage] =
+    useState("");
+
+  const [paymentData, setPaymentData] =
+    useState(null);
+
+
   /* =======================================================
-     LOAD SUBSCRIPTION
-     ======================================================= */
+     LOAD BILLING DATA
+  ======================================================= */
 
   const loadBilling = useCallback(
     async ({ refresh = false } = {}) => {
@@ -261,23 +362,145 @@ function Billing() {
       setError("");
 
       try {
-        const response =
-          await getSubscription();
+        const [
+          subscriptionResponse,
+          historyResponse,
+          creditsResponse,
+        ] = await Promise.allSettled([
+          getSubscription(),
+          getBillingHistory(),
+          getCredits(),
+        ]);
 
-        const normalized =
-          normalizeSubscription(response);
+        /* -----------------------------------------------
+           SUBSCRIPTION
+        ------------------------------------------------ */
 
-        setSubscription(normalized);
+        if (
+          subscriptionResponse.status ===
+          "fulfilled"
+        ) {
+          const normalized =
+            normalizeSubscription(
+              subscriptionResponse.value
+            );
+
+          setSubscription(
+            normalized
+          );
+
+          const currentPlan =
+            normalizePlanName(
+              normalized
+            );
+
+          if (
+            currentPlan &&
+            PLANS.some(
+              (plan) =>
+                plan.name === currentPlan
+            )
+          ) {
+            setSelectedPlan(
+              currentPlan
+            );
+          }
+
+          const currentInterval =
+            normalizeBillingInterval(
+              normalized
+            );
+
+          if (
+            String(
+              currentInterval || ""
+            ).toLowerCase() ===
+            "yearly"
+          ) {
+            setBillingCycle(
+              "yearly"
+            );
+          }
+        } else {
+          setSubscription(null);
+        }
+
+
+        /* -----------------------------------------------
+           BILLING HISTORY
+        ------------------------------------------------ */
+
+        if (
+          historyResponse.status ===
+          "fulfilled"
+        ) {
+          const historyPayload =
+            unwrapResponse(
+              historyResponse.value
+            );
+
+          if (
+            Array.isArray(
+              historyPayload
+            )
+          ) {
+            setBillingHistory(
+              historyPayload
+            );
+          } else if (
+            Array.isArray(
+              historyPayload?.history
+            )
+          ) {
+            setBillingHistory(
+              historyPayload.history
+            );
+          } else if (
+            Array.isArray(
+              historyPayload?.billingHistory
+            )
+          ) {
+            setBillingHistory(
+              historyPayload.billingHistory
+            );
+          } else {
+            setBillingHistory([]);
+          }
+        } else {
+          setBillingHistory([]);
+        }
+
+
+        /* -----------------------------------------------
+           CREDITS
+        ------------------------------------------------ */
+
+        if (
+          creditsResponse.status ===
+          "fulfilled"
+        ) {
+          const creditsPayload =
+            unwrapResponse(
+              creditsResponse.value
+            );
+
+          setCredits(
+            creditsPayload?.credits ||
+            creditsPayload ||
+            null
+          );
+        } else {
+          setCredits(null);
+        }
+
       } catch (err) {
         console.error(
           "Billing loading error:",
           err
         );
 
-        setSubscription(null);
-
         setError(
-          "Billing information could not be loaded from your workspace."
+          "Billing information could not be loaded from the backend."
         );
       } finally {
         if (refresh) {
@@ -290,22 +513,21 @@ function Billing() {
     []
   );
 
+
   useEffect(() => {
     loadBilling();
   }, [loadBilling]);
 
+
   /* =======================================================
-     REAL BILLING DATA
-     ======================================================= */
+     NORMALIZED CURRENT BILLING
+  ======================================================= */
 
   const billing = useMemo(() => {
     const infrastructure =
       normalizeInfrastructure(
         subscription
       );
-
-    const credits =
-      normalizeCredits(subscription);
 
     const paymentMethod =
       normalizePaymentMethod(
@@ -314,13 +536,19 @@ function Billing() {
 
     return {
       planName:
-        normalizePlanName(subscription),
+        normalizePlanName(
+          subscription
+        ),
 
       currency:
-        normalizeCurrency(subscription),
+        normalizeCurrency(
+          subscription
+        ) || "USD",
 
       price:
-        normalizePrice(subscription),
+        normalizePrice(
+          subscription
+        ),
 
       interval:
         normalizeBillingInterval(
@@ -328,22 +556,17 @@ function Billing() {
         ),
 
       status:
-        normalizeStatus(subscription),
+        normalizeStatus(
+          subscription
+        ),
 
       infrastructure,
-
-      credits,
 
       paymentMethod,
 
       paymentLabel:
         normalizePaymentLabel(
           paymentMethod
-        ),
-
-      manageUrl:
-        normalizeManageUrl(
-          subscription
         ),
 
       nextBillingDate:
@@ -355,122 +578,485 @@ function Billing() {
     };
   }, [subscription]);
 
+
+  /* =======================================================
+     SELECTED PLAN
+  ======================================================= */
+
+  const selectedPlanData =
+    useMemo(() => {
+      return (
+        PLANS.find(
+          (plan) =>
+            plan.name ===
+            selectedPlan
+        ) ||
+        PLANS[0]
+      );
+    }, [selectedPlan]);
+
+
+  const selectedPrice =
+    billingCycle === "yearly"
+      ? selectedPlanData.yearly
+      : selectedPlanData.monthly;
+
+
   /* =======================================================
      PRICE FORMATTER
-     ======================================================= */
+  ======================================================= */
 
-  const formattedPrice = useMemo(() => {
-    if (
-      billing.price === undefined ||
-      billing.price === null ||
-      billing.price === ""
-    ) {
-      return "—";
-    }
+  const formatMoney = useCallback(
+    (
+      amount,
+      currency = "USD"
+    ) => {
+      const numeric =
+        Number(amount);
 
-    const numericPrice =
-      Number(billing.price);
+      if (
+        !Number.isFinite(
+          numeric
+        )
+      ) {
+        return "—";
+      }
 
-    if (!Number.isFinite(numericPrice)) {
-      return displayValue(
-        billing.price
+      try {
+        return new Intl.NumberFormat(
+          undefined,
+          {
+            style: "currency",
+            currency:
+              currency || "USD",
+            maximumFractionDigits: 2,
+          }
+        ).format(numeric);
+      } catch {
+        return `${currency || "USD"} ${numeric}`;
+      }
+    },
+    []
+  );
+
+
+  const formattedCurrentPrice =
+    useMemo(() => {
+      if (
+        billing.price ===
+        undefined ||
+        billing.price ===
+        null ||
+        billing.price === ""
+      ) {
+        return "—";
+      }
+
+      return formatMoney(
+        billing.price,
+        billing.currency
       );
-    }
+    }, [
+      billing.price,
+      billing.currency,
+      formatMoney,
+    ]);
 
-    const currency =
-      billing.currency ||
-      "";
 
-    try {
-      return new Intl.NumberFormat(
-        undefined,
-        {
-          style: currency
-            ? "currency"
-            : "decimal",
+  /* =======================================================
+     CREDITS
+  ======================================================= */
 
-          currency:
-            currency || undefined,
+  const normalizedCredits =
+    useMemo(() => {
+      if (!credits) {
+        return {
+          total: null,
+          used: null,
+          remaining: null,
+          unlimited: false,
+        };
+      }
 
-          maximumFractionDigits: 2,
+      const total =
+        firstValue(
+          credits?.total,
+          credits?.limit,
+          credits?.included
+        );
+
+      const used =
+        firstValue(
+          credits?.used,
+          credits?.consumed
+        );
+
+      const remaining =
+        firstValue(
+          credits?.remaining,
+          credits?.available
+        );
+
+      return {
+        total,
+        used,
+        remaining,
+
+        unlimited:
+          credits?.unlimited ===
+          true ||
+          Number(total) === -1,
+      };
+    }, [credits]);
+
+
+  const creditProgress =
+    useMemo(() => {
+      const used =
+        Number(
+          normalizedCredits.used
+        );
+
+      const total =
+        Number(
+          normalizedCredits.total
+        );
+
+      if (
+        normalizedCredits.unlimited ||
+        !Number.isFinite(used) ||
+        !Number.isFinite(total) ||
+        total <= 0
+      ) {
+        return null;
+      }
+
+      return Math.min(
+        100,
+        Math.max(
+          0,
+          (used / total) *
+            100
+        )
+      );
+    }, [
+      normalizedCredits,
+    ]);
+
+
+  /* =======================================================
+     ERROR EXTRACTION
+  ======================================================= */
+
+  const getApiErrorMessage =
+    useCallback(
+      (err, fallback) => {
+        return (
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          fallback
+        );
+      },
+      []
+    );
+
+
+  /* =======================================================
+     START PAYMENT
+  ======================================================= */
+
+  const handleStartPayment =
+    async () => {
+      setProcessing(true);
+      setError("");
+      setSuccessMessage("");
+      setPaymentData(null);
+
+      try {
+        if (
+          provider !==
+          "stripe"
+        ) {
+          throw new Error(
+            "Razorpay is not currently enabled for the USD ZyrionOS catalog."
+          );
         }
-      ).format(numericPrice);
-    } catch {
-      return `${currency} ${numericPrice}`.trim();
-    }
-  }, [
-    billing.price,
-    billing.currency,
-  ]);
+
+        const response =
+          await createPaymentOrder({
+            plan:
+              selectedPlan,
+            billingCycle,
+            provider:
+              "stripe",
+            currency:
+              "USD",
+          });
+
+        const payload =
+          unwrapResponse(
+            response
+          );
+
+        const data =
+          payload?.data ||
+          payload;
+
+        const clientSecret =
+          data?.clientSecret ||
+          data?.paymentIntent
+            ?.client_secret ||
+          null;
+
+        const paymentIntentId =
+          data?.paymentIntentId ||
+          data?.paymentIntent
+            ?.id ||
+          null;
+
+        setPaymentData({
+          provider: "stripe",
+          plan:
+            selectedPlan,
+          billingCycle,
+          amount:
+            data?.amount ??
+            selectedPrice,
+          currency:
+            data?.currency ||
+            "USD",
+          clientSecret,
+          paymentIntentId,
+        });
+
+        /*
+         * The backend creates a real PaymentIntent.
+         *
+         * We intentionally do NOT display a fake
+         * "Payment Successful" message.
+         */
+
+        if (
+          clientSecret
+        ) {
+          setSuccessMessage(
+            "Stripe payment has been initialized. Complete the payment using the Stripe payment flow configured for this account."
+          );
+        } else {
+          setSuccessMessage(
+            "Stripe payment initialization completed, but no client secret was returned."
+          );
+        }
+
+      } catch (err) {
+        console.error(
+          "Payment initialization error:",
+          err
+        );
+
+        setError(
+          getApiErrorMessage(
+            err,
+            "Payment could not be initialized."
+          )
+        );
+      } finally {
+        setProcessing(false);
+      }
+    };
+
 
   /* =======================================================
-     CREDIT DISPLAY
-     ======================================================= */
+     CREATE SUBSCRIPTION
+  ======================================================= */
 
-  const creditProgress = useMemo(() => {
-    const used = Number(
-      billing.credits.used
-    );
+  const handleCreateSubscription =
+    async () => {
+      setProcessing(true);
+      setError("");
+      setSuccessMessage("");
 
-    const limit = Number(
-      billing.credits.limit
-    );
+      try {
+        await createSubscription({
+          plan:
+            selectedPlan,
+          billingCycle,
+          provider:
+            provider,
+          currency:
+            "USD",
+        });
 
-    if (
-      !Number.isFinite(used) ||
-      !Number.isFinite(limit) ||
-      limit <= 0
-    ) {
-      return null;
-    }
+        /*
+         * Current backend intentionally returns
+         * 409 PAYMENT_REQUIRED instead of directly
+         * activating a subscription.
+         *
+         * If backend behavior changes in the future,
+         * this call can be used as the compatibility
+         * endpoint.
+         */
 
-    return Math.min(
-      100,
-      Math.max(
-        0,
-        (used / limit) * 100
-      )
-    );
-  }, [
-    billing.credits.used,
-    billing.credits.limit,
-  ]);
+        await loadBilling({
+          refresh: true,
+        });
+
+      } catch (err) {
+        const status =
+          err?.response?.status;
+
+        const code =
+          err?.response?.data?.code;
+
+        if (
+          status === 409 ||
+          code ===
+            "PAYMENT_REQUIRED"
+        ) {
+          setError(
+            "Payment is required before the subscription can become active."
+          );
+        } else {
+          setError(
+            getApiErrorMessage(
+              err,
+              "Subscription request failed."
+            )
+          );
+        }
+      } finally {
+        setProcessing(false);
+      }
+    };
+
 
   /* =======================================================
-     ACTIONS
-     ======================================================= */
+     UPGRADE
+  ======================================================= */
 
-  const handleRefresh = () => {
-    loadBilling({
-      refresh: true,
-    });
-  };
+  const handleUpgrade =
+    async () => {
+      setProcessing(true);
+      setError("");
+      setSuccessMessage("");
 
-  const handleManageSubscription = () => {
-    /*
-     * Only open a billing portal URL if the
-     * authenticated backend actually returned one.
-     */
-    if (billing.manageUrl) {
-      window.location.assign(
-        billing.manageUrl
-      );
+      try {
+        await upgradeSubscription({
+          plan:
+            selectedPlan,
+          billingCycle,
+          provider:
+            provider,
+          currency:
+            "USD",
+        });
 
-      return;
-    }
+        await loadBilling({
+          refresh: true,
+        });
 
-    /*
-     * No invented payment endpoint.
-     * Keep the user inside the billing page
-     * when the backend has not supplied a
-     * management URL.
-     */
-    navigate("/billing");
-  };
+        setSuccessMessage(
+          "Upgrade request completed. The subscription status shown above comes from the backend."
+        );
+
+      } catch (err) {
+        const status =
+          err?.response?.status;
+
+        const code =
+          err?.response?.data?.code;
+
+        if (
+          status === 409 ||
+          code ===
+            "PAYMENT_REQUIRED"
+        ) {
+          setError(
+            "Payment is required before the upgraded subscription can become active."
+          );
+        } else {
+          setError(
+            getApiErrorMessage(
+              err,
+              "Subscription upgrade failed."
+            )
+          );
+        }
+      } finally {
+        setProcessing(false);
+      }
+    };
+
+
+  /* =======================================================
+     CANCEL
+  ======================================================= */
+
+  const handleCancel =
+    async () => {
+      const confirmed =
+        window.confirm(
+          "Are you sure you want to cancel your subscription?"
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setProcessing(true);
+      setError("");
+      setSuccessMessage("");
+
+      try {
+        await cancelSubscription();
+
+        await loadBilling({
+          refresh: true,
+        });
+
+        setSuccessMessage(
+          "Cancellation request submitted. The current subscription status is shown from the backend."
+        );
+
+      } catch (err) {
+        setError(
+          getApiErrorMessage(
+            err,
+            "Subscription cancellation failed."
+          )
+        );
+      } finally {
+        setProcessing(false);
+      }
+    };
+
+
+  /* =======================================================
+     REFRESH
+  ======================================================= */
+
+  const handleRefresh =
+    () => {
+      loadBilling({
+        refresh: true,
+      });
+    };
+
+
+  /* =======================================================
+     STATUS CLASS
+  ======================================================= */
+
+  const statusText =
+    displayValue(
+      billing.status
+    );
+
 
   /* =======================================================
      RENDER
-     ======================================================= */
+  ======================================================= */
 
   return (
     <DashboardLayout>
@@ -481,37 +1067,66 @@ function Billing() {
               HEADER
           ================================================= */}
 
-          <header className={styles.header}>
-            <div className={styles.headerContent}>
-
-              <div className={styles.eyebrow}>
+          <header
+            className={styles.header}
+          >
+            <div
+              className={
+                styles.headerContent
+              }
+            >
+              <div
+                className={
+                  styles.eyebrow
+                }
+              >
                 <span
-                  className={styles.eyebrowDot}
+                  className={
+                    styles.eyebrowDot
+                  }
                   aria-hidden="true"
                 />
 
                 ZYRIONOS BILLING
               </div>
 
-              <h1 className={styles.title}>
+              <h1
+                className={
+                  styles.title
+                }
+              >
                 Billing & Subscription
               </h1>
 
-              <p className={styles.subtitle}>
-                Manage your subscription, usage,
-                payment method and billing resources
-                from one secure workspace.
+              <p
+                className={
+                  styles.subtitle
+                }
+              >
+                Manage your subscription,
+                payment provider, usage,
+                credits and billing history
+                through the connected
+                ZyrionOS backend.
               </p>
-
             </div>
 
-            <div className={styles.headerActions}>
-
+            <div
+              className={
+                styles.headerActions
+              }
+            >
               <button
                 type="button"
-                className={styles.refreshButton}
-                onClick={handleRefresh}
-                disabled={refreshing}
+                className={
+                  styles.refreshButton
+                }
+                onClick={
+                  handleRefresh
+                }
+                disabled={
+                  refreshing
+                }
               >
                 <span
                   className={
@@ -531,39 +1146,51 @@ function Billing() {
 
               <button
                 type="button"
-                className={styles.manageButton}
-                onClick={
-                  handleManageSubscription
+                className={
+                  styles.manageButton
+                }
+                onClick={() =>
+                  navigate(
+                    "/billing"
+                  )
                 }
               >
-                Manage Subscription
+                Billing Overview
                 <span aria-hidden="true">
                   →
                 </span>
               </button>
-
             </div>
           </header>
 
+
           {/* =================================================
-              ERROR
+              ALERTS
           ================================================= */}
 
           {error && (
             <section
-              className={styles.alert}
+              className={
+                styles.alert
+              }
               role="alert"
             >
               <div
-                className={styles.alertIcon}
+                className={
+                  styles.alertIcon
+                }
                 aria-hidden="true"
               >
                 !
               </div>
 
-              <div className={styles.alertContent}>
+              <div
+                className={
+                  styles.alertContent
+                }
+              >
                 <strong>
-                  Billing data unavailable
+                  Billing action unavailable
                 </strong>
 
                 <p>
@@ -573,41 +1200,98 @@ function Billing() {
 
               <button
                 type="button"
-                className={styles.retryButton}
-                onClick={handleRefresh}
-                disabled={refreshing}
+                className={
+                  styles.retryButton
+                }
+                onClick={
+                  handleRefresh
+                }
               >
                 Retry
               </button>
             </section>
           )}
 
+
+          {successMessage && (
+            <section
+              className={
+                styles.successAlert
+              }
+              role="status"
+            >
+              <div
+                className={
+                  styles.alertIcon
+                }
+                aria-hidden="true"
+              >
+                ✓
+              </div>
+
+              <div
+                className={
+                  styles.alertContent
+                }
+              >
+                <strong>
+                  Billing update
+                </strong>
+
+                <p>
+                  {successMessage}
+                </p>
+              </div>
+            </section>
+          )}
+
+
           {/* =================================================
-              SUBSCRIPTION HERO
+              CURRENT SUBSCRIPTION
           ================================================= */}
 
-          <section className={styles.subscriptionCard}>
+          <section
+            className={
+              styles.subscriptionCard
+            }
+          >
+            <div
+              className={
+                styles.subscriptionGlow
+              }
+            />
 
-            <div className={styles.subscriptionGlow} />
-
-            <div className={styles.subscriptionMain}>
-
-              <div className={styles.subscriptionEyebrow}>
+            <div
+              className={
+                styles.subscriptionMain
+              }
+            >
+              <div
+                className={
+                  styles.subscriptionEyebrow
+                }
+              >
                 CURRENT SUBSCRIPTION
               </div>
 
-              <div className={styles.subscriptionTop}>
-
-                <h2 className={styles.planName}>
-                  {loading || error
-                    ? "—"
+              <div
+                className={
+                  styles.subscriptionTop
+                }
+              >
+                <h2
+                  className={
+                    styles.planName
+                  }
+                >
+                  {loading
+                    ? "Loading..."
                     : displayValue(
                         billing.planName
                       )}
                 </h2>
 
                 {!loading &&
-                  !error &&
                   billing.status && (
                     <span
                       className={
@@ -615,61 +1299,72 @@ function Billing() {
                       }
                     >
                       <span />
-                      {displayValue(
-                        billing.status
-                      )}
+                      {statusText}
                     </span>
                   )}
-
               </div>
 
-              <div className={styles.priceRow}>
-
+              <div
+                className={
+                  styles.priceRow
+                }
+              >
                 <strong
-                  className={styles.planPrice}
+                  className={
+                    styles.planPrice
+                  }
                 >
-                  {loading || error
+                  {loading
                     ? "—"
-                    : formattedPrice}
+                    : formattedCurrentPrice}
                 </strong>
 
                 {!loading &&
-                  !error &&
                   billing.interval && (
                     <span
                       className={
                         styles.billingInterval
                       }
                     >
-                      /{" "}
+                      /
+                      {" "}
                       {displayValue(
                         billing.interval
                       )}
                     </span>
                   )}
-
               </div>
 
-              <p className={styles.planDescription}>
-                Your subscription and resource
-                configuration are controlled by
-                the authenticated billing system.
+              <p
+                className={
+                  styles.planDescription
+                }
+              >
+                Subscription state is
+                read from the authenticated
+                backend. ZyrionOS does not
+                fabricate active billing
+                status in the frontend.
               </p>
-
             </div>
 
-            <div className={styles.subscriptionSide}>
-
-              <div className={styles.sideLabel}>
+            <div
+              className={
+                styles.subscriptionSide
+              }
+            >
+              <div
+                className={
+                  styles.sideLabel
+                }
+              >
                 BILLING STATUS
               </div>
 
               <strong>
-                {loading || error
+                {loading
                   ? "—"
-                  : displayValue(
-                      billing.status
-                    )}
+                  : statusText}
               </strong>
 
               {billing.nextBillingDate && (
@@ -680,34 +1375,504 @@ function Billing() {
                   )}
                 </span>
               )}
-
             </div>
-
           </section>
 
+
           {/* =================================================
-              RESOURCE CARDS
+              PLAN SELECTOR
           ================================================= */}
 
           <section
-            className={styles.resourceGrid}
-            aria-label="Subscription resources"
+            className={
+              styles.planSection
+            }
           >
+            <div
+              className={
+                styles.sectionHeader
+              }
+            >
+              <div>
+                <div
+                  className={
+                    styles.panelEyebrow
+                  }
+                >
+                  PLANS
+                </div>
 
-            <article className={styles.resourceCard}>
-              <div className={styles.resourceHeader}>
-                <span>RAM</span>
+                <h2
+                  className={
+                    styles.sectionTitle
+                  }
+                >
+                  Choose Your Plan
+                </h2>
+
+                <p
+                  className={
+                    styles.panelSubtitle
+                  }
+                >
+                  Prices shown here match the
+                  current backend billing catalog.
+                  The backend remains the source
+                  of truth.
+                </p>
+              </div>
+
+              <div
+                className={
+                  styles.billingToggle
+                }
+              >
+                <button
+                  type="button"
+                  className={
+                    billingCycle ===
+                    "monthly"
+                      ? styles.toggleActive
+                      : styles.toggleButton
+                  }
+                  onClick={() =>
+                    setBillingCycle(
+                      "monthly"
+                    )
+                  }
+                >
+                  Monthly
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    billingCycle ===
+                    "yearly"
+                      ? styles.toggleActive
+                      : styles.toggleButton
+                  }
+                  onClick={() =>
+                    setBillingCycle(
+                      "yearly"
+                    )
+                  }
+                >
+                  Yearly
+                </button>
+              </div>
+            </div>
+
+
+            <div
+              className={
+                styles.planGrid
+              }
+            >
+              {PLANS.map(
+                (plan) => {
+                  const active =
+                    selectedPlan ===
+                    plan.name;
+
+                  const price =
+                    billingCycle ===
+                    "yearly"
+                      ? plan.yearly
+                      : plan.monthly;
+
+                  const current =
+                    billing.planName ===
+                    plan.name;
+
+                  return (
+                    <button
+                      key={
+                        plan.name
+                      }
+                      type="button"
+                      className={
+                        active
+                          ? styles.planCardActive
+                          : styles.planCard
+                      }
+                      onClick={() =>
+                        setSelectedPlan(
+                          plan.name
+                        )
+                      }
+                    >
+                      <div
+                        className={
+                          styles.planCardTop
+                        }
+                      >
+                        <span>
+                          {plan.name}
+                        </span>
+
+                        {current && (
+                          <span
+                            className={
+                              styles.currentBadge
+                            }
+                          >
+                            Current
+                          </span>
+                        )}
+                      </div>
+
+                      <strong
+                        className={
+                          styles.planCardPrice
+                        }
+                      >
+                        {formatMoney(
+                          price,
+                          "USD"
+                        )}
+                      </strong>
+
+                      <span
+                        className={
+                          styles.planCardInterval
+                        }
+                      >
+                        /{" "}
+                        {billingCycle}
+                      </span>
+
+                      <p
+                        className={
+                          styles.planCardDescription
+                        }
+                      >
+                        {
+                          plan.description
+                        }
+                      </p>
+                    </button>
+                  );
+                }
+              )}
+            </div>
+
+
+            {/* =================================================
+                PROVIDER
+            ================================================= */}
+
+            <div
+              className={
+                styles.providerSection
+              }
+            >
+              <div>
+                <div
+                  className={
+                    styles.panelEyebrow
+                  }
+                >
+                  PAYMENT PROVIDER
+                </div>
+
+                <h3
+                  className={
+                    styles.providerTitle
+                  }
+                >
+                  Select Payment Provider
+                </h3>
+              </div>
+
+              <div
+                className={
+                  styles.providerGrid
+                }
+              >
+                <button
+                  type="button"
+                  className={
+                    provider ===
+                    "stripe"
+                      ? styles.providerActive
+                      : styles.providerButton
+                  }
+                  onClick={() =>
+                    setProvider(
+                      "stripe"
+                    )
+                  }
+                >
+                  <strong>
+                    Stripe
+                  </strong>
+
+                  <span>
+                    USD payments
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    styles.providerDisabled
+                  }
+                  disabled
+                  title="Razorpay is not enabled for the current USD catalog"
+                >
+                  <strong>
+                    Razorpay
+                  </strong>
+
+                  <span>
+                    INR pricing required
+                  </span>
+                </button>
+              </div>
+            </div>
+
+
+            {/* =================================================
+                PAYMENT ACTION
+            ================================================= */}
+
+            <div
+              className={
+                styles.planAction
+              }
+            >
+              <div>
+                <span
+                  className={
+                    styles.actionLabel
+                  }
+                >
+                  SELECTED
+                </span>
+
+                <strong>
+                  {selectedPlan}
+                </strong>
+
+                <span>
+                  {formatMoney(
+                    selectedPrice,
+                    "USD"
+                  )}
+                  {" "}
+                  /{" "}
+                  {billingCycle}
+                </span>
+              </div>
+
+              <div
+                className={
+                  styles.actionButtons
+                }
+              >
+                <button
+                  type="button"
+                  className={
+                    styles.primaryAction
+                  }
+                  onClick={
+                    handleStartPayment
+                  }
+                  disabled={
+                    processing ||
+                    provider !==
+                      "stripe"
+                  }
+                >
+                  {processing
+                    ? "Initializing..."
+                    : "Start Stripe Payment"}
+                  <span aria-hidden="true">
+                    →
+                  </span>
+                </button>
+
+                {billing.planName &&
+                  selectedPlan !==
+                    billing.planName && (
+                    <button
+                      type="button"
+                      className={
+                        styles.secondaryAction
+                      }
+                      onClick={
+                        handleUpgrade
+                      }
+                      disabled={
+                        processing
+                      }
+                    >
+                      Request Upgrade
+                    </button>
+                  )}
+              </div>
+            </div>
+          </section>
+
+
+          {/* =================================================
+              PAYMENT INITIALIZATION
+          ================================================= */}
+
+          {paymentData && (
+            <section
+              className={
+                styles.panel
+              }
+            >
+              <div
+                className={
+                  styles.panelHeader
+                }
+              >
+                <div>
+                  <div
+                    className={
+                      styles.panelEyebrow
+                    }
+                  >
+                    PAYMENT SESSION
+                  </div>
+
+                  <h2
+                    className={
+                      styles.panelTitle
+                    }
+                  >
+                    Stripe Payment Initialized
+                  </h2>
+
+                  <p
+                    className={
+                      styles.panelSubtitle
+                    }
+                  >
+                    A real Stripe PaymentIntent
+                    was created by the backend.
+                    The subscription remains
+                    pending until the provider
+                    webhook confirms payment.
+                  </p>
+                </div>
 
                 <div
-                  className={styles.resourceIcon}
+                  className={
+                    styles.creditIcon
+                  }
                   aria-hidden="true"
+                >
+                  $
+                </div>
+              </div>
+
+              <div
+                className={
+                  styles.paymentSession
+                }
+              >
+                <div>
+                  <span>
+                    Plan
+                  </span>
+
+                  <strong>
+                    {paymentData.plan}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Amount
+                  </span>
+
+                  <strong>
+                    {formatMoney(
+                      paymentData.amount,
+                      paymentData.currency
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Provider
+                  </span>
+
+                  <strong>
+                    Stripe
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Payment Intent
+                  </span>
+
+                  <strong>
+                    {displayValue(
+                      paymentData.paymentIntentId
+                    )}
+                  </strong>
+                </div>
+              </div>
+
+              <div
+                className={
+                  styles.paymentNotice
+                }
+              >
+                Payment activation is
+                <strong>
+                  {" "}
+                  pending webhook confirmation
+                </strong>
+                .
+              </div>
+            </section>
+          )}
+
+
+          {/* =================================================
+              RESOURCES
+          ================================================= */}
+
+          <section
+            className={
+              styles.resourceGrid
+            }
+            aria-label="Subscription resources"
+          >
+            <article
+              className={
+                styles.resourceCard
+              }
+            >
+              <div
+                className={
+                  styles.resourceHeader
+                }
+              >
+                <span>
+                  RAM
+                </span>
+
+                <div
+                  className={
+                    styles.resourceIcon
+                  }
                 >
                   RAM
                 </div>
               </div>
 
               <strong>
-                {loading || error
+                {loading
                   ? "—"
                   : displayValue(
                       billing.infrastructure.ram
@@ -715,24 +1880,37 @@ function Billing() {
               </strong>
 
               <span>
-                Allocated workspace memory
+                Backend-reported workspace
+                memory.
               </span>
             </article>
 
-            <article className={styles.resourceCard}>
-              <div className={styles.resourceHeader}>
-                <span>CPU</span>
+
+            <article
+              className={
+                styles.resourceCard
+              }
+            >
+              <div
+                className={
+                  styles.resourceHeader
+                }
+              >
+                <span>
+                  CPU
+                </span>
 
                 <div
-                  className={styles.resourceIcon}
-                  aria-hidden="true"
+                  className={
+                    styles.resourceIcon
+                  }
                 >
                   CPU
                 </div>
               </div>
 
               <strong>
-                {loading || error
+                {loading
                   ? "—"
                   : displayValue(
                       billing.infrastructure.cpu
@@ -740,24 +1918,37 @@ function Billing() {
               </strong>
 
               <span>
-                Allocated compute capacity
+                Backend-reported compute
+                capacity.
               </span>
             </article>
 
-            <article className={styles.resourceCard}>
-              <div className={styles.resourceHeader}>
-                <span>STORAGE</span>
+
+            <article
+              className={
+                styles.resourceCard
+              }
+            >
+              <div
+                className={
+                  styles.resourceHeader
+                }
+              >
+                <span>
+                  STORAGE
+                </span>
 
                 <div
-                  className={styles.resourceIcon}
-                  aria-hidden="true"
+                  className={
+                    styles.resourceIcon
+                  }
                 >
                   DB
                 </div>
               </div>
 
               <strong>
-                {loading || error
+                {loading
                   ? "—"
                   : displayValue(
                       billing.infrastructure.storage
@@ -765,24 +1956,37 @@ function Billing() {
               </strong>
 
               <span>
-                Workspace storage allocation
+                Backend-reported storage
+                allocation.
               </span>
             </article>
 
-            <article className={styles.resourceCard}>
-              <div className={styles.resourceHeader}>
-                <span>BANDWIDTH</span>
+
+            <article
+              className={
+                styles.resourceCard
+              }
+            >
+              <div
+                className={
+                  styles.resourceHeader
+                }
+              >
+                <span>
+                  BANDWIDTH
+                </span>
 
                 <div
-                  className={styles.resourceIcon}
-                  aria-hidden="true"
+                  className={
+                    styles.resourceIcon
+                  }
                 >
                   ↕
                 </div>
               </div>
 
               <strong>
-                {loading || error
+                {loading
                   ? "—"
                   : displayValue(
                       billing.infrastructure.bandwidth
@@ -790,151 +1994,183 @@ function Billing() {
               </strong>
 
               <span>
-                Network allocation
+                Backend-reported network
+                allocation.
               </span>
             </article>
-
           </section>
 
+
           {/* =================================================
-              BILLING DETAILS
+              PAYMENT + CREDITS
           ================================================= */}
 
-          <section className={styles.detailsGrid}>
-
-            {/* PAYMENT METHOD */}
-
-            <article className={styles.panel}>
-
-              <div className={styles.panelHeader}>
+          <section
+            className={
+              styles.detailsGrid
+            }
+          >
+            <article
+              className={
+                styles.panel
+              }
+            >
+              <div
+                className={
+                  styles.panelHeader
+                }
+              >
                 <div>
-                  <div className={styles.panelEyebrow}>
+                  <div
+                    className={
+                      styles.panelEyebrow
+                    }
+                  >
                     PAYMENTS
                   </div>
 
-                  <h2 className={styles.panelTitle}>
+                  <h2
+                    className={
+                      styles.panelTitle
+                    }
+                  >
                     Payment Method
                   </h2>
 
-                  <p className={styles.panelSubtitle}>
-                    Secure payment information
-                    returned by your billing provider.
+                  <p
+                    className={
+                      styles.panelSubtitle
+                    }
+                  >
+                    Payment information
+                    returned by the
+                    authenticated backend.
                   </p>
                 </div>
 
                 <div
-                  className={styles.cardIcon}
-                  aria-hidden="true"
+                  className={
+                    styles.cardIcon
+                  }
                 >
                   💳
                 </div>
               </div>
 
-              <div className={styles.paymentBody}>
-
-                {loading ? (
-                  <div className={styles.detailLoading}>
-                    Loading payment information...
+              {billing.paymentLabel ? (
+                <div
+                  className={
+                    styles.paymentMethod
+                  }
+                >
+                  <div
+                    className={
+                      styles.paymentMethodIcon
+                    }
+                  >
+                    💳
                   </div>
-                ) : billing.paymentLabel ? (
-                  <div className={styles.paymentMethod}>
 
-                    <div
-                      className={
-                        styles.paymentMethodIcon
-                      }
-                      aria-hidden="true"
-                    >
-                      💳
-                    </div>
-
-                    <div
-                      className={
-                        styles.paymentMethodInfo
-                      }
-                    >
-                      <strong>
-                        {billing.paymentLabel}
-                      </strong>
-
-                      <span>
-                        Payment method
-                      </span>
-                    </div>
-
-                  </div>
-                ) : (
-                  <div className={styles.detailEmpty}>
-
-                    <div
-                      className={
-                        styles.emptySmallIcon
-                      }
-                      aria-hidden="true"
-                    >
-                      💳
-                    </div>
-
+                  <div
+                    className={
+                      styles.paymentMethodInfo
+                    }
+                  >
                     <strong>
-                      No payment method available
+                      {
+                        billing.paymentLabel
+                      }
                     </strong>
 
-                    <p>
-                      Your billing provider has not
-                      returned a payment method for
-                      this subscription.
-                    </p>
-
+                    <span>
+                      Payment method on file
+                    </span>
                   </div>
-                )}
+                </div>
+              ) : (
+                <div
+                  className={
+                    styles.detailEmpty
+                  }
+                >
+                  <strong>
+                    No payment method available
+                  </strong>
 
-              </div>
-
+                  <p>
+                    The backend has not returned
+                    a stored payment method.
+                  </p>
+                </div>
+              )}
             </article>
 
-            {/* AI CREDITS */}
 
-            <article className={styles.panel}>
-
-              <div className={styles.panelHeader}>
+            <article
+              className={
+                styles.panel
+              }
+            >
+              <div
+                className={
+                  styles.panelHeader
+                }
+              >
                 <div>
-                  <div className={styles.panelEyebrow}>
+                  <div
+                    className={
+                      styles.panelEyebrow
+                    }
+                  >
                     AI USAGE
                   </div>
 
-                  <h2 className={styles.panelTitle}>
+                  <h2
+                    className={
+                      styles.panelTitle
+                    }
+                  >
                     AI Credits
                   </h2>
 
-                  <p className={styles.panelSubtitle}>
-                    Usage information supplied by
-                    your subscription system.
+                  <p
+                    className={
+                      styles.panelSubtitle
+                    }
+                  >
+                    Real credit values returned
+                    by the payment backend.
                   </p>
                 </div>
 
                 <div
-                  className={styles.creditIcon}
-                  aria-hidden="true"
+                  className={
+                    styles.creditIcon
+                  }
                 >
                   AI
                 </div>
               </div>
 
-              <div className={styles.creditBody}>
-
-                <div className={styles.creditValues}>
-
+              <div
+                className={
+                  styles.creditBody
+                }
+              >
+                <div
+                  className={
+                    styles.creditValues
+                  }
+                >
                   <div>
                     <span>
                       Used
                     </span>
 
                     <strong>
-                      {loading || error
-                        ? "—"
-                        : displayValue(
-                            billing.credits.used
-                          )}
+                      {displayValue(
+                        normalizedCredits.used
+                      )}
                     </strong>
                   </div>
 
@@ -944,11 +2180,9 @@ function Billing() {
                     </span>
 
                     <strong>
-                      {loading || error
-                        ? "—"
-                        : displayValue(
-                            billing.credits.remaining
-                          )}
+                      {displayValue(
+                        normalizedCredits.remaining
+                      )}
                     </strong>
                   </div>
 
@@ -958,14 +2192,13 @@ function Billing() {
                     </span>
 
                     <strong>
-                      {loading || error
-                        ? "—"
+                      {normalizedCredits.unlimited
+                        ? "Unlimited"
                         : displayValue(
-                            billing.credits.limit
+                            normalizedCredits.total
                           )}
                     </strong>
                   </div>
-
                 </div>
 
                 {creditProgress !== null && (
@@ -973,9 +2206,6 @@ function Billing() {
                     className={
                       styles.progressTrack
                     }
-                    aria-label={`AI credit usage ${Math.round(
-                      creditProgress
-                    )}%`}
                   >
                     <span
                       className={
@@ -987,52 +2217,258 @@ function Billing() {
                     />
                   </div>
                 )}
-
               </div>
-
             </article>
-
           </section>
 
+
           {/* =================================================
-              BILLING CONTROL
+              BILLING HISTORY
           ================================================= */}
 
-          <section className={styles.controlPanel}>
+          <section
+            className={
+              styles.panel
+            }
+          >
+            <div
+              className={
+                styles.panelHeader
+              }
+            >
+              <div>
+                <div
+                  className={
+                    styles.panelEyebrow
+                  }
+                >
+                  TRANSACTIONS
+                </div>
 
-            <div className={styles.controlContent}>
+                <h2
+                  className={
+                    styles.panelTitle
+                  }
+                >
+                  Billing History
+                </h2>
 
-              <div className={styles.controlEyebrow}>
-                ZYRIONOS BILLING CONTROL
+                <p
+                  className={
+                    styles.panelSubtitle
+                  }
+                >
+                  Subscription records returned
+                  by the authenticated billing
+                  backend.
+                </p>
+              </div>
+            </div>
+
+            {billingHistory.length ===
+            0 ? (
+              <div
+                className={
+                  styles.detailEmpty
+                }
+              >
+                <strong>
+                  No billing records available
+                </strong>
+
+                <p>
+                  No transaction history has
+                  been returned for this account.
+                </p>
+              </div>
+            ) : (
+              <div
+                className={
+                  styles.historyList
+                }
+              >
+                {billingHistory.map(
+                  (item, index) => {
+                    const itemPlan =
+                      firstValue(
+                        item?.planName,
+                        item?.plan?.name,
+                        item?.plan
+                      );
+
+                    const itemAmount =
+                      firstValue(
+                        item?.amount,
+                        item?.price?.amount
+                      );
+
+                    const itemCurrency =
+                      firstValue(
+                        item?.currency,
+                        item?.price?.currency
+                      ) ||
+                      "USD";
+
+                    const itemStatus =
+                      firstValue(
+                        item?.status,
+                        item?.subscriptionStatus
+                      );
+
+                    const itemDate =
+                      firstValue(
+                        item?.createdAt,
+                        item?.startDate,
+                        item?.date
+                      );
+
+                    return (
+                      <div
+                        key={
+                          item?._id ||
+                          item?.id ||
+                          index
+                        }
+                        className={
+                          styles.historyRow
+                        }
+                      >
+                        <div>
+                          <span>
+                            Plan
+                          </span>
+
+                          <strong>
+                            {displayValue(
+                              itemPlan
+                            )}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>
+                            Amount
+                          </span>
+
+                          <strong>
+                            {itemAmount !==
+                            undefined
+                              ? formatMoney(
+                                  itemAmount,
+                                  itemCurrency
+                                )
+                              : "—"}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>
+                            Status
+                          </span>
+
+                          <strong>
+                            {displayValue(
+                              itemStatus
+                            )}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>
+                            Date
+                          </span>
+
+                          <strong>
+                            {displayValue(
+                              itemDate
+                            )}
+                          </strong>
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            )}
+          </section>
+
+
+          {/* =================================================
+              SUBSCRIPTION CONTROL
+          ================================================= */}
+
+          <section
+            className={
+              styles.controlPanel
+            }
+          >
+            <div
+              className={
+                styles.controlContent
+              }
+            >
+              <div
+                className={
+                  styles.controlEyebrow
+                }
+              >
+                SUBSCRIPTION CONTROL
               </div>
 
               <h2>
-                Build Your Future
+                Manage Your Subscription
               </h2>
 
               <p>
-                Your plan, resources and payment
-                configuration are managed through
-                the authenticated billing system.
-                ZyrionOS never fabricates billing
-                information in the interface.
+                Subscription actions are sent
+                directly to the authenticated
+                backend. Payment confirmation and
+                activation remain provider-webhook
+                controlled.
               </p>
-
             </div>
 
-            <button
-              type="button"
-              className={styles.controlButton}
-              onClick={
-                handleManageSubscription
+            <div
+              className={
+                styles.controlActions
               }
             >
-              Manage Subscription
-              <span aria-hidden="true">
-                →
-              </span>
-            </button>
+              <button
+                type="button"
+                className={
+                  styles.controlButton
+                }
+                onClick={
+                  handleUpgrade
+                }
+                disabled={
+                  processing
+                }
+              >
+                Upgrade
+                <span aria-hidden="true">
+                  →
+                </span>
+              </button>
 
+              {billing.status ===
+                "active" && (
+                <button
+                  type="button"
+                  className={
+                    styles.cancelButton
+                  }
+                  onClick={
+                    handleCancel
+                  }
+                  disabled={
+                    processing
+                  }
+                >
+                  Cancel Subscription
+                </button>
+              )}
+            </div>
           </section>
 
         </div>

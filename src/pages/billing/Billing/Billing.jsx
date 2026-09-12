@@ -21,8 +21,9 @@ import {
 
 import styles from "./Billing.module.css";
 
+
 /* =========================================================
-   ZYRIONOS BILLING
+   ZYRIONOS — BILLING & SUBSCRIPTION
    =========================================================
 
    REAL BACKEND CONTRACT
@@ -38,22 +39,34 @@ import styles from "./Billing.module.css";
    POST /api/payment/verify-payment
 
    Billing:
-   GET /api/payment/billing-history
-   GET /api/payment/credits
+   GET  /api/payment/billing-history
+   GET  /api/payment/credits
 
-   Current provider configuration:
-   - Stripe: USD
-   - Razorpay: intentionally unavailable for current
-     USD catalog until verified INR pricing is configured.
+   Current catalog:
+   Starter    $19 / $190
+   Pro        $99 / $990
+   Business   $199 / $1990
+   Scale      $299 / $2990
+   Enterprise $499 / $4990
+
+   Currency:
+   USD
+
+   Provider:
+   Stripe = enabled
+   Razorpay = disabled until verified INR catalog exists
 
    IMPORTANT:
-   The frontend never decides the final price.
-   The backend validates the catalog price.
+   - Frontend never decides final payment amount.
+   - Backend remains source of truth.
+   - Frontend never marks subscription as active.
+   - Stripe activation is webhook controlled.
+   - Credits are read from the real backend.
 ========================================================= */
 
 
 /* =========================================================
-   SERVER CATALOG DISPLAY
+   DISPLAY CATALOG
 ========================================================= */
 
 const PLANS = Object.freeze([
@@ -100,7 +113,7 @@ const PLANS = Object.freeze([
 
 
 /* =========================================================
-   HELPERS
+   GENERIC HELPERS
 ========================================================= */
 
 function firstValue(...values) {
@@ -126,60 +139,95 @@ function displayValue(value) {
 }
 
 
+function isObject(value) {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  );
+}
+
+
 /* =========================================================
-   RESPONSE NORMALIZATION
+   RESPONSE UNWRAPPING
 ========================================================= */
 
 function unwrapResponse(response) {
-  const payload = response?.data;
+  const root = response?.data;
 
-  if (!payload) {
+  if (
+    root === undefined ||
+    root === null
+  ) {
     return null;
   }
 
   if (
-    payload?.data !== undefined &&
-    payload?.data !== null
+    root?.data !== undefined &&
+    root?.data !== null
   ) {
-    return payload.data;
+    return root.data;
   }
 
-  return payload;
-}
-
-
-function normalizeSubscription(response) {
-  const payload = unwrapResponse(response);
-
-  if (!payload) {
-    return null;
-  }
-
-  if (Array.isArray(payload)) {
-    return payload[0] || null;
-  }
-
-  if (payload?.subscription) {
-    return payload.subscription;
-  }
-
-  if (payload?.data?.subscription) {
-    return payload.data.subscription;
-  }
-
-  return payload;
+  return root;
 }
 
 
 /* =========================================================
-   SUBSCRIPTION DATA
+   SUBSCRIPTION NORMALIZATION
+========================================================= */
+
+function normalizeSubscription(response) {
+  const root = response?.data;
+
+  if (!root) {
+    return null;
+  }
+
+  const candidates = [
+    root?.subscription,
+    root?.data?.subscription,
+    root?.data?.data?.subscription,
+    root?.data,
+    root,
+  ];
+
+  for (const candidate of candidates) {
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      !Array.isArray(candidate)
+    ) {
+      if (
+        candidate?.subscription &&
+        typeof candidate.subscription === "object"
+      ) {
+        return candidate.subscription;
+      }
+
+      return candidate;
+    }
+  }
+
+  if (Array.isArray(root)) {
+    return root[0] || null;
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   SUBSCRIPTION FIELD NORMALIZATION
 ========================================================= */
 
 function normalizePlanName(subscription) {
   return firstValue(
     subscription?.planName,
     subscription?.plan?.name,
-    subscription?.plan,
+    typeof subscription?.plan === "string"
+      ? subscription.plan
+      : undefined,
     subscription?.productName,
     subscription?.product?.name
   );
@@ -190,7 +238,8 @@ function normalizeCurrency(subscription) {
   return firstValue(
     subscription?.currency,
     subscription?.plan?.currency,
-    subscription?.price?.currency
+    subscription?.price?.currency,
+    subscription?.billing?.currency
   );
 }
 
@@ -200,7 +249,9 @@ function normalizePrice(subscription) {
     subscription?.monthlyPrice,
     subscription?.price?.monthly,
     subscription?.price?.amountMonthly,
-    subscription?.price?.amount
+    subscription?.price?.amount,
+    subscription?.amount,
+    subscription?.billing?.amount
   );
 }
 
@@ -208,8 +259,10 @@ function normalizePrice(subscription) {
 function normalizeBillingInterval(subscription) {
   return firstValue(
     subscription?.billingInterval,
+    subscription?.billingCycle,
     subscription?.interval,
-    subscription?.price?.interval
+    subscription?.price?.interval,
+    subscription?.cycle
   );
 }
 
@@ -244,6 +297,7 @@ function normalizeInfrastructure(subscription) {
     ram: firstValue(
       infrastructure?.ram,
       infrastructure?.memory,
+      infrastructure?.memoryLimit,
       subscription?.ram
     ),
 
@@ -251,16 +305,19 @@ function normalizeInfrastructure(subscription) {
       infrastructure?.cpu,
       infrastructure?.vCpu,
       infrastructure?.vcpu,
+      infrastructure?.cpuLimit,
       subscription?.cpu
     ),
 
     storage: firstValue(
       infrastructure?.storage,
+      infrastructure?.storageLimit,
       subscription?.storage
     ),
 
     bandwidth: firstValue(
       infrastructure?.bandwidth,
+      infrastructure?.bandwidthLimit,
       subscription?.bandwidth
     ),
   };
@@ -271,7 +328,9 @@ function normalizeInfrastructure(subscription) {
    PAYMENT METHOD
 ========================================================= */
 
-function normalizePaymentLabel(paymentMethod) {
+function normalizePaymentLabel(
+  paymentMethod
+) {
   if (!paymentMethod) {
     return null;
   }
@@ -288,7 +347,9 @@ function normalizePaymentLabel(paymentMethod) {
   );
 
   if (brand && last4) {
-    return `${String(brand)} •••• ${last4}`;
+    return `${String(
+      brand
+    )} •••• ${last4}`;
   }
 
   if (last4) {
@@ -304,214 +365,395 @@ function normalizePaymentLabel(paymentMethod) {
 
 
 /* =========================================================
+   CREDITS NORMALIZATION
+=========================================================
+
+   Backend may return:
+
+   {
+     credits: {
+       total,
+       used,
+       remaining
+     }
+   }
+
+   OR:
+
+   {
+     data: {
+       credits: {
+         total,
+         used,
+         remaining
+       }
+     }
+   }
+
+   OR directly:
+
+   {
+     total,
+     used,
+     remaining
+   }
+
+   Additional common backend field names are supported.
+
+   No fallback credit amount is fabricated.
+========================================================= */
+
+function extractCreditsObject(response) {
+  const root = response?.data;
+
+  if (
+    root === undefined ||
+    root === null
+  ) {
+    return null;
+  }
+
+  const candidates = [
+    root?.credits,
+    root?.data?.credits,
+    root?.data?.data?.credits,
+    root?.result?.credits,
+    root?.payload?.credits,
+
+    root?.data,
+    root?.result,
+    root?.payload,
+
+    root,
+  ];
+
+  for (const candidate of candidates) {
+    if (!isObject(candidate)) {
+      continue;
+    }
+
+    const hasCreditField =
+      candidate?.total !== undefined ||
+      candidate?.limit !== undefined ||
+      candidate?.included !== undefined ||
+      candidate?.totalCredits !== undefined ||
+      candidate?.creditLimit !== undefined ||
+      candidate?.used !== undefined ||
+      candidate?.usedCredits !== undefined ||
+      candidate?.consumed !== undefined ||
+      candidate?.remaining !== undefined ||
+      candidate?.remainingCredits !== undefined ||
+      candidate?.available !== undefined ||
+      candidate?.availableCredits !== undefined ||
+      candidate?.unlimited !== undefined;
+
+    if (hasCreditField) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+
+function normalizeCredits(response) {
+  const source =
+    extractCreditsObject(
+      response
+    );
+
+  if (!source) {
+    return null;
+  }
+
+  const total = firstValue(
+    source?.total,
+    source?.limit,
+    source?.included,
+    source?.totalCredits,
+    source?.creditLimit,
+    source?.creditsLimit
+  );
+
+  const used = firstValue(
+    source?.used,
+    source?.consumed,
+    source?.usedCredits,
+    source?.creditsUsed
+  );
+
+  const remaining = firstValue(
+    source?.remaining,
+    source?.available,
+    source?.remainingCredits,
+    source?.availableCredits,
+    source?.creditsRemaining
+  );
+
+  const unlimited =
+    source?.unlimited === true ||
+    Number(total) === -1;
+
+  return {
+    total,
+    used,
+    remaining,
+    unlimited,
+  };
+}
+
+
+/* =========================================================
+   BILLING HISTORY NORMALIZATION
+========================================================= */
+
+function normalizeBillingHistory(
+  response
+) {
+  const root = response?.data;
+
+  if (!root) {
+    return [];
+  }
+
+  const candidates = [
+    root?.history,
+    root?.billingHistory,
+    root?.transactions,
+    root?.data?.history,
+    root?.data?.billingHistory,
+    root?.data?.transactions,
+    root?.data,
+    root,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+  }
+
+  return [];
+}
+
+
+/* =========================================================
    COMPONENT
 ========================================================= */
 
 function Billing() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [subscription, setSubscription] =
-    useState(null);
+  const [
+    subscription,
+    setSubscription,
+  ] = useState(null);
 
-  const [billingHistory, setBillingHistory] =
-    useState([]);
+  const [
+    billingHistory,
+    setBillingHistory,
+  ] = useState([]);
 
-  const [credits, setCredits] =
-    useState(null);
+  const [
+    credits,
+    setCredits,
+  ] = useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [refreshing, setRefreshing] =
-    useState(false);
+  const [
+    refreshing,
+    setRefreshing,
+  ] = useState(false);
 
-  const [processing, setProcessing] =
-    useState(false);
+  const [
+    processing,
+    setProcessing,
+  ] = useState(false);
 
-  const [selectedPlan, setSelectedPlan] =
-    useState("Pro");
+  const [
+    selectedPlan,
+    setSelectedPlan,
+  ] = useState("Pro");
 
-  const [billingCycle, setBillingCycle] =
-    useState("monthly");
+  const [
+    billingCycle,
+    setBillingCycle,
+  ] = useState("monthly");
 
-  const [provider, setProvider] =
-    useState("stripe");
+  const [
+    provider,
+    setProvider,
+  ] = useState("stripe");
 
-  const [error, setError] =
-    useState("");
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-  const [successMessage, setSuccessMessage] =
-    useState("");
+  const [
+    successMessage,
+    setSuccessMessage,
+  ] = useState("");
 
-  const [paymentData, setPaymentData] =
-    useState(null);
+  const [
+    paymentData,
+    setPaymentData,
+  ] = useState(null);
 
 
   /* =======================================================
-     LOAD BILLING DATA
+     LOAD REAL BILLING DATA
   ======================================================= */
 
-  const loadBilling = useCallback(
-    async ({ refresh = false } = {}) => {
-      if (refresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
-      setError("");
-
-      try {
-        const [
-          subscriptionResponse,
-          historyResponse,
-          creditsResponse,
-        ] = await Promise.allSettled([
-          getSubscription(),
-          getBillingHistory(),
-          getCredits(),
-        ]);
-
-        /* -----------------------------------------------
-           SUBSCRIPTION
-        ------------------------------------------------ */
-
-        if (
-          subscriptionResponse.status ===
-          "fulfilled"
-        ) {
-          const normalized =
-            normalizeSubscription(
-              subscriptionResponse.value
-            );
-
-          setSubscription(
-            normalized
-          );
-
-          const currentPlan =
-            normalizePlanName(
-              normalized
-            );
-
-          if (
-            currentPlan &&
-            PLANS.some(
-              (plan) =>
-                plan.name === currentPlan
-            )
-          ) {
-            setSelectedPlan(
-              currentPlan
-            );
-          }
-
-          const currentInterval =
-            normalizeBillingInterval(
-              normalized
-            );
-
-          if (
-            String(
-              currentInterval || ""
-            ).toLowerCase() ===
-            "yearly"
-          ) {
-            setBillingCycle(
-              "yearly"
-            );
-          }
+  const loadBilling =
+    useCallback(
+      async ({
+        refresh = false,
+      } = {}) => {
+        if (refresh) {
+          setRefreshing(true);
         } else {
-          setSubscription(null);
+          setLoading(true);
         }
 
+        setError("");
 
-        /* -----------------------------------------------
-           BILLING HISTORY
-        ------------------------------------------------ */
+        try {
+          const [
+            subscriptionResponse,
+            historyResponse,
+            creditsResponse,
+          ] =
+            await Promise.allSettled([
+              getSubscription(),
+              getBillingHistory(),
+              getCredits(),
+            ]);
 
-        if (
-          historyResponse.status ===
-          "fulfilled"
-        ) {
-          const historyPayload =
-            unwrapResponse(
-              historyResponse.value
-            );
+
+          /* -----------------------------------------------
+             SUBSCRIPTION
+          ------------------------------------------------ */
 
           if (
-            Array.isArray(
-              historyPayload
-            )
+            subscriptionResponse.status ===
+            "fulfilled"
           ) {
-            setBillingHistory(
-              historyPayload
+            const normalized =
+              normalizeSubscription(
+                subscriptionResponse.value
+              );
+
+            setSubscription(
+              normalized
             );
-          } else if (
-            Array.isArray(
-              historyPayload?.history
-            )
+
+            const currentPlan =
+              normalizePlanName(
+                normalized
+              );
+
+            if (
+              currentPlan &&
+              PLANS.some(
+                (plan) =>
+                  plan.name ===
+                  currentPlan
+              )
+            ) {
+              setSelectedPlan(
+                currentPlan
+              );
+            }
+
+            const currentInterval =
+              normalizeBillingInterval(
+                normalized
+              );
+
+            if (
+              String(
+                currentInterval ||
+                  ""
+              ).toLowerCase() ===
+              "yearly"
+            ) {
+              setBillingCycle(
+                "yearly"
+              );
+            }
+          } else {
+            setSubscription(null);
+          }
+
+
+          /* -----------------------------------------------
+             BILLING HISTORY
+          ------------------------------------------------ */
+
+          if (
+            historyResponse.status ===
+            "fulfilled"
           ) {
             setBillingHistory(
-              historyPayload.history
-            );
-          } else if (
-            Array.isArray(
-              historyPayload?.billingHistory
-            )
-          ) {
-            setBillingHistory(
-              historyPayload.billingHistory
+              normalizeBillingHistory(
+                historyResponse.value
+              )
             );
           } else {
             setBillingHistory([]);
           }
-        } else {
-          setBillingHistory([]);
-        }
 
 
-        /* -----------------------------------------------
-           CREDITS
-        ------------------------------------------------ */
+          /* -----------------------------------------------
+             AI CREDITS
+          ------------------------------------------------ */
 
-        if (
-          creditsResponse.status ===
-          "fulfilled"
-        ) {
-          const creditsPayload =
-            unwrapResponse(
-              creditsResponse.value
+          if (
+            creditsResponse.status ===
+            "fulfilled"
+          ) {
+            const normalizedCredits =
+              normalizeCredits(
+                creditsResponse.value
+              );
+
+            setCredits(
+              normalizedCredits
+            );
+          } else {
+            console.error(
+              "Credits API error:",
+              creditsResponse.reason
             );
 
-          setCredits(
-            creditsPayload?.credits ||
-            creditsPayload ||
-            null
+            setCredits(null);
+          }
+
+        } catch (err) {
+          console.error(
+            "Billing loading error:",
+            err
           );
-        } else {
-          setCredits(null);
-        }
 
-      } catch (err) {
-        console.error(
-          "Billing loading error:",
-          err
-        );
-
-        setError(
-          "Billing information could not be loaded from the backend."
-        );
-      } finally {
-        if (refresh) {
-          setRefreshing(false);
-        } else {
-          setLoading(false);
+          setError(
+            "Billing information could not be loaded from the backend."
+          );
+        } finally {
+          if (refresh) {
+            setRefreshing(false);
+          } else {
+            setLoading(false);
+          }
         }
-      }
-    },
-    []
-  );
+      },
+      []
+    );
 
 
   useEffect(() => {
@@ -520,63 +762,67 @@ function Billing() {
 
 
   /* =======================================================
-     NORMALIZED CURRENT BILLING
+     CURRENT BILLING
   ======================================================= */
 
-  const billing = useMemo(() => {
-    const infrastructure =
-      normalizeInfrastructure(
-        subscription
-      );
-
-    const paymentMethod =
-      normalizePaymentMethod(
-        subscription
-      );
-
-    return {
-      planName:
-        normalizePlanName(
+  const billing =
+    useMemo(() => {
+      const infrastructure =
+        normalizeInfrastructure(
           subscription
-        ),
+        );
 
-      currency:
-        normalizeCurrency(
+      const paymentMethod =
+        normalizePaymentMethod(
           subscription
-        ) || "USD",
+        );
 
-      price:
-        normalizePrice(
-          subscription
-        ),
+      return {
+        planName:
+          normalizePlanName(
+            subscription
+          ),
 
-      interval:
-        normalizeBillingInterval(
-          subscription
-        ),
+        currency:
+          normalizeCurrency(
+            subscription
+          ) || "USD",
 
-      status:
-        normalizeStatus(
-          subscription
-        ),
+        price:
+          normalizePrice(
+            subscription
+          ),
 
-      infrastructure,
+        interval:
+          normalizeBillingInterval(
+            subscription
+          ),
 
-      paymentMethod,
+        status:
+          normalizeStatus(
+            subscription
+          ),
 
-      paymentLabel:
-        normalizePaymentLabel(
-          paymentMethod
-        ),
+        infrastructure,
 
-      nextBillingDate:
-        firstValue(
-          subscription?.nextBillingDate,
-          subscription?.currentPeriodEnd,
-          subscription?.billing?.nextBillingDate
-        ),
-    };
-  }, [subscription]);
+        paymentMethod,
+
+        paymentLabel:
+          normalizePaymentLabel(
+            paymentMethod
+          ),
+
+        nextBillingDate:
+          firstValue(
+            subscription?.nextBillingDate,
+            subscription?.currentPeriodEnd,
+            subscription?.billing
+              ?.nextBillingDate
+          ),
+      };
+    }, [
+      subscription,
+    ]);
 
 
   /* =======================================================
@@ -584,70 +830,72 @@ function Billing() {
   ======================================================= */
 
   const selectedPlanData =
-    useMemo(() => {
-      return (
+    useMemo(
+      () =>
         PLANS.find(
           (plan) =>
             plan.name ===
             selectedPlan
-        ) ||
-        PLANS[0]
-      );
-    }, [selectedPlan]);
+        ) || PLANS[0],
+      [selectedPlan]
+    );
 
 
   const selectedPrice =
-    billingCycle === "yearly"
+    billingCycle ===
+    "yearly"
       ? selectedPlanData.yearly
       : selectedPlanData.monthly;
 
 
   /* =======================================================
-     PRICE FORMATTER
+     MONEY
   ======================================================= */
 
-  const formatMoney = useCallback(
-    (
-      amount,
-      currency = "USD"
-    ) => {
-      const numeric =
-        Number(amount);
+  const formatMoney =
+    useCallback(
+      (
+        amount,
+        currency = "USD"
+      ) => {
+        const numeric =
+          Number(amount);
 
-      if (
-        !Number.isFinite(
-          numeric
-        )
-      ) {
-        return "—";
-      }
+        if (
+          !Number.isFinite(
+            numeric
+          )
+        ) {
+          return "—";
+        }
 
-      try {
-        return new Intl.NumberFormat(
-          undefined,
-          {
-            style: "currency",
-            currency:
-              currency || "USD",
-            maximumFractionDigits: 2,
-          }
-        ).format(numeric);
-      } catch {
-        return `${currency || "USD"} ${numeric}`;
-      }
-    },
-    []
-  );
+        try {
+          return new Intl.NumberFormat(
+            undefined,
+            {
+              style: "currency",
+              currency:
+                currency || "USD",
+              maximumFractionDigits: 2,
+            }
+          ).format(numeric);
+        } catch {
+          return `${currency || "USD"} ${numeric}`;
+        }
+      },
+      []
+    );
 
 
   const formattedCurrentPrice =
     useMemo(() => {
       if (
         billing.price ===
-        undefined ||
+          undefined ||
         billing.price ===
-        null ||
-        billing.price === ""
+          null ||
+        billing.price ===
+          ""
       ) {
         return "—";
       }
@@ -664,68 +912,36 @@ function Billing() {
 
 
   /* =======================================================
-     CREDITS
+     CREDIT PROGRESS
   ======================================================= */
-
-  const normalizedCredits =
-    useMemo(() => {
-      if (!credits) {
-        return {
-          total: null,
-          used: null,
-          remaining: null,
-          unlimited: false,
-        };
-      }
-
-      const total =
-        firstValue(
-          credits?.total,
-          credits?.limit,
-          credits?.included
-        );
-
-      const used =
-        firstValue(
-          credits?.used,
-          credits?.consumed
-        );
-
-      const remaining =
-        firstValue(
-          credits?.remaining,
-          credits?.available
-        );
-
-      return {
-        total,
-        used,
-        remaining,
-
-        unlimited:
-          credits?.unlimited ===
-          true ||
-          Number(total) === -1,
-      };
-    }, [credits]);
-
 
   const creditProgress =
     useMemo(() => {
+      if (!credits) {
+        return null;
+      }
+
+      if (credits.unlimited) {
+        return null;
+      }
+
       const used =
         Number(
-          normalizedCredits.used
+          credits.used
         );
 
       const total =
         Number(
-          normalizedCredits.total
+          credits.total
         );
 
       if (
-        normalizedCredits.unlimited ||
-        !Number.isFinite(used) ||
-        !Number.isFinite(total) ||
+        !Number.isFinite(
+          used
+        ) ||
+        !Number.isFinite(
+          total
+        ) ||
         total <= 0
       ) {
         return null;
@@ -739,31 +955,33 @@ function Billing() {
             100
         )
       );
-    }, [
-      normalizedCredits,
-    ]);
+    }, [credits]);
 
 
   /* =======================================================
-     ERROR EXTRACTION
+     API ERROR
   ======================================================= */
 
   const getApiErrorMessage =
     useCallback(
-      (err, fallback) => {
-        return (
-          err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          fallback
-        );
-      },
+      (
+        err,
+        fallback
+      ) =>
+        err?.response?.data
+          ?.message ||
+        err?.response?.data
+          ?.error ||
+        err?.response?.data
+          ?.code ||
+        err?.message ||
+        fallback,
       []
     );
 
 
   /* =======================================================
-     START PAYMENT
+     START STRIPE PAYMENT
   ======================================================= */
 
   const handleStartPayment =
@@ -787,21 +1005,22 @@ function Billing() {
           await createPaymentOrder({
             plan:
               selectedPlan,
+
             billingCycle,
+
             provider:
               "stripe",
+
             currency:
               "USD",
           });
 
-        const payload =
-          unwrapResponse(
-            response
-          );
+        const root =
+          response?.data;
 
         const data =
-          payload?.data ||
-          payload;
+          root?.data ||
+          root;
 
         const clientSecret =
           data?.clientSecret ||
@@ -817,35 +1036,34 @@ function Billing() {
 
         setPaymentData({
           provider: "stripe",
+
           plan:
             selectedPlan,
+
           billingCycle,
+
           amount:
             data?.amount ??
             selectedPrice,
+
           currency:
             data?.currency ||
             "USD",
+
           clientSecret,
+
           paymentIntentId,
         });
-
-        /*
-         * The backend creates a real PaymentIntent.
-         *
-         * We intentionally do NOT display a fake
-         * "Payment Successful" message.
-         */
 
         if (
           clientSecret
         ) {
           setSuccessMessage(
-            "Stripe payment has been initialized. Complete the payment using the Stripe payment flow configured for this account."
+            "Stripe PaymentIntent created successfully. Complete the Stripe payment flow; subscription activation remains webhook-controlled."
           );
         } else {
           setSuccessMessage(
-            "Stripe payment initialization completed, but no client secret was returned."
+            "Stripe payment initialization returned successfully, but no client secret was provided."
           );
         }
 
@@ -868,7 +1086,7 @@ function Billing() {
 
 
   /* =======================================================
-     CREATE SUBSCRIPTION
+     CREATE SUBSCRIPTION COMPATIBILITY
   ======================================================= */
 
   const handleCreateSubscription =
@@ -881,22 +1099,14 @@ function Billing() {
         await createSubscription({
           plan:
             selectedPlan,
+
           billingCycle,
-          provider:
-            provider,
+
+          provider,
+
           currency:
             "USD",
         });
-
-        /*
-         * Current backend intentionally returns
-         * 409 PAYMENT_REQUIRED instead of directly
-         * activating a subscription.
-         *
-         * If backend behavior changes in the future,
-         * this call can be used as the compatibility
-         * endpoint.
-         */
 
         await loadBilling({
           refresh: true,
@@ -904,10 +1114,12 @@ function Billing() {
 
       } catch (err) {
         const status =
-          err?.response?.status;
+          err?.response
+            ?.status;
 
         const code =
-          err?.response?.data?.code;
+          err?.response?.data
+            ?.code;
 
         if (
           status === 409 ||
@@ -945,9 +1157,11 @@ function Billing() {
         await upgradeSubscription({
           plan:
             selectedPlan,
+
           billingCycle,
-          provider:
-            provider,
+
+          provider,
+
           currency:
             "USD",
         });
@@ -957,15 +1171,17 @@ function Billing() {
         });
 
         setSuccessMessage(
-          "Upgrade request completed. The subscription status shown above comes from the backend."
+          "Upgrade request was sent to the backend. The displayed subscription state remains backend-controlled."
         );
 
       } catch (err) {
         const status =
-          err?.response?.status;
+          err?.response
+            ?.status;
 
         const code =
-          err?.response?.data?.code;
+          err?.response?.data
+            ?.code;
 
         if (
           status === 409 ||
@@ -1016,7 +1232,7 @@ function Billing() {
         });
 
         setSuccessMessage(
-          "Cancellation request submitted. The current subscription status is shown from the backend."
+          "Cancellation request was submitted. The subscription status shown above comes from the backend."
         );
 
       } catch (err) {
@@ -1037,15 +1253,14 @@ function Billing() {
   ======================================================= */
 
   const handleRefresh =
-    () => {
+    () =>
       loadBilling({
         refresh: true,
       });
-    };
 
 
   /* =======================================================
-     STATUS CLASS
+     STATUS
   ======================================================= */
 
   const statusText =
@@ -1060,15 +1275,23 @@ function Billing() {
 
   return (
     <DashboardLayout>
-      <main className={styles.page}>
-        <div className={styles.container}>
+      <main
+        className={
+          styles.page
+        }
+      >
+        <div
+          className={
+            styles.container
+          }
+        >
 
-          {/* =================================================
-              HEADER
-          ================================================= */}
+          {/* HEADER */}
 
           <header
-            className={styles.header}
+            className={
+              styles.header
+            }
           >
             <div
               className={
@@ -1084,7 +1307,6 @@ function Billing() {
                   className={
                     styles.eyebrowDot
                   }
-                  aria-hidden="true"
                 />
 
                 ZYRIONOS BILLING
@@ -1105,9 +1327,10 @@ function Billing() {
               >
                 Manage your subscription,
                 payment provider, usage,
-                credits and billing history
-                through the connected
-                ZyrionOS backend.
+                AI credits and billing
+                history through the
+                connected ZyrionOS
+                backend.
               </p>
             </div>
 
@@ -1134,7 +1357,6 @@ function Billing() {
                       ? styles.spin
                       : styles.refreshIcon
                   }
-                  aria-hidden="true"
                 >
                   ↻
                 </span>
@@ -1156,17 +1378,13 @@ function Billing() {
                 }
               >
                 Billing Overview
-                <span aria-hidden="true">
-                  →
-                </span>
+                <span>→</span>
               </button>
             </div>
           </header>
 
 
-          {/* =================================================
-              ALERTS
-          ================================================= */}
+          {/* ALERTS */}
 
           {error && (
             <section
@@ -1179,7 +1397,6 @@ function Billing() {
                 className={
                   styles.alertIcon
                 }
-                aria-hidden="true"
               >
                 !
               </div>
@@ -1224,7 +1441,6 @@ function Billing() {
                 className={
                   styles.alertIcon
                 }
-                aria-hidden="true"
               >
                 ✓
               </div>
@@ -1246,9 +1462,7 @@ function Billing() {
           )}
 
 
-          {/* =================================================
-              CURRENT SUBSCRIPTION
-          ================================================= */}
+          {/* CURRENT SUBSCRIPTION */}
 
           <section
             className={
@@ -1326,8 +1540,7 @@ function Billing() {
                         styles.billingInterval
                       }
                     >
-                      /
-                      {" "}
+                      /{" "}
                       {displayValue(
                         billing.interval
                       )}
@@ -1341,10 +1554,11 @@ function Billing() {
                 }
               >
                 Subscription state is
-                read from the authenticated
-                backend. ZyrionOS does not
+                read directly from the
+                authenticated backend.
+                The frontend does not
                 fabricate active billing
-                status in the frontend.
+                state.
               </p>
             </div>
 
@@ -1379,9 +1593,7 @@ function Billing() {
           </section>
 
 
-          {/* =================================================
-              PLAN SELECTOR
-          ================================================= */}
+          {/* PLANS */}
 
           <section
             className={
@@ -1415,10 +1627,11 @@ function Billing() {
                     styles.panelSubtitle
                   }
                 >
-                  Prices shown here match the
-                  current backend billing catalog.
-                  The backend remains the source
-                  of truth.
+                  Display prices match the
+                  configured ZyrionOS
+                  catalog. Final payment
+                  validation is performed
+                  by the backend.
                 </p>
               </div>
 
@@ -1475,15 +1688,15 @@ function Billing() {
                     selectedPlan ===
                     plan.name;
 
+                  const current =
+                    billing.planName ===
+                    plan.name;
+
                   const price =
                     billingCycle ===
                     "yearly"
                       ? plan.yearly
                       : plan.monthly;
-
-                  const current =
-                    billing.planName ===
-                    plan.name;
 
                   return (
                     <button
@@ -1558,9 +1771,7 @@ function Billing() {
             </div>
 
 
-            {/* =================================================
-                PROVIDER
-            ================================================= */}
+            {/* PAYMENT PROVIDER */}
 
             <div
               className={
@@ -1619,7 +1830,7 @@ function Billing() {
                     styles.providerDisabled
                   }
                   disabled
-                  title="Razorpay is not enabled for the current USD catalog"
+                  title="Razorpay is disabled for the current USD catalog"
                 >
                   <strong>
                     Razorpay
@@ -1633,16 +1844,18 @@ function Billing() {
             </div>
 
 
-            {/* =================================================
-                PAYMENT ACTION
-            ================================================= */}
+            {/* PAYMENT ACTION */}
 
             <div
               className={
                 styles.planAction
               }
             >
-              <div>
+              <div
+                className={
+                  styles.selectedSummary
+                }
+              >
                 <span
                   className={
                     styles.actionLabel
@@ -1688,7 +1901,8 @@ function Billing() {
                   {processing
                     ? "Initializing..."
                     : "Start Stripe Payment"}
-                  <span aria-hidden="true">
+
+                  <span>
                     →
                   </span>
                 </button>
@@ -1716,9 +1930,7 @@ function Billing() {
           </section>
 
 
-          {/* =================================================
-              PAYMENT INITIALIZATION
-          ================================================= */}
+          {/* PAYMENT SESSION */}
 
           {paymentData && (
             <section
@@ -1753,11 +1965,11 @@ function Billing() {
                       styles.panelSubtitle
                     }
                   >
-                    A real Stripe PaymentIntent
-                    was created by the backend.
-                    The subscription remains
-                    pending until the provider
-                    webhook confirms payment.
+                    The backend created a
+                    real Stripe PaymentIntent.
+                    Subscription activation
+                    remains provider-webhook
+                    controlled.
                   </p>
                 </div>
 
@@ -1765,7 +1977,6 @@ function Billing() {
                   className={
                     styles.creditIcon
                   }
-                  aria-hidden="true"
                 >
                   $
                 </div>
@@ -1782,7 +1993,9 @@ function Billing() {
                   </span>
 
                   <strong>
-                    {paymentData.plan}
+                    {
+                      paymentData.plan
+                    }
                   </strong>
                 </div>
 
@@ -1830,7 +2043,8 @@ function Billing() {
                 Payment activation is
                 <strong>
                   {" "}
-                  pending webhook confirmation
+                  pending webhook
+                  confirmation
                 </strong>
                 .
               </div>
@@ -1838,9 +2052,7 @@ function Billing() {
           )}
 
 
-          {/* =================================================
-              RESOURCES
-          ================================================= */}
+          {/* RESOURCES */}
 
           <section
             className={
@@ -1848,168 +2060,96 @@ function Billing() {
             }
             aria-label="Subscription resources"
           >
-            <article
-              className={
-                styles.resourceCard
-              }
-            >
-              <div
-                className={
-                  styles.resourceHeader
-                }
-              >
-                <span>
-                  RAM
-                </span>
+            {[
+              [
+                "RAM",
+                "RAM",
+                billing.infrastructure
+                  .ram,
+                "Backend-reported workspace memory.",
+              ],
 
-                <div
+              [
+                "CPU",
+                "CPU",
+                billing.infrastructure
+                  .cpu,
+                "Backend-reported compute capacity.",
+              ],
+
+              [
+                "STORAGE",
+                "DB",
+                billing.infrastructure
+                  .storage,
+                "Backend-reported storage allocation.",
+              ],
+
+              [
+                "BANDWIDTH",
+                "↕",
+                billing.infrastructure
+                  .bandwidth,
+                "Backend-reported network allocation.",
+              ],
+            ].map(
+              ([
+                label,
+                icon,
+                value,
+                description,
+              ]) => (
+                <article
+                  key={label}
                   className={
-                    styles.resourceIcon
+                    styles.resourceCard
                   }
                 >
-                  RAM
-                </div>
-              </div>
+                  <div
+                    className={
+                      styles.resourceHeader
+                    }
+                  >
+                    <span>
+                      {label}
+                    </span>
 
-              <strong>
-                {loading
-                  ? "—"
-                  : displayValue(
-                      billing.infrastructure.ram
-                    )}
-              </strong>
+                    <div
+                      className={
+                        styles.resourceIcon
+                      }
+                    >
+                      {icon}
+                    </div>
+                  </div>
 
-              <span>
-                Backend-reported workspace
-                memory.
-              </span>
-            </article>
+                  <strong>
+                    {loading
+                      ? "—"
+                      : displayValue(
+                          value
+                        )}
+                  </strong>
 
-
-            <article
-              className={
-                styles.resourceCard
-              }
-            >
-              <div
-                className={
-                  styles.resourceHeader
-                }
-              >
-                <span>
-                  CPU
-                </span>
-
-                <div
-                  className={
-                    styles.resourceIcon
-                  }
-                >
-                  CPU
-                </div>
-              </div>
-
-              <strong>
-                {loading
-                  ? "—"
-                  : displayValue(
-                      billing.infrastructure.cpu
-                    )}
-              </strong>
-
-              <span>
-                Backend-reported compute
-                capacity.
-              </span>
-            </article>
-
-
-            <article
-              className={
-                styles.resourceCard
-              }
-            >
-              <div
-                className={
-                  styles.resourceHeader
-                }
-              >
-                <span>
-                  STORAGE
-                </span>
-
-                <div
-                  className={
-                    styles.resourceIcon
-                  }
-                >
-                  DB
-                </div>
-              </div>
-
-              <strong>
-                {loading
-                  ? "—"
-                  : displayValue(
-                      billing.infrastructure.storage
-                    )}
-              </strong>
-
-              <span>
-                Backend-reported storage
-                allocation.
-              </span>
-            </article>
-
-
-            <article
-              className={
-                styles.resourceCard
-              }
-            >
-              <div
-                className={
-                  styles.resourceHeader
-                }
-              >
-                <span>
-                  BANDWIDTH
-                </span>
-
-                <div
-                  className={
-                    styles.resourceIcon
-                  }
-                >
-                  ↕
-                </div>
-              </div>
-
-              <strong>
-                {loading
-                  ? "—"
-                  : displayValue(
-                      billing.infrastructure.bandwidth
-                    )}
-              </strong>
-
-              <span>
-                Backend-reported network
-                allocation.
-              </span>
-            </article>
+                  <span>
+                    {description}
+                  </span>
+                </article>
+              )
+            )}
           </section>
 
 
-          {/* =================================================
-              PAYMENT + CREDITS
-          ================================================= */}
+          {/* PAYMENT + CREDITS */}
 
           <section
             className={
               styles.detailsGrid
             }
           >
+
+            {/* PAYMENT METHOD */}
+
             <article
               className={
                 styles.panel
@@ -2098,13 +2238,16 @@ function Billing() {
                   </strong>
 
                   <p>
-                    The backend has not returned
-                    a stored payment method.
+                    The backend has not
+                    returned a stored
+                    payment method.
                   </p>
                 </div>
               )}
             </article>
 
+
+            {/* AI CREDITS */}
 
             <article
               className={
@@ -2138,8 +2281,10 @@ function Billing() {
                       styles.panelSubtitle
                     }
                   >
-                    Real credit values returned
-                    by the payment backend.
+                    Live credit values
+                    returned by the
+                    authenticated payment
+                    backend.
                   </p>
                 </div>
 
@@ -2157,74 +2302,112 @@ function Billing() {
                   styles.creditBody
                 }
               >
-                <div
-                  className={
-                    styles.creditValues
-                  }
-                >
-                  <div>
-                    <span>
-                      Used
-                    </span>
-
-                    <strong>
-                      {displayValue(
-                        normalizedCredits.used
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>
-                      Remaining
-                    </span>
-
-                    <strong>
-                      {displayValue(
-                        normalizedCredits.remaining
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>
-                      Limit
-                    </span>
-
-                    <strong>
-                      {normalizedCredits.unlimited
-                        ? "Unlimited"
-                        : displayValue(
-                            normalizedCredits.total
-                          )}
-                    </strong>
-                  </div>
-                </div>
-
-                {creditProgress !== null && (
+                {!credits ? (
                   <div
                     className={
-                      styles.progressTrack
+                      styles.creditUnavailable
                     }
                   >
-                    <span
+                    <strong>
+                      Credits unavailable
+                    </strong>
+
+                    <p>
+                      The credits API did
+                      not return credit
+                      values for this
+                      account.
+                    </p>
+
+                    <button
+                      type="button"
                       className={
-                        styles.progressBar
+                        styles.creditRetryButton
                       }
-                      style={{
-                        width: `${creditProgress}%`,
-                      }}
-                    />
+                      onClick={
+                        handleRefresh
+                      }
+                      disabled={
+                        refreshing
+                      }
+                    >
+                      Refresh Credits
+                    </button>
                   </div>
+                ) : (
+                  <>
+                    <div
+                      className={
+                        styles.creditValues
+                      }
+                    >
+                      <div>
+                        <span>
+                          Used
+                        </span>
+
+                        <strong>
+                          {displayValue(
+                            credits.used
+                          )}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Remaining
+                        </span>
+
+                        <strong>
+                          {displayValue(
+                            credits.remaining
+                          )}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Limit
+                        </span>
+
+                        <strong>
+                          {credits.unlimited
+                            ? "Unlimited"
+                            : displayValue(
+                                credits.total
+                              )}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {creditProgress !==
+                      null && (
+                      <div
+                        className={
+                          styles.progressTrack
+                        }
+                        aria-label={`AI credits used ${Math.round(
+                          creditProgress
+                        )}%`}
+                      >
+                        <span
+                          className={
+                            styles.progressBar
+                          }
+                          style={{
+                            width: `${creditProgress}%`,
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </article>
           </section>
 
 
-          {/* =================================================
-              BILLING HISTORY
-          ================================================= */}
+          {/* BILLING HISTORY */}
 
           <section
             className={
@@ -2258,8 +2441,9 @@ function Billing() {
                     styles.panelSubtitle
                   }
                 >
-                  Subscription records returned
-                  by the authenticated billing
+                  Subscription records
+                  returned by the
+                  authenticated billing
                   backend.
                 </p>
               </div>
@@ -2277,8 +2461,9 @@ function Billing() {
                 </strong>
 
                 <p>
-                  No transaction history has
-                  been returned for this account.
+                  No transaction history
+                  has been returned for
+                  this account.
                 </p>
               </div>
             ) : (
@@ -2288,12 +2473,18 @@ function Billing() {
                 }
               >
                 {billingHistory.map(
-                  (item, index) => {
+                  (
+                    item,
+                    index
+                  ) => {
                     const itemPlan =
                       firstValue(
                         item?.planName,
                         item?.plan?.name,
-                        item?.plan
+                        typeof item?.plan ===
+                          "string"
+                          ? item.plan
+                          : undefined
                       );
 
                     const itemAmount =
@@ -2393,9 +2584,7 @@ function Billing() {
           </section>
 
 
-          {/* =================================================
-              SUBSCRIPTION CONTROL
-          ================================================= */}
+          {/* SUBSCRIPTION CONTROL */}
 
           <section
             className={
@@ -2420,11 +2609,11 @@ function Billing() {
               </h2>
 
               <p>
-                Subscription actions are sent
-                directly to the authenticated
-                backend. Payment confirmation and
-                activation remain provider-webhook
-                controlled.
+                Subscription actions are
+                sent to the authenticated
+                backend. Payment confirmation
+                and activation remain
+                provider-webhook controlled.
               </p>
             </div>
 
@@ -2446,9 +2635,7 @@ function Billing() {
                 }
               >
                 Upgrade
-                <span aria-hidden="true">
-                  →
-                </span>
+                <span>→</span>
               </button>
 
               {billing.status ===

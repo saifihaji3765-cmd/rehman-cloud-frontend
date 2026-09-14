@@ -1,46 +1,39 @@
 /* =========================================================
    ZYRIONOS — LOGIN EXPERIENCE
-   Enterprise Authentication Surface
-   FULL 3D EARTH EDITION
+   FUTURISTIC AI CLOUD AUTHENTICATION
+   Responsive: Desktop / Laptop / Tablet / Mobile
    Matches Login.jsx 1:1
 ========================================================= */
 
-
-/* =========================================================
-   LOCAL DESIGN TOKENS
-========================================================= */
-
 .page {
-  --login-bg: #030611;
-  --login-bg-deep: #02030a;
+  --login-bg: #02030a;
+  --login-bg-deep: #010208;
 
-  --login-surface: rgba(10, 15, 30, 0.82);
-  --login-surface-strong: rgba(12, 18, 36, 0.94);
+  --login-surface: rgba(8, 12, 27, 0.78);
+  --login-surface-strong: rgba(10, 15, 32, 0.94);
   --login-surface-soft: rgba(255, 255, 255, 0.035);
 
-  --login-border: rgba(255, 255, 255, 0.09);
+  --login-border: rgba(255, 255, 255, 0.085);
   --login-border-strong: rgba(255, 255, 255, 0.15);
 
-  --login-text: #f4f7ff;
-  --login-text-secondary: #a8b1c7;
-  --login-text-muted: #6f7890;
+  --login-text: #f6f8ff;
+  --login-text-secondary: #aeb7cc;
+  --login-text-muted: #707a91;
 
-  --login-purple: #6c63ff;
-  --login-purple-light: #8179ff;
-  --login-purple-deep: #5148d9;
+  --login-purple: #7167ff;
+  --login-purple-light: #8d85ff;
+  --login-purple-deep: #5146d8;
 
-  --login-cyan: #35d7ff;
-  --login-blue: #4c8dff;
+  --login-cyan: #37d9ff;
+  --login-blue: #528cff;
 
-  --login-success: #20c77a;
-  --login-danger: #f05a67;
+  --login-success: #20cf80;
+  --login-danger: #f05d6c;
 
   position: relative;
 
-  width: 100vw;
-  min-width: 100%;
-  max-width: none;
-
+  width: 100%;
+  min-width: 0;
   min-height: 100svh;
 
   margin: 0;
@@ -52,25 +45,19 @@
 
   background:
     radial-gradient(
-      circle at 15% 20%,
-      rgba(108, 99, 255, 0.16),
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at 86% 75%,
-      rgba(53, 215, 255, 0.09),
-      transparent 30%
+      circle at 50% -20%,
+      rgba(113, 103, 255, 0.14),
+      transparent 42%
     ),
     linear-gradient(
-      135deg,
-      #02030a 0%,
-      #050817 48%,
-      #020711 100%
+      145deg,
+      #010208 0%,
+      #030613 46%,
+      #02030b 100%
     );
 
   isolation: isolate;
 }
-
 
 /* =========================================================
    BACKGROUND
@@ -78,14 +65,10 @@
 
 .background {
   position: fixed;
-
   inset: 0;
 
   z-index: -10;
 
-  width: 100%;
-  height: 100%;
-
   overflow: hidden;
 
   pointer-events: none;
@@ -93,520 +76,335 @@
   background:
     radial-gradient(
       ellipse at center,
-      rgba(22, 30, 62, 0.25),
-      transparent 62%
+      rgba(18, 28, 60, 0.22),
+      transparent 68%
     );
 }
 
-
 /* =========================================================
-   BACKGROUND GRID
+   DIGITAL GRID
 ========================================================= */
 
-.grid {
+.backgroundGrid {
   position: absolute;
 
-  inset: -35%;
+  inset: -25%;
 
-  opacity: 0.22;
+  opacity: 0.28;
 
   background-image:
     linear-gradient(
-      rgba(108, 99, 255, 0.09) 1px,
+      rgba(113, 103, 255, 0.075) 1px,
       transparent 1px
     ),
     linear-gradient(
       90deg,
-      rgba(108, 99, 255, 0.09) 1px,
+      rgba(55, 217, 255, 0.055) 1px,
       transparent 1px
     );
 
-  background-size: 52px 52px;
+  background-size: 58px 58px;
 
   transform:
-    perspective(1100px)
-    rotateX(64deg)
-    translateY(20%);
-
-  transform-origin: center center;
+    perspective(1000px)
+    rotateX(66deg)
+    translateY(18%);
 
   mask-image:
-    linear-gradient(
-      to bottom,
-      transparent 0%,
-      black 25%,
-      black 70%,
-      transparent 100%
+    radial-gradient(
+      ellipse at center,
+      black 0%,
+      black 48%,
+      transparent 82%
     );
 
   -webkit-mask-image:
-    linear-gradient(
-      to bottom,
-      transparent 0%,
-      black 25%,
-      black 70%,
-      transparent 100%
+    radial-gradient(
+      ellipse at center,
+      black 0%,
+      black 48%,
+      transparent 82%
     );
 
-  animation: gridDrift 28s ease-in-out infinite;
+  animation: gridFloat 24s ease-in-out infinite;
 }
 
-
 /* =========================================================
-   PRIMARY BACKGROUND GLOW
+   BACKGROUND NOISE
 ========================================================= */
 
-.glowPrimary {
+.backgroundNoise {
+  position: absolute;
+  inset: 0;
+
+  opacity: 0.045;
+
+  background-image:
+    radial-gradient(
+      rgba(255, 255, 255, 0.8) 0.5px,
+      transparent 0.7px
+    );
+
+  background-size: 7px 7px;
+
+  mix-blend-mode: screen;
+}
+
+/* =========================================================
+   PRIMARY GLOW
+========================================================= */
+
+.backgroundGlowOne {
   position: absolute;
 
-  width: min(900px, 75vw);
-  height: min(900px, 75vw);
+  width: 760px;
+  height: 760px;
 
-  left: -280px;
-  top: -320px;
+  left: -270px;
+  top: -310px;
 
   border-radius: 50%;
 
   background:
     radial-gradient(
       circle,
-      rgba(108, 99, 255, 0.24) 0%,
-      rgba(108, 99, 255, 0.11) 30%,
-      rgba(108, 99, 255, 0.035) 52%,
-      transparent 74%
-    );
-
-  filter: blur(22px);
-
-  animation:
-    primaryGlow 10s ease-in-out infinite;
-}
-
-
-/* =========================================================
-   SECONDARY BACKGROUND GLOW
-========================================================= */
-
-.glowSecondary {
-  position: absolute;
-
-  width: min(850px, 72vw);
-  height: min(850px, 72vw);
-
-  right: -300px;
-  bottom: -330px;
-
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      circle,
-      rgba(53, 215, 255, 0.14) 0%,
-      rgba(76, 141, 255, 0.08) 34%,
+      rgba(113, 103, 255, 0.22) 0%,
+      rgba(113, 103, 255, 0.08) 36%,
       transparent 72%
     );
 
-  filter: blur(25px);
+  filter: blur(24px);
 
   animation:
-    secondaryGlow 12s ease-in-out infinite;
+    glowOne 11s ease-in-out infinite;
 }
 
-
 /* =========================================================
-   3D EARTH SCENE
+   SECONDARY GLOW
 ========================================================= */
 
-.earthScene {
+.backgroundGlowTwo {
   position: absolute;
 
-  left: 50%;
-  top: 50%;
+  width: 700px;
+  height: 700px;
 
-  width: min(920px, 72vw);
-  height: min(920px, 72vw);
-
-  transform:
-    translate(-50%, -50%);
-
-  transform-style: preserve-3d;
-
-  perspective: 1200px;
-
-  opacity: 0.96;
-}
-
-
-/* =========================================================
-   EARTH AMBIENT GLOW
-========================================================= */
-
-.earthGlow {
-  position: absolute;
-
-  left: 50%;
-  top: 50%;
-
-  width: 68%;
-  height: 68%;
-
-  transform:
-    translate(-50%, -50%);
+  right: -280px;
+  bottom: -280px;
 
   border-radius: 50%;
 
   background:
     radial-gradient(
       circle,
-      rgba(53, 215, 255, 0.16) 0%,
-      rgba(76, 141, 255, 0.10) 28%,
-      rgba(108, 99, 255, 0.06) 48%,
+      rgba(55, 217, 255, 0.12) 0%,
+      rgba(82, 140, 255, 0.06) 38%,
       transparent 72%
     );
 
-  filter: blur(34px);
+  filter: blur(28px);
 
   animation:
-    earthGlowPulse 8s ease-in-out infinite;
+    glowTwo 14s ease-in-out infinite;
 }
 
-
 /* =========================================================
-   EARTH ORBITS
+   FLOATING ORBS
 ========================================================= */
 
-.earthOrbit {
+.backgroundOrbOne,
+.backgroundOrbTwo {
   position: absolute;
 
-  left: 50%;
-  top: 50%;
-
   border-radius: 50%;
-
-  transform-style: preserve-3d;
 
   pointer-events: none;
 }
 
+.backgroundOrbOne {
+  width: 260px;
+  height: 260px;
 
-/* =========================================================
-   ORBIT ONE
-========================================================= */
-
-.orbitOne {
-  width: 92%;
-  height: 37%;
-
-  margin-left: -46%;
-  margin-top: -18.5%;
-
-  border:
-    1px solid rgba(53, 215, 255, 0.22);
-
-  transform:
-    rotateX(68deg)
-    rotateZ(-16deg);
-
-  box-shadow:
-    0 0 20px rgba(53, 215, 255, 0.035);
-
-  animation:
-    earthOrbitOne 24s linear infinite;
-}
-
-
-/* =========================================================
-   ORBIT TWO
-========================================================= */
-
-.orbitTwo {
-  width: 76%;
-  height: 30%;
-
-  margin-left: -38%;
-  margin-top: -15%;
-
-  border:
-    1px solid rgba(108, 99, 255, 0.20);
-
-  transform:
-    rotateX(67deg)
-    rotateZ(52deg);
-
-  animation:
-    earthOrbitTwo 19s linear infinite reverse;
-}
-
-
-/* =========================================================
-   ORBIT THREE
-========================================================= */
-
-.orbitThree {
-  width: 112%;
-  height: 44%;
-
-  margin-left: -56%;
-  margin-top: -22%;
-
-  border:
-    1px solid rgba(76, 141, 255, 0.13);
-
-  transform:
-    rotateX(72deg)
-    rotateZ(108deg);
-
-  animation:
-    earthOrbitThree 31s linear infinite;
-}
-
-
-/* =========================================================
-   3D EARTH
-========================================================= */
-
-.earth {
-  position: absolute;
-
-  left: 50%;
-  top: 50%;
-
-  width: 55%;
-  aspect-ratio: 1 / 1;
-
-  transform:
-    translate(-50%, -50%);
-
-  border-radius: 50%;
-
-  overflow: hidden;
-
-  transform-style: preserve-3d;
+  left: 23%;
+  top: 14%;
 
   background:
     radial-gradient(
-      circle at 34% 28%,
-      rgba(53, 215, 255, 0.62) 0%,
-      rgba(53, 215, 255, 0.20) 16%,
-      transparent 36%
-    ),
-    radial-gradient(
-      circle at 48% 52%,
-      rgba(76, 141, 255, 0.40) 0%,
-      rgba(35, 71, 155, 0.42) 34%,
-      rgba(6, 15, 39, 0.96) 72%,
-      #020510 100%
-    );
-
-  border:
-    1px solid rgba(111, 220, 255, 0.30);
-
-  box-shadow:
-    0 0 0 1px rgba(108, 99, 255, 0.12),
-    0 0 30px rgba(53, 215, 255, 0.14),
-    0 0 80px rgba(76, 141, 255, 0.11),
-    0 0 150px rgba(108, 99, 255, 0.07),
-    inset -35px -25px 65px rgba(0, 0, 0, 0.82),
-    inset 18px 10px 42px rgba(53, 215, 255, 0.10);
-
-  animation:
-    earthFloat 8s ease-in-out infinite;
-}
-
-
-/* =========================================================
-   EARTH SURFACE
-========================================================= */
-
-.earthSurface {
-  position: absolute;
-
-  inset: 0;
-
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      ellipse at 30% 34%,
-      rgba(53, 215, 255, 0.42),
-      transparent 17%
-    ),
-    radial-gradient(
-      ellipse at 61% 27%,
-      rgba(76, 141, 255, 0.28),
-      transparent 20%
-    ),
-    radial-gradient(
-      ellipse at 45% 61%,
-      rgba(53, 215, 255, 0.22),
-      transparent 23%
-    ),
-    radial-gradient(
-      ellipse at 68% 72%,
-      rgba(108, 99, 255, 0.22),
-      transparent 22%
-    );
-
-  mix-blend-mode: screen;
-
-  opacity: 0.78;
-
-  animation:
-    earthSurfaceMove 18s linear infinite;
-}
-
-
-/* =========================================================
-   LATITUDE GRID
-========================================================= */
-
-.latitudeGrid {
-  position: absolute;
-
-  inset: -4%;
-
-  border-radius: 50%;
-
-  background:
-    repeating-radial-gradient(
-      ellipse at center,
-      transparent 0,
-      transparent 9%,
-      rgba(53, 215, 255, 0.12) 9.25%,
-      transparent 9.6%
-    );
-
-  opacity: 0.46;
-
-  transform:
-    scaleY(0.52);
-
-  mix-blend-mode: screen;
-
-  animation:
-    globeGridPulse 7s ease-in-out infinite;
-}
-
-
-/* =========================================================
-   LONGITUDE GRID
-========================================================= */
-
-.longitudeGrid {
-  position: absolute;
-
-  inset: -3%;
-
-  border-radius: 50%;
-
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 11%,
-      rgba(76, 141, 255, 0.13) 11.2%,
-      transparent 11.6%
-    );
-
-  opacity: 0.42;
-
-  transform:
-    rotate(16deg)
-    scaleX(0.72);
-
-  mix-blend-mode: screen;
-
-  animation:
-    longitudeMove 16s linear infinite;
-}
-
-
-/* =========================================================
-   EARTH HIGHLIGHT
-========================================================= */
-
-.earthHighlight {
-  position: absolute;
-
-  left: 7%;
-  top: 6%;
-
-  width: 48%;
-  height: 48%;
-
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      circle at 45% 45%,
-      rgba(255, 255, 255, 0.18),
-      rgba(53, 215, 255, 0.08) 24%,
+      circle at 35% 30%,
+      rgba(55, 217, 255, 0.10),
       transparent 68%
     );
 
-  filter: blur(7px);
+  filter: blur(4px);
 
-  opacity: 0.65;
+  animation:
+    orbOne 13s ease-in-out infinite;
 }
 
+.backgroundOrbTwo {
+  width: 320px;
+  height: 320px;
 
-/* =========================================================
-   EARTH SHADOW
-========================================================= */
-
-.earthShadow {
-  position: absolute;
-
-  inset: 0;
-
-  border-radius: 50%;
+  right: 17%;
+  bottom: 10%;
 
   background:
     radial-gradient(
-      circle at 70% 52%,
-      transparent 0%,
-      transparent 38%,
-      rgba(0, 0, 0, 0.28) 62%,
-      rgba(0, 0, 0, 0.70) 88%,
-      rgba(0, 0, 0, 0.92) 100%
+      circle at 60% 40%,
+      rgba(113, 103, 255, 0.12),
+      transparent 68%
     );
 
-  pointer-events: none;
+  filter: blur(5px);
+
+  animation:
+    orbTwo 17s ease-in-out infinite;
 }
 
-
 /* =========================================================
-   EARTH ATMOSPHERE
+   ORBIT RINGS
 ========================================================= */
 
-.earthAtmosphere {
+.backgroundOrbitOne,
+.backgroundOrbitTwo,
+.backgroundOrbitThree {
   position: absolute;
 
   left: 50%;
   top: 50%;
 
-  width: 59%;
-  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+
+  transform-style: preserve-3d;
+
+  pointer-events: none;
+}
+
+.backgroundOrbitOne {
+  width: min(1050px, 100vw);
+  height: 340px;
+
+  margin-left: min(-525px, -50vw);
+  margin-top: -170px;
+
+  border:
+    1px solid rgba(55, 217, 255, 0.08);
+
+  transform:
+    rotateX(68deg)
+    rotateZ(-18deg);
+
+  animation:
+    orbitOne 30s linear infinite;
+}
+
+.backgroundOrbitTwo {
+  width: min(850px, 88vw);
+  height: 270px;
+
+  margin-left: min(-425px, -44vw);
+  margin-top: -135px;
+
+  border:
+    1px solid rgba(113, 103, 255, 0.10);
+
+  transform:
+    rotateX(66deg)
+    rotateZ(42deg);
+
+  animation:
+    orbitTwo 23s linear infinite reverse;
+}
+
+.backgroundOrbitThree {
+  width: min(1250px, 118vw);
+  height: 400px;
+
+  margin-left: min(-625px, -59vw);
+  margin-top: -200px;
+
+  border:
+    1px solid rgba(82, 140, 255, 0.055);
+
+  transform:
+    rotateX(72deg)
+    rotateZ(104deg);
+
+  animation:
+    orbitThree 38s linear infinite;
+}
+
+/* =========================================================
+   BACKGROUND CORE
+========================================================= */
+
+.backgroundCore {
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: 230px;
+  height: 230px;
 
   transform:
     translate(-50%, -50%);
 
   border-radius: 50%;
 
-  border:
-    1px solid rgba(53, 215, 255, 0.34);
+  background:
+    radial-gradient(
+      circle,
+      rgba(113, 103, 255, 0.10),
+      transparent 67%
+    );
 
-  box-shadow:
-    0 0 10px rgba(53, 215, 255, 0.20),
-    0 0 28px rgba(53, 215, 255, 0.14),
-    0 0 55px rgba(76, 141, 255, 0.08);
-
-  pointer-events: none;
+  filter: blur(1px);
 
   animation:
-    atmospherePulse 5s ease-in-out infinite;
+    corePulse 8s ease-in-out infinite;
 }
 
+.backgroundCore span {
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  display: block;
+
+  border-radius: 50%;
+
+  transform:
+    translate(-50%, -50%);
+}
+
+.backgroundCore span:nth-child(1) {
+  width: 58px;
+  height: 58px;
+
+  border:
+    1px solid rgba(55, 217, 255, 0.22);
+
+  box-shadow:
+    0 0 45px rgba(55, 217, 255, 0.12);
+}
+
+.backgroundCore span:nth-child(2) {
+  width: 110px;
+  height: 110px;
+
+  border:
+    1px solid rgba(113, 103, 255, 0.13);
+}
+
+.backgroundCore span:nth-child(3) {
+  width: 180px;
+  height: 180px;
+
+  border:
+    1px dashed rgba(82, 140, 255, 0.07);
+}
 
 /* =========================================================
    TOP BAR
@@ -619,32 +417,28 @@
 
   width: 100%;
 
-  min-height: 76px;
+  min-height: 74px;
 
   padding:
-    16px
+    14px
     clamp(18px, 4vw, 60px);
 
   display: flex;
+
   align-items: center;
   justify-content: space-between;
 
-  gap: 20px;
+  gap: 18px;
 
   border-bottom:
-    1px solid rgba(255, 255, 255, 0.06);
+    1px solid rgba(255, 255, 255, 0.055);
 
   background:
-    linear-gradient(
-      to bottom,
-      rgba(3, 5, 12, 0.86),
-      rgba(3, 5, 12, 0.48)
-    );
+    rgba(2, 4, 11, 0.60);
 
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
-
 
 /* =========================================================
    BRAND
@@ -654,6 +448,7 @@
   min-width: 0;
 
   display: inline-flex;
+
   align-items: center;
 
   gap: 11px;
@@ -665,14 +460,12 @@
   outline: none;
 }
 
-
 .brand:focus-visible {
   border-radius: 12px;
 
   box-shadow:
-    0 0 0 3px rgba(108, 99, 255, 0.25);
+    0 0 0 3px rgba(113, 103, 255, 0.24);
 }
-
 
 /* =========================================================
    BRAND MARK
@@ -688,8 +481,11 @@
 
   display: grid;
 
-  grid-template-columns: repeat(2, 8px);
-  grid-template-rows: repeat(2, 8px);
+  grid-template-columns:
+    repeat(2, 8px);
+
+  grid-template-rows:
+    repeat(2, 8px);
 
   align-content: center;
   justify-content: center;
@@ -697,28 +493,27 @@
   gap: 4px;
 
   border:
-    1px solid rgba(129, 121, 255, 0.40);
+    1px solid rgba(141, 133, 255, 0.42);
 
   border-radius: 12px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(108, 99, 255, 0.30),
-      rgba(53, 215, 255, 0.10)
+      rgba(113, 103, 255, 0.30),
+      rgba(55, 217, 255, 0.08)
     );
 
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 8px 30px rgba(81, 72, 217, 0.18);
+    0 10px 35px rgba(81, 70, 216, 0.18);
 }
 
-
 .brandMark span {
-  display: block;
-
   width: 8px;
   height: 8px;
+
+  display: block;
 
   border-radius: 3px;
 
@@ -730,24 +525,20 @@
     );
 
   box-shadow:
-    0 0 10px rgba(108, 99, 255, 0.30);
+    0 0 10px rgba(113, 103, 255, 0.30);
 }
-
 
 .brandMark span:nth-child(2) {
   opacity: 0.84;
 }
 
-
 .brandMark span:nth-child(3) {
   opacity: 0.66;
 }
 
-
 .brandMark span:nth-child(4) {
   opacity: 0.48;
 }
-
 
 /* =========================================================
    BRAND TEXT
@@ -763,15 +554,13 @@
   line-height: 1.05;
 }
 
-
 .brandText strong {
   font-size: 15px;
 
-  font-weight: 750;
+  font-weight: 760;
 
   letter-spacing: -0.01em;
 }
-
 
 .brandText small {
   margin-top: 5px;
@@ -789,7 +578,6 @@
   white-space: nowrap;
 }
 
-
 /* =========================================================
    TOPBAR RIGHT
 ========================================================= */
@@ -800,22 +588,24 @@
   display: flex;
 
   align-items: center;
-  justify-content: flex-end;
-}
 
+  justify-content: flex-end;
+
+  gap: 10px;
+}
 
 /* =========================================================
    SECURE BADGE
 ========================================================= */
 
 .secureBadge {
+  min-height: 30px;
+
   display: inline-flex;
 
   align-items: center;
 
   gap: 7px;
-
-  min-height: 30px;
 
   padding:
     0
@@ -823,22 +613,18 @@
 
   color: var(--login-text-secondary);
 
-  font-size: 11px;
+  font-size: 10px;
 
   font-weight: 600;
 
   border:
-    1px solid rgba(32, 199, 122, 0.16);
+    1px solid rgba(32, 207, 128, 0.14);
 
   border-radius: 999px;
 
   background:
-    rgba(32, 199, 122, 0.045);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    rgba(32, 207, 128, 0.035);
 }
-
 
 .secureBadgeIcon {
   display: inline-flex;
@@ -849,6 +635,70 @@
   color: var(--login-success);
 }
 
+/* =========================================================
+   SIGN UP BUTTON
+========================================================= */
+
+.signupButton {
+  min-height: 36px;
+
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  padding:
+    0
+    13px;
+
+  color: #eef0ff;
+
+  border:
+    1px solid rgba(129, 121, 255, 0.25);
+
+  border-radius: 10px;
+
+  background:
+    rgba(113, 103, 255, 0.075);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  text-decoration: none;
+
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.signupButton:hover {
+  transform:
+    translateY(-1px);
+
+  border-color:
+    rgba(141, 133, 255, 0.48);
+
+  background:
+    rgba(113, 103, 255, 0.13);
+
+  box-shadow:
+    0 10px 28px rgba(81, 70, 216, 0.16);
+}
+
+.signupButton:focus-visible {
+  outline:
+    2px solid rgba(55, 217, 255, 0.48);
+
+  outline-offset: 3px;
+}
 
 /* =========================================================
    AUTH FRAME
@@ -870,39 +720,38 @@
   margin:
     clamp(28px, 5vh, 64px)
     auto
-    36px;
+    34px;
 
   display: grid;
 
   grid-template-columns:
-    minmax(0, 1.12fr)
-    minmax(400px, 0.88fr);
+    minmax(0, 1.08fr)
+    minmax(410px, 0.92fr);
 
   align-items: stretch;
 
   overflow: hidden;
 
   border:
-    1px solid rgba(255, 255, 255, 0.10);
+    1px solid rgba(255, 255, 255, 0.09);
 
   border-radius: 30px;
 
   background:
     linear-gradient(
       135deg,
-      rgba(13, 19, 38, 0.84),
-      rgba(5, 9, 20, 0.93)
+      rgba(10, 15, 32, 0.84),
+      rgba(4, 7, 17, 0.94)
     );
 
   box-shadow:
-    0 40px 120px rgba(0, 0, 0, 0.48),
-    0 0 0 1px rgba(255, 255, 255, 0.018),
+    0 45px 130px rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(255, 255, 255, 0.012),
     inset 0 1px 0 rgba(255, 255, 255, 0.055);
 
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
 }
-
 
 /* =========================================================
    PRODUCT PANEL
@@ -920,31 +769,30 @@
   justify-content: space-between;
 
   padding:
-    clamp(42px, 5vw, 76px);
+    clamp(44px, 5vw, 76px);
 
   border-right:
-    1px solid rgba(255, 255, 255, 0.06);
+    1px solid rgba(255, 255, 255, 0.055);
 
   background:
     radial-gradient(
-      circle at 24% 22%,
-      rgba(108, 99, 255, 0.12),
+      circle at 24% 20%,
+      rgba(113, 103, 255, 0.11),
       transparent 36%
     ),
     linear-gradient(
       145deg,
-      rgba(108, 99, 255, 0.06),
-      rgba(53, 215, 255, 0.015) 50%,
+      rgba(113, 103, 255, 0.055),
+      rgba(55, 217, 255, 0.012) 50%,
       rgba(0, 0, 0, 0.10)
     );
 }
 
-
 /* =========================================================
-   PRODUCT INNER
+   PRODUCT CONTENT
 ========================================================= */
 
-.productInner {
+.productContent {
   width: 100%;
 
   max-width: 700px;
@@ -955,7 +803,6 @@
     auto
     0;
 }
-
 
 /* =========================================================
    PRODUCT EYEBROW
@@ -970,17 +817,16 @@
 
   margin-bottom: 22px;
 
-  color: #929bb3;
+  color: #969fb7;
 
   font-size: 10px;
 
-  font-weight: 750;
+  font-weight: 760;
 
   letter-spacing: 0.14em;
 
   text-transform: uppercase;
 }
-
 
 .liveDot {
   width: 7px;
@@ -993,13 +839,12 @@
   background: var(--login-success);
 
   box-shadow:
-    0 0 0 4px rgba(32, 199, 122, 0.08),
-    0 0 15px rgba(32, 199, 122, 0.50);
+    0 0 0 4px rgba(32, 207, 128, 0.075),
+    0 0 16px rgba(32, 207, 128, 0.52);
 
   animation:
     livePulse 2.2s ease-in-out infinite;
 }
-
 
 /* =========================================================
    HERO TITLE
@@ -1008,26 +853,23 @@
 .heroTitle {
   width: 100%;
 
-  max-width: 700px;
+  max-width: 720px;
 
   margin: 0;
 
   color: var(--login-text);
 
   font-size:
-    clamp(42px, 5vw, 72px);
+    clamp(42px, 5vw, 70px);
 
-  font-weight: 760;
+  font-weight: 780;
 
-  line-height: 0.98;
+  line-height: 0.99;
 
   letter-spacing: -0.055em;
 
   overflow-wrap: normal;
-
-  word-break: normal;
 }
-
 
 .heroTitle span {
   display: inline;
@@ -1036,8 +878,8 @@
     linear-gradient(
       100deg,
       var(--login-purple-light) 0%,
-      #9b94ff 35%,
-      var(--login-blue) 66%,
+      #9d96ff 32%,
+      var(--login-blue) 65%,
       var(--login-cyan) 100%
     );
 
@@ -1046,7 +888,6 @@
 
   color: transparent;
 }
-
 
 /* =========================================================
    HERO DESCRIPTION
@@ -1060,7 +901,7 @@
   margin:
     24px
     0
-    32px;
+    31px;
 
   color: var(--login-text-secondary);
 
@@ -1069,12 +910,7 @@
   line-height: 1.72;
 
   letter-spacing: -0.01em;
-
-  overflow-wrap: normal;
-
-  word-break: normal;
 }
-
 
 /* =========================================================
    CAPABILITY GRID
@@ -1095,7 +931,6 @@
   gap: 10px;
 }
 
-
 /* =========================================================
    CAPABILITY CARD
 ========================================================= */
@@ -1112,15 +947,15 @@
   padding: 14px;
 
   border:
-    1px solid rgba(255, 255, 255, 0.07);
+    1px solid rgba(255, 255, 255, 0.065);
 
   border-radius: 14px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(255, 255, 255, 0.035),
-      rgba(255, 255, 255, 0.018)
+      rgba(255, 255, 255, 0.034),
+      rgba(255, 255, 255, 0.014)
     );
 
   box-shadow:
@@ -1133,21 +968,20 @@
     box-shadow 180ms ease;
 }
 
-
 .capabilityCard:hover {
-  transform: translateY(-2px);
+  transform:
+    translateY(-2px);
 
   border-color:
     rgba(129, 121, 255, 0.22);
 
   background:
-    rgba(108, 99, 255, 0.05);
+    rgba(113, 103, 255, 0.055);
 
   box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.12),
+    0 12px 30px rgba(0, 0, 0, 0.13),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
-
 
 /* =========================================================
    CAPABILITY ICON
@@ -1167,18 +1001,17 @@
   color: var(--login-purple-light);
 
   border:
-    1px solid rgba(108, 99, 255, 0.19);
+    1px solid rgba(113, 103, 255, 0.19);
 
   border-radius: 10px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(108, 99, 255, 0.10),
-      rgba(53, 215, 255, 0.035)
+      rgba(113, 103, 255, 0.10),
+      rgba(55, 217, 255, 0.03)
     );
 }
-
 
 /* =========================================================
    CAPABILITY CONTENT
@@ -1194,7 +1027,6 @@
   gap: 4px;
 }
 
-
 .capabilityCard strong {
   color: var(--login-text);
 
@@ -1205,7 +1037,6 @@
   line-height: 1.3;
 }
 
-
 .capabilityCard span:not(.capabilityIcon) {
   color: var(--login-text-muted);
 
@@ -1214,13 +1045,10 @@
   line-height: 1.45;
 
   overflow-wrap: normal;
-
-  word-break: normal;
 }
 
-
 /* =========================================================
-   PRODUCT PRINCIPLE
+   PRINCIPLE
 ========================================================= */
 
 .productPrinciple {
@@ -1234,25 +1062,24 @@
 
   max-width: 610px;
 
-  margin-top: 24px;
+  margin-top: 23px;
 
   padding:
     13px
     14px;
 
   border:
-    1px solid rgba(53, 215, 255, 0.11);
+    1px solid rgba(55, 217, 255, 0.105);
 
   border-radius: 14px;
 
   background:
     linear-gradient(
       90deg,
-      rgba(53, 215, 255, 0.04),
-      rgba(108, 99, 255, 0.025)
+      rgba(55, 217, 255, 0.038),
+      rgba(113, 103, 255, 0.024)
     );
 }
-
 
 .principleIcon {
   width: 30px;
@@ -1268,21 +1095,19 @@
   color: var(--login-cyan);
 
   border:
-    1px solid rgba(53, 215, 255, 0.12);
+    1px solid rgba(55, 217, 255, 0.12);
 
   border-radius: 9px;
 
   background:
-    rgba(53, 215, 255, 0.07);
+    rgba(55, 217, 255, 0.065);
 }
 
-
-.productPrinciple > div:last-child {
+.productPrinciple > div {
   min-width: 0;
 }
 
-
-.productPrinciple > div:last-child > span {
+.productPrinciple small {
   display: block;
 
   margin-bottom: 4px;
@@ -1291,13 +1116,12 @@
 
   font-size: 8px;
 
-  font-weight: 750;
+  font-weight: 760;
 
   letter-spacing: 0.14em;
 
   line-height: 1.3;
 }
-
 
 .productPrinciple p {
   margin: 0;
@@ -1307,12 +1131,7 @@
   font-size: 11px;
 
   line-height: 1.5;
-
-  overflow-wrap: normal;
-
-  word-break: normal;
 }
-
 
 /* =========================================================
    PRODUCT FOOTER
@@ -1327,22 +1146,20 @@
 
   padding-top: 30px;
 
-  color: var(--login-text-muted);
+  color: #5d667c;
 
   font-size: 9px;
 
   font-weight: 650;
 
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
 
   text-transform: uppercase;
 }
 
-
 .footerSeparator {
-  color: rgba(255, 255, 255, 0.20);
+  color: rgba(255, 255, 255, 0.18);
 }
-
 
 /* =========================================================
    LOGIN PANEL
@@ -1356,20 +1173,18 @@
   display: flex;
 
   align-items: center;
-
   justify-content: center;
 
   padding:
-    clamp(36px, 5vw, 70px);
+    clamp(38px, 5vw, 70px);
 
   background:
     linear-gradient(
       145deg,
-      rgba(4, 7, 16, 0.42),
-      rgba(10, 14, 28, 0.72)
+      rgba(3, 6, 15, 0.38),
+      rgba(9, 13, 28, 0.70)
     );
 }
-
 
 /* =========================================================
    LOGIN CONTAINER
@@ -1382,11 +1197,8 @@
 
   min-width: 0;
 
-  margin:
-    0
-    auto;
+  margin: 0 auto;
 }
-
 
 /* =========================================================
    LOGIN HEADER
@@ -1402,11 +1214,9 @@
   margin-bottom: 28px;
 }
 
-
 .loginHeadingContent {
   min-width: 0;
 }
-
 
 .mobileProductMark {
   display: none;
@@ -1422,14 +1232,13 @@
   color: var(--login-purple-light);
 
   border:
-    1px solid rgba(108, 99, 255, 0.22);
+    1px solid rgba(113, 103, 255, 0.22);
 
   border-radius: 11px;
 
   background:
-    rgba(108, 99, 255, 0.075);
+    rgba(113, 103, 255, 0.075);
 }
-
 
 /* =========================================================
    LOGIN EYEBROW
@@ -1451,7 +1260,6 @@
   text-transform: uppercase;
 }
 
-
 /* =========================================================
    LOGIN TITLE
 ========================================================= */
@@ -1471,12 +1279,7 @@
   line-height: 1.08;
 
   letter-spacing: -0.04em;
-
-  overflow-wrap: normal;
-
-  word-break: normal;
 }
-
 
 /* =========================================================
    LOGIN SUBTITLE
@@ -1495,12 +1298,7 @@
   font-size: 12px;
 
   line-height: 1.55;
-
-  overflow-wrap: normal;
-
-  word-break: normal;
 }
-
 
 /* =========================================================
    ERROR
@@ -1519,21 +1317,20 @@
     11px
     12px;
 
-  color: #ffc1c7;
+  color: #ffc4ca;
 
   font-size: 11px;
 
   line-height: 1.45;
 
   border:
-    1px solid rgba(240, 90, 103, 0.22);
+    1px solid rgba(240, 93, 108, 0.22);
 
   border-radius: 11px;
 
   background:
-    rgba(240, 90, 103, 0.065);
+    rgba(240, 93, 108, 0.065);
 }
-
 
 .errorIcon {
   width: 18px;
@@ -1555,16 +1352,16 @@
   border-radius: 50%;
 
   background:
-    rgba(240, 90, 103, 0.75);
+    rgba(240, 93, 108, 0.76);
 }
-
 
 .errorMessage {
   min-width: 0;
 
+  margin: 0;
+
   overflow-wrap: anywhere;
 }
-
 
 /* =========================================================
    FORM
@@ -1582,7 +1379,6 @@
   min-width: 0;
 }
 
-
 /* =========================================================
    FIELD
 ========================================================= */
@@ -1592,7 +1388,6 @@
 
   min-width: 0;
 }
-
 
 /* =========================================================
    LABEL ROW
@@ -1610,7 +1405,6 @@
   margin-bottom: 8px;
 }
 
-
 /* =========================================================
    LABEL
 ========================================================= */
@@ -1620,7 +1414,7 @@
 
   margin-bottom: 8px;
 
-  color: #cbd2e3;
+  color: #cbd3e5;
 
   font-size: 11px;
 
@@ -1629,11 +1423,9 @@
   line-height: 1.3;
 }
 
-
 .labelRow .label {
   margin-bottom: 0;
 }
-
 
 /* =========================================================
    FORGOT LINK
@@ -1654,21 +1446,18 @@
     color 160ms ease;
 }
 
-
 .forgotLink:hover {
   color: var(--login-cyan);
 }
 
-
 .forgotLink:focus-visible {
   outline:
-    2px solid rgba(108, 99, 255, 0.45);
+    2px solid rgba(113, 103, 255, 0.45);
 
   outline-offset: 3px;
 
   border-radius: 4px;
 }
-
 
 /* =========================================================
    INPUT SHELL
@@ -1693,10 +1482,10 @@
   border-radius: 13px;
 
   background:
-    rgba(255, 255, 255, 0.035);
+    rgba(255, 255, 255, 0.032);
 
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+    inset 0 1px 0 rgba(255, 255, 255, 0.024);
 
   transition:
     border-color 160ms ease,
@@ -1704,19 +1493,17 @@
     background-color 160ms ease;
 }
 
-
 .inputShell:focus-within {
   border-color:
-    rgba(108, 99, 255, 0.58);
+    rgba(113, 103, 255, 0.58);
 
   background:
-    rgba(108, 99, 255, 0.035);
+    rgba(113, 103, 255, 0.035);
 
   box-shadow:
-    0 0 0 3px rgba(108, 99, 255, 0.09),
+    0 0 0 3px rgba(113, 103, 255, 0.085),
     0 8px 30px rgba(0, 0, 0, 0.10);
 }
-
 
 /* =========================================================
    INPUT ICON
@@ -1732,11 +1519,10 @@
   align-items: center;
   justify-content: center;
 
-  color: #69738c;
+  color: #6c7690;
 
   pointer-events: none;
 }
-
 
 /* =========================================================
    INPUT
@@ -1770,20 +1556,19 @@
   line-height: 1.2;
 }
 
-
-.input::placeholder {
-  color: #555e73;
+.input::placeholder,
+.inputWithAction::placeholder {
+  color: #555f75;
 
   opacity: 1;
 }
 
-
-.input:disabled {
+.input:disabled,
+.inputWithAction:disabled {
   cursor: not-allowed;
 
   opacity: 0.55;
 }
-
 
 /* =========================================================
    PASSWORD INPUT
@@ -1817,21 +1602,6 @@
   line-height: 1.2;
 }
 
-
-.inputWithAction::placeholder {
-  color: #555e73;
-
-  opacity: 1;
-}
-
-
-.inputWithAction:disabled {
-  cursor: not-allowed;
-
-  opacity: 0.55;
-}
-
-
 /* =========================================================
    PASSWORD TOGGLE
 ========================================================= */
@@ -1855,7 +1625,7 @@
 
   padding: 0;
 
-  color: #707a92;
+  color: #707b93;
 
   border: 0;
 
@@ -1870,7 +1640,6 @@
     background-color 160ms ease;
 }
 
-
 .passwordToggle:hover:not(:disabled) {
   color: var(--login-text);
 
@@ -1878,14 +1647,12 @@
     rgba(255, 255, 255, 0.055);
 }
 
-
 .passwordToggle:focus-visible {
   outline:
-    2px solid rgba(108, 99, 255, 0.45);
+    2px solid rgba(113, 103, 255, 0.45);
 
   outline-offset: 1px;
 }
-
 
 .passwordToggle:disabled {
   cursor: not-allowed;
@@ -1893,9 +1660,8 @@
   opacity: 0.45;
 }
 
-
 /* =========================================================
-   REMEMBER ME
+   REMEMBER
 ========================================================= */
 
 .remember {
@@ -1922,7 +1688,6 @@
   user-select: none;
 }
 
-
 .remember input {
   position: absolute;
 
@@ -1933,7 +1698,6 @@
 
   pointer-events: none;
 }
-
 
 .checkbox {
   width: 17px;
@@ -1962,7 +1726,6 @@
     color 150ms ease;
 }
 
-
 .remember input:checked + .checkbox {
   color: #fff;
 
@@ -1973,17 +1736,15 @@
     var(--login-purple);
 
   box-shadow:
-    0 0 14px rgba(108, 99, 255, 0.18);
+    0 0 14px rgba(113, 103, 255, 0.18);
 }
-
 
 .remember input:focus-visible + .checkbox {
   outline:
-    2px solid rgba(108, 99, 255, 0.45);
+    2px solid rgba(113, 103, 255, 0.45);
 
   outline-offset: 2px;
 }
-
 
 /* =========================================================
    PRIMARY BUTTON
@@ -2012,7 +1773,7 @@
   color: #fff;
 
   border:
-    1px solid rgba(129, 121, 255, 0.48);
+    1px solid rgba(141, 133, 255, 0.48);
 
   border-radius: 13px;
 
@@ -2021,11 +1782,11 @@
       105deg,
       var(--login-purple-deep) 0%,
       var(--login-purple) 48%,
-      #6e78ff 100%
+      #6877ff 100%
     );
 
   box-shadow:
-    0 10px 32px rgba(81, 72, 217, 0.27),
+    0 10px 32px rgba(81, 70, 216, 0.27),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
 
   font: inherit;
@@ -2044,7 +1805,6 @@
     filter 160ms ease;
 }
 
-
 .primaryButton::before {
   content: "";
 
@@ -2056,7 +1816,7 @@
     linear-gradient(
       105deg,
       transparent 20%,
-      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.16) 50%,
       transparent 80%
     );
 
@@ -2067,7 +1827,6 @@
     transform 550ms ease;
 }
 
-
 .primaryButton:hover:not(:disabled) {
   transform:
     translateY(-1px);
@@ -2075,48 +1834,41 @@
   filter: brightness(1.05);
 
   box-shadow:
-    0 15px 38px rgba(81, 72, 217, 0.34),
-    0 0 25px rgba(108, 99, 255, 0.13),
+    0 15px 38px rgba(81, 70, 216, 0.34),
+    0 0 25px rgba(113, 103, 255, 0.13),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
-
 
 .primaryButton:hover:not(:disabled)::before {
   transform:
     translateX(120%);
 }
 
-
 .primaryButton:active:not(:disabled) {
   transform:
     translateY(0);
 }
 
-
 .primaryButton:focus-visible {
   outline:
-    2px solid rgba(53, 215, 255, 0.55);
+    2px solid rgba(55, 217, 255, 0.55);
 
   outline-offset: 3px;
 }
-
 
 .primaryButton:disabled {
   cursor: not-allowed;
 
   opacity: 0.62;
 
-  box-shadow:
-    none;
+  box-shadow: none;
 }
 
-
 /* =========================================================
-   SPINNERS
+   SPINNER
 ========================================================= */
 
-.spinner,
-.oauthSpinner {
+.spinner {
   width: 16px;
   height: 16px;
 
@@ -2133,7 +1885,6 @@
     spinnerRotate 700ms linear infinite;
 }
 
-
 .oauthSpinner {
   border-color:
     rgba(255, 255, 255, 0.18);
@@ -2141,7 +1892,6 @@
   border-top-color:
     var(--login-purple-light);
 }
-
 
 /* =========================================================
    DIVIDER
@@ -2177,18 +1927,15 @@
   white-space: nowrap;
 }
 
-
 .divider span {
   display: block;
 
   min-width: 0;
+
+  height: 1px;
 }
 
-
-.divider span:first-child,
-.divider span:last-child {
-  height: 1px;
-
+.divider span:first-child {
   background:
     linear-gradient(
       90deg,
@@ -2196,7 +1943,6 @@
       rgba(255, 255, 255, 0.08)
     );
 }
-
 
 .divider span:last-child {
   background:
@@ -2206,7 +1952,6 @@
       transparent
     );
 }
-
 
 /* =========================================================
    OAUTH GRID
@@ -2224,7 +1969,6 @@
 
   min-width: 0;
 }
-
 
 /* =========================================================
    OAUTH BUTTON
@@ -2246,7 +1990,7 @@
     0
     13px;
 
-  color: #d9dfed;
+  color: #dce2f0;
 
   border:
     1px solid rgba(255, 255, 255, 0.085);
@@ -2258,7 +2002,7 @@
 
   font: inherit;
 
-  font-size: 11px;
+  font-size: 10px;
 
   font-weight: 650;
 
@@ -2268,9 +2012,9 @@
     transform 160ms ease,
     border-color 160ms ease,
     background-color 160ms ease,
-    color 160ms ease;
+    color 160ms ease,
+    box-shadow 160ms ease;
 }
-
 
 .oauthButton:hover:not(:disabled) {
   transform:
@@ -2279,33 +2023,32 @@
   color: #fff;
 
   border-color:
-    rgba(129, 121, 255, 0.24);
+    rgba(129, 121, 255, 0.28);
 
   background:
-    rgba(108, 99, 255, 0.055);
-}
+    rgba(113, 103, 255, 0.065);
 
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.12);
+}
 
 .oauthButton:active:not(:disabled) {
   transform:
     translateY(0);
 }
 
-
 .oauthButton:focus-visible {
   outline:
-    2px solid rgba(108, 99, 255, 0.45);
+    2px solid rgba(113, 103, 255, 0.45);
 
   outline-offset: 2px;
 }
-
 
 .oauthButton:disabled {
   cursor: not-allowed;
 
   opacity: 0.52;
 }
-
 
 /* =========================================================
    REGISTER PROMPT
@@ -2315,7 +2058,6 @@
   display: flex;
 
   align-items: center;
-
   justify-content: center;
 
   flex-wrap: wrap;
@@ -2332,11 +2074,6 @@
 
   text-align: center;
 }
-
-
-/* =========================================================
-   REGISTER LINK
-========================================================= */
 
 .registerLink {
   display: inline-flex;
@@ -2355,21 +2092,18 @@
     color 160ms ease;
 }
 
-
 .registerLink:hover {
   color: var(--login-cyan);
 }
 
-
 .registerLink:focus-visible {
   outline:
-    2px solid rgba(108, 99, 255, 0.45);
+    2px solid rgba(113, 103, 255, 0.45);
 
   outline-offset: 3px;
 
   border-radius: 4px;
 }
-
 
 /* =========================================================
    SECURITY NOTICE
@@ -2379,14 +2113,13 @@
   display: flex;
 
   align-items: center;
-
   justify-content: center;
 
   gap: 7px;
 
   margin-top: 18px;
 
-  color: #5f6980;
+  color: #606a81;
 
   font-size: 9px;
 
@@ -2394,7 +2127,6 @@
 
   text-align: center;
 }
-
 
 .securityIcon {
   width: 23px;
@@ -2407,7 +2139,7 @@
   align-items: center;
   justify-content: center;
 
-  color: #68738b;
+  color: #69748c;
 
   border:
     1px solid rgba(255, 255, 255, 0.065);
@@ -2418,9 +2150,8 @@
     rgba(255, 255, 255, 0.025);
 }
 
-
 /* =========================================================
-   PAGE FOOTER
+   FOOTER
 ========================================================= */
 
 .pageFooter {
@@ -2437,25 +2168,19 @@
   margin:
     0
     auto
-    26px;
+    25px;
 
   display: flex;
 
   align-items: center;
-
   justify-content: space-between;
 
   gap: 20px;
 
-  color: #555e73;
+  color: #555f74;
 
   font-size: 9px;
 }
-
-
-/* =========================================================
-   FOOTER LINKS
-========================================================= */
 
 .footerLinks {
   display: inline-flex;
@@ -2465,9 +2190,8 @@
   gap: 16px;
 }
 
-
 .footerLinks a {
-  color: #69738a;
+  color: #68738a;
 
   text-decoration: none;
 
@@ -2475,32 +2199,28 @@
     color 160ms ease;
 }
 
-
 .footerLinks a:hover {
   color: var(--login-text-secondary);
 }
 
-
 .footerLinks a:focus-visible {
   outline:
-    2px solid rgba(108, 99, 255, 0.45);
+    2px solid rgba(113, 103, 255, 0.45);
 
   outline-offset: 3px;
 
   border-radius: 3px;
 }
 
-
 /* =========================================================
    LARGE TABLET
 ========================================================= */
 
 @media (max-width: 1100px) {
-
   .authFrame {
     grid-template-columns:
       minmax(0, 1fr)
-      minmax(370px, 0.82fr);
+      minmax(370px, 0.84fr);
 
     width:
       min(
@@ -2509,70 +2229,58 @@
       );
   }
 
-
   .productPanel {
-    padding: 42px;
+    padding: 44px;
   }
-
 
   .loginPanel {
-    padding: 42px;
+    padding: 44px;
   }
-
 
   .heroTitle {
     font-size:
       clamp(40px, 5vw, 58px);
   }
 
-
-  .earthScene {
-    width: 850px;
-    height: 850px;
-
-    opacity: 0.78;
+  .backgroundOrbitOne {
+    width: 900px;
+    margin-left: -450px;
   }
 
-}
+  .backgroundOrbitTwo {
+    width: 760px;
+    margin-left: -380px;
+  }
 
+  .backgroundOrbitThree {
+    width: 1050px;
+    margin-left: -525px;
+  }
+}
 
 /* =========================================================
    TABLET
 ========================================================= */
 
 @media (max-width: 900px) {
-
-  .earthScene {
-    width: 720px;
-    height: 720px;
-
-    top: 28%;
-
-    opacity: 0.60;
-  }
-
-
   .authFrame {
     width:
       min(
         calc(100% - 32px),
-        720px
+        760px
       );
 
     min-height: auto;
 
-    margin-top: 28px;
-
     display: flex;
 
     flex-direction: column;
+
+    margin-top: 28px;
   }
 
-
   .productPanel {
-    min-height: auto;
-
-    padding: 40px;
+    padding: 42px;
 
     border-right: 0;
 
@@ -2580,73 +2288,58 @@
       1px solid rgba(255, 255, 255, 0.055);
   }
 
-
-  .productInner {
+  .productContent {
     max-width: none;
   }
-
 
   .productFooter {
     display: none;
   }
 
-
   .loginPanel {
     padding:
-      44px
-      40px;
+      46px
+      42px;
   }
-
 
   .loginContainer {
-    width: 100%;
-
     max-width: 480px;
   }
-
 
   .capabilityGrid {
     max-width: none;
   }
 
-
   .pageFooter {
     width:
       min(
         calc(100% - 32px),
-        720px
+        760px
       );
   }
 
+  .backgroundCore {
+    top: 34%;
+  }
 }
-
 
 /* =========================================================
    MOBILE
 ========================================================= */
 
 @media (max-width: 640px) {
-
   .page {
-    width: 100vw;
-
-    min-width: 100%;
-
     min-height: 100svh;
+
+    width: 100%;
 
     overflow-x: hidden;
   }
 
+  .backgroundGrid {
+    inset: -40%;
 
-  .background {
-    position: fixed;
-  }
-
-
-  .grid {
-    inset: -45%;
-
-    opacity: 0.15;
+    opacity: 0.16;
 
     background-size: 34px 34px;
 
@@ -2656,57 +2349,76 @@
       translateY(34%);
   }
 
-
-  .glowPrimary {
+  .backgroundGlowOne {
     width: 500px;
     height: 500px;
 
     left: -260px;
-    top: -200px;
+    top: -190px;
   }
 
-
-  .glowSecondary {
+  .backgroundGlowTwo {
     width: 450px;
     height: 450px;
 
-    right: -250px;
-    bottom: -220px;
+    right: -240px;
+    bottom: -210px;
   }
 
+  .backgroundOrbOne {
+    width: 180px;
+    height: 180px;
 
-  /* =======================================================
-     MOBILE EARTH
-  ======================================================= */
+    left: 5%;
+    top: 18%;
+  }
 
-  .earthScene {
+  .backgroundOrbTwo {
+    width: 210px;
+    height: 210px;
+
+    right: 2%;
+    bottom: 16%;
+  }
+
+  .backgroundOrbitOne {
     width: 620px;
-    height: 620px;
+    height: 210px;
 
-    left: 50%;
+    margin-left: -310px;
+    margin-top: -105px;
+
+    opacity: 0.7;
+  }
+
+  .backgroundOrbitTwo {
+    width: 500px;
+    height: 170px;
+
+    margin-left: -250px;
+    margin-top: -85px;
+
+    opacity: 0.65;
+  }
+
+  .backgroundOrbitThree {
+    width: 720px;
+    height: 240px;
+
+    margin-left: -360px;
+    margin-top: -120px;
+
+    opacity: 0.5;
+  }
+
+  .backgroundCore {
+    width: 170px;
+    height: 170px;
+
     top: 42%;
 
-    opacity: 0.48;
-
-    transform:
-      translate(-50%, -50%);
+    opacity: 0.7;
   }
-
-
-  .earth {
-    width: 56%;
-  }
-
-
-  .earthOrbit {
-    opacity: 0.72;
-  }
-
-
-  .earthAtmosphere {
-    width: 60%;
-  }
-
 
   /* =======================================================
      TOP BAR
@@ -2716,19 +2428,15 @@
     min-height: 64px;
 
     padding:
-      12px
-      16px;
+      11px
+      14px;
 
     gap: 10px;
   }
 
-
   .brand {
     gap: 9px;
-
-    min-width: 0;
   }
-
 
   .brandMark {
     width: 35px;
@@ -2739,16 +2447,13 @@
     border-radius: 10px;
   }
 
-
   .brandText strong {
     font-size: 14px;
   }
 
-
   .brandText small {
     display: none;
   }
-
 
   .secureBadge {
     min-height: 28px;
@@ -2760,6 +2465,20 @@
     font-size: 9px;
   }
 
+  .signupButton {
+    width: 36px;
+    height: 36px;
+
+    min-height: 36px;
+
+    padding: 0;
+
+    border-radius: 10px;
+  }
+
+  .signupButton span {
+    display: none;
+  }
 
   /* =======================================================
      AUTH FRAME
@@ -2767,22 +2486,17 @@
 
   .authFrame {
     width:
-      calc(100% - 24px);
+      calc(100% - 20px);
 
     max-width: none;
 
     margin:
-      16px
+      12px
       auto
-      22px;
+      20px;
 
     border-radius: 21px;
-
-    display: flex;
-
-    flex-direction: column;
   }
-
 
   /* =======================================================
      PRODUCT
@@ -2792,63 +2506,48 @@
     width: 100%;
 
     padding:
-      28px
-      22px
+      30px
+      20px
       24px;
-
-    border-right: 0;
-
-    border-bottom:
-      1px solid rgba(255, 255, 255, 0.055);
   }
 
-
   .productEyebrow {
-    margin-bottom: 14px;
+    margin-bottom: 15px;
 
     font-size: 8px;
   }
 
-
   .heroTitle {
-    width: 100%;
-
     max-width: none;
 
     font-size:
-      clamp(34px, 9vw, 46px);
+      clamp(34px, 9.2vw, 46px);
 
     line-height: 1.01;
 
     letter-spacing: -0.045em;
   }
 
-
   .heroDescription {
-    width: 100%;
-
     max-width: none;
 
     margin:
       16px
       0
-      20px;
+      21px;
 
     font-size: 12px;
 
-    line-height: 1.6;
+    line-height: 1.62;
   }
-
 
   .capabilityGrid {
     width: 100%;
 
-    grid-template-columns:
-      1fr;
+    grid-template-columns: 1fr;
 
     gap: 8px;
   }
-
 
   .capabilityCard {
     width: 100%;
@@ -2857,7 +2556,6 @@
 
     border-radius: 11px;
   }
-
 
   .capabilityIcon {
     width: 30px;
@@ -2868,16 +2566,13 @@
     border-radius: 8px;
   }
 
-
   .capabilityCard strong {
     font-size: 11px;
   }
 
-
   .capabilityCard span:not(.capabilityIcon) {
     font-size: 9px;
   }
-
 
   .productPrinciple {
     width: 100%;
@@ -2889,11 +2584,9 @@
     border-radius: 11px;
   }
 
-
-  .productFooter {
-    display: none;
+  .productPrinciple p {
+    font-size: 10px;
   }
-
 
   /* =======================================================
      LOGIN
@@ -2903,11 +2596,10 @@
     width: 100%;
 
     padding:
-      28px
-      22px
-      30px;
+      29px
+      20px
+      31px;
   }
-
 
   .loginContainer {
     width: 100%;
@@ -2915,38 +2607,28 @@
     max-width: none;
   }
 
-
   .loginHeader {
     width: 100%;
 
     margin-bottom: 22px;
   }
 
-
   .mobileProductMark {
     display: inline-flex;
   }
-
 
   .eyebrow {
     font-size: 8px;
   }
 
-
   .title {
-    width: 100%;
-
     font-size:
       clamp(25px, 7vw, 31px);
   }
 
-
   .subtitle {
-    width: 100%;
-
     font-size: 10px;
   }
-
 
   .form {
     width: 100%;
@@ -2954,44 +2636,43 @@
     gap: 15px;
   }
 
-
   .inputShell {
-    width: 100%;
-
-    min-height: 46px;
+    min-height: 47px;
   }
-
 
   .input,
   .inputWithAction {
-    height: 44px;
+    height: 45px;
 
     font-size: 11px;
   }
-
 
   .primaryButton {
     min-height: 48px;
   }
 
+  .divider {
+    margin-top: 22px;
+  }
 
   .oauthGrid {
     width: 100%;
 
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
-  }
 
+    gap: 8px;
+  }
 
   .oauthButton {
-    min-height: 45px;
+    min-height: 46px;
+
+    padding:
+      0
+      9px;
+
+    font-size: 9px;
   }
-
-
-  .divider {
-    margin-top: 22px;
-  }
-
 
   .registerPrompt {
     margin-top: 21px;
@@ -2999,13 +2680,11 @@
     font-size: 9px;
   }
 
-
   .securityNotice {
     margin-top: 15px;
 
     font-size: 8px;
   }
-
 
   /* =======================================================
      FOOTER
@@ -3013,33 +2692,28 @@
 
   .pageFooter {
     width:
-      calc(100% - 28px);
+      calc(100% - 24px);
 
-    margin-bottom: 18px;
+    margin-bottom: 17px;
 
     font-size: 8px;
   }
 
-
   .footerLinks {
     gap: 11px;
   }
-
 }
-
 
 /* =========================================================
    SMALL MOBILE
 ========================================================= */
 
 @media (max-width: 420px) {
-
   .topbar {
     padding:
-      11px
-      12px;
+      10px
+      10px;
   }
-
 
   .secureBadge {
     padding:
@@ -3047,47 +2721,37 @@
       8px;
   }
 
-
   .secureBadgeIcon {
     display: none;
   }
 
-
-  .earthScene {
-    width: 520px;
-    height: 520px;
-
-    top: 38%;
-
-    opacity: 0.40;
+  .signupButton {
+    width: 34px;
+    height: 34px;
   }
-
 
   .authFrame {
     width:
-      calc(100% - 16px);
+      calc(100% - 14px);
 
-    margin-top: 10px;
+    margin-top: 9px;
 
     border-radius: 18px;
   }
 
-
   .productPanel {
     padding:
-      24px
-      17px
-      20px;
+      25px
+      16px
+      21px;
   }
-
 
   .loginPanel {
     padding:
-      24px
-      17px
-      26px;
+      25px
+      16px
+      27px;
   }
-
 
   .mobileProductMark {
     width: 34px;
@@ -3096,21 +2760,17 @@
     flex-basis: 34px;
   }
 
-
   .heroTitle {
     font-size: 31px;
   }
-
 
   .heroDescription {
     font-size: 11px;
   }
 
-
   .capabilityCard {
     gap: 9px;
   }
-
 
   .capabilityIcon {
     width: 28px;
@@ -3119,37 +2779,35 @@
     flex-basis: 28px;
   }
 
-
   .title {
     font-size: 24px;
   }
-
 
   .label {
     font-size: 10px;
   }
 
-
   .forgotLink {
     font-size: 9px;
   }
-
 
   .oauthGrid {
     gap: 7px;
   }
 
-
   .oauthButton {
-    gap: 6px;
+    gap: 5px;
 
     padding:
       0
-      8px;
+      7px;
 
-    font-size: 10px;
+    font-size: 8.5px;
   }
 
+  .oauthButton svg {
+    flex: 0 0 auto;
+  }
 
   .pageFooter {
     align-items: flex-start;
@@ -3158,232 +2816,184 @@
 
     gap: 7px;
   }
-
 }
 
-
 /* =========================================================
-   VERY SHORT DESKTOP VIEWPORT
+   VERY SHORT DESKTOP
 ========================================================= */
 
 @media (max-height: 720px) and (min-width: 641px) {
-
   .topbar {
-    min-height: 64px;
+    min-height: 62px;
 
-    padding-top: 12px;
-
-    padding-bottom: 12px;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
-
 
   .authFrame {
-    min-height: 620px;
+    min-height: 610px;
 
-    margin-top: 20px;
+    margin-top: 18px;
   }
-
 
   .productPanel {
     padding:
       34px
-      46px;
+      44px;
   }
-
 
   .loginPanel {
     padding:
-      32px
-      42px;
+      30px
+      40px;
   }
-
 
   .heroDescription {
     margin-top: 17px;
-
-    margin-bottom: 22px;
+    margin-bottom: 21px;
   }
-
 
   .capabilityCard {
     padding: 11px;
   }
 
-
   .productPrinciple {
-    margin-top: 16px;
+    margin-top: 15px;
   }
-
 
   .loginHeader {
-    margin-bottom: 20px;
+    margin-bottom: 19px;
   }
-
 
   .form {
-    gap: 13px;
+    gap: 12px;
   }
-
 
   .divider {
-    margin-top: 19px;
-
-    margin-bottom: 12px;
+    margin-top: 18px;
+    margin-bottom: 11px;
   }
-
 
   .registerPrompt {
-    margin-top: 16px;
+    margin-top: 15px;
   }
-
 
   .securityNotice {
-    margin-top: 12px;
+    margin-top: 11px;
   }
-
-
-  .earthScene {
-    width: 700px;
-    height: 700px;
-
-    opacity: 0.62;
-  }
-
 }
-
 
 /* =========================================================
    REDUCED MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
-  .grid,
-  .glowPrimary,
-  .glowSecondary,
-  .earthGlow,
-  .earth,
-  .earthSurface,
-  .earthOrbit,
-  .earthAtmosphere,
-  .latitudeGrid,
-  .longitudeGrid,
+  .backgroundGrid,
+  .backgroundGlowOne,
+  .backgroundGlowTwo,
+  .backgroundOrbOne,
+  .backgroundOrbTwo,
+  .backgroundOrbitOne,
+  .backgroundOrbitTwo,
+  .backgroundOrbitThree,
+  .backgroundCore,
   .liveDot,
-  .spinner,
-  .oauthSpinner {
+  .spinner {
     animation: none;
   }
-
 
   .capabilityCard,
   .primaryButton,
   .oauthButton,
   .passwordToggle,
+  .signupButton,
   .registerLink,
   .forgotLink {
     transition: none;
   }
-
 }
-
 
 /* =========================================================
    KEYFRAMES — BACKGROUND
 ========================================================= */
 
-@keyframes gridDrift {
-
-  0% {
+@keyframes gridFloat {
+  0%,
+  100% {
     transform:
-      perspective(1100px)
-      rotateX(64deg)
-      translateY(20%);
+      perspective(1000px)
+      rotateX(66deg)
+      translateY(18%);
   }
 
   50% {
     transform:
-      perspective(1100px)
-      rotateX(64deg)
-      translateY(24%);
+      perspective(1000px)
+      rotateX(66deg)
+      translateY(23%);
   }
-
-  100% {
-    transform:
-      perspective(1100px)
-      rotateX(64deg)
-      translateY(20%);
-  }
-
 }
 
-
-@keyframes primaryGlow {
-
+@keyframes glowOne {
   0%,
   100% {
     transform: scale(1);
-
-    opacity: 0.80;
+    opacity: 0.75;
   }
 
   50% {
     transform: scale(1.08);
-
     opacity: 1;
   }
-
 }
 
-
-@keyframes secondaryGlow {
-
+@keyframes glowTwo {
   0%,
   100% {
     transform: scale(1);
-
-    opacity: 0.62;
+    opacity: 0.58;
   }
 
   50% {
-    transform: scale(1.10);
-
+    transform: scale(1.11);
     opacity: 0.88;
   }
-
 }
 
-
-/* =========================================================
-   KEYFRAMES — EARTH
-========================================================= */
-
-@keyframes earthFloat {
-
+@keyframes orbOne {
   0%,
   100% {
     transform:
-      translate(-50%, -50%)
-      translateY(0);
+      translate3d(0, 0, 0);
   }
 
   50% {
     transform:
-      translate(-50%, -50%)
-      translateY(-10px);
+      translate3d(35px, 22px, 0);
   }
-
 }
 
+@keyframes orbTwo {
+  0%,
+  100% {
+    transform:
+      translate3d(0, 0, 0);
+  }
 
-@keyframes earthGlowPulse {
+  50% {
+    transform:
+      translate3d(-30px, -25px, 0);
+  }
+}
 
+@keyframes corePulse {
   0%,
   100% {
     transform:
       translate(-50%, -50%)
-      scale(0.96);
+      scale(0.94);
 
-    opacity: 0.72;
+    opacity: 0.62;
   }
 
   50% {
@@ -3391,170 +3001,78 @@
       translate(-50%, -50%)
       scale(1.06);
 
-    opacity: 1;
+    opacity: 0.94;
   }
-
 }
 
+/* =========================================================
+   KEYFRAMES — ORBITS
+========================================================= */
 
-@keyframes earthSurfaceMove {
-
-  0% {
-    transform:
-      translateX(-2%)
-      scale(1.02);
-  }
-
-  50% {
-    transform:
-      translateX(3%)
-      scale(1.05);
-  }
-
-  100% {
-    transform:
-      translateX(-2%)
-      scale(1.02);
-  }
-
-}
-
-
-@keyframes globeGridPulse {
-
-  0%,
-  100% {
-    opacity: 0.30;
-  }
-
-  50% {
-    opacity: 0.58;
-  }
-
-}
-
-
-@keyframes longitudeMove {
-
-  from {
-    transform:
-      rotate(16deg)
-      scaleX(0.72)
-      translateX(-4%);
-  }
-
-  to {
-    transform:
-      rotate(16deg)
-      scaleX(0.72)
-      translateX(4%);
-  }
-
-}
-
-
-@keyframes atmospherePulse {
-
-  0%,
-  100% {
-    opacity: 0.62;
-
-    box-shadow:
-      0 0 10px rgba(53, 215, 255, 0.18),
-      0 0 28px rgba(53, 215, 255, 0.11),
-      0 0 55px rgba(76, 141, 255, 0.07);
-  }
-
-  50% {
-    opacity: 0.92;
-
-    box-shadow:
-      0 0 14px rgba(53, 215, 255, 0.28),
-      0 0 34px rgba(53, 215, 255, 0.18),
-      0 0 70px rgba(76, 141, 255, 0.11);
-  }
-
-}
-
-
-@keyframes earthOrbitOne {
-
+@keyframes orbitOne {
   from {
     transform:
       rotateX(68deg)
-      rotateZ(-16deg);
+      rotateZ(-18deg);
   }
 
   to {
     transform:
       rotateX(68deg)
-      rotateZ(344deg);
+      rotateZ(342deg);
   }
-
 }
 
-
-@keyframes earthOrbitTwo {
-
+@keyframes orbitTwo {
   from {
     transform:
-      rotateX(67deg)
-      rotateZ(52deg);
+      rotateX(66deg)
+      rotateZ(42deg);
   }
 
   to {
     transform:
-      rotateX(67deg)
-      rotateZ(-308deg);
+      rotateX(66deg)
+      rotateZ(-318deg);
   }
-
 }
 
-
-@keyframes earthOrbitThree {
-
+@keyframes orbitThree {
   from {
     transform:
       rotateX(72deg)
-      rotateZ(108deg);
+      rotateZ(104deg);
   }
 
   to {
     transform:
       rotateX(72deg)
-      rotateZ(468deg);
+      rotateZ(464deg);
   }
-
 }
-
 
 /* =========================================================
    KEYFRAMES — UI
 ========================================================= */
 
 @keyframes livePulse {
-
   0%,
   100% {
     box-shadow:
-      0 0 0 4px rgba(32, 199, 122, 0.08),
-      0 0 14px rgba(32, 199, 122, 0.46);
+      0 0 0 4px rgba(32, 207, 128, 0.075),
+      0 0 14px rgba(32, 207, 128, 0.46);
   }
 
   50% {
     box-shadow:
-      0 0 0 6px rgba(32, 199, 122, 0.035),
-      0 0 20px rgba(32, 199, 122, 0.62);
+      0 0 0 6px rgba(32, 207, 128, 0.035),
+      0 0 20px rgba(32, 207, 128, 0.62);
   }
-
 }
 
-
 @keyframes spinnerRotate {
-
   to {
     transform:
       rotate(360deg);
   }
-
 }

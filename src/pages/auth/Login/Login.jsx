@@ -15,7 +15,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { APP_NAME } from "../../../config/constants";
 
 /* =========================================================
-   ICONS
+   ICON SYSTEM
 ========================================================= */
 
 function Icon({ name, size = 18 }) {
@@ -121,6 +121,16 @@ function Icon({ name, size = 18 }) {
       return (
         <svg {...common}>
           <path d="m5 12 4 4L19 6" />
+        </svg>
+      );
+
+    case "userPlus":
+      return (
+        <svg {...common}>
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3.5 20c.6-3.3 2.4-5 5.5-5s4.9 1.7 5.5 5" />
+          <path d="M18 8v6" />
+          <path d="M15 11h6" />
         </svg>
       );
 
@@ -235,12 +245,6 @@ function Login() {
         );
       }
 
-      /*
-       * The backend HttpOnly cookie is the real
-       * authentication mechanism.
-       *
-       * The token is NOT persisted by this frontend.
-       */
       saveAuth(data.user, data.token);
 
       setUser(data.user);
@@ -298,49 +302,7 @@ function Login() {
     <AuthLayout>
       <main className={styles.page}>
         {/* =================================================
-            FULL PAGE 3D EARTH
-        ================================================= */}
-
-        <div
-          className={styles.earthScene}
-          aria-hidden="true"
-        >
-          <div className={styles.earthGlow} />
-
-          <div
-            className={styles.earthOrbit}
-            aria-hidden="true"
-          >
-            <span className={styles.orbitOne} />
-          </div>
-
-          <div
-            className={styles.earthOrbit}
-            aria-hidden="true"
-          >
-            <span className={styles.orbitTwo} />
-          </div>
-
-          <div
-            className={styles.earthOrbit}
-            aria-hidden="true"
-          >
-            <span className={styles.orbitThree} />
-          </div>
-
-          <div className={styles.earth}>
-            <div className={styles.earthSurface} />
-            <div className={styles.latitudeGrid} />
-            <div className={styles.longitudeGrid} />
-            <div className={styles.earthHighlight} />
-            <div className={styles.earthShadow} />
-          </div>
-
-          <div className={styles.earthAtmosphere} />
-        </div>
-
-        {/* =================================================
-            BACKGROUND
+            FUTURISTIC BACKGROUND
         ================================================= */}
 
         <div
@@ -349,8 +311,22 @@ function Login() {
         >
           <div className={styles.backgroundGrid} />
           <div className={styles.backgroundNoise} />
+
           <div className={styles.backgroundGlowOne} />
           <div className={styles.backgroundGlowTwo} />
+
+          <div className={styles.backgroundOrbOne} />
+          <div className={styles.backgroundOrbTwo} />
+
+          <div className={styles.backgroundOrbitOne} />
+          <div className={styles.backgroundOrbitTwo} />
+          <div className={styles.backgroundOrbitThree} />
+
+          <div className={styles.backgroundCore}>
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
 
         {/* =================================================
@@ -381,44 +357,45 @@ function Login() {
 
           <div className={styles.topbarRight}>
             <div className={styles.secureBadge}>
-              <Icon
-                name="shield"
-                size={13}
-              />
-
-              <span>
-                Secure workspace
+              <span className={styles.secureBadgeIcon}>
+                <Icon
+                  name="shield"
+                  size={13}
+                />
               </span>
-            </div>
 
-            {/* =============================================
-                SHORT TOP SIGN-UP BUTTON
-            ============================================= */}
+              <span>Secure workspace</span>
+            </div>
 
             <Link
               to="/register"
               className={styles.signupButton}
+              aria-label="Create a ZyrionOS account"
             >
-              Sign up
+              <Icon
+                name="userPlus"
+                size={15}
+              />
+
+              <span>Sign up</span>
             </Link>
           </div>
         </header>
 
         {/* =================================================
-            AUTH FRAME
+            MAIN AUTH FRAME
         ================================================= */}
 
         <section className={styles.authFrame}>
           {/* =================================================
-              PRODUCT PANEL
+              PRODUCT SIDE
           ================================================= */}
 
           <section className={styles.productPanel}>
             <div className={styles.productContent}>
               <div className={styles.productEyebrow}>
                 <span className={styles.liveDot} />
-
-                THE {APP_NAME.toUpperCase()} PLATFORM
+                ZYRIONOS INTELLIGENT CLOUD
               </div>
 
               <h1 className={styles.heroTitle}>
@@ -426,142 +403,102 @@ function Login() {
                 <br />
 
                 <span>
-                  Operate it with AI.
+                  Let intelligence operate it.
                 </span>
               </h1>
 
               <p className={styles.heroDescription}>
-                {APP_NAME} brings AI-assisted
+                ZyrionOS brings AI-assisted
                 application building, cloud
                 deployment, project operations
                 and intelligent workflows into
-                one workspace.
+                one connected workspace.
               </p>
 
-              {/* =========================================
+              {/* =================================================
                   CAPABILITIES
-              ========================================= */}
+              ================================================= */}
 
               <div className={styles.capabilityGrid}>
-                <article
-                  className={styles.capabilityCard}
-                >
-                  <span
-                    className={
-                      styles.capabilityIcon
-                    }
-                  >
+                <article className={styles.capabilityCard}>
+                  <span className={styles.capabilityIcon}>
                     <Icon
                       name="spark"
                       size={16}
                     />
                   </span>
 
-                  <div>
-                    <strong>
-                      Build with AI
-                    </strong>
+                  <div className={styles.capabilityContent}>
+                    <strong>Build with AI</strong>
 
                     <span>
-                      Turn ideas and outcomes into
+                      Turn natural-language ideas into
                       working software.
                     </span>
                   </div>
                 </article>
 
-                <article
-                  className={styles.capabilityCard}
-                >
-                  <span
-                    className={
-                      styles.capabilityIcon
-                    }
-                  >
+                <article className={styles.capabilityCard}>
+                  <span className={styles.capabilityIcon}>
                     <Icon
                       name="cloud"
                       size={16}
                     />
                   </span>
 
-                  <div>
-                    <strong>
-                      Deploy to Cloud
-                    </strong>
+                  <div className={styles.capabilityContent}>
+                    <strong>Deploy to Cloud</strong>
 
                     <span>
-                      Move validated projects toward
-                      real deployment.
+                      Move validated applications toward
+                      real infrastructure.
                     </span>
                   </div>
                 </article>
 
-                <article
-                  className={styles.capabilityCard}
-                >
-                  <span
-                    className={
-                      styles.capabilityIcon
-                    }
-                  >
+                <article className={styles.capabilityCard}>
+                  <span className={styles.capabilityIcon}>
                     <Icon
                       name="layers"
                       size={16}
                     />
                   </span>
 
-                  <div>
-                    <strong>
-                      Unified Workspace
-                    </strong>
+                  <div className={styles.capabilityContent}>
+                    <strong>One Workspace</strong>
 
                     <span>
-                      Projects, code and operations
-                      stay together.
+                      Projects, code, deployments and
+                      operations stay connected.
                     </span>
                   </div>
                 </article>
 
-                <article
-                  className={styles.capabilityCard}
-                >
-                  <span
-                    className={
-                      styles.capabilityIcon
-                    }
-                  >
+                <article className={styles.capabilityCard}>
+                  <span className={styles.capabilityIcon}>
                     <Icon
                       name="network"
                       size={16}
                     />
                   </span>
 
-                  <div>
-                    <strong>
-                      Operate & Iterate
-                    </strong>
+                  <div className={styles.capabilityContent}>
+                    <strong>Operate & Iterate</strong>
 
                     <span>
-                      Improve, test and ship from
-                      one environment.
+                      Improve, inspect and ship from one
+                      environment.
                     </span>
                   </div>
                 </article>
               </div>
 
-              {/* =========================================
-                  CORE PRINCIPLE
-              ========================================= */}
+              {/* =================================================
+                  PRINCIPLE
+              ================================================= */}
 
-              <div
-                className={
-                  styles.productPrinciple
-                }
-              >
-                <span
-                  className={
-                    styles.principleIcon
-                  }
-                >
+              <div className={styles.productPrinciple}>
+                <span className={styles.principleIcon}>
                   <Icon
                     name="spark"
                     size={14}
@@ -569,81 +506,82 @@ function Login() {
                 </span>
 
                 <div>
-                  <small>
-                    THE CORE IDEA
-                  </small>
+                  <small>THE ZYRIONOS IDEA</small>
 
                   <p>
-                    Give {APP_NAME} the outcome.
+                    Give ZyrionOS the outcome.
                     <br />
-                    Work happens inside the
-                    workspace.
+                    Work happens inside the workspace.
                   </p>
                 </div>
               </div>
             </div>
+
+            <div className={styles.productFooter}>
+              <span>AI</span>
+              <span className={styles.footerSeparator}>/</span>
+              <span>Cloud</span>
+              <span className={styles.footerSeparator}>/</span>
+              <span>Operations</span>
+            </div>
           </section>
 
           {/* =================================================
-              LOGIN PANEL
+              LOGIN SIDE
           ================================================= */}
 
           <section className={styles.loginPanel}>
             <div className={styles.loginContainer}>
-              {/* =============================================
+              {/* =================================================
                   LOGIN HEADER
-              ============================================= */}
+              ================================================= */}
 
               <div className={styles.loginHeader}>
-                <span
-                  className={
-                    styles.mobileIcon
-                  }
-                >
+                <span className={styles.mobileProductMark}>
                   <Icon
                     name="spark"
                     size={16}
                   />
                 </span>
 
-                <div>
-                  <span
-                    className={
-                      styles.eyebrow
-                    }
-                  >
+                <div className={styles.loginHeadingContent}>
+                  <span className={styles.eyebrow}>
                     WELCOME BACK
                   </span>
 
-                  <h2>
+                  <h2 className={styles.title}>
                     Sign in to {APP_NAME}
                   </h2>
 
-                  <p>
+                  <p className={styles.subtitle}>
                     Continue to your workspace,
                     projects and AI tools.
                   </p>
                 </div>
               </div>
 
-              {/* =============================================
+              {/* =================================================
                   ERROR
-              ============================================= */}
+              ================================================= */}
 
               {error && (
                 <div
                   className={styles.error}
                   role="alert"
                 >
-                  <span>!</span>
+                  <span className={styles.errorIcon}>
+                    !
+                  </span>
 
-                  <p>{error}</p>
+                  <p className={styles.errorMessage}>
+                    {error}
+                  </p>
                 </div>
               )}
 
-              {/* =============================================
-                  LOGIN FORM
-              ============================================= */}
+              {/* =================================================
+                  FORM
+              ================================================= */}
 
               <form
                 className={styles.form}
@@ -652,20 +590,15 @@ function Login() {
                 {/* EMAIL */}
 
                 <div className={styles.field}>
-                  <label htmlFor="login-email">
+                  <label
+                    className={styles.label}
+                    htmlFor="login-email"
+                  >
                     Email address
                   </label>
 
-                  <div
-                    className={
-                      styles.inputShell
-                    }
-                  >
-                    <span
-                      className={
-                        styles.inputIcon
-                      }
-                    >
+                  <div className={styles.inputShell}>
+                    <span className={styles.inputIcon}>
                       <Icon
                         name="mail"
                         size={16}
@@ -674,21 +607,18 @@ function Login() {
 
                     <input
                       id="login-email"
+                      className={styles.input}
                       type="email"
                       name="email"
                       autoComplete="email"
                       placeholder="you@company.com"
                       value={email}
                       onChange={(event) =>
-                        setEmail(
-                          event.target.value
-                        )
+                        setEmail(event.target.value)
                       }
                       disabled={
                         loading ||
-                        Boolean(
-                          oauthLoading
-                        )
+                        Boolean(oauthLoading)
                       }
                     />
                   </div>
@@ -697,33 +627,24 @@ function Login() {
                 {/* PASSWORD */}
 
                 <div className={styles.field}>
-                  <div
-                    className={
-                      styles.labelRow
-                    }
-                  >
-                    <label htmlFor="login-password">
+                  <div className={styles.labelRow}>
+                    <label
+                      className={styles.label}
+                      htmlFor="login-password"
+                    >
                       Password
                     </label>
 
                     <Link
                       to="/forgot-password"
-                      className={styles.forgot}
+                      className={styles.forgotLink}
                     >
                       Forgot password?
                     </Link>
                   </div>
 
-                  <div
-                    className={
-                      styles.inputShell
-                    }
-                  >
-                    <span
-                      className={
-                        styles.inputIcon
-                      }
-                    >
+                  <div className={styles.inputShell}>
+                    <span className={styles.inputIcon}>
                       <Icon
                         name="lock"
                         size={16}
@@ -732,6 +653,7 @@ function Login() {
 
                     <input
                       id="login-password"
+                      className={styles.inputWithAction}
                       type={
                         showPassword
                           ? "text"
@@ -742,34 +664,25 @@ function Login() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(event) =>
-                        setPassword(
-                          event.target.value
-                        )
+                        setPassword(event.target.value)
                       }
                       disabled={
                         loading ||
-                        Boolean(
-                          oauthLoading
-                        )
+                        Boolean(oauthLoading)
                       }
                     />
 
                     <button
                       type="button"
-                      className={
-                        styles.passwordButton
-                      }
+                      className={styles.passwordToggle}
                       onClick={() =>
                         setShowPassword(
-                          (value) =>
-                            !value
+                          (value) => !value
                         )
                       }
                       disabled={
                         loading ||
-                        Boolean(
-                          oauthLoading
-                        )
+                        Boolean(oauthLoading)
                       }
                       aria-label={
                         showPassword
@@ -791,23 +704,18 @@ function Login() {
 
                 {/* REMEMBER */}
 
-                <label
-                  className={
-                    styles.remember
-                  }
-                >
+                <label className={styles.remember}>
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(event) =>
                       setRememberMe(
-                        event.target
-                          .checked
+                        event.target.checked
                       )
                     }
                   />
 
-                  <span>
+                  <span className={styles.checkbox}>
                     <Icon
                       name="check"
                       size={10}
@@ -821,9 +729,7 @@ function Login() {
 
                 <button
                   type="submit"
-                  className={
-                    styles.primaryButton
-                  }
+                  className={styles.primaryButton}
                   disabled={
                     loading ||
                     Boolean(oauthLoading)
@@ -831,18 +737,12 @@ function Login() {
                 >
                   {loading ? (
                     <>
-                      <span
-                        className={
-                          styles.spinner
-                        }
-                      />
-
+                      <span className={styles.spinner} />
                       Signing in...
                     </>
                   ) : (
                     <>
                       Sign in
-
                       <Icon
                         name="arrow"
                         size={16}
@@ -852,54 +752,33 @@ function Login() {
                 </button>
               </form>
 
-              {/* =============================================
+              {/* =================================================
                   DIVIDER
-              ============================================= */}
+              ================================================= */}
 
-              <div
-                className={
-                  styles.divider
-                }
-              >
+              <div className={styles.divider}>
                 <span />
-
-                <small>
-                  OR CONTINUE WITH
-                </small>
-
+                <small>OR CONTINUE WITH</small>
                 <span />
               </div>
 
-              {/* =============================================
+              {/* =================================================
                   OAUTH
-              ============================================= */}
+              ================================================= */}
 
-              <div
-                className={
-                  styles.oauthGrid
-                }
-              >
+              <div className={styles.oauthGrid}>
                 <button
                   type="button"
-                  className={
-                    styles.oauthButton
-                  }
-                  onClick={
-                    handleGoogleLogin
-                  }
+                  className={styles.oauthButton}
+                  onClick={handleGoogleLogin}
                   disabled={
                     loading ||
-                    Boolean(
-                      oauthLoading
-                    )
+                    Boolean(oauthLoading)
                   }
                 >
-                  {oauthLoading ===
-                  "google" ? (
+                  {oauthLoading === "google" ? (
                     <span
-                      className={
-                        styles.spinner
-                      }
+                      className={`${styles.spinner} ${styles.oauthSpinner}`}
                     />
                   ) : (
                     <Icon
@@ -908,30 +787,21 @@ function Login() {
                     />
                   )}
 
-                  Google
+                  <span>Continue with Google</span>
                 </button>
 
                 <button
                   type="button"
-                  className={
-                    styles.oauthButton
-                  }
-                  onClick={
-                    handleGitHubLogin
-                  }
+                  className={styles.oauthButton}
+                  onClick={handleGitHubLogin}
                   disabled={
                     loading ||
-                    Boolean(
-                      oauthLoading
-                    )
+                    Boolean(oauthLoading)
                   }
                 >
-                  {oauthLoading ===
-                  "github" ? (
+                  {oauthLoading === "github" ? (
                     <span
-                      className={
-                        styles.spinner
-                      }
+                      className={`${styles.spinner} ${styles.oauthSpinner}`}
                     />
                   ) : (
                     <Icon
@@ -940,27 +810,24 @@ function Login() {
                     />
                   )}
 
-                  GitHub
+                  <span>Continue with GitHub</span>
                 </button>
               </div>
 
-              {/* =============================================
-                  REGISTER PROMPT
-              ============================================= */}
+              {/* =================================================
+                  REGISTER
+              ================================================= */}
 
-              <div
-                className={
-                  styles.registerPrompt
-                }
-              >
+              <div className={styles.registerPrompt}>
                 <span>
-                  Don't have a {APP_NAME}{" "}
-                  account?
+                  Don't have a {APP_NAME} account?
                 </span>
 
-                <Link to="/register">
+                <Link
+                  to="/register"
+                  className={styles.registerLink}
+                >
                   Create an account
-
                   <Icon
                     name="arrow"
                     size={13}
@@ -968,24 +835,21 @@ function Login() {
                 </Link>
               </div>
 
-              {/* =============================================
+              {/* =================================================
                   SECURITY
-              ============================================= */}
+              ================================================= */}
 
-              <div
-                className={
-                  styles.securityNotice
-                }
-              >
-                <Icon
-                  name="shield"
-                  size={12}
-                />
+              <div className={styles.securityNotice}>
+                <span className={styles.securityIcon}>
+                  <Icon
+                    name="shield"
+                    size={12}
+                  />
+                </span>
 
                 <span>
-                  Authentication is handled
-                  securely by the {APP_NAME}{" "}
-                  backend.
+                  Authentication is handled securely
+                  by the {APP_NAME} backend.
                 </span>
               </div>
             </div>
@@ -996,18 +860,15 @@ function Login() {
             FOOTER
         ================================================= */}
 
-        <footer
-          className={styles.pageFooter}
-        >
+        <footer className={styles.pageFooter}>
           <span>
-            © {new Date().getFullYear()}{" "}
-            {APP_NAME}
+            © {new Date().getFullYear()} {APP_NAME}
           </span>
 
-          <span>
-            Privacy&nbsp;&nbsp; · &nbsp;&nbsp;
-            Terms
-          </span>
+          <div className={styles.footerLinks}>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/terms">Terms</Link>
+          </div>
         </footer>
       </main>
     </AuthLayout>

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <!-- =====================================================
-         BASIC DOCUMENT CONFIGURATION
+         CORE DOCUMENT
     ====================================================== -->
 
     <meta charset="UTF-8" />
@@ -14,35 +14,21 @@
 
     <meta
       name="theme-color"
-      content="#000000"
+      content="#05070B"
+    />
+
+    <meta
+      name="color-scheme"
+      content="dark"
     />
 
     <!-- =====================================================
-         PRIMARY SEO
+         PRIMARY BRAND IDENTITY
     ====================================================== -->
 
     <title>
       ZYRIONOS — AI Cloud & Application Platform
     </title>
-
-    <meta
-      name="description"
-      content="ZYRIONOS is an AI-powered cloud platform for building applications, deploying infrastructure, managing projects, and automating intelligent workflows from one unified workspace."
-    />
-
-    <meta
-      name="robots"
-      content="index, follow"
-    />
-
-    <link
-      rel="canonical"
-      href="https://zyrionos.com/"
-    />
-
-    <!-- =====================================================
-         BRAND / SITE IDENTITY
-    ====================================================== -->
 
     <meta
       name="application-name"
@@ -60,8 +46,26 @@
     />
 
     <!-- =====================================================
+         PRIMARY SEARCH DESCRIPTION
+    ====================================================== -->
+
+    <meta
+      name="description"
+      content="ZYRIONOS is an AI-native cloud and application platform for building software, deploying cloud infrastructure, managing projects, operating AI agents, and automating intelligent workflows from one unified workspace."
+    />
+
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+
+    <link
+      rel="canonical"
+      href="https://zyrionos.com/"
+    />
+
+    <!-- =====================================================
          OPEN GRAPH
-         Used by social platforms and other link previews.
     ====================================================== -->
 
     <meta
@@ -81,7 +85,7 @@
 
     <meta
       property="og:description"
-      content="Build applications with AI, deploy cloud infrastructure, manage projects, and automate intelligent workflows from one unified workspace."
+      content="Build applications with AI, deploy cloud infrastructure, manage projects, operate intelligent agents, and automate workflows from one unified platform."
     />
 
     <meta
@@ -95,7 +99,7 @@
     />
 
     <!-- =====================================================
-         TWITTER / X CARD
+         X / SOCIAL PREVIEW
     ====================================================== -->
 
     <meta
@@ -110,32 +114,55 @@
 
     <meta
       name="twitter:description"
-      content="AI-powered application building, cloud deployment, project operations, and intelligent workflow automation in one platform."
+      content="AI-native application building, cloud deployment, project operations, AI agents, and intelligent workflow automation."
     />
 
     <!-- =====================================================
-         STRUCTURED DATA
+         GOOGLE / SEARCH SITE IDENTITY
     ====================================================== -->
 
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "ZYRIONOS",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Web",
-        "url": "https://zyrionos.com/",
-        "description": "ZYRIONOS is an AI-powered cloud platform for building applications, deploying infrastructure, managing projects, and automating intelligent workflows from one unified workspace.",
-        "publisher": {
-          "@type": "Organization",
-          "name": "ZYRIONOS",
-          "url": "https://zyrionos.com/"
-        }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://zyrionos.com/#website",
+            "url": "https://zyrionos.com/",
+            "name": "ZYRIONOS",
+            "alternateName": "ZYRIONOS AI Cloud",
+            "description": "AI-native cloud and application platform for building, deploying, operating, and automating software.",
+            "publisher": {
+              "@id": "https://zyrionos.com/#organization"
+            },
+            "inLanguage": "en"
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://zyrionos.com/#organization",
+            "name": "ZYRIONOS",
+            "url": "https://zyrionos.com/",
+            "description": "ZYRIONOS operates an AI-native cloud and application platform for software development, deployment, project operations, AI agents, and intelligent workflow automation."
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://zyrionos.com/#application",
+            "name": "ZYRIONOS",
+            "url": "https://zyrionos.com/",
+            "applicationCategory": "DeveloperApplication",
+            "applicationSubCategory": "AI Cloud Platform",
+            "operatingSystem": "Web",
+            "description": "ZYRIONOS is an AI-native cloud and application platform for building applications, deploying infrastructure, managing projects, operating AI agents, and automating intelligent workflows.",
+            "publisher": {
+              "@id": "https://zyrionos.com/#organization"
+            }
+          }
+        ]
       }
     </script>
 
     <!-- =====================================================
-         APPLICATION ENTRY
+         APPLICATION
     ====================================================== -->
   </head>
 

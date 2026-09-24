@@ -1,7 +1,7 @@
 /* =========================================================
    ZYRIONOS WORKSPACE
    Professional Light IDE
-   Full viewport / Responsive / Production UI
+   Full Viewport / Responsive / Production UI
    ========================================================= */
 
 
@@ -10,11 +10,11 @@
 ========================================================= */
 
 .workspace {
-  --ws-bg: #f5f7fb;
+  --ws-bg: #ffffff;
   --ws-surface: #ffffff;
   --ws-surface-soft: #f8f9fc;
   --ws-surface-muted: #f1f3f7;
-  --ws-surface-hover: #eef2f8;
+  --ws-surface-hover: #f3f5f9;
 
   --ws-border: #e4e8ef;
   --ws-border-strong: #d4dbe6;
@@ -59,10 +59,26 @@
   --ws-transition:
     160ms ease;
 
+  /*
+   * IMPORTANT:
+   * The old version used height: 100%.
+   * If an outer DashboardLayout does not give the element
+   * an explicit height, the remaining page area can expose
+   * the parent's dark background.
+   *
+   * This version anchors the workspace to the viewport.
+   */
+
   width: 100%;
-  height: 100%;
+  max-width: none;
+
   min-width: 0;
-  min-height: 0;
+
+  height: 100dvh;
+  min-height: 100dvh;
+
+  margin: 0;
+  padding: 0;
 
   display: flex;
   flex-direction: column;
@@ -71,11 +87,17 @@
 
   color: var(--ws-text);
 
-  background: var(--ws-bg);
+  background: #ffffff;
+
+  isolation: isolate;
 
   box-sizing: border-box;
 }
 
+
+/* =========================================================
+   GLOBAL WORKSPACE BOX MODEL
+========================================================= */
 
 .workspace,
 .workspace *,
@@ -95,6 +117,7 @@
   min-height: 72px;
 
   width: 100%;
+  max-width: none;
 
   display: flex;
   align-items: center;
@@ -105,7 +128,7 @@
 
   border-bottom: 1px solid var(--ws-border);
 
-  background: rgba(255, 255, 255, 0.96);
+  background: #ffffff;
 
   box-shadow:
     0 1px 3px rgba(16, 24, 40, 0.025);
@@ -327,7 +350,7 @@
 
   border: 1px solid var(--ws-border);
 
-  background: var(--ws-surface);
+  background: #ffffff;
 }
 
 
@@ -538,8 +561,13 @@
 .workspaceBody {
   flex: 1 1 auto;
 
+  width: 100%;
+  max-width: none;
+
   min-width: 0;
   min-height: 0;
+
+  height: auto;
 
   display: grid;
 
@@ -550,7 +578,7 @@
 
   overflow: hidden;
 
-  background: var(--ws-bg);
+  background: #ffffff;
 }
 
 
@@ -569,7 +597,7 @@
 
   border-right: 1px solid var(--ws-border);
 
-  background: var(--ws-surface);
+  background: #ffffff;
 }
 
 
@@ -1063,7 +1091,7 @@
 
   overflow: hidden;
 
-  background: #f7f8fb;
+  background: #ffffff;
 }
 
 
@@ -1326,6 +1354,8 @@
   position: relative;
 
   overflow: hidden;
+
+  background: #ffffff;
 }
 
 
@@ -1628,6 +1658,8 @@
   flex-direction: column;
 
   overflow: hidden;
+
+  background: #ffffff;
 }
 
 
@@ -1821,6 +1853,8 @@
   padding: 9px;
 
   overflow: hidden;
+
+  background: #ffffff;
 }
 
 
@@ -3535,6 +3569,11 @@
 ========================================================= */
 
 @media (max-width: 980px) {
+  .workspace {
+    min-height: 100dvh;
+    height: 100dvh;
+  }
+
   .workspaceBody {
     grid-template-columns:
       205px
@@ -3556,6 +3595,14 @@
 ========================================================= */
 
 @media (max-width: 760px) {
+  .workspace {
+    width: 100%;
+    min-width: 0;
+
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
   .workspaceHeader {
     min-height: 62px;
 
@@ -3621,7 +3668,15 @@
 
     display: block;
 
+    width: 100%;
+
+    height: auto;
+
+    min-height: 0;
+
     overflow: hidden;
+
+    background: #ffffff;
   }
 
   .projectRail,
@@ -3629,6 +3684,8 @@
   .inspector {
     width: 100%;
     height: 100%;
+
+    min-height: 0;
 
     border: 0;
   }
@@ -3640,6 +3697,8 @@
 
   .buildArea {
     display: flex;
+
+    background: #ffffff;
   }
 
   .mobilePanelVisible {
@@ -3951,6 +4010,11 @@
 ========================================================= */
 
 @media (max-width: 760px) and (orientation: landscape) {
+  .workspace {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
   .workspaceHeader {
     min-height: 50px;
   }

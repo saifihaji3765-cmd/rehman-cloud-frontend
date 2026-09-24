@@ -1,5 +1,6 @@
 import api from "./api";
 
+
 /*
 |--------------------------------------------------------------------------
 | ZYRIONOS — PROJECT SERVICE
@@ -14,39 +15,30 @@ import api from "./api";
 | - Project update
 | - Project deletion
 | - Project deployment
-| - Project ID validation
 | - Project ID normalization
 | - Consistent API error normalization
 |
-| Architecture:
-|
-| Page / Feature
-|       ↓
-| projectService
-|       ↓
-| centralized api client
-|       ↓
-| REAL BACKEND API
-|
-| IMPORTANT:
-| - No mock data
-| - No fake projects
-| - No fake deployment URLs
-| - No frontend authorization
-| - Backend remains authoritative for ownership,
-|   permissions, subscription limits and business rules.
+| Backend remains authoritative.
 |
 |--------------------------------------------------------------------------
 */
+
+
+const API_PREFIX =
+  "/api/projects";
 
 
 /*
 |--------------------------------------------------------------------------
-| CONFIGURATION
+| TIMEOUTS
 |--------------------------------------------------------------------------
 */
 
-const API_PREFIX = "/api/projects";
+const DEFAULT_PROJECT_TIMEOUT =
+  30000;
+
+const DEPLOYMENT_TIMEOUT =
+  120000;
 
 
 /*
@@ -56,12 +48,10 @@ const API_PREFIX = "/api/projects";
 */
 
 
-/**
- * Validate a project identifier.
- */
 function normalizeProjectId(
   projectId
 ) {
+
   if (
     projectId === undefined ||
     projectId === null
@@ -72,7 +62,9 @@ function normalizeProjectId(
   }
 
   const normalizedId =
-    String(projectId).trim();
+    String(
+      projectId
+    ).trim();
 
   if (!normalizedId) {
     throw new Error(
@@ -80,31 +72,16 @@ function normalizeProjectId(
     );
   }
 
-  /*
-   * Encode the ID before putting it into a URL.
-   */
   return encodeURIComponent(
     normalizedId
   );
 }
 
 
-/**
- * Validate a project payload.
- *
- * This only validates the basic JavaScript shape.
- *
- * Backend remains responsible for:
- * - Authentication
- * - Authorization
- * - Ownership
- * - Subscription limits
- * - Business rules
- * - Field-level validation
- */
 function validateProjectData(
   projectData
 ) {
+
   if (
     projectData === null ||
     projectData === undefined ||
@@ -118,13 +95,17 @@ function validateProjectData(
 }
 
 
-/**
- * Normalize API errors into a predictable Error object.
- */
+/*
+|--------------------------------------------------------------------------
+| ERROR NORMALIZATION
+|--------------------------------------------------------------------------
+*/
+
 function normalizeApiError(
   error,
   fallbackMessage
 ) {
+
   const responseData =
     error?.response?.data;
 
@@ -139,6 +120,7 @@ function normalizeApiError(
     responseData?.detail ||
     responseData?.reason;
 
+
   let message =
     backendMessage ||
     error?.message ||
@@ -146,15 +128,35 @@ function normalizeApiError(
 
 
   /*
-   * Network / timeout failures.
+   * Network / timeout
    */
-  if (!error?.response) {
+
+  if (
+    !error?.response
+  ) {
+
     if (
-      error?.code === "ECONNABORTED"
+      error?.code ===
+        "ECONNABORTED" ||
+      error?.code ===
+        "ETIMEDOUT" ||
+      error?.isTimeout
     ) {
+
       message =
-        "The request timed out. Please try again.";
+        "The request timed out. The backend may still be processing the operation.";
+
+    } else if (
+      error?.code ===
+        "ERR_NETWORK" ||
+      error?.isNetworkError
+    ) {
+
+      message =
+        "Unable to connect to the server. Please check your connection.";
+
     } else {
+
       message =
         "Unable to connect to the server. Please check your internet connection.";
     }
@@ -162,74 +164,100 @@ function normalizeApiError(
 
 
   /*
-   * Authentication.
+   * Authentication
    */
+
   if (
     status === 401 &&
     !backendMessage
   ) {
+
     message =
       "Authentication required. Please sign in again.";
   }
 
 
   /*
-   * Authorization.
+   * Authorization
    */
+
   if (
     status === 403 &&
     !backendMessage
   ) {
+
     message =
       "You do not have permission to perform this action.";
   }
 
 
   /*
-   * Project not found.
+   * Not found
    */
+
   if (
     status === 404 &&
     !backendMessage
   ) {
+
     message =
       "The requested project could not be found.";
   }
 
 
   /*
-   * Conflict.
+   * Conflict
    */
+
   if (
     status === 409 &&
     !backendMessage
   ) {
+
     message =
       "This project operation could not be completed because of a conflict.";
   }
 
 
   /*
-   * Rate limiting.
+   * Validation
    */
+
+  if (
+    status === 422 &&
+    !backendMessage
+  ) {
+
+    message =
+      "The project data could not be validated.";
+  }
+
+
+  /*
+   * Rate limiting
+   */
+
   if (
     status === 429 &&
     !backendMessage
   ) {
+
     message =
       "Too many requests. Please wait a moment and try again.";
   }
 
 
   /*
-   * Backend/server failure.
+   * Server failure
    */
+
   if (
     status >= 500 &&
     !backendMessage
   ) {
+
     message =
-      "The project service encountered an error. Please try again later.";
+      "The project service encountered a server error. Please try again later.";
   }
 
 
@@ -239,9 +267,6 @@ function normalizeApiError(
     );
 
 
-  /*
-   * Preserve safe diagnostic information.
-   */
   normalizedError.status =
     status;
 
@@ -258,22 +283,48 @@ function normalizeApiError(
   normalizedError.isProjectError =
     true;
 
+  normalizedError.isTimeout =
+    Boolean(
+      error?.isTimeout ||
+      error?.code ===
+        "ECONNABORTED" ||
+      error?.code ===
+        "ETIMEDOUT"
+    );
+
+  normalizedError.isNetworkError =
+    Boolean(
+      error?.isNetworkError ||
+      error?.code ===
+        "ERR_NETWORK"
+    );
+
+  normalizedError.duration =
+    error?.config?.metadata?.duration ??
+    null;
+
 
   return normalizedError;
 }
 
 
-/**
- * Execute an API request through one
- * centralized error-normalization boundary.
- */
+/*
+|--------------------------------------------------------------------------
+| REQUEST EXECUTOR
+|--------------------------------------------------------------------------
+*/
+
 async function executeRequest(
   request,
   fallbackMessage
 ) {
+
   try {
+
     return await request();
+
   } catch (error) {
+
     throw normalizeApiError(
       error,
       fallbackMessage
@@ -289,20 +340,13 @@ async function executeRequest(
 |
 | POST /api/projects/create
 |
-| Existing Workspace payload:
-|
-| {
-|   projectName,
-|   description,
-|   framework
-| }
-|
 |--------------------------------------------------------------------------
 */
 
 export async function createProject(
   projectData
 ) {
+
   validateProjectData(
     projectData
   );
@@ -311,7 +355,11 @@ export async function createProject(
     () =>
       api.post(
         `${API_PREFIX}/create`,
-        projectData
+        projectData,
+        {
+          timeout:
+            DEFAULT_PROJECT_TIMEOUT,
+        }
       ),
     "Unable to create the project."
   );
@@ -325,18 +373,19 @@ export async function createProject(
 |
 | GET /api/projects/me
 |
-| Returns projects belonging to the authenticated user.
-|
-| Backend authorization remains authoritative.
-|
 |--------------------------------------------------------------------------
 */
 
 export async function getProjects() {
+
   return executeRequest(
     () =>
       api.get(
-        `${API_PREFIX}/me`
+        `${API_PREFIX}/me`,
+        {
+          timeout:
+            DEFAULT_PROJECT_TIMEOUT,
+        }
       ),
     "Unable to load your projects."
   );
@@ -356,6 +405,7 @@ export async function getProjects() {
 export async function getProject(
   projectId
 ) {
+
   const id =
     normalizeProjectId(
       projectId
@@ -364,7 +414,11 @@ export async function getProject(
   return executeRequest(
     () =>
       api.get(
-        `${API_PREFIX}/${id}`
+        `${API_PREFIX}/${id}`,
+        {
+          timeout:
+            DEFAULT_PROJECT_TIMEOUT,
+        }
       ),
     "Unable to load the project."
   );
@@ -385,6 +439,7 @@ export async function updateProject(
   projectId,
   projectData
 ) {
+
   const id =
     normalizeProjectId(
       projectId
@@ -398,7 +453,11 @@ export async function updateProject(
     () =>
       api.put(
         `${API_PREFIX}/update/${id}`,
-        projectData
+        projectData,
+        {
+          timeout:
+            DEFAULT_PROJECT_TIMEOUT,
+        }
       ),
     "Unable to update the project."
   );
@@ -412,19 +471,13 @@ export async function updateProject(
 |
 | DELETE /api/projects/delete/:projectId
 |
-| This is a destructive operation.
-|
-| The frontend does not treat possession of a project ID
-| as authorization.
-|
-| Backend must enforce ownership and permission.
-|
 |--------------------------------------------------------------------------
 */
 
 export async function deleteProject(
   projectId
 ) {
+
   const id =
     normalizeProjectId(
       projectId
@@ -433,7 +486,11 @@ export async function deleteProject(
   return executeRequest(
     () =>
       api.delete(
-        `${API_PREFIX}/delete/${id}`
+        `${API_PREFIX}/delete/${id}`,
+        {
+          timeout:
+            DEFAULT_PROJECT_TIMEOUT,
+        }
       ),
     "Unable to delete the project."
   );
@@ -447,15 +504,8 @@ export async function deleteProject(
 |
 | POST /api/projects/deploy/:projectId
 |
-| IMPORTANT:
-|
-| This service does NOT:
-| - create a deployment URL
-| - force deployment success
-| - invent deployment status
-| - modify deployment response
-|
-| The backend response remains authoritative.
+| Deployment can legitimately take longer than
+| ordinary project CRUD requests.
 |
 |--------------------------------------------------------------------------
 */
@@ -463,6 +513,7 @@ export async function deleteProject(
 export async function deployProject(
   projectId
 ) {
+
   const id =
     normalizeProjectId(
       projectId
@@ -471,7 +522,12 @@ export async function deployProject(
   return executeRequest(
     () =>
       api.post(
-        `${API_PREFIX}/deploy/${id}`
+        `${API_PREFIX}/deploy/${id}`,
+        undefined,
+        {
+          timeout:
+            DEPLOYMENT_TIMEOUT,
+        }
       ),
     "Unable to deploy the project."
   );
@@ -482,16 +538,12 @@ export async function deployProject(
 |--------------------------------------------------------------------------
 | PROJECT ID VALIDATION
 |--------------------------------------------------------------------------
-|
-| Utility for UI/features that need to determine
-| whether a project ID exists before calling the API.
-|
-|--------------------------------------------------------------------------
 */
 
 export function isValidProjectId(
   projectId
 ) {
+
   if (
     projectId === undefined ||
     projectId === null
@@ -500,7 +552,9 @@ export function isValidProjectId(
   }
 
   return (
-    String(projectId).trim().length > 0
+    String(
+      projectId
+    ).trim().length > 0
   );
 }
 
@@ -509,16 +563,12 @@ export function isValidProjectId(
 |--------------------------------------------------------------------------
 | NORMALIZED PROJECT ID
 |--------------------------------------------------------------------------
-|
-| Public utility for consumers that need the
-| same ID normalization used internally.
-|
-|--------------------------------------------------------------------------
 */
 
 export function getNormalizedProjectId(
   projectId
 ) {
+
   return normalizeProjectId(
     projectId
   );
@@ -532,13 +582,21 @@ export function getNormalizedProjectId(
 */
 
 const projectService = {
+
   createProject,
+
   getProjects,
+
   getProject,
+
   updateProject,
+
   deleteProject,
+
   deployProject,
+
   isValidProjectId,
+
   getNormalizedProjectId,
 };
 

@@ -24,8 +24,42 @@ import api from "./api";
  * - No mock/fake responses
  * - No API keys in frontend
  * - Centralized API communication
+ * - AI requests use dedicated longer timeouts
  * =========================================================
  */
+
+
+/* =========================================================
+   AI REQUEST TIMEOUTS
+========================================================= */
+
+/*
+ * AI operations can involve:
+ *
+ * Intent Agent
+ * Planning Agent
+ * Builder Agent
+ * Review/Fix Agent
+ * Master Agent
+ *
+ * Therefore they must not use the normal
+ * 30-second API timeout.
+ */
+
+const AI_CHAT_TIMEOUT =
+  90000;
+
+
+const AI_CODE_TIMEOUT =
+  120000;
+
+
+const AI_DEPLOY_TIMEOUT =
+  120000;
+
+
+const AI_THUMBNAIL_TIMEOUT =
+  120000;
 
 
 /* =========================================================
@@ -39,18 +73,22 @@ function normalizeAIError(
   error,
   fallbackMessage
 ) {
+
   const responseData =
     error?.response?.data;
+
 
   const backendMessage =
     responseData?.message ||
     responseData?.error ||
     responseData?.detail;
 
+
   const status =
     error?.response?.status ??
     error?.status ??
     null;
+
 
   const normalizedError =
     new Error(
@@ -61,21 +99,53 @@ function normalizeAIError(
       )
     );
 
+
   normalizedError.status =
     status;
+
 
   normalizedError.code =
     responseData?.code ||
     error?.code ||
     null;
 
+
   normalizedError.data =
     responseData ||
     error?.data ||
     null;
 
+
   normalizedError.isAIError =
     true;
+
+
+  normalizedError.isTimeout =
+    Boolean(
+      error?.isTimeout ||
+      error?.code ===
+        "ECONNABORTED" ||
+      error?.code ===
+        "ETIMEDOUT"
+    );
+
+
+  normalizedError.isNetworkError =
+    Boolean(
+      error?.isNetworkError ||
+      error?.code ===
+        "ERR_NETWORK"
+    );
+
+
+  /*
+   * Preserve request timing information
+   * when available.
+   */
+  normalizedError.duration =
+    error?.config?.metadata?.duration ??
+    null;
+
 
   return normalizedError;
 }
@@ -88,7 +158,9 @@ async function executeAIRequest(
   request,
   fallbackMessage
 ) {
+
   try {
+
     return await request();
 
   } catch (error) {
@@ -109,14 +181,17 @@ function validatePrompt(
   value,
   fieldName
 ) {
+
   if (
     typeof value !== "string" ||
     !value.trim()
   ) {
+
     throw new Error(
       `${fieldName} is required.`
     );
   }
+
 
   return value.trim();
 }
@@ -128,15 +203,18 @@ function validatePrompt(
 function validateProjectId(
   projectId
 ) {
+
   if (
     projectId === undefined ||
     projectId === null ||
     String(projectId).trim() === ""
   ) {
+
     throw new Error(
       "Project ID is required."
     );
   }
+
 
   return String(
     projectId
@@ -161,6 +239,7 @@ export async function aiChat(
       "AI chat prompt"
     );
 
+
   return executeAIRequest(
     () =>
       api.post(
@@ -168,8 +247,13 @@ export async function aiChat(
         {
           prompt:
             normalizedPrompt,
+        },
+        {
+          timeout:
+            AI_CHAT_TIMEOUT,
         }
       ),
+
     "Unable to communicate with the AI."
   );
 }
@@ -207,11 +291,13 @@ export async function generateCode(
       "Code generation prompt"
     );
 
+
   const normalizedFramework =
     typeof framework === "string" &&
     framework.trim()
       ? framework.trim()
       : "React";
+
 
   return executeAIRequest(
     () =>
@@ -223,8 +309,19 @@ export async function generateCode(
 
           framework:
             normalizedFramework,
+        },
+        {
+          /*
+           * AI code generation has multiple
+           * backend agent stages, so allow
+           * substantially more time than
+           * ordinary API requests.
+           */
+          timeout:
+            AI_CODE_TIMEOUT,
         }
       ),
+
     "Unable to generate project code."
   );
 }
@@ -246,6 +343,7 @@ export async function aiDeploy(
       projectId
     );
 
+
   return executeAIRequest(
     () =>
       api.post(
@@ -253,8 +351,13 @@ export async function aiDeploy(
         {
           projectId:
             normalizedProjectId,
+        },
+        {
+          timeout:
+            AI_DEPLOY_TIMEOUT,
         }
       ),
+
     "Unable to start the AI deployment agent."
   );
 }
@@ -277,6 +380,7 @@ export async function generateThumbnail(
       "Thumbnail prompt"
     );
 
+
   return executeAIRequest(
     () =>
       api.post(
@@ -284,8 +388,13 @@ export async function generateThumbnail(
         {
           prompt:
             normalizedPrompt,
+        },
+        {
+          timeout:
+            AI_THUMBNAIL_TIMEOUT,
         }
       ),
+
     "Unable to generate the thumbnail."
   );
 }
@@ -325,21 +434,28 @@ export function getAIResult(
     response === undefined ||
     response === null
   ) {
+
     return null;
   }
+
 
   if (
     response?.data?.data !==
     undefined
   ) {
+
     return response.data.data;
   }
 
+
   if (
-    response?.data !== undefined
+    response?.data !==
+    undefined
   ) {
+
     return response.data;
   }
+
 
   return response;
 }
@@ -370,40 +486,73 @@ export function getGeneratedFiles(
       response
     );
 
+
   const possibleFileCollections = [
 
+    /*
+     * Current Master Agent structure.
+     */
     result?.orchestration
       ?.buildResult
       ?.data
       ?.files,
 
+
+    /*
+     * Compatibility.
+     */
     result?.orchestration
       ?.buildResult
       ?.files,
 
+
+    /*
+     * Compatibility.
+     */
     result?.buildResult
       ?.data
       ?.files,
 
+
+    /*
+     * Compatibility.
+     */
     result?.buildResult
       ?.files,
 
+
+    /*
+     * Nested data compatibility.
+     */
     result?.data
       ?.orchestration
       ?.buildResult
       ?.data
       ?.files,
 
+
+    /*
+     * Nested data compatibility.
+     */
     result?.data
       ?.orchestration
       ?.buildResult
       ?.files,
 
+
+    /*
+     * Direct files compatibility.
+     */
     result?.files,
 
+
+    /*
+     * Direct data files compatibility.
+     */
     result?.data?.files,
 
   ];
+
 
   for (
     const files
@@ -413,10 +562,11 @@ export function getGeneratedFiles(
     if (
       Array.isArray(files)
     ) {
+
       return files;
     }
-
   }
+
 
   return [];
 }
@@ -436,6 +586,7 @@ export function normalizeAIResponse(
     response === undefined ||
     response === null
   ) {
+
     return "";
   }
 
@@ -450,6 +601,7 @@ export function normalizeAIResponse(
     typeof result ===
     "string"
   ) {
+
     return result;
   }
 
@@ -458,6 +610,7 @@ export function normalizeAIResponse(
     typeof result?.reply ===
     "string"
   ) {
+
     return result.reply;
   }
 
@@ -466,6 +619,7 @@ export function normalizeAIResponse(
     typeof result?.text ===
     "string"
   ) {
+
     return result.text;
   }
 
@@ -474,6 +628,7 @@ export function normalizeAIResponse(
     typeof result?.content ===
     "string"
   ) {
+
     return result.content;
   }
 
@@ -482,6 +637,7 @@ export function normalizeAIResponse(
     typeof result?.message ===
     "string"
   ) {
+
     return result.message;
   }
 
@@ -490,6 +646,7 @@ export function normalizeAIResponse(
     typeof response?.data?.message ===
     "string"
   ) {
+
     return response.data.message;
   }
 
@@ -507,9 +664,7 @@ export function normalizeAIResponse(
     return String(
       result
     );
-
   }
-
 }
 
 

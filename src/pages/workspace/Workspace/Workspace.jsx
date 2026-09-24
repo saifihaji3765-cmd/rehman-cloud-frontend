@@ -11,6 +11,7 @@ import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.js
 import {
   getProjects,
   createProject,
+  updateProject,
   deployProject,
 } from "../../../services/workspaceService";
 
@@ -25,14 +26,7 @@ import styles from "./Workspace.module.css";
 
 /* =========================================================
    ZYRIONOS WORKSPACE
-   Professional light IDE / AI builder workspace
-   Backend/API contracts preserved
    ========================================================= */
-
-
-/* =========================================================
-   CONSTANTS
-========================================================= */
 
 const FRAMEWORKS = [
   "React",
@@ -82,7 +76,99 @@ const BUILDER_ACTIONS = [
 
 
 /* =========================================================
-   HELPERS
+   RESPONSE NORMALIZATION
+========================================================= */
+
+function unwrapApiResponse(response) {
+  if (
+    response === undefined ||
+    response === null
+  ) {
+    return null;
+  }
+
+  /*
+   * Axios response:
+   *
+   * response.data
+   *
+   * Backend:
+   *
+   * {
+   *   success,
+   *   message,
+   *   data
+   * }
+   */
+
+  const axiosData =
+    response?.data !== undefined
+      ? response.data
+      : response;
+
+  if (
+    axiosData &&
+    typeof axiosData === "object" &&
+    !Array.isArray(axiosData) &&
+    axiosData.data !== undefined
+  ) {
+    return axiosData.data;
+  }
+
+  return axiosData;
+}
+
+
+function extractProjectFromResponse(response) {
+  const root =
+    response?.data !== undefined
+      ? response.data
+      : response;
+
+  const candidates = [
+    root?.project,
+    root?.data?.project,
+
+    root?.data,
+
+    root?.project?.data,
+
+    response?.project,
+    response?.data?.project,
+    response?.data?.data?.project,
+  ];
+
+  for (
+    const candidate of candidates
+  ) {
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      !Array.isArray(candidate)
+    ) {
+      /*
+       * Make sure this actually looks like
+       * a project instead of an arbitrary wrapper.
+       */
+      if (
+        candidate._id ||
+        candidate.id ||
+        candidate.projectId ||
+        candidate.projectName ||
+        candidate.name ||
+        Array.isArray(candidate.files)
+      ) {
+        return candidate;
+      }
+    }
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   PROJECT HELPERS
 ========================================================= */
 
 function getProjectId(project) {
@@ -113,24 +199,36 @@ function getProjectFramework(project) {
 
 
 function normalizeProjects(response) {
-  const data =
-    response?.data ??
-    response;
+  const root =
+    response?.data !== undefined
+      ? response.data
+      : response;
 
-  if (Array.isArray(data)) {
-    return data;
+  const candidates = [
+    root?.projects,
+    root?.data?.projects,
+
+    root?.data,
+
+    response?.projects,
+    response?.data?.projects,
+    response?.data?.data?.projects,
+  ];
+
+  for (
+    const candidate of candidates
+  ) {
+    if (
+      Array.isArray(candidate)
+    ) {
+      return candidate;
+    }
   }
 
-  if (Array.isArray(data?.projects)) {
-    return data.projects;
-  }
-
-  if (Array.isArray(data?.data?.projects)) {
-    return data.data.projects;
-  }
-
-  if (Array.isArray(data?.data)) {
-    return data.data;
+  if (
+    Array.isArray(root)
+  ) {
+    return root;
   }
 
   return [];
@@ -172,6 +270,10 @@ function normalizeDeploymentStatus(status) {
   }
 }
 
+
+/* =========================================================
+   FILE NORMALIZATION
+========================================================= */
 
 function normalizeProjectFiles(
   project,
@@ -228,8 +330,12 @@ function normalizeProjectFiles(
       ?.files,
   ];
 
-  for (const files of possibleCollections) {
-    if (Array.isArray(files)) {
+  for (
+    const files of possibleCollections
+  ) {
+    if (
+      Array.isArray(files)
+    ) {
       return files;
     }
   }
@@ -258,14 +364,18 @@ function getFileContent(file) {
     file.content !== undefined &&
     file.content !== null
   ) {
-    return String(file.content);
+    return String(
+      file.content
+    );
   }
 
   if (
     file.code !== undefined &&
     file.code !== null
   ) {
-    return String(file.code);
+    return String(
+      file.code
+    );
   }
 
   return "The backend returned this file without readable content.";
@@ -287,6 +397,10 @@ function getDeploymentUrl(
 }
 
 
+/* =========================================================
+   ERROR HANDLING
+========================================================= */
+
 function getErrorMessage(
   error,
   fallback
@@ -295,6 +409,7 @@ function getErrorMessage(
     error?.response?.data?.message ||
     error?.response?.data?.error ||
     error?.response?.data?.details ||
+    error?.data?.message ||
     error?.message ||
     fallback
   );
@@ -302,11 +417,16 @@ function getErrorMessage(
 
 
 /* =========================================================
-   BACKEND ACTIVITY EXTRACTION
-   ========================================================= */
+   ACTIVITY
+========================================================= */
 
-function normalizeActivityItem(item, index) {
-  if (typeof item === "string") {
+function normalizeActivityItem(
+  item,
+  index
+) {
+  if (
+    typeof item === "string"
+  ) {
     return {
       id: `activity-${index}-${item}`,
       message: item,
@@ -314,7 +434,10 @@ function normalizeActivityItem(item, index) {
     };
   }
 
-  if (!item || typeof item !== "object") {
+  if (
+    !item ||
+    typeof item !== "object"
+  ) {
     return null;
   }
 
@@ -375,7 +498,9 @@ function normalizeActivityItem(item, index) {
 }
 
 
-function extractBackendActivity(result) {
+function extractBackendActivity(
+  result
+) {
   const candidates = [
     result?.activity,
     result?.logs,
@@ -389,19 +514,47 @@ function extractBackendActivity(result) {
     result?.orchestration?.logs,
     result?.orchestration?.events,
 
-    result?.orchestration?.buildResult?.activity,
-    result?.orchestration?.buildResult?.logs,
-    result?.orchestration?.buildResult?.events,
+    result
+      ?.orchestration
+      ?.buildResult
+      ?.activity,
 
-    result?.data?.orchestration?.activity,
-    result?.data?.orchestration?.logs,
-    result?.data?.orchestration?.events,
+    result
+      ?.orchestration
+      ?.buildResult
+      ?.logs,
+
+    result
+      ?.orchestration
+      ?.buildResult
+      ?.events,
+
+    result
+      ?.data
+      ?.orchestration
+      ?.activity,
+
+    result
+      ?.data
+      ?.orchestration
+      ?.logs,
+
+    result
+      ?.data
+      ?.orchestration
+      ?.events,
   ];
 
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) {
+  for (
+    const candidate of candidates
+  ) {
+    if (
+      Array.isArray(candidate)
+    ) {
       return candidate
-        .map(normalizeActivityItem)
+        .map(
+          normalizeActivityItem
+        )
         .filter(Boolean);
     }
   }
@@ -414,32 +567,44 @@ function extractBackendActivity(result) {
    OPERATION LABELS
 ========================================================= */
 
-function getOperationTitle(operation) {
+function getOperationTitle(
+  operation
+) {
   switch (operation) {
     case "build":
       return "Building project";
+
     case "change":
       return "Applying project change";
+
     case "review":
       return "Reviewing project";
+
     case "deploy":
       return "Deploying project";
+
     default:
       return "Workspace ready";
   }
 }
 
 
-function getOperationDescription(operation) {
+function getOperationDescription(
+  operation
+) {
   switch (operation) {
     case "build":
       return "Your request has been submitted to the connected AI backend.";
+
     case "change":
       return "The connected AI backend is processing the requested change.";
+
     case "review":
       return "The connected AI backend is reviewing the selected project.";
+
     case "deploy":
       return "The deployment request is being processed by the backend.";
+
     default:
       return "Ready for the next operation.";
   }
@@ -511,7 +676,7 @@ function Workspace() {
 
 
   /* =======================================================
-     DEPLOYMENT STATE
+     DEPLOYMENT
   ======================================================= */
 
   const [
@@ -617,7 +782,9 @@ function Workspace() {
         getFileContent(
           selectedFile
         ),
-      [selectedFile]
+      [
+        selectedFile,
+      ]
     );
 
   const deploymentIsLive =
@@ -627,35 +794,48 @@ function Workspace() {
     operation !== "idle";
 
   const operationTitle =
-    getOperationTitle(operation);
+    getOperationTitle(
+      operation
+    );
 
   const operationDescription =
-    getOperationDescription(operation);
+    getOperationDescription(
+      operation
+    );
 
 
   /* =======================================================
-     OPERATION TIMER
+     TIMER
   ======================================================= */
 
   useEffect(() => {
-    if (!operationStartedAt) {
+
+    if (
+      !operationStartedAt
+    ) {
       setElapsedSeconds(0);
+
       return undefined;
     }
 
-    const updateTimer = () => {
-      const seconds =
-        Math.max(
-          0,
-          Math.floor(
-            (Date.now() -
-              operationStartedAt) /
-              1000
-          )
-        );
+    const updateTimer =
+      () => {
 
-      setElapsedSeconds(seconds);
-    };
+        const seconds =
+          Math.max(
+            0,
+            Math.floor(
+              (
+                Date.now() -
+                operationStartedAt
+              ) / 1000
+            )
+          );
+
+        setElapsedSeconds(
+          seconds
+        );
+      };
 
     updateTimer();
 
@@ -669,6 +849,7 @@ function Workspace() {
       window.clearInterval(
         timer
       );
+
   }, [
     operationStartedAt,
   ]);
@@ -679,25 +860,30 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
+
     selectedProjectRef.current =
       selectedProject;
+
   }, [
     selectedProject,
   ]);
 
 
   /* =======================================================
-     PREVIEW FULLSCREEN STATE
+     FULLSCREEN
   ======================================================= */
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setPreviewFullscreen(
-        Boolean(
-          document.fullscreenElement
-        )
-      );
-    };
+
+    const handleFullscreenChange =
+      () => {
+
+        setPreviewFullscreen(
+          Boolean(
+            document.fullscreenElement
+          )
+        );
+      };
 
     document.addEventListener(
       "fullscreenchange",
@@ -709,6 +895,7 @@ function Workspace() {
         "fullscreenchange",
         handleFullscreenChange
       );
+
   }, []);
 
 
@@ -722,25 +909,28 @@ function Workspace() {
         message,
         type = "info"
       ) => {
+
         setActivityLog(
-          previous => [
-            ...previous,
-            {
-              id:
-                `${Date.now()}-${Math.random()}`,
-              message,
-              type,
-              timestamp:
-                new Date().toLocaleTimeString(
-                  [],
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  }
-                ),
-            },
-          ].slice(-40)
+          previous =>
+            [
+              ...previous,
+              {
+                id:
+                  `${Date.now()}-${Math.random()}`,
+                message,
+                type,
+                timestamp:
+                  new Date()
+                    .toLocaleTimeString(
+                      [],
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      }
+                    ),
+              },
+            ].slice(-40)
         );
       },
       []
@@ -750,6 +940,7 @@ function Workspace() {
   const addBackendActivity =
     useCallback(
       result => {
+
         const backendActivity =
           extractBackendActivity(
             result
@@ -762,23 +953,25 @@ function Workspace() {
         }
 
         setActivityLog(
-          previous => [
-            ...previous,
-            ...backendActivity.map(
-              item => ({
-                ...item,
-                timestamp:
-                  new Date().toLocaleTimeString(
-                    [],
-                    {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    }
-                  ),
-              })
-            ),
-          ].slice(-40)
+          previous =>
+            [
+              ...previous,
+              ...backendActivity.map(
+                item => ({
+                  ...item,
+                  timestamp:
+                    new Date()
+                      .toLocaleTimeString(
+                        [],
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        }
+                      ),
+                })
+              ),
+            ].slice(-40)
         );
       },
       []
@@ -791,7 +984,11 @@ function Workspace() {
         type,
         message
       ) => {
-        setOperation(type);
+
+        setOperation(
+          type
+        );
+
         setOperationStartedAt(
           Date.now()
         );
@@ -801,7 +998,9 @@ function Workspace() {
           "active"
         );
       },
-      [addActivity]
+      [
+        addActivity,
+      ]
     );
 
 
@@ -811,6 +1010,7 @@ function Workspace() {
         success,
         message
       ) => {
+
         addActivity(
           message,
           success
@@ -818,12 +1018,17 @@ function Workspace() {
             : "error"
         );
 
-        setOperation("idle");
+        setOperation(
+          "idle"
+        );
+
         setOperationStartedAt(
           null
         );
       },
-      [addActivity]
+      [
+        addActivity,
+      ]
     );
 
 
@@ -834,6 +1039,7 @@ function Workspace() {
   const applySelectedProject =
     useCallback(
       project => {
+
         if (!project) {
           return;
         }
@@ -903,7 +1109,9 @@ function Workspace() {
       async (
         preferredProjectId = ""
       ) => {
+
         try {
+
           setProjectLoading(
             true
           );
@@ -920,9 +1128,15 @@ function Workspace() {
             normalized
           );
 
+
+          /* -----------------------------------------------
+             PREFERRED PROJECT
+          ------------------------------------------------ */
+
           if (
             preferredProjectId
           ) {
+
             const preferred =
               normalized.find(
                 project =>
@@ -936,7 +1150,10 @@ function Workspace() {
                   )
               );
 
-            if (preferred) {
+            if (
+              preferred
+            ) {
+
               applySelectedProject(
                 preferred
               );
@@ -945,12 +1162,20 @@ function Workspace() {
             }
           }
 
+
+          /* -----------------------------------------------
+             CURRENT PROJECT
+          ------------------------------------------------ */
+
           const currentId =
             getProjectId(
               selectedProjectRef.current
             );
 
-          if (currentId) {
+          if (
+            currentId
+          ) {
+
             const current =
               normalized.find(
                 project =>
@@ -964,7 +1189,10 @@ function Workspace() {
                   )
               );
 
-            if (current) {
+            if (
+              current
+            ) {
+
               applySelectedProject(
                 current
               );
@@ -973,13 +1201,21 @@ function Workspace() {
             }
           }
 
+
+          /* -----------------------------------------------
+             FIRST PROJECT
+          ------------------------------------------------ */
+
           if (
             normalized.length > 0
           ) {
+
             applySelectedProject(
               normalized[0]
             );
+
           } else {
+
             selectedProjectRef.current =
               null;
 
@@ -1007,6 +1243,7 @@ function Workspace() {
           return normalized;
 
         } catch (err) {
+
           console.error(
             "Workspace project loading error:",
             err
@@ -1026,10 +1263,12 @@ function Workspace() {
           return [];
 
         } finally {
+
           setProjectLoading(
             false
           );
         }
+
       },
       [
         applySelectedProject,
@@ -1042,6 +1281,7 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
+
     if (
       initialLoadStarted.current
     ) {
@@ -1060,6 +1300,7 @@ function Workspace() {
       mountedRef.current =
         false;
     };
+
   }, [
     loadProjects,
   ]);
@@ -1072,6 +1313,7 @@ function Workspace() {
   const handleSelectProject =
     useCallback(
       project => {
+
         setError("");
         setNotice("");
         setAiResponse("");
@@ -1103,6 +1345,7 @@ function Workspace() {
   const handleNewProject =
     useCallback(
       () => {
+
         selectedProjectRef.current =
           null;
 
@@ -1171,17 +1414,13 @@ function Workspace() {
   function handleQuickPrompt(
     quickPrompt
   ) {
+
     setPrompt(
       quickPrompt
     );
 
-    setError(
-      ""
-    );
-
-    setNotice(
-      ""
-    );
+    setError("");
+    setNotice("");
 
     setMobilePanel(
       "builder"
@@ -1194,10 +1433,12 @@ function Workspace() {
   ======================================================= */
 
   async function handleGenerate() {
+
     const userPrompt =
       prompt.trim();
 
     if (!userPrompt) {
+
       setError(
         "Describe what you want to build first."
       );
@@ -1210,6 +1451,7 @@ function Workspace() {
     }
 
     try {
+
       setError("");
       setNotice("");
       setLoading(true);
@@ -1222,6 +1464,11 @@ function Workspace() {
       setActiveTab(
         "preview"
       );
+
+
+      /* -----------------------------------------------
+         AI GENERATION
+      ------------------------------------------------ */
 
       const aiResult =
         await generateCode(
@@ -1238,6 +1485,7 @@ function Workspace() {
         aiResult
       );
 
+
       const formattedResponse =
         normalizeAIResponse(
           aiResult
@@ -1247,6 +1495,11 @@ function Workspace() {
         formattedResponse
       );
 
+
+      /* -----------------------------------------------
+         EXTRACT FILES
+      ------------------------------------------------ */
+
       const filesFromAI =
         getGeneratedFiles(
           aiResult
@@ -1255,6 +1508,7 @@ function Workspace() {
       if (
         filesFromAI.length === 0
       ) {
+
         throw new Error(
           "AI generation completed, but the backend returned no project files."
         );
@@ -1264,6 +1518,11 @@ function Workspace() {
         `${filesFromAI.length} generated project files received.`,
         "success"
       );
+
+
+      /* -----------------------------------------------
+         CREATE PROJECT
+      ------------------------------------------------ */
 
       const projectResponse =
         await createProject({
@@ -1282,25 +1541,67 @@ function Workspace() {
             filesFromAI,
         });
 
+
       addActivity(
         "Project creation request completed.",
         "success"
       );
 
-      const projectData =
-        projectResponse?.data ??
-        projectResponse ??
-        {};
 
-      const createdProject =
-        projectData?.project ||
-        projectData?.data?.project ||
-        null;
+      /* -----------------------------------------------
+         CORRECT RESPONSE EXTRACTION
+      ------------------------------------------------ */
+
+      let createdProject =
+        extractProjectFromResponse(
+          projectResponse
+        );
+
+
+      /*
+       * Some backends may return only the
+       * created project data.
+       *
+       * In that case use the response
+       * directly if it looks like a project.
+       */
+
+      if (
+        !createdProject
+      ) {
+
+        const unwrapped =
+          unwrapApiResponse(
+            projectResponse
+          );
+
+        if (
+          unwrapped &&
+          typeof unwrapped === "object" &&
+          !Array.isArray(unwrapped) &&
+          (
+            unwrapped._id ||
+            unwrapped.id ||
+            unwrapped.projectName ||
+            Array.isArray(
+              unwrapped.files
+            )
+          )
+        ) {
+          createdProject =
+            unwrapped;
+        }
+      }
+
+
+      /* -----------------------------------------------
+         FILE FALLBACK
+      ------------------------------------------------ */
 
       const savedFiles =
         normalizeProjectFiles(
           createdProject,
-          aiResult
+          null
         );
 
       const files =
@@ -1308,9 +1609,15 @@ function Workspace() {
           ? savedFiles
           : filesFromAI;
 
+
+      /* -----------------------------------------------
+         APPLY CREATED PROJECT
+      ------------------------------------------------ */
+
       if (
         createdProject
       ) {
+
         const projectWithFiles = {
           ...createdProject,
           files,
@@ -1321,10 +1628,16 @@ function Workspace() {
         );
 
         addActivity(
-          "Project state applied to the workspace.",
+          `Project state applied with ${files.length} files.`,
           "success"
         );
+
       } else {
+
+        /*
+         * If the create endpoint did not return
+         * the project object, reload the backend.
+         */
         await loadProjects();
 
         addActivity(
@@ -1332,6 +1645,11 @@ function Workspace() {
           "success"
         );
       }
+
+
+      /* -----------------------------------------------
+         GET CREATED ID
+      ------------------------------------------------ */
 
       const createdId =
         getProjectId(
@@ -1341,14 +1659,14 @@ function Workspace() {
       if (
         createdId
       ) {
+
         await loadProjects(
           createdId
         );
       }
 
-      setPrompt(
-        ""
-      );
+
+      setPrompt("");
 
       setActiveTab(
         "code"
@@ -1358,11 +1676,13 @@ function Workspace() {
         "builder"
       );
 
+
       setNotice(
         createdProject
           ? `Project created successfully with ${files.length} real files.`
-          : "Build completed. Workspace state was refreshed from the backend."
+          : "Build completed. Workspace was refreshed from the backend."
       );
+
 
       finishOperation(
         true,
@@ -1370,6 +1690,7 @@ function Workspace() {
       );
 
     } catch (err) {
+
       console.error(
         "Workspace generation error:",
         err
@@ -1388,6 +1709,7 @@ function Workspace() {
       );
 
     } finally {
+
       setLoading(
         false
       );
@@ -1400,9 +1722,11 @@ function Workspace() {
   ======================================================= */
 
   async function handleBuildChange() {
+
     if (
       !selectedProjectId
     ) {
+
       setError(
         "Select a project before building a change."
       );
@@ -1414,6 +1738,7 @@ function Workspace() {
       prompt.trim();
 
     if (!changePrompt) {
+
       setError(
         "Describe the change you want to build."
       );
@@ -1426,6 +1751,7 @@ function Workspace() {
     }
 
     try {
+
       setError("");
       setNotice("");
       setLoading(true);
@@ -1435,8 +1761,13 @@ function Workspace() {
         "Project change request submitted to the connected AI backend."
       );
 
+
       const instruction = [
         "Update the current project.",
+        "",
+        `Current project ID: ${selectedProjectId}`,
+        `Current project name: ${projectName}`,
+        `Current framework: ${framework}`,
         "",
         "Requested change:",
         changePrompt,
@@ -1444,11 +1775,13 @@ function Workspace() {
         "Return the actual generated project files for the requested implementation.",
       ].join("\n");
 
+
       const result =
         await generateCode(
           instruction,
           framework
         );
+
 
       addActivity(
         "AI backend response received for the requested change.",
@@ -1459,59 +1792,129 @@ function Workspace() {
         result
       );
 
-      const formattedResponse =
-        normalizeAIResponse(
-          result
-        );
 
       setAiResponse(
-        formattedResponse
+        normalizeAIResponse(
+          result
+        )
       );
+
 
       const files =
         getGeneratedFiles(
           result
         );
 
+
       if (
-        files.length > 0
+        files.length === 0
       ) {
-        setGeneratedFiles(
-          files
-        );
 
-        setSelectedFile(
-          files[0]
-        );
-
-        addActivity(
-          `${files.length} updated project files received.`,
-          "success"
-        );
-
-        setActiveTab(
-          "code"
-        );
-
-        setNotice(
-          `Build Change completed. ${files.length} generated files are available in the workspace.`
-        );
-      } else {
-        setNotice(
-          "Build Change completed, but the backend returned no replacement project files."
+        throw new Error(
+          "The change request completed, but the backend returned no project files."
         );
       }
 
-      setPrompt(
-        ""
+
+      addActivity(
+        `${files.length} updated project files received.`,
+        "success"
       );
+
+
+      /* -----------------------------------------------
+         PERSIST UPDATED FILES
+      ------------------------------------------------ */
+
+      const updateResponse =
+        await updateProject(
+          selectedProjectId,
+          {
+            files,
+          }
+        );
+
+
+      addActivity(
+        "Updated files saved to the project backend.",
+        "success"
+      );
+
+
+      /* -----------------------------------------------
+         USE UPDATED RESPONSE IF AVAILABLE
+      ------------------------------------------------ */
+
+      const updatedProject =
+        extractProjectFromResponse(
+          updateResponse
+        );
+
+
+      if (
+        updatedProject
+      ) {
+
+        const returnedFiles =
+          normalizeProjectFiles(
+            updatedProject,
+            null
+          );
+
+        const finalFiles =
+          returnedFiles.length > 0
+            ? returnedFiles
+            : files;
+
+        applySelectedProject({
+          ...updatedProject,
+          files: finalFiles,
+        });
+
+      } else {
+
+        /*
+         * Backend did not return project data.
+         * Reload the authoritative project.
+         */
+        await loadProjects(
+          selectedProjectId
+        );
+      }
+
+
+      /*
+       * Ensure immediate UI state even if
+       * the GET response is delayed.
+       */
+      setGeneratedFiles(
+        files
+      );
+
+      setSelectedFile(
+        files[0] || null
+      );
+
+
+      setActiveTab(
+        "code"
+      );
+
+      setPrompt("");
+
+
+      setNotice(
+        `Build Change completed and ${files.length} files were saved to the project.`
+      );
+
 
       finishOperation(
         true,
-        "Build Change operation completed."
+        "Build Change operation completed and files were persisted."
       );
 
     } catch (err) {
+
       console.error(
         "Workspace build change error:",
         err
@@ -1530,6 +1933,7 @@ function Workspace() {
       );
 
     } finally {
+
       setLoading(
         false
       );
@@ -1542,9 +1946,11 @@ function Workspace() {
   ======================================================= */
 
   async function handleReviewFix() {
+
     if (
       !selectedProjectId
     ) {
+
       setError(
         "Select a project before running Review / Fix."
       );
@@ -1564,6 +1970,9 @@ function Workspace() {
         ? [
             "Review the current project.",
             "",
+            `Current project ID: ${selectedProjectId}`,
+            `Current project name: ${projectName}`,
+            "",
             "Requested change:",
             reviewPrompt,
             "",
@@ -1580,7 +1989,9 @@ function Workspace() {
             "Return only changes and project files that are actually generated by the connected backend.",
           ].join("\n");
 
+
     try {
+
       setError("");
       setNotice("");
       setLoading(true);
@@ -1590,11 +2001,13 @@ function Workspace() {
         "Review / Fix request submitted to the connected AI backend."
       );
 
+
       const result =
         await generateCode(
           baseInstruction,
           framework
         );
+
 
       addActivity(
         "AI backend review response received.",
@@ -1605,20 +2018,74 @@ function Workspace() {
         result
       );
 
+
       setAiResponse(
         normalizeAIResponse(
           result
         )
       );
 
+
       const files =
         getGeneratedFiles(
           result
         );
 
+
       if (
         files.length > 0
       ) {
+
+        /*
+         * Review/Fix is also persisted.
+         */
+        const updateResponse =
+          await updateProject(
+            selectedProjectId,
+            {
+              files,
+            }
+          );
+
+
+        addActivity(
+          "Reviewed files saved to the project backend.",
+          "success"
+        );
+
+
+        const updatedProject =
+          extractProjectFromResponse(
+            updateResponse
+          );
+
+
+        if (
+          updatedProject
+        ) {
+
+          const returnedFiles =
+            normalizeProjectFiles(
+              updatedProject,
+              null
+            );
+
+          applySelectedProject({
+            ...updatedProject,
+            files:
+              returnedFiles.length > 0
+                ? returnedFiles
+                : files,
+          });
+
+        } else {
+
+          await loadProjects(
+            selectedProjectId
+          );
+        }
+
+
         setGeneratedFiles(
           files
         );
@@ -1627,19 +2094,24 @@ function Workspace() {
           files[0]
         );
 
+
         addActivity(
-          `${files.length} reviewed/generated project files received.`,
+          `${files.length} reviewed/generated project files persisted.`,
           "success"
         );
 
+
         setNotice(
-          `Review completed. ${files.length} real project files returned by the backend.`
+          `Review completed. ${files.length} real project files were saved.`
         );
+
       } else {
+
         setNotice(
           "Review completed. The connected backend did not return replacement project files."
         );
       }
+
 
       setActiveTab(
         "code"
@@ -1649,12 +2121,14 @@ function Workspace() {
         "builder"
       );
 
+
       finishOperation(
         true,
         "Review / Fix operation completed."
       );
 
     } catch (err) {
+
       console.error(
         "Workspace review error:",
         err
@@ -1673,6 +2147,7 @@ function Workspace() {
       );
 
     } finally {
+
       setLoading(
         false
       );
@@ -1685,12 +2160,14 @@ function Workspace() {
   ======================================================= */
 
   async function handleDeploy() {
+
     const projectId =
       getProjectId(
         selectedProject
       );
 
     if (!projectId) {
+
       setError(
         "Select a project before deploying."
       );
@@ -1703,6 +2180,7 @@ function Workspace() {
     }
 
     try {
+
       setError("");
       setNotice("");
       setDeploying(true);
@@ -1716,30 +2194,40 @@ function Workspace() {
         "Deploying..."
       );
 
+
       const response =
         await deployProject(
           projectId
         );
+
 
       addActivity(
         "Deployment response received.",
         "success"
       );
 
+
       const responseData =
-        response?.data ??
-        response ??
-        {};
+        unwrapApiResponse(
+          response
+        ) || {};
+
 
       const deployment =
         responseData?.deployment ||
         responseData?.data?.deployment ||
         {};
 
+
       const deployedProject =
         responseData?.project ||
         responseData?.data?.project ||
-        null;
+        (
+          responseData?._id
+            ? responseData
+            : null
+        );
+
 
       const url =
         getDeploymentUrl(
@@ -1747,26 +2235,33 @@ function Workspace() {
           deployedProject
         );
 
+
       const returnedStatus =
         deployment?.status ||
         deployedProject?.deploymentStatus ||
         deployedProject?.status;
 
+
       const finalStatus =
         normalizeDeploymentStatus(
           returnedStatus ||
-          (url
-            ? "deployed"
-            : "pending")
+          (
+            url
+              ? "deployed"
+              : "pending"
+          )
         );
+
 
       if (
         deployedProject
       ) {
+
         applySelectedProject(
           deployedProject
         );
       }
+
 
       setDeploymentStatus(
         finalStatus
@@ -1776,10 +2271,12 @@ function Workspace() {
         url
       );
 
+
       setProjects(
         previous =>
           previous.map(
             project => {
+
               if (
                 String(
                   getProjectId(
@@ -1796,14 +2293,17 @@ function Workspace() {
               return {
                 ...project,
                 ...(deployedProject || {}),
+
                 ...(url
                   ? {
                       liveUrl:
                         url,
+
                       deploymentUrl:
                         url,
                     }
                   : {}),
+
                 deploymentStatus:
                   finalStatus,
               };
@@ -1811,15 +2311,18 @@ function Workspace() {
           )
       );
 
+
       setActiveTab(
         "preview"
       );
+
 
       setNotice(
         url
           ? "Deployment completed successfully. Live preview is available."
           : "Deployment request completed. The backend did not return a live URL."
       );
+
 
       finishOperation(
         true,
@@ -1829,6 +2332,7 @@ function Workspace() {
       );
 
     } catch (err) {
+
       console.error(
         "Workspace deployment error:",
         err
@@ -1851,6 +2355,7 @@ function Workspace() {
       );
 
     } finally {
+
       setDeploying(
         false
       );
@@ -1859,25 +2364,33 @@ function Workspace() {
 
 
   /* =======================================================
-     PREVIEW FULLSCREEN
+     FULLSCREEN
   ======================================================= */
 
   async function handlePreviewFullscreen() {
+
     try {
+
       if (
         document.fullscreenElement
       ) {
+
         await document.exitFullscreen();
+
         return;
       }
+
 
       if (
         previewRef.current &&
         previewRef.current.requestFullscreen
       ) {
+
         await previewRef.current.requestFullscreen();
       }
+
     } catch (err) {
+
       console.error(
         "Preview fullscreen error:",
         err
@@ -1891,6 +2404,7 @@ function Workspace() {
   ======================================================= */
 
   function handleSubscription() {
+
     window.location.assign(
       "/billing"
     );
@@ -1902,10 +2416,13 @@ function Workspace() {
   ======================================================= */
 
   function handlePrimaryAction() {
+
     if (
       selectedProject
     ) {
+
       handleBuildChange();
+
       return;
     }
 
@@ -1914,16 +2431,18 @@ function Workspace() {
 
 
   /* =======================================================
-     PROMPT KEYBOARD
+     KEYBOARD
   ======================================================= */
 
   function handlePromptKeyDown(
     event
   ) {
+
     if (
       event.key === "Enter" &&
       !event.shiftKey
     ) {
+
       event.preventDefault();
 
       handlePrimaryAction();
@@ -1931,9 +2450,9 @@ function Workspace() {
   }
 
 
-  /* =======================================================
+  /* =========================================================
      RENDER
-  ======================================================= */
+  ========================================================= */
 
   return (
     <DashboardLayout>
@@ -1944,9 +2463,7 @@ function Workspace() {
         }
       >
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
+        {/* HEADER */}
 
         <header
           className={
@@ -2109,9 +2626,7 @@ function Workspace() {
         </header>
 
 
-        {/* =================================================
-            MOBILE NAV
-        ================================================= */}
+        {/* MOBILE NAV */}
 
         <nav
           className={
@@ -2171,9 +2686,7 @@ function Workspace() {
         </nav>
 
 
-        {/* =================================================
-            GLOBAL ALERTS
-        ================================================= */}
+        {/* ALERTS */}
 
         {error && (
           <div
@@ -2251,9 +2764,7 @@ function Workspace() {
         )}
 
 
-        {/* =================================================
-            MAIN IDE
-        ================================================= */}
+        {/* MAIN IDE */}
 
         <section
           className={
@@ -2261,9 +2772,7 @@ function Workspace() {
           }
         >
 
-          {/* =================================================
-              PROJECT SIDEBAR
-          ================================================= */}
+          {/* PROJECT SIDEBAR */}
 
           <aside
             className={`
@@ -2353,6 +2862,7 @@ function Workspace() {
             >
 
               {projectLoading ? (
+
                 <div
                   className={
                     styles.projectLoading
@@ -2370,6 +2880,7 @@ function Workspace() {
                 </div>
 
               ) : projects.length === 0 ? (
+
                 <div
                   className={
                     styles.noProjects
@@ -2399,7 +2910,9 @@ function Workspace() {
                   </button>
 
                 </div>
+
               ) : (
+
                 projects.map(
                   project => {
 
@@ -2491,9 +3004,7 @@ function Workspace() {
           </aside>
 
 
-          {/* =================================================
-              CENTRAL WORKSPACE
-          ================================================= */}
+          {/* CENTRAL WORKSPACE */}
 
           <section
             className={`
@@ -2505,8 +3016,6 @@ function Workspace() {
               }
             `}
           >
-
-            {/* TOOLBAR */}
 
             <div
               className={
@@ -2594,10 +3103,6 @@ function Workspace() {
             </div>
 
 
-            {/* =================================================
-                OPERATION BAR
-            ================================================= */}
-
             {operationRunning && (
               <div
                 className={
@@ -2639,10 +3144,6 @@ function Workspace() {
             )}
 
 
-            {/* =================================================
-                CANVAS
-            ================================================= */}
-
             <div
               className={
                 styles.canvas
@@ -2651,6 +3152,7 @@ function Workspace() {
 
               {!aiResponse &&
               !loading ? (
+
                 <div
                   className={
                     styles.emptyWorkspace
@@ -2718,7 +3220,9 @@ function Workspace() {
                   </div>
 
                 </div>
+
               ) : loading ? (
+
                 <div
                   className={
                     styles.buildingState
@@ -2781,7 +3285,9 @@ function Workspace() {
                   </div>
 
                 </div>
+
               ) : (
+
                 <div
                   className={
                     styles.resultArea
@@ -2877,11 +3383,8 @@ function Workspace() {
                     }
                   >
 
-                    {/* =====================================
-                        FULL PREVIEW
-                    ===================================== */}
-
                     {activeTab === "preview" && (
+
                       <div
                         ref={
                           previewRef
@@ -2960,6 +3463,7 @@ function Workspace() {
                         >
 
                           {liveUrl ? (
+
                             <iframe
                               title={
                                 `${projectName} preview`
@@ -2972,7 +3476,9 @@ function Workspace() {
                               }
                               allow="fullscreen"
                             />
+
                           ) : (
+
                             <div
                               className={
                                 styles.previewPlaceholder
@@ -3014,6 +3520,7 @@ function Workspace() {
                               </button>
 
                             </div>
+
                           )}
 
                         </div>
@@ -3022,11 +3529,8 @@ function Workspace() {
                     )}
 
 
-                    {/* =====================================
-                        CODE
-                    ===================================== */}
-
                     {activeTab === "code" && (
+
                       <div
                         className={
                           styles.codePanel
@@ -3079,6 +3583,7 @@ function Workspace() {
 
                             {generatedFiles.length ===
                             0 ? (
+
                               <div
                                 className={
                                   styles.noFiles
@@ -3099,7 +3604,9 @@ function Workspace() {
                                 </small>
 
                               </div>
+
                             ) : (
+
                               generatedFiles.map(
                                 file => {
 
@@ -3197,9 +3704,7 @@ function Workspace() {
             </div>
 
 
-            {/* =================================================
-                COMMAND AREA
-            ================================================= */}
+            {/* COMMAND AREA */}
 
             <div
               className={
@@ -3405,8 +3910,10 @@ function Workspace() {
                           loading ||
                           deploying ||
                           (
-                            (isDeploy ||
-                              isReview) &&
+                            (
+                              isDeploy ||
+                              isReview
+                            ) &&
                             !selectedProjectId
                           )
                         }
@@ -3448,9 +3955,7 @@ function Workspace() {
           </section>
 
 
-          {/* =================================================
-              ACTIVITY / INSPECTOR
-          ================================================= */}
+          {/* INSPECTOR */}
 
           <aside
             className={`
@@ -3501,8 +4006,6 @@ function Workspace() {
                 styles.inspectorContent
               }
             >
-
-              {/* OPERATION STATUS */}
 
               <div
                 className={
@@ -3555,8 +4058,6 @@ function Workspace() {
               </div>
 
 
-              {/* PROJECT STATUS */}
-
               <div
                 className={
                   styles.inspectorCard
@@ -3584,8 +4085,6 @@ function Workspace() {
               </div>
 
 
-              {/* FILE STATUS */}
-
               <div
                 className={
                   styles.inspectorCard
@@ -3611,8 +4110,6 @@ function Workspace() {
 
               </div>
 
-
-              {/* DEPLOYMENT */}
 
               <div
                 className={
@@ -3648,8 +4145,6 @@ function Workspace() {
               </div>
 
 
-              {/* ACTIVITY */}
-
               <div
                 className={
                   styles.activityCard
@@ -3674,6 +4169,7 @@ function Workspace() {
 
 
                 {activityLog.length === 0 ? (
+
                   <div
                     className={
                       styles.activityEmpty
@@ -3682,7 +4178,9 @@ function Workspace() {
                     Waiting for the next
                     workspace operation.
                   </div>
+
                 ) : (
+
                   <div
                     className={
                       styles.activityList
@@ -3692,50 +4190,52 @@ function Workspace() {
                     {activityLog
                       .slice()
                       .reverse()
-                      .map(item => (
-                        <div
-                          key={
-                            item.id
-                          }
-                          className={
-                            styles.activityItem
-                          }
-                        >
-
-                          <span
-                            className={
-                              item.type ===
-                              "success"
-                                ? styles.activitySuccess
-                                : item.type ===
-                                  "error"
-                                ? styles.activityError
-                                : item.type ===
-                                  "warning"
-                                ? styles.activityWarning
-                                : item.type ===
-                                  "active"
-                                ? styles.activityActive
-                                : styles.activityInfo
+                      .map(
+                        item => (
+                          <div
+                            key={
+                              item.id
                             }
-                          />
+                            className={
+                              styles.activityItem
+                            }
+                          >
 
-                          <div>
+                            <span
+                              className={
+                                item.type ===
+                                "success"
+                                  ? styles.activitySuccess
+                                  : item.type ===
+                                    "error"
+                                  ? styles.activityError
+                                  : item.type ===
+                                    "warning"
+                                  ? styles.activityWarning
+                                  : item.type ===
+                                    "active"
+                                  ? styles.activityActive
+                                  : styles.activityInfo
+                              }
+                            />
 
-                            <p>
-                              {item.message}
-                            </p>
+                            <div>
 
-                            {item.timestamp && (
-                              <small>
-                                {item.timestamp}
-                              </small>
-                            )}
+                              <p>
+                                {item.message}
+                              </p>
+
+                              {item.timestamp && (
+                                <small>
+                                  {item.timestamp}
+                                </small>
+                              )}
+
+                            </div>
 
                           </div>
-
-                        </div>
-                      ))}
+                        )
+                      )}
 
                   </div>
                 )}
@@ -3743,9 +4243,8 @@ function Workspace() {
               </div>
 
 
-              {/* LIVE APPLICATION */}
-
               {liveUrl && (
+
                 <div
                   className={
                     styles.liveCard
@@ -3792,8 +4291,6 @@ function Workspace() {
                 </div>
               )}
 
-
-              {/* SUBSCRIPTION */}
 
               <button
                 type="button"

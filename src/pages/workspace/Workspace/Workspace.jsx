@@ -25,8 +25,8 @@ import styles from "./Workspace.module.css";
 
 /* =========================================================
    ZYRIONOS WORKSPACE
-   Enterprise AI Builder
-   Real backend state only
+   Professional light IDE / AI builder workspace
+   Backend/API contracts preserved
    ========================================================= */
 
 
@@ -66,7 +66,7 @@ const BUILDER_ACTIONS = [
   {
     id: "build",
     label: "Build",
-    description: "Generate from your idea.",
+    description: "Generate a new implementation.",
   },
   {
     id: "review",
@@ -173,47 +173,21 @@ function normalizeDeploymentStatus(status) {
 }
 
 
-/**
- * Extract project files from every real
- * response shape currently supported
- * by the backend.
- */
 function normalizeProjectFiles(
   project,
   aiResult
 ) {
   const possibleCollections = [
-
-    /* -----------------------------------------------
-       Saved project
-       ----------------------------------------------- */
-
     project?.files,
-
     project?.data?.files,
-
     project?.project?.files,
-
     project?.data?.project?.files,
 
-
-    /* -----------------------------------------------
-       AI result
-       ----------------------------------------------- */
-
     aiResult?.files,
-
     aiResult?.data?.files,
-
     aiResult?.project?.files,
-
     aiResult?.data?.project?.files,
 
-
-    /* -----------------------------------------------
-       Master Agent orchestration
-       ----------------------------------------------- */
-
     aiResult
       ?.orchestration
       ?.buildResult
@@ -252,20 +226,12 @@ function normalizeProjectFiles(
       ?.data
       ?.data
       ?.files,
-
   ];
 
-  for (
-    const files
-    of possibleCollections
-  ) {
-
-    if (
-      Array.isArray(files)
-    ) {
+  for (const files of possibleCollections) {
+    if (Array.isArray(files)) {
       return files;
     }
-
   }
 
   return [];
@@ -292,18 +258,14 @@ function getFileContent(file) {
     file.content !== undefined &&
     file.content !== null
   ) {
-    return String(
-      file.content
-    );
+    return String(file.content);
   }
 
   if (
     file.code !== undefined &&
     file.code !== null
   ) {
-    return String(
-      file.code
-    );
+    return String(file.code);
   }
 
   return "The backend returned this file without readable content.";
@@ -336,6 +298,151 @@ function getErrorMessage(
     error?.message ||
     fallback
   );
+}
+
+
+/* =========================================================
+   BACKEND ACTIVITY EXTRACTION
+   ========================================================= */
+
+function normalizeActivityItem(item, index) {
+  if (typeof item === "string") {
+    return {
+      id: `activity-${index}-${item}`,
+      message: item,
+      type: "info",
+    };
+  }
+
+  if (!item || typeof item !== "object") {
+    return null;
+  }
+
+  const message =
+    item.message ||
+    item.description ||
+    item.detail ||
+    item.step ||
+    item.name ||
+    item.action ||
+    "";
+
+  if (!message) {
+    return null;
+  }
+
+  const rawType =
+    String(
+      item.type ||
+      item.status ||
+      item.level ||
+      "info"
+    ).toLowerCase();
+
+  let type = "info";
+
+  if (
+    rawType.includes("error") ||
+    rawType.includes("fail")
+  ) {
+    type = "error";
+  } else if (
+    rawType.includes("success") ||
+    rawType.includes("complete") ||
+    rawType.includes("done")
+  ) {
+    type = "success";
+  } else if (
+    rawType.includes("warn")
+  ) {
+    type = "warning";
+  } else if (
+    rawType.includes("active") ||
+    rawType.includes("running") ||
+    rawType.includes("progress")
+  ) {
+    type = "active";
+  }
+
+  return {
+    id:
+      item.id ||
+      item._id ||
+      `activity-${index}-${message}`,
+    message: String(message),
+    type,
+  };
+}
+
+
+function extractBackendActivity(result) {
+  const candidates = [
+    result?.activity,
+    result?.logs,
+    result?.events,
+
+    result?.data?.activity,
+    result?.data?.logs,
+    result?.data?.events,
+
+    result?.orchestration?.activity,
+    result?.orchestration?.logs,
+    result?.orchestration?.events,
+
+    result?.orchestration?.buildResult?.activity,
+    result?.orchestration?.buildResult?.logs,
+    result?.orchestration?.buildResult?.events,
+
+    result?.data?.orchestration?.activity,
+    result?.data?.orchestration?.logs,
+    result?.data?.orchestration?.events,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate
+        .map(normalizeActivityItem)
+        .filter(Boolean);
+    }
+  }
+
+  return [];
+}
+
+
+/* =========================================================
+   OPERATION LABELS
+========================================================= */
+
+function getOperationTitle(operation) {
+  switch (operation) {
+    case "build":
+      return "Building project";
+    case "change":
+      return "Applying project change";
+    case "review":
+      return "Reviewing project";
+    case "deploy":
+      return "Deploying project";
+    default:
+      return "Workspace ready";
+  }
+}
+
+
+function getOperationDescription(operation) {
+  switch (operation) {
+    case "build":
+      return "Your request has been submitted to the connected AI backend.";
+    case "change":
+      return "The connected AI backend is processing the requested change.";
+    case "review":
+      return "The connected AI backend is reviewing the selected project.";
+    case "deploy":
+      return "The deployment request is being processed by the backend.";
+    default:
+      return "Ready for the next operation.";
+  }
 }
 
 
@@ -447,9 +554,34 @@ function Workspace() {
     setProjectLoading,
   ] = useState(true);
 
+  const [
+    operation,
+    setOperation,
+  ] = useState("idle");
+
+  const [
+    operationStartedAt,
+    setOperationStartedAt,
+  ] = useState(null);
+
+  const [
+    elapsedSeconds,
+    setElapsedSeconds,
+  ] = useState(0);
+
+  const [
+    activityLog,
+    setActivityLog,
+  ] = useState([]);
+
+  const [
+    previewFullscreen,
+    setPreviewFullscreen,
+  ] = useState(false);
+
 
   /* =======================================================
-     REQUEST CONTROL
+     REFS
   ======================================================= */
 
   const initialLoadStarted =
@@ -457,6 +589,9 @@ function Workspace() {
 
   const mountedRef =
     useRef(false);
+
+  const previewRef =
+    useRef(null);
 
 
   /* =======================================================
@@ -486,8 +621,57 @@ function Workspace() {
     );
 
   const deploymentIsLive =
-    deploymentStatus ===
-    "Deployed";
+    deploymentStatus === "Deployed";
+
+  const operationRunning =
+    operation !== "idle";
+
+  const operationTitle =
+    getOperationTitle(operation);
+
+  const operationDescription =
+    getOperationDescription(operation);
+
+
+  /* =======================================================
+     OPERATION TIMER
+  ======================================================= */
+
+  useEffect(() => {
+    if (!operationStartedAt) {
+      setElapsedSeconds(0);
+      return undefined;
+    }
+
+    const updateTimer = () => {
+      const seconds =
+        Math.max(
+          0,
+          Math.floor(
+            (Date.now() -
+              operationStartedAt) /
+              1000
+          )
+        );
+
+      setElapsedSeconds(seconds);
+    };
+
+    updateTimer();
+
+    const timer =
+      window.setInterval(
+        updateTimer,
+        1000
+      );
+
+    return () =>
+      window.clearInterval(
+        timer
+      );
+  }, [
+    operationStartedAt,
+  ]);
 
 
   /* =======================================================
@@ -495,13 +679,152 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
-
     selectedProjectRef.current =
       selectedProject;
-
   }, [
     selectedProject,
   ]);
+
+
+  /* =======================================================
+     PREVIEW FULLSCREEN STATE
+  ======================================================= */
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setPreviewFullscreen(
+        Boolean(
+          document.fullscreenElement
+        )
+      );
+    };
+
+    document.addEventListener(
+      "fullscreenchange",
+      handleFullscreenChange
+    );
+
+    return () =>
+      document.removeEventListener(
+        "fullscreenchange",
+        handleFullscreenChange
+      );
+  }, []);
+
+
+  /* =======================================================
+     ACTIVITY HELPERS
+  ======================================================= */
+
+  const addActivity =
+    useCallback(
+      (
+        message,
+        type = "info"
+      ) => {
+        setActivityLog(
+          previous => [
+            ...previous,
+            {
+              id:
+                `${Date.now()}-${Math.random()}`,
+              message,
+              type,
+              timestamp:
+                new Date().toLocaleTimeString(
+                  [],
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  }
+                ),
+            },
+          ].slice(-40)
+        );
+      },
+      []
+    );
+
+
+  const addBackendActivity =
+    useCallback(
+      result => {
+        const backendActivity =
+          extractBackendActivity(
+            result
+          );
+
+        if (
+          backendActivity.length === 0
+        ) {
+          return;
+        }
+
+        setActivityLog(
+          previous => [
+            ...previous,
+            ...backendActivity.map(
+              item => ({
+                ...item,
+                timestamp:
+                  new Date().toLocaleTimeString(
+                    [],
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    }
+                  ),
+              })
+            ),
+          ].slice(-40)
+        );
+      },
+      []
+    );
+
+
+  const startOperation =
+    useCallback(
+      (
+        type,
+        message
+      ) => {
+        setOperation(type);
+        setOperationStartedAt(
+          Date.now()
+        );
+
+        addActivity(
+          message,
+          "active"
+        );
+      },
+      [addActivity]
+    );
+
+
+  const finishOperation =
+    useCallback(
+      (
+        success,
+        message
+      ) => {
+        addActivity(
+          message,
+          success
+            ? "success"
+            : "error"
+        );
+
+        setOperation("idle");
+        setOperationStartedAt(
+          null
+        );
+      },
+      [addActivity]
+    );
 
 
   /* =======================================================
@@ -510,8 +833,7 @@ function Workspace() {
 
   const applySelectedProject =
     useCallback(
-      (project) => {
-
+      project => {
         if (!project) {
           return;
         }
@@ -523,25 +845,21 @@ function Workspace() {
           project
         );
 
-
         const files =
           normalizeProjectFiles(
             project,
             null
           );
 
-
         setGeneratedFiles(
           files
         );
-
 
         setSelectedFile(
           files.length > 0
             ? files[0]
             : null
         );
-
 
         setDeploymentStatus(
           normalizeDeploymentStatus(
@@ -550,7 +868,6 @@ function Workspace() {
           )
         );
 
-
         setLiveUrl(
           getDeploymentUrl(
             project,
@@ -558,25 +875,20 @@ function Workspace() {
           )
         );
 
-
         const projectFramework =
           getProjectFramework(
             project
           );
-
 
         if (
           FRAMEWORKS.includes(
             projectFramework
           )
         ) {
-
           setFramework(
             projectFramework
           );
-
         }
-
       },
       []
     );
@@ -591,40 +903,29 @@ function Workspace() {
       async (
         preferredProjectId = ""
       ) => {
-
         try {
-
           setProjectLoading(
             true
           );
 
-
           const response =
             await getProjects();
-
 
           const normalized =
             normalizeProjects(
               response
             );
 
-
           setProjects(
             normalized
           );
 
-
-          /* -----------------------------------------------
-             Preferred project
-          ----------------------------------------------- */
-
           if (
             preferredProjectId
           ) {
-
             const preferred =
               normalized.find(
-                (project) =>
+                project =>
                   String(
                     getProjectId(
                       project
@@ -635,35 +936,24 @@ function Workspace() {
                   )
               );
 
-
             if (preferred) {
-
               applySelectedProject(
                 preferred
               );
 
               return normalized;
-
             }
-
           }
-
-
-          /* -----------------------------------------------
-             Preserve selected project
-          ----------------------------------------------- */
 
           const currentId =
             getProjectId(
               selectedProjectRef.current
             );
 
-
           if (currentId) {
-
             const current =
               normalized.find(
-                (project) =>
+                project =>
                   String(
                     getProjectId(
                       project
@@ -674,34 +964,22 @@ function Workspace() {
                   )
               );
 
-
             if (current) {
-
               applySelectedProject(
                 current
               );
 
               return normalized;
-
             }
-
           }
-
-
-          /* -----------------------------------------------
-             First real backend project
-          ----------------------------------------------- */
 
           if (
             normalized.length > 0
           ) {
-
             applySelectedProject(
               normalized[0]
             );
-
           } else {
-
             selectedProjectRef.current =
               null;
 
@@ -724,24 +1002,19 @@ function Workspace() {
             setLiveUrl(
               ""
             );
-
           }
-
 
           return normalized;
 
         } catch (err) {
-
           console.error(
             "Workspace project loading error:",
             err
           );
 
-
           setProjects(
             []
           );
-
 
           setError(
             getErrorMessage(
@@ -750,17 +1023,13 @@ function Workspace() {
             )
           );
 
-
           return [];
 
         } finally {
-
           setProjectLoading(
             false
           );
-
         }
-
       },
       [
         applySelectedProject,
@@ -773,32 +1042,24 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
-
     if (
       initialLoadStarted.current
     ) {
       return;
     }
 
-
     initialLoadStarted.current =
       true;
-
 
     mountedRef.current =
       true;
 
-
     loadProjects();
 
-
     return () => {
-
       mountedRef.current =
         false;
-
     };
-
   }, [
     loadProjects,
   ]);
@@ -810,11 +1071,12 @@ function Workspace() {
 
   const handleSelectProject =
     useCallback(
-      (project) => {
-
+      project => {
         setError("");
         setNotice("");
         setAiResponse("");
+
+        setActivityLog([]);
 
         setActiveTab(
           "preview"
@@ -827,7 +1089,6 @@ function Workspace() {
         applySelectedProject(
           project
         );
-
       },
       [
         applySelectedProject,
@@ -842,7 +1103,6 @@ function Workspace() {
   const handleNewProject =
     useCallback(
       () => {
-
         selectedProjectRef.current =
           null;
 
@@ -890,6 +1150,15 @@ function Workspace() {
           ""
         );
 
+        setActivityLog([]);
+
+        setOperation(
+          "idle"
+        );
+
+        setOperationStartedAt(
+          null
+        );
       },
       []
     );
@@ -902,7 +1171,6 @@ function Workspace() {
   function handleQuickPrompt(
     quickPrompt
   ) {
-
     setPrompt(
       quickPrompt
     );
@@ -918,46 +1186,42 @@ function Workspace() {
     setMobilePanel(
       "builder"
     );
-
   }
 
 
   /* =======================================================
-     CREATE / GENERATE PROJECT
+     BUILD NEW PROJECT
   ======================================================= */
 
   async function handleGenerate() {
-
     const userPrompt =
       prompt.trim();
 
-
     if (!userPrompt) {
-
       setError(
         "Describe what you want to build first."
       );
 
       return;
-
     }
-
 
     if (loading) {
       return;
     }
 
-
     try {
-
       setError("");
       setNotice("");
       setLoading(true);
 
+      startOperation(
+        "build",
+        "Build request submitted to the connected AI backend."
+      );
 
-      /* -----------------------------------------------
-         AI GENERATION
-      ----------------------------------------------- */
+      setActiveTab(
+        "preview"
+      );
 
       const aiResult =
         await generateCode(
@@ -965,54 +1229,44 @@ function Workspace() {
           framework
         );
 
+      addActivity(
+        "AI backend response received.",
+        "success"
+      );
+
+      addBackendActivity(
+        aiResult
+      );
 
       const formattedResponse =
         normalizeAIResponse(
           aiResult
         );
 
-
       setAiResponse(
         formattedResponse
       );
-
-
-      /* -----------------------------------------------
-         EXTRACT REAL AI FILES
-      ----------------------------------------------- */
 
       const filesFromAI =
         getGeneratedFiles(
           aiResult
         );
 
-
-      /*
-       * Do not create a project without
-       * actual generated files.
-       *
-       * The backend must provide the
-       * real project implementation.
-       */
-
       if (
         filesFromAI.length === 0
       ) {
-
         throw new Error(
           "AI generation completed, but the backend returned no project files."
         );
-
       }
 
-
-      /* -----------------------------------------------
-         CREATE REAL BACKEND PROJECT
-      ----------------------------------------------- */
+      addActivity(
+        `${filesFromAI.length} generated project files received.`,
+        "success"
+      );
 
       const projectResponse =
         await createProject({
-
           projectName:
             userPrompt.substring(
               0,
@@ -1026,25 +1280,22 @@ function Workspace() {
 
           files:
             filesFromAI,
-
         });
 
+      addActivity(
+        "Project creation request completed.",
+        "success"
+      );
 
       const projectData =
         projectResponse?.data ??
         projectResponse ??
         {};
 
-
       const createdProject =
         projectData?.project ||
         projectData?.data?.project ||
         null;
-
-
-      /* -----------------------------------------------
-         PROJECT RESPONSE FILES
-      ----------------------------------------------- */
 
       const savedFiles =
         normalizeProjectFiles(
@@ -1052,92 +1303,60 @@ function Workspace() {
           aiResult
         );
 
-
-      /*
-       * Prefer the actual project returned
-       * by the backend. If its response does
-       * not include files, use the exact files
-       * that were sent to the backend.
-       *
-       * No placeholders are created.
-       */
-
       const files =
         savedFiles.length > 0
           ? savedFiles
           : filesFromAI;
 
-
-      /* -----------------------------------------------
-         APPLY CREATED PROJECT
-      ----------------------------------------------- */
-
       if (
         createdProject
       ) {
-
         const projectWithFiles = {
-
           ...createdProject,
-
           files,
-
         };
-
 
         applySelectedProject(
           projectWithFiles
         );
 
+        addActivity(
+          "Project state applied to the workspace.",
+          "success"
+        );
       } else {
-
-        /*
-         * Project API returned without
-         * a usable project object.
-         *
-         * Refresh only from the real backend.
-         */
-
         await loadProjects();
 
+        addActivity(
+          "Workspace refreshed from the backend.",
+          "success"
+        );
       }
-
-
-      /* -----------------------------------------------
-         REFRESH REAL BACKEND STATE
-      ----------------------------------------------- */
 
       const createdId =
         getProjectId(
           createdProject
         );
 
-
       if (
         createdId
       ) {
-
         await loadProjects(
           createdId
         );
-
       }
-
 
       setPrompt(
         ""
       );
 
-
       setActiveTab(
         "code"
       );
 
-
       setMobilePanel(
         "builder"
       );
-
 
       setNotice(
         createdProject
@@ -1145,13 +1364,16 @@ function Workspace() {
           : "Build completed. Workspace state was refreshed from the backend."
       );
 
-    } catch (err) {
+      finishOperation(
+        true,
+        "Build operation completed successfully."
+      );
 
+    } catch (err) {
       console.error(
         "Workspace generation error:",
         err
       );
-
 
       setError(
         getErrorMessage(
@@ -1160,14 +1382,158 @@ function Workspace() {
         )
       );
 
-    } finally {
+      finishOperation(
+        false,
+        "Build operation failed."
+      );
 
+    } finally {
       setLoading(
         false
       );
+    }
+  }
 
+
+  /* =======================================================
+     BUILD CHANGE
+  ======================================================= */
+
+  async function handleBuildChange() {
+    if (
+      !selectedProjectId
+    ) {
+      setError(
+        "Select a project before building a change."
+      );
+
+      return;
     }
 
+    const changePrompt =
+      prompt.trim();
+
+    if (!changePrompt) {
+      setError(
+        "Describe the change you want to build."
+      );
+
+      return;
+    }
+
+    if (loading) {
+      return;
+    }
+
+    try {
+      setError("");
+      setNotice("");
+      setLoading(true);
+
+      startOperation(
+        "change",
+        "Project change request submitted to the connected AI backend."
+      );
+
+      const instruction = [
+        "Update the current project.",
+        "",
+        "Requested change:",
+        changePrompt,
+        "",
+        "Return the actual generated project files for the requested implementation.",
+      ].join("\n");
+
+      const result =
+        await generateCode(
+          instruction,
+          framework
+        );
+
+      addActivity(
+        "AI backend response received for the requested change.",
+        "success"
+      );
+
+      addBackendActivity(
+        result
+      );
+
+      const formattedResponse =
+        normalizeAIResponse(
+          result
+        );
+
+      setAiResponse(
+        formattedResponse
+      );
+
+      const files =
+        getGeneratedFiles(
+          result
+        );
+
+      if (
+        files.length > 0
+      ) {
+        setGeneratedFiles(
+          files
+        );
+
+        setSelectedFile(
+          files[0]
+        );
+
+        addActivity(
+          `${files.length} updated project files received.`,
+          "success"
+        );
+
+        setActiveTab(
+          "code"
+        );
+
+        setNotice(
+          `Build Change completed. ${files.length} generated files are available in the workspace.`
+        );
+      } else {
+        setNotice(
+          "Build Change completed, but the backend returned no replacement project files."
+        );
+      }
+
+      setPrompt(
+        ""
+      );
+
+      finishOperation(
+        true,
+        "Build Change operation completed."
+      );
+
+    } catch (err) {
+      console.error(
+        "Workspace build change error:",
+        err
+      );
+
+      setError(
+        getErrorMessage(
+          err,
+          "Build Change could not be completed."
+        )
+      );
+
+      finishOperation(
+        false,
+        "Build Change operation failed."
+      );
+
+    } finally {
+      setLoading(
+        false
+      );
+    }
   }
 
 
@@ -1176,26 +1542,22 @@ function Workspace() {
   ======================================================= */
 
   async function handleReviewFix() {
-
-    if (!selectedProjectId) {
-
+    if (
+      !selectedProjectId
+    ) {
       setError(
         "Select a project before running Review / Fix."
       );
 
       return;
-
     }
-
 
     if (loading) {
       return;
     }
 
-
     const reviewPrompt =
       prompt.trim();
-
 
     const baseInstruction =
       reviewPrompt
@@ -1204,6 +1566,8 @@ function Workspace() {
             "",
             "Requested change:",
             reviewPrompt,
+            "",
+            "Return actual generated project files when changes are required.",
           ].join("\n")
         : [
             "Review the current project for:",
@@ -1216,13 +1580,15 @@ function Workspace() {
             "Return only changes and project files that are actually generated by the connected backend.",
           ].join("\n");
 
-
     try {
-
       setError("");
       setNotice("");
       setLoading(true);
 
+      startOperation(
+        "review",
+        "Review / Fix request submitted to the connected AI backend."
+      );
 
       const result =
         await generateCode(
@@ -1230,6 +1596,14 @@ function Workspace() {
           framework
         );
 
+      addActivity(
+        "AI backend review response received.",
+        "success"
+      );
+
+      addBackendActivity(
+        result
+      );
 
       setAiResponse(
         normalizeAIResponse(
@@ -1237,56 +1611,54 @@ function Workspace() {
         )
       );
 
-
       const files =
         getGeneratedFiles(
           result
         );
 
-
       if (
         files.length > 0
       ) {
-
         setGeneratedFiles(
           files
         );
-
 
         setSelectedFile(
           files[0]
         );
 
+        addActivity(
+          `${files.length} reviewed/generated project files received.`,
+          "success"
+        );
 
         setNotice(
           `Review completed. ${files.length} real project files returned by the backend.`
         );
-
       } else {
-
         setNotice(
           "Review completed. The connected backend did not return replacement project files."
         );
-
       }
-
 
       setActiveTab(
         "code"
       );
 
-
       setMobilePanel(
         "builder"
       );
 
-    } catch (err) {
+      finishOperation(
+        true,
+        "Review / Fix operation completed."
+      );
 
+    } catch (err) {
       console.error(
         "Workspace review error:",
         err
       );
-
 
       setError(
         getErrorMessage(
@@ -1295,14 +1667,16 @@ function Workspace() {
         )
       );
 
-    } finally {
+      finishOperation(
+        false,
+        "Review / Fix operation failed."
+      );
 
+    } finally {
       setLoading(
         false
       );
-
     }
-
   }
 
 
@@ -1311,64 +1685,61 @@ function Workspace() {
   ======================================================= */
 
   async function handleDeploy() {
-
     const projectId =
       getProjectId(
         selectedProject
       );
 
-
     if (!projectId) {
-
       setError(
         "Select a project before deploying."
       );
 
       return;
-
     }
-
 
     if (deploying) {
       return;
     }
 
-
     try {
-
       setError("");
       setNotice("");
       setDeploying(true);
 
+      startOperation(
+        "deploy",
+        "Deployment request submitted to the connected backend."
+      );
 
       setDeploymentStatus(
         "Deploying..."
       );
-
 
       const response =
         await deployProject(
           projectId
         );
 
+      addActivity(
+        "Deployment response received.",
+        "success"
+      );
 
       const responseData =
         response?.data ??
         response ??
         {};
 
-
       const deployment =
         responseData?.deployment ||
         responseData?.data?.deployment ||
         {};
 
-
       const deployedProject =
         responseData?.project ||
         responseData?.data?.project ||
         null;
-
 
       const url =
         getDeploymentUrl(
@@ -1376,12 +1747,10 @@ function Workspace() {
           deployedProject
         );
 
-
       const returnedStatus =
         deployment?.status ||
         deployedProject?.deploymentStatus ||
         deployedProject?.status;
-
 
       const finalStatus =
         normalizeDeploymentStatus(
@@ -1391,33 +1760,26 @@ function Workspace() {
             : "pending")
         );
 
-
       if (
         deployedProject
       ) {
-
         applySelectedProject(
           deployedProject
         );
-
       }
-
 
       setDeploymentStatus(
         finalStatus
       );
 
-
       setLiveUrl(
         url
       );
 
-
       setProjects(
-        (previous) =>
+        previous =>
           previous.map(
-            (project) => {
-
+            project => {
               if (
                 String(
                   getProjectId(
@@ -1431,57 +1793,50 @@ function Workspace() {
                 return project;
               }
 
-
               return {
-
                 ...project,
-
-                ...(deployedProject ||
-                  {}),
-
+                ...(deployedProject || {}),
                 ...(url
                   ? {
                       liveUrl:
                         url,
-
                       deploymentUrl:
                         url,
                     }
                   : {}),
-
                 deploymentStatus:
                   finalStatus,
-
               };
-
             }
           )
       );
-
 
       setActiveTab(
         "preview"
       );
 
-
       setNotice(
         url
-          ? "Deployment completed successfully."
+          ? "Deployment completed successfully. Live preview is available."
           : "Deployment request completed. The backend did not return a live URL."
       );
 
-    } catch (err) {
+      finishOperation(
+        true,
+        url
+          ? "Deployment completed and a live URL was returned."
+          : "Deployment request completed without a live URL."
+      );
 
+    } catch (err) {
       console.error(
         "Workspace deployment error:",
         err
       );
 
-
       setDeploymentStatus(
         "Deployment failed"
       );
-
 
       setError(
         getErrorMessage(
@@ -1490,14 +1845,44 @@ function Workspace() {
         )
       );
 
-    } finally {
+      finishOperation(
+        false,
+        "Deployment operation failed."
+      );
 
+    } finally {
       setDeploying(
         false
       );
-
     }
+  }
 
+
+  /* =======================================================
+     PREVIEW FULLSCREEN
+  ======================================================= */
+
+  async function handlePreviewFullscreen() {
+    try {
+      if (
+        document.fullscreenElement
+      ) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      if (
+        previewRef.current &&
+        previewRef.current.requestFullscreen
+      ) {
+        await previewRef.current.requestFullscreen();
+      }
+    } catch (err) {
+      console.error(
+        "Preview fullscreen error:",
+        err
+      );
+    }
   }
 
 
@@ -1506,11 +1891,9 @@ function Workspace() {
   ======================================================= */
 
   function handleSubscription() {
-
     window.location.assign(
       "/billing"
     );
-
   }
 
 
@@ -1519,21 +1902,14 @@ function Workspace() {
   ======================================================= */
 
   function handlePrimaryAction() {
-
     if (
-      selectedProject &&
-      prompt.trim()
+      selectedProject
     ) {
-
-      handleReviewFix();
-
+      handleBuildChange();
       return;
-
     }
 
-
     handleGenerate();
-
   }
 
 
@@ -1544,18 +1920,14 @@ function Workspace() {
   function handlePromptKeyDown(
     event
   ) {
-
     if (
       event.key === "Enter" &&
       !event.shiftKey
     ) {
-
       event.preventDefault();
 
       handlePrimaryAction();
-
     }
-
   }
 
 
@@ -1573,7 +1945,7 @@ function Workspace() {
       >
 
         {/* =================================================
-            WORKSPACE HEADER
+            HEADER
         ================================================= */}
 
         <header
@@ -1595,7 +1967,6 @@ function Workspace() {
             >
               Z
             </div>
-
 
             <div
               className={
@@ -1623,18 +1994,39 @@ function Workspace() {
 
               </div>
 
-
               <h1>
                 {projectName}
               </h1>
 
-
               <p>
-                Build, improve, preview and
-                deploy from one workspace.
+                Build, review, preview and deploy
+                from one professional workspace.
               </p>
 
             </div>
+
+          </div>
+
+
+          <div
+            className={
+              styles.headerStatus
+            }
+          >
+
+            <span
+              className={
+                operationRunning
+                  ? styles.headerStatusRunning
+                  : styles.headerStatusReady
+              }
+            />
+
+            <span>
+              {operationRunning
+                ? operationTitle
+                : "Workspace ready"}
+            </span>
 
           </div>
 
@@ -1678,25 +2070,19 @@ function Workspace() {
             <button
               type="button"
               className={
-                styles.premiumSubscription
+                styles.subscriptionAction
               }
               onClick={
                 handleSubscription
               }
             >
-
               <span>
                 ✦
               </span>
 
-              <span>
+              <strong>
                 Build Your Future
-              </span>
-
-              <small>
-                Subscription
-              </small>
-
+              </strong>
             </button>
 
 
@@ -1713,11 +2099,9 @@ function Workspace() {
                 !selectedProjectId
               }
             >
-
               {deploying
                 ? "Deploying..."
                 : "Deploy"}
-
             </button>
 
           </div>
@@ -1726,7 +2110,7 @@ function Workspace() {
 
 
         {/* =================================================
-            MOBILE PANEL NAV
+            MOBILE NAV
         ================================================= */}
 
         <nav
@@ -1752,7 +2136,6 @@ function Workspace() {
             Projects
           </button>
 
-
           <button
             type="button"
             className={
@@ -1766,9 +2149,8 @@ function Workspace() {
               )
             }
           >
-            Builder
+            Workspace
           </button>
-
 
           <button
             type="button"
@@ -1783,18 +2165,17 @@ function Workspace() {
               )
             }
           >
-            Inspector
+            Activity
           </button>
 
         </nav>
 
 
         {/* =================================================
-            ERROR
+            GLOBAL ALERTS
         ================================================= */}
 
         {error && (
-
           <div
             className={
               styles.errorBanner
@@ -1810,7 +2191,6 @@ function Workspace() {
               !
             </div>
 
-
             <div
               className={
                 styles.alertContent
@@ -1821,13 +2201,11 @@ function Workspace() {
                 Workspace error
               </strong>
 
-
               <p>
                 {error}
               </p>
 
             </div>
-
 
             <button
               type="button"
@@ -1840,16 +2218,10 @@ function Workspace() {
             </button>
 
           </div>
-
         )}
 
 
-        {/* =================================================
-            NOTICE
-        ================================================= */}
-
         {notice && !error && (
-
           <div
             className={
               styles.noticeBanner
@@ -1861,11 +2233,9 @@ function Workspace() {
               ✓
             </span>
 
-
             <p>
               {notice}
             </p>
-
 
             <button
               type="button"
@@ -1878,12 +2248,11 @@ function Workspace() {
             </button>
 
           </div>
-
         )}
 
 
         {/* =================================================
-            MAIN WORKSPACE
+            MAIN IDE
         ================================================= */}
 
         <section
@@ -1893,7 +2262,7 @@ function Workspace() {
         >
 
           {/* =================================================
-              PROJECTS
+              PROJECT SIDEBAR
           ================================================= */}
 
           <aside
@@ -1913,23 +2282,17 @@ function Workspace() {
               }
             >
 
-              <div
-                className={
-                  styles.railTitle
-                }
-              >
+              <div>
 
                 <span>
                   PROJECTS
                 </span>
-
 
                 <strong>
                   {projectCount}
                 </strong>
 
               </div>
-
 
               <button
                 type="button"
@@ -1939,59 +2302,42 @@ function Workspace() {
                 className={
                   styles.createProjectButton
                 }
-                title="Create a new project"
               >
-
-                <span>
-                  +
-                </span>
-
-
-                <small>
-                  Create Project
-                </small>
-
+                + New
               </button>
 
             </div>
 
 
-            {/* =================================================
-                CREATE PROJECT CARD
-            ================================================= */}
-
             <button
               type="button"
               className={
-                styles.premiumCreateCard
+                styles.createProjectCard
               }
               onClick={
                 handleNewProject
               }
             >
 
-              <div
+              <span
                 className={
-                  styles.premiumCreateIcon
+                  styles.createProjectIcon
                 }
               >
                 +
-              </div>
+              </span>
 
-
-              <div>
+              <span>
 
                 <strong>
                   Create a Project
                 </strong>
 
-
-                <span>
+                <small>
                   Start from an idea
-                </span>
+                </small>
 
-              </div>
-
+              </span>
 
               <b>
                 →
@@ -2000,10 +2346,6 @@ function Workspace() {
             </button>
 
 
-            {/* =================================================
-                PROJECT LIST
-            ================================================= */}
-
             <div
               className={
                 styles.projectList
@@ -2011,7 +2353,6 @@ function Workspace() {
             >
 
               {projectLoading ? (
-
                 <div
                   className={
                     styles.projectLoading
@@ -2022,7 +2363,6 @@ function Workspace() {
                   <span />
                   <span />
 
-
                   <small>
                     Loading projects...
                   </small>
@@ -2030,7 +2370,6 @@ function Workspace() {
                 </div>
 
               ) : projects.length === 0 ? (
-
                 <div
                   className={
                     styles.noProjects
@@ -2041,18 +2380,14 @@ function Workspace() {
                     ◇
                   </div>
 
-
                   <strong>
                     No projects yet
                   </strong>
 
-
                   <p>
-                    Your projects will appear
-                    here after the backend
-                    creates them.
+                    Projects created through the
+                    backend will appear here.
                   </p>
-
 
                   <button
                     type="button"
@@ -2064,38 +2399,30 @@ function Workspace() {
                   </button>
 
                 </div>
-
               ) : (
-
                 projects.map(
-                  (project) => {
+                  project => {
 
                     const name =
                       getProjectName(
                         project
                       );
 
-
                     const id =
                       getProjectId(
                         project
                       );
-
 
                     const frameworkName =
                       getProjectFramework(
                         project
                       );
 
-
                     const active =
-                      String(
-                        id
-                      ) ===
+                      String(id) ===
                       String(
                         selectedProjectId
                       );
-
 
                     return (
                       <button
@@ -2129,7 +2456,6 @@ function Workspace() {
                             .toUpperCase()}
                         </span>
 
-
                         <span
                           className={
                             styles.projectItemText
@@ -2140,30 +2466,24 @@ function Workspace() {
                             {name}
                           </strong>
 
-
                           <small>
                             {frameworkName}
                           </small>
 
                         </span>
 
-
                         {active && (
-
                           <span
                             className={
                               styles.activeIndicator
                             }
                           />
-
                         )}
 
                       </button>
                     );
-
                   }
                 )
-
               )}
 
             </div>
@@ -2172,7 +2492,7 @@ function Workspace() {
 
 
           {/* =================================================
-              BUILDER
+              CENTRAL WORKSPACE
           ================================================= */}
 
           <section
@@ -2186,9 +2506,7 @@ function Workspace() {
             `}
           >
 
-            {/* =================================================
-                BUILDER TOOLBAR
-            ================================================= */}
+            {/* TOOLBAR */}
 
             <div
               className={
@@ -2204,10 +2522,11 @@ function Workspace() {
 
                 <span
                   className={
-                    styles.liveDot
+                    operationRunning
+                      ? styles.liveDotRunning
+                      : styles.liveDot
                   }
                 />
-
 
                 <div>
 
@@ -2215,10 +2534,9 @@ function Workspace() {
                     ZyrionOS AI
                   </strong>
 
-
                   <small>
-                    {loading
-                      ? "Working on your request"
+                    {operationRunning
+                      ? operationTitle
                       : "Ready"}
                   </small>
 
@@ -2233,20 +2551,19 @@ function Workspace() {
                 }
               >
 
-                <label
+                <span
                   className={
                     styles.frameworkLabel
                   }
                 >
                   Framework
-                </label>
-
+                </span>
 
                 <select
                   value={
                     framework
                   }
-                  onChange={(event) =>
+                  onChange={event =>
                     setFramework(
                       event.target.value
                     )
@@ -2260,15 +2577,13 @@ function Workspace() {
                 >
 
                   {FRAMEWORKS.map(
-                    (item) => (
-
+                    item => (
                       <option
                         key={item}
                         value={item}
                       >
                         {item}
                       </option>
-
                     )
                   )}
 
@@ -2280,7 +2595,52 @@ function Workspace() {
 
 
             {/* =================================================
-                BUILDER CANVAS
+                OPERATION BAR
+            ================================================= */}
+
+            {operationRunning && (
+              <div
+                className={
+                  styles.operationBar
+                }
+              >
+
+                <div
+                  className={
+                    styles.operationPulse
+                  }
+                />
+
+                <div
+                  className={
+                    styles.operationCopy
+                  }
+                >
+
+                  <strong>
+                    {operationTitle}
+                  </strong>
+
+                  <span>
+                    {operationDescription}
+                  </span>
+
+                </div>
+
+                <div
+                  className={
+                    styles.operationTimer
+                  }
+                >
+                  {elapsedSeconds}s
+                </div>
+
+              </div>
+            )}
+
+
+            {/* =================================================
+                CANVAS
             ================================================= */}
 
             <div
@@ -2291,7 +2651,6 @@ function Workspace() {
 
               {!aiResponse &&
               !loading ? (
-
                 <div
                   className={
                     styles.emptyWorkspace
@@ -2306,31 +2665,25 @@ function Workspace() {
                     Z
                   </div>
 
-
-                  <div
+                  <span
                     className={
                       styles.eyebrow
                     }
                   >
                     ZYRIONOS AI COMMAND CENTER
-                  </div>
-
+                  </span>
 
                   <h2>
-                    What do you want
-                    to build?
+                    What do you want to build?
                   </h2>
-
 
                   <p>
                     Describe an application,
                     automation, feature or
-                    business system. ZyrionOS
-                    will process your request
-                    through the connected
+                    business system. Your request
+                    is sent through the connected
                     project backend.
                   </p>
-
 
                   <div
                     className={
@@ -2339,8 +2692,7 @@ function Workspace() {
                   >
 
                     {QUICK_PROMPTS.map(
-                      (item) => (
-
+                      item => (
                         <button
                           key={
                             item.prompt
@@ -2360,16 +2712,13 @@ function Workspace() {
                           {item.label}
 
                         </button>
-
                       )
                     )}
 
                   </div>
 
                 </div>
-
               ) : loading ? (
-
                 <div
                   className={
                     styles.buildingState
@@ -2384,49 +2733,55 @@ function Workspace() {
                     Z
                   </div>
 
-
-                  <div
+                  <span
                     className={
                       styles.eyebrow
                     }
                   >
                     ZYRIONOS AI
-                  </div>
-
+                  </span>
 
                   <h2>
-                    {selectedProject
-                      ? "Reviewing your project"
-                      : "Building your project"}
+                    {operationTitle}
                   </h2>
 
-
                   <p>
-                    Your request is being
-                    processed by the connected
-                    AI service.
+                    {operationDescription}
                   </p>
-
 
                   <div
                     className={
-                      styles.progressTrack
+                      styles.indeterminateProgress
                     }
                   >
                     <span />
                   </div>
 
+                  <div
+                    className={
+                      styles.processingStatus
+                    }
+                  >
 
-                  <small>
-                    {selectedProject
-                      ? "Inspecting the requested project changes"
-                      : "Preparing the requested project"}
-                  </small>
+                    <span
+                      className={
+                        styles.processingSpinner
+                      }
+                    />
+
+                    <span>
+                      Waiting for the connected
+                      backend response
+                    </span>
+
+                    <strong>
+                      {elapsedSeconds}s
+                    </strong>
+
+                  </div>
 
                 </div>
-
               ) : (
-
                 <div
                   className={
                     styles.resultArea
@@ -2442,37 +2797,35 @@ function Workspace() {
                     <div>
 
                       <span>
-                        AI BUILD RESULT
+                        PROJECT WORKSPACE
                       </span>
-
 
                       <h2>
                         {selectedProject
-                          ? "Project workspace"
+                          ? projectName
                           : "Build result"}
                       </h2>
 
                     </div>
 
-
                     <div
                       className={
-                        styles.readyBadge
+                        deploymentIsLive
+                          ? styles.liveBadge
+                          : styles.readyBadge
                       }
                     >
 
                       <i />
 
-                      Ready
+                      {deploymentIsLive
+                        ? "Live"
+                        : "Ready"}
 
                     </div>
 
                   </div>
 
-
-                  {/* =================================================
-                      RESULT TABS
-                  ================================================= */}
 
                   <div
                     className={
@@ -2496,7 +2849,6 @@ function Workspace() {
                       Preview
                     </button>
 
-
                     <button
                       type="button"
                       className={
@@ -2510,13 +2862,10 @@ function Workspace() {
                         )
                       }
                     >
-
                       Code
-
                       <span>
                         {generatedFiles.length}
                       </span>
-
                     </button>
 
                   </div>
@@ -2528,16 +2877,19 @@ function Workspace() {
                     }
                   >
 
-                    {/* =======================================
-                        PREVIEW
-                    ======================================= */}
+                    {/* =====================================
+                        FULL PREVIEW
+                    ===================================== */}
 
-                    {activeTab ===
-                      "preview" && (
-
+                    {activeTab === "preview" && (
                       <div
+                        ref={
+                          previewRef
+                        }
                         className={
-                          styles.previewPanel
+                          previewFullscreen
+                            ? `${styles.previewPanel} ${styles.previewFullscreen}`
+                            : styles.previewPanel
                         }
                       >
 
@@ -2557,21 +2909,46 @@ function Workspace() {
                             <span />
                           </div>
 
-
-                          <label>
+                          <strong>
                             Project Preview
-                          </label>
-
+                          </strong>
 
                           <span
                             className={
-                              styles.previewState
+                              styles.previewUrl
                             }
                           >
-                            {liveUrl
+                            {liveUrl ||
+                              "Not deployed"}
+                          </span>
+
+                          <span
+                            className={
+                              deploymentIsLive
+                                ? styles.previewLiveState
+                                : styles.previewWaitingState
+                            }
+                          >
+                            {deploymentIsLive
                               ? "Live"
                               : "Awaiting deployment"}
                           </span>
+
+                          {liveUrl && (
+                            <button
+                              type="button"
+                              className={
+                                styles.previewFullscreenButton
+                              }
+                              onClick={
+                                handlePreviewFullscreen
+                              }
+                            >
+                              {previewFullscreen
+                                ? "Exit Fullscreen"
+                                : "Fullscreen"}
+                            </button>
+                          )}
 
                         </div>
 
@@ -2583,57 +2960,19 @@ function Workspace() {
                         >
 
                           {liveUrl ? (
-
-                            <div
-                              className={
-                                styles.livePreview
+                            <iframe
+                              title={
+                                `${projectName} preview`
                               }
-                            >
-
-                              <div
-                                className={
-                                  styles.livePreviewIcon
-                                }
-                              >
-                                ✓
-                              </div>
-
-
-                              <strong>
-                                Live application
-                              </strong>
-
-
-                              <p>
-                                The backend returned
-                                a live deployment URL
-                                for this project.
-                              </p>
-
-
-                              <a
-                                href={
-                                  liveUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className={
-                                  styles.openLiveButton
-                                }
-                              >
-
-                                Open live project
-
-                                <span>
-                                  →
-                                </span>
-
-                              </a>
-
-                            </div>
-
+                              src={
+                                liveUrl
+                              }
+                              className={
+                                styles.previewFrame
+                              }
+                              allow="fullscreen"
+                            />
                           ) : (
-
                             <div
                               className={
                                 styles.previewPlaceholder
@@ -2648,19 +2987,16 @@ function Workspace() {
                                 ◇
                               </div>
 
-
                               <strong>
-                                Preview not available
+                                Live preview is not
+                                available yet
                               </strong>
 
-
                               <p>
-                                No live preview URL
-                                has been returned by
-                                the connected backend
-                                for this project yet.
+                                Deploy the selected
+                                project to receive a
+                                live application URL.
                               </p>
-
 
                               <button
                                 type="button"
@@ -2678,23 +3014,19 @@ function Workspace() {
                               </button>
 
                             </div>
-
                           )}
 
                         </div>
 
                       </div>
-
                     )}
 
 
-                    {/* =======================================
+                    {/* =====================================
                         CODE
-                    ======================================= */}
+                    ===================================== */}
 
-                    {activeTab ===
-                      "code" && (
-
+                    {activeTab === "code" && (
                       <div
                         className={
                           styles.codePanel
@@ -2713,13 +3045,11 @@ function Workspace() {
                               PROJECT FILES
                             </span>
 
-
                             <strong>
                               {generatedFiles.length}
                             </strong>
 
                           </div>
-
 
                           <button
                             type="button"
@@ -2729,7 +3059,7 @@ function Workspace() {
                               )
                             }
                           >
-                            Back to Preview
+                            Preview
                           </button>
 
                         </div>
@@ -2749,7 +3079,6 @@ function Workspace() {
 
                             {generatedFiles.length ===
                             0 ? (
-
                               <div
                                 className={
                                   styles.noFiles
@@ -2760,35 +3089,28 @@ function Workspace() {
                                   ◇
                                 </span>
 
-
                                 <strong>
                                   No files available
                                 </strong>
 
-
                                 <small>
-                                  The connected backend
-                                  has not returned
-                                  project files.
+                                  The backend has not
+                                  returned project files.
                                 </small>
 
                               </div>
-
                             ) : (
-
                               generatedFiles.map(
-                                (file) => {
+                                file => {
 
                                   const path =
                                     getFilePath(
                                       file
                                     );
 
-
                                   const active =
                                     selectedFile ===
                                     file;
-
 
                                   return (
                                     <button
@@ -2817,17 +3139,14 @@ function Workspace() {
                                         ◇
                                       </span>
 
-
                                       <span>
                                         {path}
                                       </span>
 
                                     </button>
                                   );
-
                                 }
                               )
-
                             )}
 
                           </div>
@@ -2853,13 +3172,11 @@ function Workspace() {
                                   : "No file selected"}
                               </span>
 
-
                               <small>
-                                Read-only preview
+                                Read-only
                               </small>
 
                             </div>
-
 
                             <pre>
                               {filePreview}
@@ -2870,20 +3187,18 @@ function Workspace() {
                         </div>
 
                       </div>
-
                     )}
 
                   </div>
 
                 </div>
-
               )}
 
             </div>
 
 
             {/* =================================================
-                AI COMMAND AREA
+                COMMAND AREA
             ================================================= */}
 
             <div
@@ -2912,11 +3227,20 @@ function Workspace() {
                     ✦
                   </span>
 
-
                   <span>
                     {selectedProject
                       ? "ZyrionOS AI · Improve your project"
                       : "ZyrionOS AI · Build your idea"}
+                  </span>
+
+                  <span
+                    className={
+                      styles.commandState
+                    }
+                  >
+                    {loading
+                      ? "Processing"
+                      : "Ready"}
                   </span>
 
                 </div>
@@ -2926,7 +3250,7 @@ function Workspace() {
                   value={
                     prompt
                   }
-                  onChange={(event) =>
+                  onChange={event =>
                     setPrompt(
                       event.target.value
                     )
@@ -2936,13 +3260,13 @@ function Workspace() {
                   }
                   placeholder={
                     selectedProject
-                      ? "Describe a change, fix or feature..."
+                      ? "Describe a change or feature you want to build..."
                       : "Describe the application, product or system you want to build..."
                   }
                   disabled={
                     loading
                   }
-                  rows={4}
+                  rows={3}
                   aria-label={
                     selectedProject
                       ? "Describe a project change"
@@ -2964,18 +3288,20 @@ function Workspace() {
                   >
 
                     <span>
-                      Enter to send
+                      Enter
                     </span>
-
 
                     <b>
-                      ·
+                      to run
                     </b>
 
-
                     <span>
-                      Shift + Enter for new line
+                      Shift + Enter
                     </span>
+
+                    <b>
+                      for new line
+                    </b>
 
                   </div>
 
@@ -2987,7 +3313,6 @@ function Workspace() {
                   >
 
                     {selectedProject && (
-
                       <button
                         type="button"
                         className={
@@ -3003,7 +3328,6 @@ function Workspace() {
                       >
                         Review / Fix
                       </button>
-
                     )}
 
 
@@ -3027,7 +3351,6 @@ function Workspace() {
                         ? "Build Change"
                         : "Build"}
 
-
                       <span>
                         ↑
                       </span>
@@ -3041,9 +3364,7 @@ function Workspace() {
               </div>
 
 
-              {/* =================================================
-                  QUICK COMMANDS
-              ================================================= */}
+              {/* ACTION STRIP */}
 
               <div
                 className={
@@ -3052,17 +3373,15 @@ function Workspace() {
               >
 
                 {BUILDER_ACTIONS.map(
-                  (action) => {
+                  action => {
 
                     const isDeploy =
                       action.id ===
                       "deploy";
 
-
                     const isReview =
                       action.id ===
                       "review";
-
 
                     return (
                       <button
@@ -3078,13 +3397,9 @@ function Workspace() {
                             ? handleDeploy
                             : isReview
                             ? handleReviewFix
-                            : () => {
-                                document
-                                  .querySelector(
-                                    `.${styles.commandBox} textarea`
-                                  )
-                                  ?.focus();
-                              }
+                            : selectedProject
+                            ? handleBuildChange
+                            : handleGenerate
                         }
                         disabled={
                           loading ||
@@ -3102,22 +3417,18 @@ function Workspace() {
                             styles.builderActionIcon
                           }
                         >
-
                           {isDeploy
                             ? "↗"
                             : isReview
                             ? "✓"
                             : "✦"}
-
                         </span>
-
 
                         <span>
 
                           <strong>
                             {action.label}
                           </strong>
-
 
                           <small>
                             {action.description}
@@ -3127,7 +3438,6 @@ function Workspace() {
 
                       </button>
                     );
-
                   }
                 )}
 
@@ -3139,7 +3449,7 @@ function Workspace() {
 
 
           {/* =================================================
-              INSPECTOR
+              ACTIVITY / INSPECTOR
           ================================================= */}
 
           <aside
@@ -3162,27 +3472,26 @@ function Workspace() {
               <div>
 
                 <span>
-                  PROJECT
+                  SYSTEM
                 </span>
 
-
                 <strong>
-                  Inspector
+                  Activity
                 </strong>
 
               </div>
 
-
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveTab(
-                    "code"
-                  )
+              <span
+                className={
+                  operationRunning
+                    ? styles.inspectorRunning
+                    : styles.inspectorReady
                 }
               >
-                Code
-              </button>
+                {operationRunning
+                  ? "Running"
+                  : "Ready"}
+              </span>
 
             </div>
 
@@ -3193,7 +3502,60 @@ function Workspace() {
               }
             >
 
-              {/* PROJECT */}
+              {/* OPERATION STATUS */}
+
+              <div
+                className={
+                  styles.operationCard
+                }
+              >
+
+                <div
+                  className={
+                    styles.operationCardTop
+                  }
+                >
+
+                  <span>
+                    CURRENT OPERATION
+                  </span>
+
+                  <i
+                    className={
+                      operationRunning
+                        ? styles.statusRunning
+                        : styles.statusReady
+                    }
+                  />
+
+                </div>
+
+                <strong>
+                  {operationRunning
+                    ? operationTitle
+                    : "Workspace ready"}
+                </strong>
+
+                <p>
+                  {operationRunning
+                    ? operationDescription
+                    : "No operation is currently running."}
+                </p>
+
+                {operationRunning && (
+                  <div
+                    className={
+                      styles.activityProgress
+                    }
+                  >
+                    <span />
+                  </div>
+                )}
+
+              </div>
+
+
+              {/* PROJECT STATUS */}
 
               <div
                 className={
@@ -3209,11 +3571,9 @@ function Workspace() {
                   PROJECT
                 </span>
 
-
                 <strong>
                   {projectName}
                 </strong>
-
 
                 <small>
                   {getProjectFramework(
@@ -3224,44 +3584,7 @@ function Workspace() {
               </div>
 
 
-              {/* BUILD STATUS */}
-
-              <div
-                className={
-                  styles.inspectorCard
-                }
-              >
-
-                <span
-                  className={
-                    styles.cardLabel
-                  }
-                >
-                  BUILD STATUS
-                </span>
-
-
-                <div
-                  className={
-                    styles.statusValue
-                  }
-                >
-
-                  <i />
-
-
-                  {loading
-                    ? "Building"
-                    : aiResponse
-                    ? "Ready"
-                    : "Waiting"}
-
-                </div>
-
-              </div>
-
-
-              {/* FILES */}
+              {/* FILE STATUS */}
 
               <div
                 className={
@@ -3277,15 +3600,13 @@ function Workspace() {
                   PROJECT FILES
                 </span>
 
-
                 <strong>
                   {generatedFiles.length}
                 </strong>
 
-
                 <small>
-                  Files returned by the connected
-                  AI/backend services
+                  Real files returned by the
+                  connected backend.
                 </small>
 
               </div>
@@ -3307,11 +3628,13 @@ function Workspace() {
                   DEPLOYMENT
                 </span>
 
-
                 <div
                   className={
                     deploymentIsLive
-                      ? styles.statusValue
+                      ? styles.statusSuccess
+                      : deploymentStatus ===
+                        "Deployment failed"
+                      ? styles.statusError
                       : styles.statusPending
                   }
                 >
@@ -3325,10 +3648,104 @@ function Workspace() {
               </div>
 
 
+              {/* ACTIVITY */}
+
+              <div
+                className={
+                  styles.activityCard
+                }
+              >
+
+                <div
+                  className={
+                    styles.activityHeader
+                  }
+                >
+
+                  <span>
+                    ACTIVITY
+                  </span>
+
+                  <strong>
+                    {activityLog.length}
+                  </strong>
+
+                </div>
+
+
+                {activityLog.length === 0 ? (
+                  <div
+                    className={
+                      styles.activityEmpty
+                    }
+                  >
+                    Waiting for the next
+                    workspace operation.
+                  </div>
+                ) : (
+                  <div
+                    className={
+                      styles.activityList
+                    }
+                  >
+
+                    {activityLog
+                      .slice()
+                      .reverse()
+                      .map(item => (
+                        <div
+                          key={
+                            item.id
+                          }
+                          className={
+                            styles.activityItem
+                          }
+                        >
+
+                          <span
+                            className={
+                              item.type ===
+                              "success"
+                                ? styles.activitySuccess
+                                : item.type ===
+                                  "error"
+                                ? styles.activityError
+                                : item.type ===
+                                  "warning"
+                                ? styles.activityWarning
+                                : item.type ===
+                                  "active"
+                                ? styles.activityActive
+                                : styles.activityInfo
+                            }
+                          />
+
+                          <div>
+
+                            <p>
+                              {item.message}
+                            </p>
+
+                            {item.timestamp && (
+                              <small>
+                                {item.timestamp}
+                              </small>
+                            )}
+
+                          </div>
+
+                        </div>
+                      ))}
+
+                  </div>
+                )}
+
+              </div>
+
+
               {/* LIVE APPLICATION */}
 
               {liveUrl && (
-
                 <div
                   className={
                     styles.liveCard
@@ -3339,30 +3756,40 @@ function Workspace() {
                     LIVE APPLICATION
                   </span>
 
-
                   <strong>
                     Deployment available
                   </strong>
 
-
-                  <a
-                    href={
-                      liveUrl
+                  <div
+                    className={
+                      styles.liveCardActions
                     }
-                    target="_blank"
-                    rel="noreferrer"
                   >
 
-                    Open live project
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveTab(
+                          "preview"
+                        )
+                      }
+                    >
+                      Open Preview
+                    </button>
 
-                    <span>
-                      →
-                    </span>
+                    <a
+                      href={
+                        liveUrl
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      New tab →
+                    </a>
 
-                  </a>
+                  </div>
 
                 </div>
-
               )}
 
 
@@ -3386,20 +3813,17 @@ function Workspace() {
                   ✦
                 </span>
 
-
                 <span>
 
                   <strong>
                     Build Your Future
                   </strong>
 
-
                   <small>
                     Manage subscription
                   </small>
 
                 </span>
-
 
                 <b>
                   →
@@ -3409,8 +3833,6 @@ function Workspace() {
 
             </div>
 
-
-            {/* DEPLOY CTA */}
 
             <button
               type="button"

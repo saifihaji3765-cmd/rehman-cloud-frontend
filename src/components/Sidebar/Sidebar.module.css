@@ -2,19 +2,20 @@
    ZYRIONOS
    ENTERPRISE SIDEBAR SYSTEM
    ---------------------------------------------------------
-   Designed for:
-   - Desktop persistent navigation
+   Responsibilities:
+   - Primary navigation
+   - Enterprise icon presentation
+   - Active navigation state
    - Collapsed desktop navigation
-   - Mobile drawer navigation
-   - Touch-friendly controls
+   - Mobile navigation drawer
    - Accessibility
+   - Responsive behaviour
    - Reduced motion
-   - Approved ZyrionOS design tokens
 ========================================================= */
 
 
 /* =========================================================
-   ROOT SIDEBAR
+   01. ROOT SIDEBAR
 ========================================================= */
 
 .sidebar {
@@ -22,6 +23,7 @@
   --sidebar-collapsed-width: 76px;
 
   position: relative;
+
   z-index: var(--zy-z-sticky, 100);
 
   display: flex;
@@ -38,13 +40,16 @@
   background:
     linear-gradient(
       180deg,
-      var(--zy-bg-900),
-      var(--zy-bg-950)
+      #0b1020 0%,
+      #080d19 100%
     );
 
-  border-right: 1px solid var(--zy-border);
+  border-right:
+    1px solid
+    rgba(148, 163, 184, 0.13);
 
-  color: var(--zy-text-primary);
+  color:
+    var(--zy-text-primary, #f4f7ff);
 
   overflow: hidden;
 
@@ -60,7 +65,7 @@
 
 
 /* =========================================================
-   AMBIENT BRAND LIGHT
+   02. PREMIUM AMBIENT LIGHT
 ========================================================= */
 
 .sidebar::before {
@@ -69,15 +74,15 @@
   position: absolute;
 
   top: -180px;
-  left: -180px;
+  left: -190px;
 
-  width: 380px;
-  height: 380px;
+  width: 410px;
+  height: 410px;
 
   background:
     radial-gradient(
       circle,
-      rgba(108, 99, 255, 0.095),
+      rgba(108, 99, 255, 0.12),
       transparent 68%
     );
 
@@ -88,7 +93,7 @@
 
 
 /* =========================================================
-   SECONDARY AMBIENT LIGHT
+   03. SECONDARY AMBIENT LIGHT
 ========================================================= */
 
 .sidebar::after {
@@ -96,16 +101,16 @@
 
   position: absolute;
 
-  right: -180px;
-  bottom: -220px;
+  right: -190px;
+  bottom: -230px;
 
-  width: 360px;
-  height: 360px;
+  width: 380px;
+  height: 380px;
 
   background:
     radial-gradient(
       circle,
-      rgba(53, 215, 255, 0.035),
+      rgba(53, 215, 255, 0.045),
       transparent 70%
     );
 
@@ -116,12 +121,15 @@
 
 
 /* =========================================================
-   COLLAPSED DESKTOP SIDEBAR
+   04. COLLAPSED SIDEBAR
 ========================================================= */
 
 .collapsed {
-  width: var(--sidebar-collapsed-width);
-  min-width: var(--sidebar-collapsed-width);
+  width:
+    var(--sidebar-collapsed-width);
+
+  min-width:
+    var(--sidebar-collapsed-width);
 
   padding-left: 10px;
   padding-right: 10px;
@@ -129,7 +137,7 @@
 
 
 /* =========================================================
-   HEADER
+   05. HEADER
 ========================================================= */
 
 .header {
@@ -143,14 +151,16 @@
   margin-bottom: 12px;
   padding-bottom: 12px;
 
-  border-bottom: 1px solid var(--zy-border);
+  border-bottom:
+    1px solid
+    rgba(148, 163, 184, 0.11);
 
   flex-shrink: 0;
 }
 
 
 /* =========================================================
-   BRAND
+   06. BRAND
 ========================================================= */
 
 .brand {
@@ -163,11 +173,12 @@
 
   gap: 10px;
 
-  color: var(--zy-text-primary);
+  color:
+    var(--zy-text-primary, #f4f7ff);
 
   text-decoration: none;
 
-  border-radius: var(--zy-radius-sm);
+  border-radius: 10px;
 
   transition:
     opacity var(--zy-transition-fast, 120ms ease);
@@ -175,19 +186,20 @@
 
 
 .brand:hover {
-  opacity: 0.94;
+  opacity: 0.96;
 }
 
 
 .brand:focus-visible {
   outline: none;
 
-  box-shadow: var(--zy-focus-ring);
+  box-shadow:
+    var(--zy-focus-ring);
 }
 
 
 /* =========================================================
-   BRAND MARK
+   07. BRAND MARK
 ========================================================= */
 
 .brandMark {
@@ -195,31 +207,40 @@
 
   display: grid;
 
-  grid-template-columns: repeat(2, 7px);
-  grid-template-rows: repeat(2, 7px);
+  grid-template-columns:
+    repeat(2, 7px);
+
+  grid-template-rows:
+    repeat(2, 7px);
 
   gap: 2px;
 
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
 
-  flex: 0 0 30px;
+  flex: 0 0 32px;
 
-  padding: 6px;
+  padding: 7px;
 
-  border: 1px solid var(--zy-border-strong);
+  border:
+    1px solid
+    rgba(129, 121, 255, 0.28);
 
-  border-radius: 9px;
+  border-radius: 10px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(108, 99, 255, 0.16),
-      var(--zy-surface-2)
+      rgba(108, 99, 255, 0.20),
+      rgba(17, 24, 42, 0.94)
     );
 
   box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.22);
+    0 7px 20px
+    rgba(0, 0, 0, 0.22),
+
+    inset 0 1px 0
+    rgba(255, 255, 255, 0.06);
 }
 
 
@@ -230,7 +251,16 @@
 
   border-radius: 2px;
 
-  background: var(--zy-brand);
+  background:
+    linear-gradient(
+      180deg,
+      #8179ff,
+      #5f57ef
+    );
+
+  box-shadow:
+    0 0 8px
+    rgba(108, 99, 255, 0.18);
 }
 
 
@@ -244,12 +274,17 @@
 
   width: 100%;
 
-  opacity: 0.46;
+  opacity: 0.50;
+}
+
+
+.brandMark span:nth-child(4) {
+  display: none;
 }
 
 
 /* =========================================================
-   BRAND CONTENT
+   08. BRAND CONTENT
 ========================================================= */
 
 .brandContent {
@@ -263,10 +298,13 @@
 
 
 .brandName {
-  color: var(--zy-text-primary);
+  color:
+    var(--zy-text-primary, #f4f7ff);
 
   font-size: 15px;
-  font-weight: var(--zy-font-bold);
+
+  font-weight:
+    var(--zy-font-bold, 700);
 
   line-height: 1.15;
 
@@ -275,6 +313,7 @@
   white-space: nowrap;
 
   overflow: hidden;
+
   text-overflow: ellipsis;
 }
 
@@ -282,22 +321,26 @@
 .brandTagline {
   margin-top: 3px;
 
-  color: var(--zy-text-muted);
+  color:
+    var(--zy-text-muted, #6f7890);
 
   font-size: 9px;
-  font-weight: var(--zy-font-medium);
+
+  font-weight:
+    var(--zy-font-medium, 500);
 
   line-height: 1.25;
 
   white-space: nowrap;
 
   overflow: hidden;
+
   text-overflow: ellipsis;
 }
 
 
 /* =========================================================
-   COLLAPSE BUTTON
+   09. COLLAPSE BUTTON
 ========================================================= */
 
 .collapseButton {
@@ -316,36 +359,44 @@
 
   padding: 0;
 
-  border: 1px solid transparent;
+  border:
+    1px solid
+    transparent;
 
-  border-radius: var(--zy-radius-sm);
+  border-radius: 9px;
 
-  color: var(--zy-text-muted);
+  color:
+    var(--zy-text-muted, #6f7890);
 
-  background: transparent;
+  background:
+    transparent;
 
   cursor: pointer;
 
   transition:
-    color var(--zy-transition-fast),
-    background-color var(--zy-transition-fast),
-    border-color var(--zy-transition-fast);
+    color var(--zy-transition-fast, 120ms ease),
+    background-color var(--zy-transition-fast, 120ms ease),
+    border-color var(--zy-transition-fast, 120ms ease);
 }
 
 
 .collapseButton:hover {
-  color: var(--zy-text-primary);
+  color:
+    var(--zy-text-primary, #f4f7ff);
 
-  background: var(--zy-surface-3);
+  background:
+    rgba(255, 255, 255, 0.045);
 
-  border-color: var(--zy-border);
+  border-color:
+    rgba(148, 163, 184, 0.14);
 }
 
 
 .collapseButton:focus-visible {
   outline: none;
 
-  box-shadow: var(--zy-focus-ring);
+  box-shadow:
+    var(--zy-focus-ring);
 }
 
 
@@ -354,25 +405,28 @@
   display: block;
 
   font-size: 23px;
+
   line-height: 1;
 
   transition:
-    transform var(--zy-transition-standard);
+    transform var(--zy-transition-standard, 180ms ease);
 }
 
 
 .chevron {
-  transform: rotate(0deg);
+  transform:
+    rotate(0deg);
 }
 
 
 .chevronCollapsed {
-  transform: rotate(180deg);
+  transform:
+    rotate(180deg);
 }
 
 
 /* =========================================================
-   COLLAPSED BRAND
+   10. COLLAPSED BRAND
 ========================================================= */
 
 .collapsed .brand {
@@ -396,7 +450,7 @@
 
 
 /* =========================================================
-   WORKSPACE CONTEXT
+   11. WORKSPACE CONTEXT
 ========================================================= */
 
 .workspaceContext {
@@ -411,32 +465,43 @@
 
   padding: 8px;
 
-  border: 1px solid var(--zy-border);
+  border:
+    1px solid
+    rgba(148, 163, 184, 0.12);
 
-  border-radius: var(--zy-radius-md);
+  border-radius: 12px;
 
   background:
     linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.025),
-      rgba(255, 255, 255, 0.01)
+      rgba(255, 255, 255, 0.045),
+      rgba(255, 255, 255, 0.018)
     );
+
+  box-shadow:
+    inset 0 1px 0
+    rgba(255, 255, 255, 0.025);
 
   flex-shrink: 0;
 
   transition:
-    background-color var(--zy-transition-fast),
-    border-color var(--zy-transition-fast);
+    background-color var(--zy-transition-fast, 120ms ease),
+    border-color var(--zy-transition-fast, 120ms ease);
 }
 
 
 .workspaceContext:hover {
-  border-color: var(--zy-border-strong);
+  border-color:
+    rgba(129, 121, 255, 0.24);
 
   background:
-    rgba(255, 255, 255, 0.035);
+    rgba(255, 255, 255, 0.05);
 }
 
+
+/* =========================================================
+   12. WORKSPACE ICON
+========================================================= */
 
 .workspaceIcon {
   display: flex;
@@ -450,15 +515,31 @@
 
   flex: 0 0 32px;
 
-  border: 1px solid var(--zy-border);
+  border:
+    1px solid
+    rgba(108, 99, 255, 0.22);
 
   border-radius: 9px;
 
-  background: var(--zy-surface-2);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(108, 99, 255, 0.13),
+      rgba(255, 255, 255, 0.025)
+    );
 
-  color: var(--zy-text-secondary);
+  color:
+    #9b96ff;
+
+  box-shadow:
+    inset 0 1px 0
+    rgba(255, 255, 255, 0.04);
 }
 
+
+/* =========================================================
+   13. WORKSPACE CONTENT
+========================================================= */
 
 .workspaceContent {
   display: flex;
@@ -471,10 +552,13 @@
 
 
 .eyebrow {
-  color: var(--zy-text-muted);
+  color:
+    var(--zy-text-muted, #6f7890);
 
   font-size: 8px;
-  font-weight: var(--zy-font-semibold);
+
+  font-weight:
+    var(--zy-font-semibold, 600);
 
   letter-spacing: 0.11em;
 
@@ -487,22 +571,26 @@
 .workspaceValue {
   margin-top: 3px;
 
-  color: var(--zy-text-secondary);
+  color:
+    var(--zy-text-secondary, #a8b1c7);
 
   font-size: 11px;
-  font-weight: var(--zy-font-medium);
+
+  font-weight:
+    var(--zy-font-medium, 500);
 
   line-height: 1.25;
 
   white-space: nowrap;
 
   overflow: hidden;
+
   text-overflow: ellipsis;
 }
 
 
 /* =========================================================
-   COLLAPSED WORKSPACE
+   14. COLLAPSED WORKSPACE
 ========================================================= */
 
 .collapsed .workspaceContext {
@@ -523,7 +611,7 @@
 
 
 /* =========================================================
-   NAVIGATION WRAPPER
+   15. NAVIGATION
 ========================================================= */
 
 .navigation {
@@ -546,7 +634,7 @@
 
 
 /* =========================================================
-   NAVIGATION SECTION
+   16. NAVIGATION SECTION
 ========================================================= */
 
 .navigationSection {
@@ -555,17 +643,20 @@
 
 
 /* =========================================================
-   SECTION LABEL
+   17. SECTION LABEL
 ========================================================= */
 
 .sectionLabel {
   padding:
     0 10px 7px;
 
-  color: var(--zy-text-disabled);
+  color:
+    var(--zy-text-disabled, #4e566b);
 
   font-size: 8px;
-  font-weight: var(--zy-font-semibold);
+
+  font-weight:
+    var(--zy-font-semibold, 600);
 
   letter-spacing: 0.12em;
 
@@ -576,21 +667,21 @@
 
 
 /* =========================================================
-   NAVIGATION ITEMS
+   18. NAVIGATION ITEMS
 ========================================================= */
 
 .navigationItems {
   display: flex;
   flex-direction: column;
 
-  gap: 3px;
+  gap: 4px;
 
   min-width: 0;
 }
 
 
 /* =========================================================
-   NAV ITEM
+   19. NAV ITEM
 ========================================================= */
 
 .navItem {
@@ -605,69 +696,83 @@
   min-height: 44px;
 
   padding:
-    0 10px;
+    0 9px;
 
-  border: 1px solid transparent;
+  border:
+    1px solid
+    transparent;
 
-  border-radius: 11px;
+  border-radius: 12px;
 
-  color: var(--zy-text-secondary);
+  color:
+    var(--zy-text-secondary, #a8b1c7);
 
   text-decoration: none;
 
   overflow: hidden;
 
   transition:
-    color var(--zy-transition-fast),
-    background-color var(--zy-transition-fast),
-    border-color var(--zy-transition-fast),
-    transform var(--zy-transition-fast);
+    color var(--zy-transition-fast, 120ms ease),
+    background-color var(--zy-transition-fast, 120ms ease),
+    border-color var(--zy-transition-fast, 120ms ease),
+    transform var(--zy-transition-fast, 120ms ease);
 }
 
 
 .navItem:hover {
-  color: var(--zy-text-primary);
+  color:
+    var(--zy-text-primary, #f4f7ff);
 
   background:
-    rgba(255, 255, 255, 0.035);
+    rgba(255, 255, 255, 0.045);
 
-  border-color: var(--zy-border);
+  border-color:
+    rgba(148, 163, 184, 0.12);
 
-  transform: translateX(1px);
+  transform:
+    translateX(1px);
 }
 
 
 .navItem:focus-visible {
   outline: none;
 
-  box-shadow: var(--zy-focus-ring);
+  box-shadow:
+    var(--zy-focus-ring);
 }
 
 
 .navItem:active {
-  transform: translateX(1px) scale(0.995);
+  transform:
+    translateX(1px)
+    scale(0.995);
 }
 
 
 /* =========================================================
-   ACTIVE NAV ITEM
+   20. ACTIVE NAV ITEM
 ========================================================= */
 
 .active {
-  color: var(--zy-text-primary);
+  color:
+    #f7f8ff;
 
   background:
     linear-gradient(
       90deg,
-      rgba(108, 99, 255, 0.14),
+      rgba(108, 99, 255, 0.17),
       rgba(108, 99, 255, 0.055)
     );
 
-  border-color: var(--zy-border-brand);
+  border-color:
+    rgba(129, 121, 255, 0.22);
 
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.025),
-    0 4px 14px rgba(0, 0, 0, 0.10);
+    inset 0 1px 0
+    rgba(255, 255, 255, 0.035),
+
+    0 5px 18px
+    rgba(0, 0, 0, 0.12);
 }
 
 
@@ -675,14 +780,14 @@
   background:
     linear-gradient(
       90deg,
-      rgba(108, 99, 255, 0.16),
-      rgba(108, 99, 255, 0.065)
+      rgba(108, 99, 255, 0.20),
+      rgba(108, 99, 255, 0.07)
     );
 }
 
 
 /* =========================================================
-   ACTIVE INDICATOR
+   21. ACTIVE INDICATOR
 ========================================================= */
 
 .activeIndicator {
@@ -697,19 +802,25 @@
 
   border-radius:
     0
-    var(--zy-radius-pill)
-    var(--zy-radius-pill)
+    999px
+    999px
     0;
 
-  background: var(--zy-brand-bright);
+  background:
+    linear-gradient(
+      180deg,
+      #8179ff,
+      #5f57ef
+    );
 
   box-shadow:
-    0 0 12px rgba(108, 99, 255, 0.45);
+    0 0 13px
+    rgba(108, 99, 255, 0.48);
 
   opacity: 0;
 
   transition:
-    opacity var(--zy-transition-fast);
+    opacity var(--zy-transition-fast, 120ms ease);
 }
 
 
@@ -719,7 +830,40 @@
 
 
 /* =========================================================
-   NAV ICON
+   22. ICON CONTAINER
+========================================================= */
+
+.navIconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+
+  min-width: 30px;
+
+  flex: 0 0 30px;
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius: 9px;
+
+  background:
+    transparent;
+
+  transition:
+    background-color var(--zy-transition-fast, 120ms ease),
+    border-color var(--zy-transition-fast, 120ms ease),
+    box-shadow var(--zy-transition-fast, 120ms ease),
+    transform var(--zy-transition-fast, 120ms ease);
+}
+
+
+/* =========================================================
+   23. ICON
 ========================================================= */
 
 .navIcon {
@@ -727,35 +871,57 @@
   align-items: center;
   justify-content: center;
 
-  width: 24px;
-  height: 24px;
+  width: 21px;
+  height: 21px;
 
-  min-width: 24px;
-
-  flex: 0 0 24px;
-
-  color: var(--zy-text-muted);
+  color:
+    var(--zy-text-muted, #6f7890);
 
   transition:
-    color var(--zy-transition-fast),
-    transform var(--zy-transition-fast);
+    color var(--zy-transition-fast, 120ms ease),
+    transform var(--zy-transition-fast, 120ms ease);
+}
+
+
+.navItem:hover .navIconBox {
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  border-color:
+    rgba(148, 163, 184, 0.08);
 }
 
 
 .navItem:hover .navIcon {
-  color: var(--zy-text-secondary);
+  color:
+    var(--zy-text-secondary, #a8b1c7);
 
-  transform: scale(1.03);
+  transform:
+    scale(1.04);
+}
+
+
+.navItem.active .navIconBox {
+  background:
+    rgba(108, 99, 255, 0.13);
+
+  border-color:
+    rgba(129, 121, 255, 0.17);
+
+  box-shadow:
+    inset 0 1px 0
+    rgba(255, 255, 255, 0.035);
 }
 
 
 .navItem.active .navIcon {
-  color: var(--zy-brand-bright);
+  color:
+    #9b96ff;
 }
 
 
 /* =========================================================
-   NAV LABEL
+   24. NAV LABEL
 ========================================================= */
 
 .navLabel {
@@ -770,14 +936,16 @@
   white-space: nowrap;
 
   font-size: 13px;
-  font-weight: var(--zy-font-medium);
+
+  font-weight:
+    var(--zy-font-medium, 500);
 
   line-height: 1.2;
 }
 
 
 /* =========================================================
-   NAV BADGE
+   25. NAV BADGE
 ========================================================= */
 
 .navBadge {
@@ -788,20 +956,26 @@
   min-width: 20px;
 
   margin-left: auto;
+
   padding:
     2px 6px;
 
   border:
-    1px solid var(--zy-border);
+    1px solid
+    rgba(148, 163, 184, 0.13);
 
-  border-radius: var(--zy-radius-pill);
+  border-radius: 999px;
 
-  background: var(--zy-surface-3);
+  background:
+    rgba(255, 255, 255, 0.035);
 
-  color: var(--zy-text-muted);
+  color:
+    var(--zy-text-muted, #6f7890);
 
   font-size: 9px;
-  font-weight: var(--zy-font-semibold);
+
+  font-weight:
+    var(--zy-font-semibold, 600);
 
   line-height: 1.2;
 
@@ -810,7 +984,7 @@
 
 
 /* =========================================================
-   COLLAPSED NAVIGATION
+   26. COLLAPSED NAVIGATION
 ========================================================= */
 
 .collapsed .navigation {
@@ -838,11 +1012,19 @@
 }
 
 
-.collapsed .navIcon {
-  width: 24px;
-  height: 24px;
+.collapsed .navIconBox {
+  width: 34px;
+  height: 34px;
 
-  margin-inline: auto;
+  min-width: 34px;
+
+  flex: 0 0 34px;
+}
+
+
+.collapsed .navIcon {
+  width: 21px;
+  height: 21px;
 }
 
 
@@ -855,13 +1037,13 @@
 .collapsed .activeIndicator {
   left: -1px;
 
-  top: 10px;
-  bottom: 10px;
+  top: 9px;
+  bottom: 9px;
 }
 
 
 /* =========================================================
-   BOTTOM AREA
+   27. BOTTOM AREA
 ========================================================= */
 
 .bottomArea {
@@ -874,27 +1056,31 @@
 
 
 /* =========================================================
-   PLATFORM CARD
+   28. PLATFORM CARD
 ========================================================= */
 
 .platformCard {
   padding: 11px;
 
   border:
-    1px solid var(--zy-border);
+    1px solid
+    rgba(148, 163, 184, 0.12);
 
-  border-radius:
-    var(--zy-radius-md);
+  border-radius: 12px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(255, 255, 255, 0.025),
-      rgba(255, 255, 255, 0.012)
+      rgba(255, 255, 255, 0.045),
+      rgba(255, 255, 255, 0.015)
     );
 
   box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.12);
+    0 8px 24px
+    rgba(0, 0, 0, 0.12),
+
+    inset 0 1px 0
+    rgba(255, 255, 255, 0.025);
 }
 
 
@@ -904,10 +1090,13 @@
 
   gap: 7px;
 
-  color: var(--zy-text-secondary);
+  color:
+    var(--zy-text-secondary, #a8b1c7);
 
   font-size: 10px;
-  font-weight: var(--zy-font-semibold);
+
+  font-weight:
+    var(--zy-font-semibold, 600);
 
   line-height: 1.2;
 }
@@ -921,10 +1110,15 @@
 
   border-radius: 50%;
 
-  background: var(--zy-success);
+  background:
+    var(--zy-success, #20c77a);
 
   box-shadow:
-    0 0 0 3px var(--zy-success-bg);
+    0 0 0 3px
+    rgba(32, 199, 122, 0.08),
+
+    0 0 10px
+    rgba(32, 199, 122, 0.20);
 }
 
 
@@ -932,7 +1126,8 @@
   margin:
     7px 0 0;
 
-  color: var(--zy-text-muted);
+  color:
+    var(--zy-text-muted, #6f7890);
 
   font-size: 9px;
 
@@ -941,7 +1136,7 @@
 
 
 /* =========================================================
-   SIDEBAR META
+   29. SIDEBAR META
 ========================================================= */
 
 .sidebarMeta {
@@ -957,7 +1152,8 @@
   padding:
     0 4px;
 
-  color: var(--zy-text-disabled);
+  color:
+    var(--zy-text-disabled, #4e566b);
 
   font-size: 8px;
 
@@ -981,22 +1177,26 @@
   margin-inline: auto;
 
   border:
-    1px solid var(--zy-border);
+    1px solid
+    rgba(148, 163, 184, 0.12);
 
   border-radius: 9px;
 
   background:
-    rgba(255, 255, 255, 0.018);
+    rgba(255, 255, 255, 0.025);
 
-  color: var(--zy-text-muted);
+  color:
+    var(--zy-text-muted, #6f7890);
 
   font-size: 11px;
-  font-weight: var(--zy-font-bold);
+
+  font-weight:
+    var(--zy-font-bold, 700);
 }
 
 
 /* =========================================================
-   COLLAPSED BOTTOM
+   30. COLLAPSED BOTTOM
 ========================================================= */
 
 .collapsed .platformCard {
@@ -1012,7 +1212,7 @@
 
 
 /* =========================================================
-   MOBILE MENU BUTTON
+   31. MOBILE MENU BUTTON
 ========================================================= */
 
 .mobileMenuButton {
@@ -1020,21 +1220,24 @@
 
   position: fixed;
 
-  top: max(
-    12px,
-    env(safe-area-inset-top)
-  );
+  top:
+    max(
+      12px,
+      env(safe-area-inset-top)
+    );
 
-  left: max(
-    12px,
-    env(safe-area-inset-left)
-  );
+  left:
+    max(
+      12px,
+      env(safe-area-inset-left)
+    );
 
   z-index:
     calc(var(--zy-z-modal, 1000) + 10);
 
   align-items: center;
   justify-content: center;
+
   flex-direction: column;
 
   width: 46px;
@@ -1045,39 +1248,45 @@
   padding: 9px;
 
   border:
-    1px solid var(--zy-border-strong);
+    1px solid
+    rgba(148, 163, 184, 0.20);
 
   border-radius: 12px;
 
   background:
-    rgba(15, 18, 32, 0.96);
+    rgba(11, 16, 32, 0.96);
 
-  color: var(--zy-text-primary);
+  color:
+    var(--zy-text-primary, #f4f7ff);
 
   box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.30);
+    0 10px 30px
+    rgba(0, 0, 0, 0.30);
 
   cursor: pointer;
 
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color:
+    transparent;
 
   transition:
-    background-color var(--zy-transition-fast),
-    border-color var(--zy-transition-fast),
-    transform var(--zy-transition-fast);
+    background-color var(--zy-transition-fast, 120ms ease),
+    border-color var(--zy-transition-fast, 120ms ease),
+    transform var(--zy-transition-fast, 120ms ease);
 }
 
 
 .mobileMenuButton:hover {
-  border-color: var(--zy-border-interactive);
+  border-color:
+    rgba(129, 121, 255, 0.32);
 
   background:
-    var(--zy-surface-2);
+    #11182a;
 }
 
 
 .mobileMenuButton:active {
-  transform: scale(0.96);
+  transform:
+    scale(0.96);
 }
 
 
@@ -1086,7 +1295,8 @@
 
   box-shadow:
     var(--zy-focus-ring),
-    0 10px 30px rgba(0, 0, 0, 0.30);
+    0 10px 30px
+    rgba(0, 0, 0, 0.30);
 }
 
 
@@ -1098,16 +1308,15 @@
 
   margin: 3px 0;
 
-  border-radius:
-    var(--zy-radius-pill);
+  border-radius: 999px;
 
   background:
-    var(--zy-text-secondary);
+    var(--zy-text-secondary, #a8b1c7);
 }
 
 
 /* =========================================================
-   MOBILE BACKDROP
+   32. MOBILE BACKDROP
 ========================================================= */
 
 .mobileBackdrop {
@@ -1142,8 +1351,11 @@
   transition:
     opacity var(--zy-transition-standard, 180ms ease);
 
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter:
+    blur(3px);
+
+  backdrop-filter:
+    blur(3px);
 }
 
 
@@ -1155,7 +1367,7 @@
 
 
 /* =========================================================
-   MOBILE CLOSE BUTTON
+   33. MOBILE CLOSE BUTTON
 ========================================================= */
 
 .mobileCloseButton {
@@ -1176,51 +1388,57 @@
   padding: 0;
 
   border:
-    1px solid var(--zy-border);
+    1px solid
+    rgba(148, 163, 184, 0.13);
 
   border-radius: 10px;
 
   background:
     rgba(255, 255, 255, 0.025);
 
-  color: var(--zy-text-secondary);
+  color:
+    var(--zy-text-secondary, #a8b1c7);
 
   font-size: 24px;
+
   font-weight: 300;
 
   line-height: 1;
 
   cursor: pointer;
 
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color:
+    transparent;
 
   transition:
-    color var(--zy-transition-fast),
-    background-color var(--zy-transition-fast),
-    border-color var(--zy-transition-fast);
+    color var(--zy-transition-fast, 120ms ease),
+    background-color var(--zy-transition-fast, 120ms ease),
+    border-color var(--zy-transition-fast, 120ms ease);
 }
 
 
 .mobileCloseButton:hover {
-  color: var(--zy-text-primary);
+  color:
+    var(--zy-text-primary, #f4f7ff);
 
   background:
-    var(--zy-surface-3);
+    rgba(255, 255, 255, 0.055);
 
   border-color:
-    var(--zy-border-strong);
+    rgba(148, 163, 184, 0.20);
 }
 
 
 .mobileCloseButton:focus-visible {
   outline: none;
 
-  box-shadow: var(--zy-focus-ring);
+  box-shadow:
+    var(--zy-focus-ring);
 }
 
 
 /* =========================================================
-   DESKTOP — LARGE
+   34. LARGE DESKTOP
 ========================================================= */
 
 @media (min-width: 1201px) {
@@ -1231,7 +1449,7 @@
 
 
 /* =========================================================
-   DESKTOP — STANDARD
+   35. STANDARD DESKTOP
 ========================================================= */
 
 @media (max-width: 1200px) and (min-width: 769px) {
@@ -1246,37 +1464,20 @@
 
 
 /* =========================================================
-   MOBILE DRAWER
+   36. MOBILE DRAWER
 ========================================================= */
 
 @media (max-width: 768px) {
-
-  /* -----------------------------------------------
-     Mobile trigger
-  ----------------------------------------------- */
 
   .mobileMenuButton {
     display: flex;
   }
 
 
-  /* -----------------------------------------------
-     Backdrop
-  ----------------------------------------------- */
-
   .mobileBackdrop {
     display: block;
   }
 
-
-  /* -----------------------------------------------
-     Drawer
-     
-     IMPORTANT:
-     Do NOT use 86vw here.
-     On a 690px phone it creates a ~593px drawer.
-     Keep it compact and professional.
-  ----------------------------------------------- */
 
   .sidebar {
     position: fixed;
@@ -1284,8 +1485,11 @@
     top: 0;
     left: 0;
 
-    width: min(88vw, 360px);
-    min-width: min(88vw, 360px);
+    width:
+      min(88vw, 360px);
+
+    min-width:
+      min(88vw, 360px);
 
     height: 100dvh;
 
@@ -1304,28 +1508,22 @@
       translate3d(-105%, 0, 0);
 
     box-shadow:
-      18px 0 50px rgba(0, 0, 0, 0.38);
+      18px 0 50px
+      rgba(0, 0, 0, 0.38);
 
     transition:
       transform var(--zy-transition-large, 260ms ease);
 
-    overscroll-behavior: contain;
+    overscroll-behavior:
+      contain;
   }
 
-
-  /* -----------------------------------------------
-     Open drawer
-  ----------------------------------------------- */
 
   .sidebar.mobileOpen {
     transform:
       translate3d(0, 0, 0);
   }
 
-
-  /* -----------------------------------------------
-     Mobile header
-  ----------------------------------------------- */
 
   .header {
     min-height: 58px;
@@ -1335,10 +1533,6 @@
     padding-bottom: 14px;
   }
 
-
-  /* -----------------------------------------------
-     Mobile brand
-  ----------------------------------------------- */
 
   .brandMark {
     width: 34px;
@@ -1362,27 +1556,15 @@
   }
 
 
-  /* -----------------------------------------------
-     Hide desktop collapse
-  ----------------------------------------------- */
-
   .collapseButton {
     display: none;
   }
 
 
-  /* -----------------------------------------------
-     Show mobile close
-  ----------------------------------------------- */
-
   .mobileCloseButton {
     display: flex;
   }
 
-
-  /* -----------------------------------------------
-     Workspace
-  ----------------------------------------------- */
 
   .workspaceContext {
     min-height: 52px;
@@ -1402,10 +1584,6 @@
     flex-basis: 34px;
   }
 
-
-  /* -----------------------------------------------
-     Navigation
-  ----------------------------------------------- */
 
   .navigation {
     gap: 18px;
@@ -1427,10 +1605,6 @@
   }
 
 
-  /* -----------------------------------------------
-     Mobile nav item
-  ----------------------------------------------- */
-
   .navItem {
     min-height: 48px;
 
@@ -1441,13 +1615,19 @@
   }
 
 
+  .navIconBox {
+    width: 32px;
+    height: 32px;
+
+    min-width: 32px;
+
+    flex-basis: 32px;
+  }
+
+
   .navIcon {
-    width: 25px;
-    height: 25px;
-
-    min-width: 25px;
-
-    flex-basis: 25px;
+    width: 21px;
+    height: 21px;
   }
 
 
@@ -1455,13 +1635,11 @@
     margin-left: 12px;
 
     font-size: 14px;
-    font-weight: var(--zy-font-medium);
+
+    font-weight:
+      var(--zy-font-medium, 500);
   }
 
-
-  /* -----------------------------------------------
-     Bottom
-  ----------------------------------------------- */
 
   .bottomArea {
     padding-top: 14px;
@@ -1487,16 +1665,16 @@
   }
 
 
-  /* -----------------------------------------------
-     IMPORTANT MOBILE OVERRIDE
-     
-     Mobile drawer must NEVER inherit
-     desktop collapsed presentation.
-  ----------------------------------------------- */
+  /* -------------------------------------------------------
+     Mobile drawer must never inherit collapsed presentation
+  ------------------------------------------------------- */
 
   .sidebar.collapsed {
-    width: min(88vw, 360px);
-    min-width: min(88vw, 360px);
+    width:
+      min(88vw, 360px);
+
+    min-width:
+      min(88vw, 360px);
 
     padding:
       max(14px, env(safe-area-inset-top))
@@ -1556,13 +1734,13 @@
   }
 
 
-  .sidebar.collapsed .navIcon {
-    width: 25px;
-    height: 25px;
+  .sidebar.collapsed .navIconBox {
+    width: 32px;
+    height: 32px;
 
-    min-width: 25px;
+    min-width: 32px;
 
-    flex-basis: 25px;
+    flex-basis: 32px;
 
     margin-inline: 0;
   }
@@ -1592,33 +1770,41 @@
 
 
 /* =========================================================
-   SMALL MOBILE
+   37. SMALL MOBILE
 ========================================================= */
 
 @media (max-width: 480px) {
 
   .sidebar {
-    width: min(90vw, 340px);
-    min-width: min(90vw, 340px);
+    width:
+      min(90vw, 340px);
+
+    min-width:
+      min(90vw, 340px);
   }
 
 
   .sidebar.collapsed {
-    width: min(90vw, 340px);
-    min-width: min(90vw, 340px);
+    width:
+      min(90vw, 340px);
+
+    min-width:
+      min(90vw, 340px);
   }
 
 
   .mobileMenuButton {
-    top: max(
-      10px,
-      env(safe-area-inset-top)
-    );
+    top:
+      max(
+        10px,
+        env(safe-area-inset-top)
+      );
 
-    left: max(
-      10px,
-      env(safe-area-inset-left)
-    );
+    left:
+      max(
+        10px,
+        env(safe-area-inset-left)
+      );
 
     width: 44px;
     height: 44px;
@@ -1642,7 +1828,7 @@
 
 
 /* =========================================================
-   VERY SMALL DEVICES
+   38. VERY SMALL DEVICES
 ========================================================= */
 
 @media (max-width: 360px) {
@@ -1678,7 +1864,7 @@
 
 
 /* =========================================================
-   REDUCED MOTION
+   39. REDUCED MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
@@ -1690,14 +1876,16 @@
   .mobileBackdrop,
   .mobileMenuButton,
   .mobileCloseButton,
-  .navIcon {
+  .navIcon,
+  .navIconBox,
+  .activeIndicator {
     transition: none;
   }
 }
 
 
 /* =========================================================
-   FORCED COLORS / HIGH CONTRAST
+   40. FORCED COLORS / HIGH CONTRAST
 ========================================================= */
 
 @media (forced-colors: active) {
@@ -1707,31 +1895,37 @@
   .platformCard,
   .navItem,
   .mobileMenuButton,
-  .mobileCloseButton {
-    border-color: CanvasText;
+  .mobileCloseButton,
+  .navIconBox {
+    border-color:
+      CanvasText;
   }
 
 
   .active {
-    background: Highlight;
+    background:
+      Highlight;
 
-    color: HighlightText;
+    color:
+      HighlightText;
   }
 
 
   .active .navIcon {
-    color: HighlightText;
+    color:
+      HighlightText;
   }
 
 
   .activeIndicator {
-    background: HighlightText;
+    background:
+      HighlightText;
   }
 }
 
 
 /* =========================================================
-   TOUCH DEVICE REFINEMENT
+   41. TOUCH DEVICE REFINEMENT
 ========================================================= */
 
 @media (hover: none) and (pointer: coarse) {
@@ -1742,7 +1936,8 @@
 
 
   .navItem:active {
-    transform: scale(0.99);
+    transform:
+      scale(0.99);
   }
 
 
@@ -1760,7 +1955,7 @@
 
 
 /* =========================================================
-   SAFE AREA
+   42. SAFE AREA
 ========================================================= */
 
 @supports (padding: env(safe-area-inset-bottom)) {
@@ -1773,3 +1968,8 @@
       );
   }
 }
+
+
+/* =========================================================
+   END OF ENTERPRISE SIDEBAR SYSTEM
+========================================================= */

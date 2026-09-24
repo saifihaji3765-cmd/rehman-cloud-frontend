@@ -34,6 +34,20 @@ const API_BASE_URL =
 
 /*
 |--------------------------------------------------------------------------
+| DEFAULT API TIMEOUT
+|--------------------------------------------------------------------------
+|
+| Normal APIs should not remain pending indefinitely.
+|
+| AI-heavy requests override this timeout inside aiService.js.
+|
+*/
+
+const DEFAULT_API_TIMEOUT = 30000;
+
+
+/*
+|--------------------------------------------------------------------------
 | AXIOS CLIENT
 |--------------------------------------------------------------------------
 */
@@ -47,9 +61,11 @@ const api = axios.create({
   withCredentials: true,
 
   /*
-   * Prevent requests from hanging indefinitely.
+   * Default timeout for normal API requests.
+   *
+   * AI requests can override this per request.
    */
-  timeout: 30000,
+  timeout: DEFAULT_API_TIMEOUT,
 
   headers: {
     "Content-Type":
@@ -69,15 +85,15 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
+
     /*
      * Request timing metadata.
-     *
-     * This is useful for debugging and
-     * performance monitoring.
      */
     config.metadata = {
       ...(config.metadata || {}),
-      startTime: Date.now(),
+
+      startTime:
+        Date.now(),
     };
 
     return config;
@@ -104,18 +120,19 @@ api.interceptors.request.use(
 | error.response.status
 | error.message
 |
-| Therefore this interceptor modifies the existing
-| Axios error instead of replacing it.
 |--------------------------------------------------------------------------
 */
 
 api.interceptors.response.use(
+
+  /*
+   * SUCCESS
+   */
   (response) => {
-    /*
-     * Add response timing information without
-     * changing the response structure.
-     */
-    if (response.config?.metadata) {
+
+    if (
+      response.config?.metadata
+    ) {
       response.config.metadata.duration =
         Date.now() -
         response.config.metadata.startTime;
@@ -124,7 +141,12 @@ api.interceptors.response.use(
     return response;
   },
 
+
+  /*
+   * ERROR
+   */
   (error) => {
+
     /*
      * Preserve Axios error object.
      */
@@ -132,15 +154,18 @@ api.interceptors.response.use(
       error?.response?.status ??
       null;
 
+
     const responseData =
       error?.response?.data ??
       null;
 
 
     /*
-     * Calculate request duration when available.
+     * Calculate request duration.
      */
-    if (error?.config?.metadata) {
+    if (
+      error?.config?.metadata
+    ) {
       error.config.metadata.duration =
         Date.now() -
         error.config.metadata.startTime;
@@ -165,24 +190,54 @@ api.interceptors.response.use(
      */
 
     if (!error.response) {
+
       error.status = null;
 
+
+      /*
+       * Axios timeout.
+       */
       if (
         error.code ===
-        "ECONNABORTED"
+        "ECONNABORTED" ||
+        error.code ===
+        "ETIMEDOUT"
       ) {
+
+        error.isTimeout =
+          true;
+
         error.message =
-          "The request timed out. Please try again.";
-      } else if (
+          "The request timed out. The AI/server may still be processing the request.";
+
+      }
+
+      /*
+       * Browser/network failure.
+       */
+      else if (
         error.code ===
         "ERR_NETWORK"
       ) {
+
+        error.isNetworkError =
+          true;
+
         error.message =
           "Unable to connect to the server. Please check your internet connection.";
-      } else {
+
+      }
+
+      /*
+       * Unknown connection failure.
+       */
+      else {
+
         error.message =
           "Unable to connect to the server. Please try again.";
+
       }
+
 
       return Promise.reject(
         error
@@ -196,12 +251,16 @@ api.interceptors.response.use(
      |--------------------------------------------------------------------------
      */
 
-    if (status === 400) {
+    if (
+      status === 400
+    ) {
+
       error.message =
         backendMessage ||
         "The request could not be processed.";
 
-      error.status = 400;
+      error.status =
+        400;
 
       return Promise.reject(
         error
@@ -215,12 +274,16 @@ api.interceptors.response.use(
      |--------------------------------------------------------------------------
      */
 
-    if (status === 401) {
+    if (
+      status === 401
+    ) {
+
       error.message =
         backendMessage ||
         "Authentication required.";
 
-      error.status = 401;
+      error.status =
+        401;
 
       return Promise.reject(
         error
@@ -234,12 +297,16 @@ api.interceptors.response.use(
      |--------------------------------------------------------------------------
      */
 
-    if (status === 403) {
+    if (
+      status === 403
+    ) {
+
       error.message =
         backendMessage ||
         "You do not have permission to perform this action.";
 
-      error.status = 403;
+      error.status =
+        403;
 
       return Promise.reject(
         error
@@ -253,12 +320,16 @@ api.interceptors.response.use(
      |--------------------------------------------------------------------------
      */
 
-    if (status === 404) {
+    if (
+      status === 404
+    ) {
+
       error.message =
         backendMessage ||
         "The requested resource was not found.";
 
-      error.status = 404;
+      error.status =
+        404;
 
       return Promise.reject(
         error
@@ -272,12 +343,16 @@ api.interceptors.response.use(
      |--------------------------------------------------------------------------
      */
 
-    if (status === 409) {
+    if (
+      status === 409
+    ) {
+
       error.message =
         backendMessage ||
         "The request conflicts with the current project state.";
 
-      error.status = 409;
+      error.status =
+        409;
 
       return Promise.reject(
         error
@@ -291,12 +366,16 @@ api.interceptors.response.use(
      |--------------------------------------------------------------------------
      */
 
-    if (status === 422) {
+    if (
+      status === 422
+    ) {
+
       error.message =
         backendMessage ||
         "Some of the provided information is invalid.";
 
-      error.status = 422;
+      error.status =
+        422;
 
       return Promise.reject(
         error
@@ -310,12 +389,16 @@ api.interceptors.response.use(
      |--------------------------------------------------------------------------
      */
 
-    if (status === 429) {
+    if (
+      status === 429
+    ) {
+
       error.message =
         backendMessage ||
         "Too many requests. Please wait a moment and try again.";
 
-      error.status = 429;
+      error.status =
+        429;
 
       return Promise.reject(
         error
@@ -329,7 +412,10 @@ api.interceptors.response.use(
      |--------------------------------------------------------------------------
      */
 
-    if (status >= 500) {
+    if (
+      status >= 500
+    ) {
+
       error.message =
         backendMessage ||
         "The server encountered an error. Please try again later.";
@@ -359,11 +445,7 @@ api.interceptors.response.use(
 
 
     /*
-     * Preserve original backend response.
-     *
-     * Existing services can still access:
-     *
-     * error.response.data
+     * Preserve original Axios error.
      */
     return Promise.reject(
       error

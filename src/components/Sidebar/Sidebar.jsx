@@ -7,8 +7,12 @@ import navigation from "../../config/navigation";
 import { APP_NAME, APP_TAGLINE } from "../../config/constants";
 
 /* =========================================================
-   ENTERPRISE ICON SYSTEM
-   No external icon dependency required.
+   ZYRIONOS ENTERPRISE ICON SYSTEM
+   ---------------------------------------------------------
+   - Inline SVG
+   - No external dependency
+   - Consistent visual language
+   - Accessible
 ========================================================= */
 
 function Icon({ name, size = 19 }) {
@@ -18,7 +22,7 @@ function Icon({ name, size = 19 }) {
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 1.8,
+    strokeWidth: 1.75,
     strokeLinecap: "round",
     strokeLinejoin: "round",
     "aria-hidden": "true",
@@ -33,22 +37,22 @@ function Icon({ name, size = 19 }) {
     case "home":
       return (
         <svg {...common}>
-          <path d="M3.5 10.5 12 3l8.5 7.5" />
+          <path d="M3.5 10.5 12 3.5l8.5 7" />
           <path d="M5.5 9.5V20h13V9.5" />
-          <path d="M9.5 20v-6h5v6" />
+          <path d="M9.5 20v-5.75h5V20" />
         </svg>
       );
 
     /* -----------------------------------------------------
-       WORKSPACE
+       WORKSPACE / PROJECTS
     ----------------------------------------------------- */
     case "workspace":
     case "projects":
     case "project":
       return (
         <svg {...common}>
-          <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h4l2 2h6A2.5 2.5 0 0 1 20.5 9.5v8A2.5 2.5 0 0 1 18 20H6a2.5 2.5 0 0 1-2.5-2.5z" />
-          <path d="M3.5 10h17" />
+          <path d="M3.5 7.75A2.25 2.25 0 0 1 5.75 5.5H10l2 2h6.25a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25H5.75a2.25 2.25 0 0 1-2.25-2.25z" />
+          <path d="M3.75 10h16.5" />
           <path d="M8 14h4" />
         </svg>
       );
@@ -61,8 +65,8 @@ function Icon({ name, size = 19 }) {
     case "deploy":
       return (
         <svg {...common}>
-          <path d="M12 15V3" />
-          <path d="m7.5 7.5 4.5-4.5 4.5 4.5" />
+          <path d="M12 15V3.5" />
+          <path d="m7.5 8 4.5-4.5L16.5 8" />
           <path d="M5 15.5h14" />
           <path d="M4 20.5h16" />
           <path d="M8 15.5v2.5" />
@@ -71,14 +75,14 @@ function Icon({ name, size = 19 }) {
       );
 
     /* -----------------------------------------------------
-       AI TOOLS
+       AI
     ----------------------------------------------------- */
     case "ai":
     case "ai-tools":
     case "sparkles":
       return (
         <svg {...common}>
-          <path d="m12 3 1.25 4.25L17.5 9 13.25 10.25 12 14.5l-1.25-4.25L6.5 9l4.25-1.75z" />
+          <path d="m12 3 1.35 4.35L17.5 9l-4.15 1.65L12 15l-1.35-4.35L6.5 9l4.15-1.65z" />
           <path d="m19 14 .65 2.35L22 17l-2.35.65L19 20l-.65-2.35L16 17l2.35-.65z" />
           <path d="m5 14 .5 1.5L7 16l-1.5.5L5 18l-.5-1.5L3 16l1.5-.5z" />
         </svg>
@@ -118,8 +122,8 @@ function Icon({ name, size = 19 }) {
     case "settings":
       return (
         <svg {...common}>
-          <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
-          <path d="M19.4 15a1.8 1.8 0 0 0 .35 1.95l.05.05-1.8 1.8-.05-.05a1.8 1.8 0 0 0-1.95-.35 1.8 1.8 0 0 0-1.1 1.65v.15h-2.55v-.15a1.8 1.8 0 0 0-1.1-1.65 1.8 1.8 0 0 0-1.95.35l-.05.05-1.8-1.8.05-.05A1.8 1.8 0 0 0 7.85 15a1.8 1.8 0 0 0-1.65-1.1h-.15v-2.55h.15a1.8 1.8 0 0 0 1.65-1.1 1.8 1.8 0 0 0-.35-1.95L7.45 8.25l1.8-1.8.05.05a1.8 1.8 0 0 0 1.95.35 1.8 1.8 0 0 0 1.1-1.65v-.15h2.55v.15a1.8 1.8 0 0 0 1.1 1.65 1.8 1.8 0 0 0 1.95-.35l.05-.05 1.8 1.8-.05.05A1.8 1.8 0 0 0 19.4 10a1.8 1.8 0 0 0 1.65 1.1h.15v2.55h-.15A1.8 1.8 0 0 0 19.4 15Z" />
+          <path d="M12 15.25a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z" />
+          <path d="m19.15 15.1.55 1.25-1.7 1.7-1.25-.55a1.75 1.75 0 0 0-2.35 1v1.35h-2.4V19.5a1.75 1.75 0 0 0-2.35-1l-1.25.55-1.7-1.7.55-1.25a1.75 1.75 0 0 0-1-2.35H4.9v-2.4h1.35a1.75 1.75 0 0 0 1-2.35L6.7 7.75l1.7-1.7 1.25.55a1.75 1.75 0 0 0 2.35-1V4.25h2.4V5.6a1.75 1.75 0 0 0 2.35 1L18 6.05l1.7 1.7-.55 1.25a1.75 1.75 0 0 0 1 2.35h1.35v2.4H20.15a1.75 1.75 0 0 0-1 1.35Z" />
         </svg>
       );
 
@@ -139,7 +143,7 @@ function Icon({ name, size = 19 }) {
       );
 
     /* -----------------------------------------------------
-       TERMINAL / DEVELOPER
+       TERMINAL / CODE
     ----------------------------------------------------- */
     case "terminal":
     case "code":
@@ -167,7 +171,7 @@ function Icon({ name, size = 19 }) {
     case "folder":
       return (
         <svg {...common}>
-          <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h4l2 2h6A2.5 2.5 0 0 1 20.5 9.5v7A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5z" />
+          <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h4l2 2h6a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5z" />
           <path d="M3.5 10h17" />
         </svg>
       );
@@ -267,14 +271,14 @@ function Sidebar() {
 
   /* =======================================================
      KEYBOARD CONTROLS
-     
      Ctrl/Cmd + B = desktop collapse
      Escape        = mobile close
   ======================================================= */
 
   useEffect(() => {
     const handleKeyboard = (event) => {
-      const modifier = event.ctrlKey || event.metaKey;
+      const modifier =
+        event.ctrlKey || event.metaKey;
 
       if (
         modifier &&
@@ -292,7 +296,10 @@ function Sidebar() {
       }
     };
 
-    window.addEventListener("keydown", handleKeyboard);
+    window.addEventListener(
+      "keydown",
+      handleKeyboard
+    );
 
     return () => {
       window.removeEventListener(
@@ -383,7 +390,7 @@ function Sidebar() {
   };
 
   /* =======================================================
-     BRAND
+     RENDER
   ======================================================= */
 
   return (
@@ -422,7 +429,9 @@ function Sidebar() {
             ? styles.mobileBackdropVisible
             : ""
         }`}
-        onClick={() => setMobileOpen(false)}
+        onClick={() =>
+          setMobileOpen(false)
+        }
         aria-label="Close navigation"
         tabIndex={mobileOpen ? 0 : -1}
       />
@@ -434,9 +443,13 @@ function Sidebar() {
       <aside
         id="zyrionos-navigation"
         className={`${styles.sidebar} ${
-          collapsed ? styles.collapsed : ""
+          collapsed
+            ? styles.collapsed
+            : ""
         } ${
-          mobileOpen ? styles.mobileOpen : ""
+          mobileOpen
+            ? styles.mobileOpen
+            : ""
         }`}
         aria-label="ZyrionOS primary navigation"
       >
@@ -458,14 +471,21 @@ function Sidebar() {
               <span />
               <span />
               <span />
+              <span />
             </span>
 
-            <span className={styles.brandContent}>
-              <span className={styles.brandName}>
+            <span
+              className={styles.brandContent}
+            >
+              <span
+                className={styles.brandName}
+              >
                 {APP_NAME}
               </span>
 
-              <span className={styles.brandTagline}>
+              <span
+                className={styles.brandTagline}
+              >
                 {APP_TAGLINE}
               </span>
             </span>
@@ -505,8 +525,12 @@ function Sidebar() {
 
           <button
             type="button"
-            className={styles.mobileCloseButton}
-            onClick={() => setMobileOpen(false)}
+            className={
+              styles.mobileCloseButton
+            }
+            onClick={() =>
+              setMobileOpen(false)
+            }
             aria-label="Close navigation"
           >
             ×
@@ -537,14 +561,20 @@ function Sidebar() {
 
           {!collapsed && (
             <span
-              className={styles.workspaceContent}
+              className={
+                styles.workspaceContent
+              }
             >
-              <span className={styles.eyebrow}>
+              <span
+                className={styles.eyebrow}
+              >
                 WORKSPACE
               </span>
 
               <span
-                className={styles.workspaceValue}
+                className={
+                  styles.workspaceValue
+                }
               >
                 Workspace
               </span>
@@ -625,13 +655,19 @@ function Sidebar() {
                       >
                         <span
                           className={
-                            styles.navIcon
+                            styles.navIconBox
                           }
                         >
-                          <Icon
-                            name={iconName}
-                            size={19}
-                          />
+                          <span
+                            className={
+                              styles.navIcon
+                            }
+                          >
+                            <Icon
+                              name={iconName}
+                              size={19}
+                            />
+                          </span>
                         </span>
 
                         <span

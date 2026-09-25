@@ -12,7 +12,6 @@ import {
   getProjects,
   createProject,
   updateProject,
-  deployProject,
 } from "../../../services/workspaceService";
 
 import {
@@ -26,6 +25,7 @@ import styles from "./Workspace.module.css";
 
 /* =========================================================
    ZYRIONOS WORKSPACE
+   AI APP BUILDER
    ========================================================= */
 
 const FRAMEWORKS = [
@@ -56,27 +56,9 @@ const QUICK_PROMPTS = [
   },
 ];
 
-const BUILDER_ACTIONS = [
-  {
-    id: "build",
-    label: "Build",
-    description: "Generate a new implementation.",
-  },
-  {
-    id: "review",
-    label: "Review / Fix",
-    description: "Inspect and improve the project.",
-  },
-  {
-    id: "deploy",
-    label: "Deploy",
-    description: "Publish the selected project.",
-  },
-];
-
 
 /* =========================================================
-   RESPONSE NORMALIZATION
+   RESPONSE HELPERS
 ========================================================= */
 
 function unwrapApiResponse(response) {
@@ -87,35 +69,21 @@ function unwrapApiResponse(response) {
     return null;
   }
 
-  /*
-   * Axios response:
-   *
-   * response.data
-   *
-   * Backend:
-   *
-   * {
-   *   success,
-   *   message,
-   *   data
-   * }
-   */
-
-  const axiosData =
+  const root =
     response?.data !== undefined
       ? response.data
       : response;
 
   if (
-    axiosData &&
-    typeof axiosData === "object" &&
-    !Array.isArray(axiosData) &&
-    axiosData.data !== undefined
+    root &&
+    typeof root === "object" &&
+    !Array.isArray(root) &&
+    root.data !== undefined
   ) {
-    return axiosData.data;
+    return root.data;
   }
 
-  return axiosData;
+  return root;
 }
 
 
@@ -128,9 +96,7 @@ function extractProjectFromResponse(response) {
   const candidates = [
     root?.project,
     root?.data?.project,
-
     root?.data,
-
     root?.project?.data,
 
     response?.project,
@@ -144,32 +110,23 @@ function extractProjectFromResponse(response) {
     if (
       candidate &&
       typeof candidate === "object" &&
-      !Array.isArray(candidate)
-    ) {
-      /*
-       * Make sure this actually looks like
-       * a project instead of an arbitrary wrapper.
-       */
-      if (
+      !Array.isArray(candidate) &&
+      (
         candidate._id ||
         candidate.id ||
         candidate.projectId ||
         candidate.projectName ||
         candidate.name ||
         Array.isArray(candidate.files)
-      ) {
-        return candidate;
-      }
+      )
+    ) {
+      return candidate;
     }
   }
 
   return null;
 }
 
-
-/* =========================================================
-   PROJECT HELPERS
-========================================================= */
 
 function getProjectId(project) {
   return (
@@ -207,9 +164,7 @@ function normalizeProjects(response) {
   const candidates = [
     root?.projects,
     root?.data?.projects,
-
     root?.data,
-
     response?.projects,
     response?.data?.projects,
     response?.data?.data?.projects,
@@ -218,16 +173,12 @@ function normalizeProjects(response) {
   for (
     const candidate of candidates
   ) {
-    if (
-      Array.isArray(candidate)
-    ) {
+    if (Array.isArray(candidate)) {
       return candidate;
     }
   }
 
-  if (
-    Array.isArray(root)
-  ) {
+  if (Array.isArray(root)) {
     return root;
   }
 
@@ -235,44 +186,8 @@ function normalizeProjects(response) {
 }
 
 
-function normalizeDeploymentStatus(status) {
-  const value =
-    String(status || "")
-      .trim()
-      .toLowerCase();
-
-  switch (value) {
-    case "deployed":
-    case "success":
-    case "successful":
-      return "Deployed";
-
-    case "deploying":
-    case "in_progress":
-    case "in-progress":
-      return "Deploying...";
-
-    case "failed":
-    case "error":
-      return "Deployment failed";
-
-    case "building":
-      return "Building";
-
-    case "pending":
-      return "Pending";
-
-    case "not_deployed":
-    case "not deployed":
-    case "":
-    default:
-      return "Not deployed";
-  }
-}
-
-
 /* =========================================================
-   FILE NORMALIZATION
+   FILE HELPERS
 ========================================================= */
 
 function normalizeProjectFiles(
@@ -290,39 +205,33 @@ function normalizeProjectFiles(
     aiResult?.project?.files,
     aiResult?.data?.project?.files,
 
-    aiResult
-      ?.orchestration
+    aiResult?.orchestration
       ?.buildResult
       ?.data
       ?.files,
 
-    aiResult
-      ?.orchestration
+    aiResult?.orchestration
       ?.buildResult
       ?.files,
 
-    aiResult
-      ?.orchestration
+    aiResult?.orchestration
       ?.buildResult
       ?.data
       ?.data
       ?.files,
 
-    aiResult
-      ?.data
+    aiResult?.data
       ?.orchestration
       ?.buildResult
       ?.data
       ?.files,
 
-    aiResult
-      ?.data
+    aiResult?.data
       ?.orchestration
       ?.buildResult
       ?.files,
 
-    aiResult
-      ?.data
+    aiResult?.data
       ?.orchestration
       ?.buildResult
       ?.data
@@ -333,9 +242,7 @@ function normalizeProjectFiles(
   for (
     const files of possibleCollections
   ) {
-    if (
-      Array.isArray(files)
-    ) {
+    if (Array.isArray(files)) {
       return files;
     }
   }
@@ -364,41 +271,88 @@ function getFileContent(file) {
     file.content !== undefined &&
     file.content !== null
   ) {
-    return String(
-      file.content
-    );
+    return String(file.content);
   }
 
   if (
     file.code !== undefined &&
     file.code !== null
   ) {
-    return String(
-      file.code
-    );
+    return String(file.code);
   }
 
   return "The backend returned this file without readable content.";
 }
 
 
-function getDeploymentUrl(
-  deployment,
-  project
-) {
+/* =========================================================
+   PREVIEW HELPERS
+========================================================= */
+
+function getPreviewUrl(project) {
   return (
-    deployment?.liveUrl ||
-    deployment?.url ||
-    deployment?.deploymentUrl ||
+    project?.previewUrl ||
+    project?.preview?.url ||
+    project?.preview?.liveUrl ||
     project?.liveUrl ||
     project?.deploymentUrl ||
+    project?.deployment?.url ||
+    project?.deployment?.liveUrl ||
     ""
   );
 }
 
 
+function getPreviewStatus(project) {
+  return String(
+    project?.previewStatus ||
+    project?.preview?.status ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+
 /* =========================================================
-   ERROR HANDLING
+   DEPLOYMENT
+========================================================= */
+
+function normalizeDeploymentStatus(status) {
+  const value =
+    String(status || "")
+      .trim()
+      .toLowerCase();
+
+  switch (value) {
+    case "deployed":
+    case "success":
+    case "successful":
+      return "Deployed";
+
+    case "deploying":
+    case "in_progress":
+    case "in-progress":
+      return "Deploying...";
+
+    case "failed":
+    case "error":
+      return "Deployment failed";
+
+    case "building":
+      return "Building";
+
+    case "pending":
+      return "Pending";
+
+    default:
+      return "Not deployed";
+  }
+}
+
+
+/* =========================================================
+   ERROR
 ========================================================= */
 
 function getErrorMessage(
@@ -424,9 +378,7 @@ function normalizeActivityItem(
   item,
   index
 ) {
-  if (
-    typeof item === "string"
-  ) {
+  if (typeof item === "string") {
     return {
       id: `activity-${index}-${item}`,
       message: item,
@@ -498,9 +450,7 @@ function normalizeActivityItem(
 }
 
 
-function extractBackendActivity(
-  result
-) {
+function extractBackendActivity(result) {
   const candidates = [
     result?.activity,
     result?.logs,
@@ -514,33 +464,27 @@ function extractBackendActivity(
     result?.orchestration?.logs,
     result?.orchestration?.events,
 
-    result
-      ?.orchestration
+    result?.orchestration
       ?.buildResult
       ?.activity,
 
-    result
-      ?.orchestration
+    result?.orchestration
       ?.buildResult
       ?.logs,
 
-    result
-      ?.orchestration
+    result?.orchestration
       ?.buildResult
       ?.events,
 
-    result
-      ?.data
+    result?.data
       ?.orchestration
       ?.activity,
 
-    result
-      ?.data
+    result?.data
       ?.orchestration
       ?.logs,
 
-    result
-      ?.data
+    result?.data
       ?.orchestration
       ?.events,
   ];
@@ -548,13 +492,9 @@ function extractBackendActivity(
   for (
     const candidate of candidates
   ) {
-    if (
-      Array.isArray(candidate)
-    ) {
+    if (Array.isArray(candidate)) {
       return candidate
-        .map(
-          normalizeActivityItem
-        )
+        .map(normalizeActivityItem)
         .filter(Boolean);
     }
   }
@@ -564,50 +504,29 @@ function extractBackendActivity(
 
 
 /* =========================================================
-   OPERATION LABELS
+   CHAT MESSAGE
 ========================================================= */
 
-function getOperationTitle(
-  operation
+function createMessage(
+  role,
+  content,
+  extra = {}
 ) {
-  switch (operation) {
-    case "build":
-      return "Building project";
-
-    case "change":
-      return "Applying project change";
-
-    case "review":
-      return "Reviewing project";
-
-    case "deploy":
-      return "Deploying project";
-
-    default:
-      return "Workspace ready";
-  }
-}
-
-
-function getOperationDescription(
-  operation
-) {
-  switch (operation) {
-    case "build":
-      return "Your request has been submitted to the connected AI backend.";
-
-    case "change":
-      return "The connected AI backend is processing the requested change.";
-
-    case "review":
-      return "The connected AI backend is reviewing the selected project.";
-
-    case "deploy":
-      return "The deployment request is being processed by the backend.";
-
-    default:
-      return "Ready for the next operation.";
-  }
+  return {
+    id:
+      `${Date.now()}-${Math.random()}`,
+    role,
+    content,
+    timestamp:
+      new Date().toLocaleTimeString(
+        [],
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      ),
+    ...extra,
+  };
 }
 
 
@@ -636,7 +555,7 @@ function Workspace() {
 
 
   /* =======================================================
-     BUILDER STATE
+     BUILDER
   ======================================================= */
 
   const [
@@ -659,10 +578,10 @@ function Workspace() {
     setDeploying,
   ] = useState(false);
 
-  const [
-    aiResponse,
-    setAiResponse,
-  ] = useState("");
+
+  /* =======================================================
+     PROJECT RESULT
+  ======================================================= */
 
   const [
     generatedFiles,
@@ -673,6 +592,16 @@ function Workspace() {
     selectedFile,
     setSelectedFile,
   ] = useState(null);
+
+
+  /* =======================================================
+     CHAT
+  ======================================================= */
+
+  const [
+    chatMessages,
+    setChatMessages,
+  ] = useState([]);
 
 
   /* =======================================================
@@ -691,18 +620,28 @@ function Workspace() {
 
 
   /* =======================================================
-     UI STATE
+     UI
   ======================================================= */
 
   const [
-    activeTab,
-    setActiveTab,
+    activeView,
+    setActiveView,
   ] = useState("preview");
 
   const [
     mobilePanel,
     setMobilePanel,
-  ] = useState("builder");
+  ] = useState("workspace");
+
+  const [
+    filesDrawerOpen,
+    setFilesDrawerOpen,
+  ] = useState(false);
+
+  const [
+    activityDrawerOpen,
+    setActivityDrawerOpen,
+  ] = useState(false);
 
   const [
     error,
@@ -718,6 +657,11 @@ function Workspace() {
     projectLoading,
     setProjectLoading,
   ] = useState(true);
+
+
+  /* =======================================================
+     OPERATION
+  ======================================================= */
 
   const [
     operation,
@@ -739,10 +683,18 @@ function Workspace() {
     setActivityLog,
   ] = useState([]);
 
+
+  /* =======================================================
+     PREVIEW
+  ======================================================= */
+
   const [
     previewFullscreen,
     setPreviewFullscreen,
   ] = useState(false);
+
+  const previewRef =
+    useRef(null);
 
 
   /* =======================================================
@@ -755,12 +707,12 @@ function Workspace() {
   const mountedRef =
     useRef(false);
 
-  const previewRef =
+  const chatEndRef =
     useRef(null);
 
 
   /* =======================================================
-     DERIVED STATE
+     DERIVED
   ======================================================= */
 
   const projectName =
@@ -768,40 +720,33 @@ function Workspace() {
       selectedProject
     );
 
-  const projectCount =
-    projects.length;
-
   const selectedProjectId =
     getProjectId(
       selectedProject
     );
 
-  const filePreview =
-    useMemo(
-      () =>
-        getFileContent(
-          selectedFile
-        ),
-      [
-        selectedFile,
-      ]
+  const projectCount =
+    projects.length;
+
+  const previewUrl =
+    liveUrl ||
+    getPreviewUrl(
+      selectedProject
     );
+
+  const previewStatus =
+    getPreviewStatus(
+      selectedProject
+    );
+
+  const previewAvailable =
+    Boolean(previewUrl);
 
   const deploymentIsLive =
     deploymentStatus === "Deployed";
 
   const operationRunning =
     operation !== "idle";
-
-  const operationTitle =
-    getOperationTitle(
-      operation
-    );
-
-  const operationDescription =
-    getOperationDescription(
-      operation
-    );
 
 
   /* =======================================================
@@ -810,32 +755,24 @@ function Workspace() {
 
   useEffect(() => {
 
-    if (
-      !operationStartedAt
-    ) {
+    if (!operationStartedAt) {
       setElapsedSeconds(0);
-
       return undefined;
     }
 
-    const updateTimer =
-      () => {
-
-        const seconds =
-          Math.max(
-            0,
-            Math.floor(
-              (
-                Date.now() -
-                operationStartedAt
-              ) / 1000
-            )
-          );
-
-        setElapsedSeconds(
-          seconds
-        );
-      };
+    const updateTimer = () => {
+      setElapsedSeconds(
+        Math.max(
+          0,
+          Math.floor(
+            (
+              Date.now() -
+              operationStartedAt
+            ) / 1000
+          )
+        )
+      );
+    };
 
     updateTimer();
 
@@ -846,9 +783,7 @@ function Workspace() {
       );
 
     return () =>
-      window.clearInterval(
-        timer
-      );
+      window.clearInterval(timer);
 
   }, [
     operationStartedAt,
@@ -856,16 +791,18 @@ function Workspace() {
 
 
   /* =======================================================
-     SELECTED PROJECT REF
+     CHAT AUTO SCROLL
   ======================================================= */
 
   useEffect(() => {
 
-    selectedProjectRef.current =
-      selectedProject;
+    chatEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
 
   }, [
-    selectedProject,
+    chatMessages,
   ]);
 
 
@@ -875,15 +812,13 @@ function Workspace() {
 
   useEffect(() => {
 
-    const handleFullscreenChange =
-      () => {
-
-        setPreviewFullscreen(
-          Boolean(
-            document.fullscreenElement
-          )
-        );
-      };
+    const handleFullscreenChange = () => {
+      setPreviewFullscreen(
+        Boolean(
+          document.fullscreenElement
+        )
+      );
+    };
 
     document.addEventListener(
       "fullscreenchange",
@@ -900,7 +835,19 @@ function Workspace() {
 
 
   /* =======================================================
-     ACTIVITY HELPERS
+     SELECTED PROJECT REF
+  ======================================================= */
+
+  useEffect(() => {
+    selectedProjectRef.current =
+      selectedProject;
+  }, [
+    selectedProject,
+  ]);
+
+
+  /* =======================================================
+     ACTIVITY
   ======================================================= */
 
   const addActivity =
@@ -930,7 +877,7 @@ function Workspace() {
                       }
                     ),
               },
-            ].slice(-40)
+            ].slice(-60)
         );
       },
       []
@@ -971,7 +918,7 @@ function Workspace() {
                       ),
                 })
               ),
-            ].slice(-40)
+            ].slice(-60)
         );
       },
       []
@@ -985,9 +932,7 @@ function Workspace() {
         message
       ) => {
 
-        setOperation(
-          type
-        );
+        setOperation(type);
 
         setOperationStartedAt(
           Date.now()
@@ -1018,9 +963,7 @@ function Workspace() {
             : "error"
         );
 
-        setOperation(
-          "idle"
-        );
+        setOperation("idle");
 
         setOperationStartedAt(
           null
@@ -1062,21 +1005,18 @@ function Workspace() {
         );
 
         setSelectedFile(
-          files.length > 0
-            ? files[0]
-            : null
+          files[0] || null
         );
 
         setDeploymentStatus(
           normalizeDeploymentStatus(
             project?.deploymentStatus ||
-            project?.status
+            project?.deployment?.status
           )
         );
 
         setLiveUrl(
-          getDeploymentUrl(
-            project,
+          getPreviewUrl(
             project
           )
         );
@@ -1095,6 +1035,7 @@ function Workspace() {
             projectFramework
           );
         }
+
       },
       []
     );
@@ -1112,9 +1053,7 @@ function Workspace() {
 
         try {
 
-          setProjectLoading(
-            true
-          );
+          setProjectLoading(true);
 
           const response =
             await getProjects();
@@ -1129,54 +1068,16 @@ function Workspace() {
           );
 
 
-          /* -----------------------------------------------
-             PREFERRED PROJECT
-          ------------------------------------------------ */
-
-          if (
-            preferredProjectId
-          ) {
-
-            const preferred =
-              normalized.find(
-                project =>
-                  String(
-                    getProjectId(
-                      project
-                    )
-                  ) ===
-                  String(
-                    preferredProjectId
-                  )
-              );
-
-            if (
-              preferred
-            ) {
-
-              applySelectedProject(
-                preferred
-              );
-
-              return normalized;
-            }
-          }
-
-
-          /* -----------------------------------------------
-             CURRENT PROJECT
-          ------------------------------------------------ */
-
           const currentId =
+            preferredProjectId ||
             getProjectId(
               selectedProjectRef.current
             );
 
-          if (
-            currentId
-          ) {
 
-            const current =
+          if (currentId) {
+
+            const preferred =
               normalized.find(
                 project =>
                   String(
@@ -1189,22 +1090,16 @@ function Workspace() {
                   )
               );
 
-            if (
-              current
-            ) {
+            if (preferred) {
 
               applySelectedProject(
-                current
+                preferred
               );
 
               return normalized;
             }
           }
 
-
-          /* -----------------------------------------------
-             FIRST PROJECT
-          ------------------------------------------------ */
 
           if (
             normalized.length > 0
@@ -1223,21 +1118,14 @@ function Workspace() {
               null
             );
 
-            setGeneratedFiles(
-              []
-            );
-
-            setSelectedFile(
-              null
-            );
+            setGeneratedFiles([]);
+            setSelectedFile(null);
 
             setDeploymentStatus(
               "Not deployed"
             );
 
-            setLiveUrl(
-              ""
-            );
+            setLiveUrl("");
           }
 
           return normalized;
@@ -1247,10 +1135,6 @@ function Workspace() {
           console.error(
             "Workspace project loading error:",
             err
-          );
-
-          setProjects(
-            []
           );
 
           setError(
@@ -1264,9 +1148,7 @@ function Workspace() {
 
         } finally {
 
-          setProjectLoading(
-            false
-          );
+          setProjectLoading(false);
         }
 
       },
@@ -1307,7 +1189,7 @@ function Workspace() {
 
 
   /* =======================================================
-     SELECT PROJECT
+     PROJECT SELECTION
   ======================================================= */
 
   const handleSelectProject =
@@ -1316,21 +1198,26 @@ function Workspace() {
 
         setError("");
         setNotice("");
-        setAiResponse("");
 
         setActivityLog([]);
 
-        setActiveTab(
+        setChatMessages([]);
+
+        setActiveView(
           "preview"
         );
 
         setMobilePanel(
-          "builder"
+          "workspace"
         );
+
+        setFilesDrawerOpen(false);
+        setActivityDrawerOpen(false);
 
         applySelectedProject(
           project
         );
+
       },
       [
         applySelectedProject,
@@ -1349,59 +1236,41 @@ function Workspace() {
         selectedProjectRef.current =
           null;
 
-        setSelectedProject(
-          null
-        );
+        setSelectedProject(null);
 
-        setAiResponse(
-          ""
-        );
+        setGeneratedFiles([]);
 
-        setGeneratedFiles(
-          []
-        );
+        setSelectedFile(null);
 
-        setSelectedFile(
-          null
-        );
+        setPrompt("");
 
-        setPrompt(
-          ""
-        );
+        setChatMessages([]);
 
-        setLiveUrl(
-          ""
-        );
+        setLiveUrl("");
 
         setDeploymentStatus(
           "Not deployed"
         );
 
-        setActiveTab(
+        setActiveView(
           "preview"
         );
 
         setMobilePanel(
-          "builder"
+          "workspace"
         );
 
-        setError(
-          ""
-        );
+        setFilesDrawerOpen(false);
+        setActivityDrawerOpen(false);
 
-        setNotice(
-          ""
-        );
+        setError("");
+        setNotice("");
 
         setActivityLog([]);
 
-        setOperation(
-          "idle"
-        );
+        setOperation("idle");
+        setOperationStartedAt(null);
 
-        setOperationStartedAt(
-          null
-        );
       },
       []
     );
@@ -1412,35 +1281,45 @@ function Workspace() {
   ======================================================= */
 
   function handleQuickPrompt(
-    quickPrompt
+    value
   ) {
 
-    setPrompt(
-      quickPrompt
-    );
+    setPrompt(value);
 
     setError("");
     setNotice("");
 
     setMobilePanel(
-      "builder"
+      "workspace"
     );
+
+    setTimeout(() => {
+      document
+        .querySelector(
+          '[data-zyrionos-chat-input="true"]'
+        )
+        ?.focus();
+    }, 50);
   }
 
 
   /* =======================================================
-     BUILD NEW PROJECT
+     BUILD / CHANGE
   ======================================================= */
 
-  async function handleGenerate() {
+  async function handleBuild(
+    suppliedPrompt = ""
+  ) {
 
     const userPrompt =
-      prompt.trim();
+      String(
+        suppliedPrompt || prompt
+      ).trim();
 
     if (!userPrompt) {
 
       setError(
-        "Describe what you want to build first."
+        "Describe what you want to build or change first."
       );
 
       return;
@@ -1450,333 +1329,80 @@ function Workspace() {
       return;
     }
 
+    const isExistingProject =
+      Boolean(
+        selectedProjectId
+      );
+
+
     try {
 
       setError("");
       setNotice("");
+
       setLoading(true);
 
-      startOperation(
-        "build",
-        "Build request submitted to the connected AI backend."
-      );
-
-      setActiveTab(
+      setActiveView(
         "preview"
       );
 
-
-      /* -----------------------------------------------
-         AI GENERATION
-      ------------------------------------------------ */
-
-      const aiResult =
-        await generateCode(
-          userPrompt,
-          framework
-        );
-
-      addActivity(
-        "AI backend response received.",
-        "success"
-      );
-
-      addBackendActivity(
-        aiResult
-      );
-
-
-      const formattedResponse =
-        normalizeAIResponse(
-          aiResult
-        );
-
-      setAiResponse(
-        formattedResponse
-      );
-
-
-      /* -----------------------------------------------
-         EXTRACT FILES
-      ------------------------------------------------ */
-
-      const filesFromAI =
-        getGeneratedFiles(
-          aiResult
-        );
-
-      if (
-        filesFromAI.length === 0
-      ) {
-
-        throw new Error(
-          "AI generation completed, but the backend returned no project files."
-        );
-      }
-
-      addActivity(
-        `${filesFromAI.length} generated project files received.`,
-        "success"
-      );
-
-
-      /* -----------------------------------------------
-         CREATE PROJECT
-      ------------------------------------------------ */
-
-      const projectResponse =
-        await createProject({
-          projectName:
-            userPrompt.substring(
-              0,
-              120
-            ),
-
-          description:
-            userPrompt,
-
-          framework,
-
-          files:
-            filesFromAI,
-        });
-
-
-      addActivity(
-        "Project creation request completed.",
-        "success"
-      );
-
-
-      /* -----------------------------------------------
-         CORRECT RESPONSE EXTRACTION
-      ------------------------------------------------ */
-
-      let createdProject =
-        extractProjectFromResponse(
-          projectResponse
-        );
-
-
-      /*
-       * Some backends may return only the
-       * created project data.
-       *
-       * In that case use the response
-       * directly if it looks like a project.
-       */
-
-      if (
-        !createdProject
-      ) {
-
-        const unwrapped =
-          unwrapApiResponse(
-            projectResponse
-          );
-
-        if (
-          unwrapped &&
-          typeof unwrapped === "object" &&
-          !Array.isArray(unwrapped) &&
-          (
-            unwrapped._id ||
-            unwrapped.id ||
-            unwrapped.projectName ||
-            Array.isArray(
-              unwrapped.files
-            )
-          )
-        ) {
-          createdProject =
-            unwrapped;
-        }
-      }
-
-
-      /* -----------------------------------------------
-         FILE FALLBACK
-      ------------------------------------------------ */
-
-      const savedFiles =
-        normalizeProjectFiles(
-          createdProject,
-          null
-        );
-
-      const files =
-        savedFiles.length > 0
-          ? savedFiles
-          : filesFromAI;
-
-
-      /* -----------------------------------------------
-         APPLY CREATED PROJECT
-      ------------------------------------------------ */
-
-      if (
-        createdProject
-      ) {
-
-        const projectWithFiles = {
-          ...createdProject,
-          files,
-        };
-
-        applySelectedProject(
-          projectWithFiles
-        );
-
-        addActivity(
-          `Project state applied with ${files.length} files.`,
-          "success"
-        );
-
-      } else {
-
-        /*
-         * If the create endpoint did not return
-         * the project object, reload the backend.
-         */
-        await loadProjects();
-
-        addActivity(
-          "Workspace refreshed from the backend.",
-          "success"
-        );
-      }
-
-
-      /* -----------------------------------------------
-         GET CREATED ID
-      ------------------------------------------------ */
-
-      const createdId =
-        getProjectId(
-          createdProject
-        );
-
-      if (
-        createdId
-      ) {
-
-        await loadProjects(
-          createdId
-        );
-      }
-
-
-      setPrompt("");
-
-      setActiveTab(
-        "code"
-      );
-
       setMobilePanel(
-        "builder"
+        "workspace"
       );
 
 
-      setNotice(
-        createdProject
-          ? `Project created successfully with ${files.length} real files.`
-          : "Build completed. Workspace was refreshed from the backend."
+      setChatMessages(
+        previous => [
+          ...previous,
+          createMessage(
+            "user",
+            userPrompt
+          ),
+        ]
       );
 
-
-      finishOperation(
-        true,
-        "Build operation completed successfully."
-      );
-
-    } catch (err) {
-
-      console.error(
-        "Workspace generation error:",
-        err
-      );
-
-      setError(
-        getErrorMessage(
-          err,
-          "Unable to generate the project right now."
-        )
-      );
-
-      finishOperation(
-        false,
-        "Build operation failed."
-      );
-
-    } finally {
-
-      setLoading(
-        false
-      );
-    }
-  }
-
-
-  /* =======================================================
-     BUILD CHANGE
-  ======================================================= */
-
-  async function handleBuildChange() {
-
-    if (
-      !selectedProjectId
-    ) {
-
-      setError(
-        "Select a project before building a change."
-      );
-
-      return;
-    }
-
-    const changePrompt =
-      prompt.trim();
-
-    if (!changePrompt) {
-
-      setError(
-        "Describe the change you want to build."
-      );
-
-      return;
-    }
-
-    if (loading) {
-      return;
-    }
-
-    try {
-
-      setError("");
-      setNotice("");
-      setLoading(true);
 
       startOperation(
-        "change",
-        "Project change request submitted to the connected AI backend."
+        isExistingProject
+          ? "change"
+          : "build",
+        isExistingProject
+          ? "Change request submitted to ZyrionOS AI."
+          : "Build request submitted to ZyrionOS AI."
       );
 
 
-      const instruction = [
-        "Update the current project.",
-        "",
-        `Current project ID: ${selectedProjectId}`,
-        `Current project name: ${projectName}`,
-        `Current framework: ${framework}`,
-        "",
-        "Requested change:",
-        changePrompt,
-        "",
-        "Return the actual generated project files for the requested implementation.",
-      ].join("\n");
+      addActivity(
+        "Master Agent request accepted.",
+        "active"
+      );
 
 
-      const result =
+      const instruction =
+        isExistingProject
+          ? [
+              "Update the current project.",
+              "",
+              `Project ID: ${selectedProjectId}`,
+              `Project name: ${projectName}`,
+              `Framework: ${framework}`,
+              "",
+              "User request:",
+              userPrompt,
+              "",
+              "Return the complete project files required for the implementation.",
+              "Preserve working functionality unless the requested change requires modifying it.",
+            ].join("\n")
+          : userPrompt;
+
+
+      addActivity(
+        "Intent and planning stages are being processed by the backend.",
+        "active"
+      );
+
+
+      const aiResult =
         await generateCode(
           instruction,
           framework
@@ -1784,272 +1410,205 @@ function Workspace() {
 
 
       addActivity(
-        "AI backend response received for the requested change.",
+        "AI backend response received.",
         "success"
       );
 
+
       addBackendActivity(
-        result
+        aiResult
       );
 
 
-      setAiResponse(
+      const assistantText =
         normalizeAIResponse(
-          result
-        )
-      );
+          aiResult
+        );
 
 
-      const files =
+      const filesFromAI =
         getGeneratedFiles(
-          result
+          aiResult
         );
 
 
       if (
-        files.length === 0
+        filesFromAI.length === 0
       ) {
 
         throw new Error(
-          "The change request completed, but the backend returned no project files."
+          "AI generation completed, but no project files were returned by the backend."
         );
       }
 
 
       addActivity(
-        `${files.length} updated project files received.`,
+        `${filesFromAI.length} generated project files received.`,
         "success"
       );
 
 
-      /* -----------------------------------------------
-         PERSIST UPDATED FILES
-      ------------------------------------------------ */
-
-      const updateResponse =
-        await updateProject(
-          selectedProjectId,
-          {
-            files,
-          }
-        );
-
-
-      addActivity(
-        "Updated files saved to the project backend.",
-        "success"
+      setChatMessages(
+        previous => [
+          ...previous,
+          createMessage(
+            "assistant",
+            assistantText ||
+              `The project build completed and ${filesFromAI.length} files were generated.`,
+            {
+              fileCount:
+                filesFromAI.length,
+            }
+          ),
+        ]
       );
 
 
-      /* -----------------------------------------------
-         USE UPDATED RESPONSE IF AVAILABLE
-      ------------------------------------------------ */
+      /* ===================================================
+         CREATE NEW PROJECT
+      =================================================== */
 
-      const updatedProject =
-        extractProjectFromResponse(
-          updateResponse
+      if (!isExistingProject) {
+
+        addActivity(
+          "Saving generated application as a project.",
+          "active"
         );
 
 
-      if (
-        updatedProject
-      ) {
+        const projectResponse =
+          await createProject({
+            projectName:
+              userPrompt.substring(
+                0,
+                120
+              ),
 
-        const returnedFiles =
-          normalizeProjectFiles(
-            updatedProject,
-            null
+            description:
+              userPrompt,
+
+            framework,
+
+            files:
+              filesFromAI,
+          });
+
+
+        addActivity(
+          "Project saved successfully.",
+          "success"
+        );
+
+
+        let createdProject =
+          extractProjectFromResponse(
+            projectResponse
           );
 
-        const finalFiles =
-          returnedFiles.length > 0
-            ? returnedFiles
-            : files;
 
-        applySelectedProject({
-          ...updatedProject,
-          files: finalFiles,
-        });
+        if (!createdProject) {
 
-      } else {
+          const unwrapped =
+            unwrapApiResponse(
+              projectResponse
+            );
 
-        /*
-         * Backend did not return project data.
-         * Reload the authoritative project.
-         */
-        await loadProjects(
-          selectedProjectId
+          if (
+            unwrapped &&
+            typeof unwrapped === "object" &&
+            !Array.isArray(unwrapped) &&
+            (
+              unwrapped._id ||
+              unwrapped.id ||
+              unwrapped.projectName ||
+              Array.isArray(
+                unwrapped.files
+              )
+            )
+          ) {
+            createdProject =
+              unwrapped;
+          }
+        }
+
+
+        if (createdProject) {
+
+          const savedFiles =
+            normalizeProjectFiles(
+              createdProject,
+              null
+            );
+
+          const finalFiles =
+            savedFiles.length > 0
+              ? savedFiles
+              : filesFromAI;
+
+          applySelectedProject({
+            ...createdProject,
+            files:
+              finalFiles,
+          });
+
+          setGeneratedFiles(
+            finalFiles
+          );
+
+          setSelectedFile(
+            finalFiles[0] || null
+          );
+
+
+          const createdId =
+            getProjectId(
+              createdProject
+            );
+
+          if (createdId) {
+
+            await loadProjects(
+              createdId
+            );
+          }
+
+        } else {
+
+          await loadProjects();
+        }
+
+
+        setNotice(
+          `Project created successfully with ${filesFromAI.length} generated files.`
         );
+
       }
 
 
-      /*
-       * Ensure immediate UI state even if
-       * the GET response is delayed.
-       */
-      setGeneratedFiles(
-        files
-      );
+      /* ===================================================
+         UPDATE EXISTING PROJECT
+      =================================================== */
 
-      setSelectedFile(
-        files[0] || null
-      );
+      else {
 
-
-      setActiveTab(
-        "code"
-      );
-
-      setPrompt("");
-
-
-      setNotice(
-        `Build Change completed and ${files.length} files were saved to the project.`
-      );
-
-
-      finishOperation(
-        true,
-        "Build Change operation completed and files were persisted."
-      );
-
-    } catch (err) {
-
-      console.error(
-        "Workspace build change error:",
-        err
-      );
-
-      setError(
-        getErrorMessage(
-          err,
-          "Build Change could not be completed."
-        )
-      );
-
-      finishOperation(
-        false,
-        "Build Change operation failed."
-      );
-
-    } finally {
-
-      setLoading(
-        false
-      );
-    }
-  }
-
-
-  /* =======================================================
-     REVIEW / FIX
-  ======================================================= */
-
-  async function handleReviewFix() {
-
-    if (
-      !selectedProjectId
-    ) {
-
-      setError(
-        "Select a project before running Review / Fix."
-      );
-
-      return;
-    }
-
-    if (loading) {
-      return;
-    }
-
-    const reviewPrompt =
-      prompt.trim();
-
-    const baseInstruction =
-      reviewPrompt
-        ? [
-            "Review the current project.",
-            "",
-            `Current project ID: ${selectedProjectId}`,
-            `Current project name: ${projectName}`,
-            "",
-            "Requested change:",
-            reviewPrompt,
-            "",
-            "Return actual generated project files when changes are required.",
-          ].join("\n")
-        : [
-            "Review the current project for:",
-            "- implementation errors",
-            "- broken user experience",
-            "- responsive issues",
-            "- accessibility problems",
-            "- unsafe or incomplete implementation",
-            "",
-            "Return only changes and project files that are actually generated by the connected backend.",
-          ].join("\n");
-
-
-    try {
-
-      setError("");
-      setNotice("");
-      setLoading(true);
-
-      startOperation(
-        "review",
-        "Review / Fix request submitted to the connected AI backend."
-      );
-
-
-      const result =
-        await generateCode(
-          baseInstruction,
-          framework
+        addActivity(
+          "Saving updated application files.",
+          "active"
         );
 
 
-      addActivity(
-        "AI backend review response received.",
-        "success"
-      );
-
-      addBackendActivity(
-        result
-      );
-
-
-      setAiResponse(
-        normalizeAIResponse(
-          result
-        )
-      );
-
-
-      const files =
-        getGeneratedFiles(
-          result
-        );
-
-
-      if (
-        files.length > 0
-      ) {
-
-        /*
-         * Review/Fix is also persisted.
-         */
         const updateResponse =
           await updateProject(
             selectedProjectId,
             {
-              files,
+              files:
+                filesFromAI,
             }
           );
 
 
         addActivity(
-          "Reviewed files saved to the project backend.",
+          "Updated application files persisted.",
           "success"
         );
 
@@ -2060,9 +1619,7 @@ function Workspace() {
           );
 
 
-        if (
-          updatedProject
-        ) {
+        if (updatedProject) {
 
           const returnedFiles =
             normalizeProjectFiles(
@@ -2075,7 +1632,7 @@ function Workspace() {
             files:
               returnedFiles.length > 0
                 ? returnedFiles
-                : files,
+                : filesFromAI,
           });
 
         } else {
@@ -2087,79 +1644,167 @@ function Workspace() {
 
 
         setGeneratedFiles(
-          files
+          filesFromAI
         );
 
         setSelectedFile(
-          files[0]
-        );
-
-
-        addActivity(
-          `${files.length} reviewed/generated project files persisted.`,
-          "success"
+          filesFromAI[0] || null
         );
 
 
         setNotice(
-          `Review completed. ${files.length} real project files were saved.`
-        );
-
-      } else {
-
-        setNotice(
-          "Review completed. The connected backend did not return replacement project files."
+          `Change applied successfully. ${filesFromAI.length} project files are now saved.`
         );
       }
 
 
-      setActiveTab(
-        "code"
+      addActivity(
+        "Build operation completed.",
+        "success"
       );
 
-      setMobilePanel(
-        "builder"
-      );
 
+      setPrompt("");
+
+      setActiveView(
+        "preview"
+      );
 
       finishOperation(
         true,
-        "Review / Fix operation completed."
+        isExistingProject
+          ? "Project change completed successfully."
+          : "Project build completed successfully."
       );
 
     } catch (err) {
 
       console.error(
-        "Workspace review error:",
+        "Workspace build error:",
         err
       );
+
+
+      setChatMessages(
+        previous => [
+          ...previous,
+          createMessage(
+            "assistant",
+            getErrorMessage(
+              err,
+              "The build could not be completed."
+            ),
+            {
+              error: true,
+            }
+          ),
+        ]
+      );
+
 
       setError(
         getErrorMessage(
           err,
-          "Review / Fix could not be completed."
+          "Unable to build the project right now."
         )
       );
 
+
       finishOperation(
         false,
-        "Review / Fix operation failed."
+        "Build operation failed."
       );
 
     } finally {
 
-      setLoading(
-        false
-      );
+      setLoading(false);
     }
   }
 
 
   /* =======================================================
-     DEPLOY
+     CHAT SUBMIT
   ======================================================= */
 
-  async function handleDeploy() {
+  function handleChatSubmit(event) {
+
+    event?.preventDefault();
+
+    if (
+      loading ||
+      !prompt.trim()
+    ) {
+      return;
+    }
+
+    handleBuild(
+      prompt
+    );
+  }
+
+
+  /* =======================================================
+     REVIEW / FIX
+  ======================================================= */
+
+  async function handleReviewFix() {
+
+    if (!selectedProjectId) {
+
+      setError(
+        "Select a project before running Review / Fix."
+      );
+
+      return;
+    }
+
+    if (loading) {
+      return;
+    }
+
+
+    const reviewInstruction =
+      prompt.trim()
+        ? [
+            "Review and improve the current project.",
+            "",
+            `Project ID: ${selectedProjectId}`,
+            `Project name: ${projectName}`,
+            "",
+            "Requested review/change:",
+            prompt.trim(),
+            "",
+            "Return the complete project files required for the implementation.",
+          ].join("\n")
+        : [
+            "Review the current project.",
+            "",
+            "Check for:",
+            "- implementation errors",
+            "- broken user experience",
+            "- responsive issues",
+            "- accessibility problems",
+            "- incomplete functionality",
+            "",
+            "Return the complete project files required for any fixes.",
+          ].join("\n");
+
+
+    setPrompt(
+      reviewInstruction
+    );
+
+    await handleBuild(
+      reviewInstruction
+    );
+  }
+
+
+  /* =======================================================
+     DEPLOY → BILLING
+  ======================================================= */
+
+  function handleDeploy() {
 
     const projectId =
       getProjectId(
@@ -2175,196 +1820,39 @@ function Workspace() {
       return;
     }
 
-    if (deploying) {
+    if (
+      generatedFiles.length === 0
+    ) {
+
+      setError(
+        "This project has no generated files to deploy."
+      );
+
       return;
     }
 
-    try {
 
-      setError("");
-      setNotice("");
-      setDeploying(true);
+    /*
+     * IMPORTANT:
+     *
+     * Workspace does NOT call deployment directly.
+     *
+     * The billing/payment system must verify
+     * payment first. The backend billing flow
+     * is responsible for triggering deployment
+     * after successful payment verification.
+     */
 
-      startOperation(
-        "deploy",
-        "Deployment request submitted to the connected backend."
-      );
-
-      setDeploymentStatus(
-        "Deploying..."
-      );
-
-
-      const response =
-        await deployProject(
-          projectId
-        );
-
-
-      addActivity(
-        "Deployment response received.",
-        "success"
-      );
-
-
-      const responseData =
-        unwrapApiResponse(
-          response
-        ) || {};
-
-
-      const deployment =
-        responseData?.deployment ||
-        responseData?.data?.deployment ||
-        {};
-
-
-      const deployedProject =
-        responseData?.project ||
-        responseData?.data?.project ||
-        (
-          responseData?._id
-            ? responseData
-            : null
-        );
-
-
-      const url =
-        getDeploymentUrl(
-          deployment,
-          deployedProject
-        );
-
-
-      const returnedStatus =
-        deployment?.status ||
-        deployedProject?.deploymentStatus ||
-        deployedProject?.status;
-
-
-      const finalStatus =
-        normalizeDeploymentStatus(
-          returnedStatus ||
-          (
-            url
-              ? "deployed"
-              : "pending"
-          )
-        );
-
-
-      if (
-        deployedProject
-      ) {
-
-        applySelectedProject(
-          deployedProject
-        );
-      }
-
-
-      setDeploymentStatus(
-        finalStatus
-      );
-
-      setLiveUrl(
-        url
-      );
-
-
-      setProjects(
-        previous =>
-          previous.map(
-            project => {
-
-              if (
-                String(
-                  getProjectId(
-                    project
-                  )
-                ) !==
-                String(
-                  projectId
-                )
-              ) {
-                return project;
-              }
-
-              return {
-                ...project,
-                ...(deployedProject || {}),
-
-                ...(url
-                  ? {
-                      liveUrl:
-                        url,
-
-                      deploymentUrl:
-                        url,
-                    }
-                  : {}),
-
-                deploymentStatus:
-                  finalStatus,
-              };
-            }
-          )
-      );
-
-
-      setActiveTab(
-        "preview"
-      );
-
-
-      setNotice(
-        url
-          ? "Deployment completed successfully. Live preview is available."
-          : "Deployment request completed. The backend did not return a live URL."
-      );
-
-
-      finishOperation(
-        true,
-        url
-          ? "Deployment completed and a live URL was returned."
-          : "Deployment request completed without a live URL."
-      );
-
-    } catch (err) {
-
-      console.error(
-        "Workspace deployment error:",
-        err
-      );
-
-      setDeploymentStatus(
-        "Deployment failed"
-      );
-
-      setError(
-        getErrorMessage(
-          err,
-          "Deployment could not be completed."
-        )
-      );
-
-      finishOperation(
-        false,
-        "Deployment operation failed."
-      );
-
-    } finally {
-
-      setDeploying(
-        false
-      );
-    }
+    window.location.assign(
+      `/billing?projectId=${encodeURIComponent(
+        projectId
+      )}&intent=deploy`
+    );
   }
 
 
   /* =======================================================
-     FULLSCREEN
+     PREVIEW FULLSCREEN
   ======================================================= */
 
   async function handlePreviewFullscreen() {
@@ -2400,7 +1888,7 @@ function Workspace() {
 
 
   /* =======================================================
-     SUBSCRIPTION
+     OPEN BILLING
   ======================================================= */
 
   function handleSubscription() {
@@ -2408,25 +1896,6 @@ function Workspace() {
     window.location.assign(
       "/billing"
     );
-  }
-
-
-  /* =======================================================
-     PRIMARY ACTION
-  ======================================================= */
-
-  function handlePrimaryAction() {
-
-    if (
-      selectedProject
-    ) {
-
-      handleBuildChange();
-
-      return;
-    }
-
-    handleGenerate();
   }
 
 
@@ -2445,25 +1914,73 @@ function Workspace() {
 
       event.preventDefault();
 
-      handlePrimaryAction();
+      handleChatSubmit(event);
     }
   }
 
 
-  /* =========================================================
+  /* =======================================================
+     FILES DRAWER
+  ======================================================= */
+
+  function openFilesDrawer() {
+
+    setFilesDrawerOpen(true);
+    setActivityDrawerOpen(false);
+  }
+
+
+  function closeFilesDrawer() {
+
+    setFilesDrawerOpen(false);
+  }
+
+
+  /* =======================================================
+     ACTIVITY DRAWER
+  ======================================================= */
+
+  function openActivityDrawer() {
+
+    setActivityDrawerOpen(true);
+    setFilesDrawerOpen(false);
+  }
+
+
+  function closeActivityDrawer() {
+
+    setActivityDrawerOpen(false);
+  }
+
+
+  /* =======================================================
+     FILE SELECTION
+  ======================================================= */
+
+  function handleFileSelect(file) {
+
+    setSelectedFile(file);
+
+    setFilesDrawerOpen(false);
+
+    setActiveView("code");
+  }
+
+
+  /* =======================================================
      RENDER
-  ========================================================= */
+  ======================================================= */
 
   return (
     <DashboardLayout>
 
       <main
-        className={
-          styles.workspace
-        }
+        className={styles.workspace}
       >
 
-        {/* HEADER */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <header
           className={
@@ -2473,7 +1990,7 @@ function Workspace() {
 
           <div
             className={
-              styles.projectHeading
+              styles.brandBlock
             }
           >
 
@@ -2487,38 +2004,17 @@ function Workspace() {
 
             <div
               className={
-                styles.headingCopy
+                styles.brandCopy
               }
             >
 
-              <div
-                className={
-                  styles.breadcrumb
-                }
-              >
+              <span>
+                ZYRIONOS
+              </span>
 
-                <span>
-                  WORKSPACE
-                </span>
-
-                <b>
-                  /
-                </b>
-
-                <span>
-                  {projectName}
-                </span>
-
-              </div>
-
-              <h1>
+              <strong>
                 {projectName}
-              </h1>
-
-              <p>
-                Build, review, preview and deploy
-                from one professional workspace.
-              </p>
+              </strong>
 
             </div>
 
@@ -2527,23 +2023,29 @@ function Workspace() {
 
           <div
             className={
-              styles.headerStatus
+              styles.headerCenter
             }
           >
 
             <span
               className={
                 operationRunning
-                  ? styles.headerStatusRunning
-                  : styles.headerStatusReady
+                  ? styles.statusRunning
+                  : styles.statusReady
               }
             />
 
             <span>
               {operationRunning
-                ? operationTitle
-                : "Workspace ready"}
+                ? "AI working"
+                : "Ready"}
             </span>
+
+            {operationRunning && (
+              <small>
+                {elapsedSeconds}s
+              </small>
+            )}
 
           </div>
 
@@ -2557,10 +2059,44 @@ function Workspace() {
             <button
               type="button"
               className={
-                styles.secondaryAction
+                styles.headerButton
+              }
+              onClick={
+                openFilesDrawer
+              }
+            >
+              <span>
+                ▫
+              </span>
+
+              Files
+
+              <b>
+                {generatedFiles.length}
+              </b>
+            </button>
+
+
+            <button
+              type="button"
+              className={
+                styles.headerButton
+              }
+              onClick={
+                openActivityDrawer
+              }
+            >
+              Activity
+            </button>
+
+
+            <button
+              type="button"
+              className={
+                styles.headerButton
               }
               onClick={() =>
-                setActiveTab(
+                setActiveView(
                   "preview"
                 )
               }
@@ -2572,53 +2108,17 @@ function Workspace() {
             <button
               type="button"
               className={
-                styles.secondaryAction
-              }
-              onClick={() =>
-                setActiveTab(
-                  "code"
-                )
-              }
-            >
-              Code
-            </button>
-
-
-            <button
-              type="button"
-              className={
-                styles.subscriptionAction
-              }
-              onClick={
-                handleSubscription
-              }
-            >
-              <span>
-                ✦
-              </span>
-
-              <strong>
-                Build Your Future
-              </strong>
-            </button>
-
-
-            <button
-              type="button"
-              className={
-                styles.deployAction
+                styles.deployButton
               }
               onClick={
                 handleDeploy
               }
               disabled={
-                deploying ||
-                !selectedProjectId
+                !selectedProjectId ||
+                generatedFiles.length === 0
               }
             >
-              {deploying
-                ? "Deploying..."
-                : "Deploy"}
+              Deploy
             </button>
 
           </div>
@@ -2626,13 +2126,82 @@ function Workspace() {
         </header>
 
 
-        {/* MOBILE NAV */}
+        {/* =================================================
+            ALERTS
+        ================================================= */}
+
+        {error && (
+          <div
+            className={
+              styles.alertError
+            }
+            role="alert"
+          >
+
+            <span>
+              !
+            </span>
+
+            <div>
+              <strong>
+                Workspace error
+              </strong>
+
+              <p>
+                {error}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setError("")
+              }
+            >
+              ×
+            </button>
+
+          </div>
+        )}
+
+
+        {notice && !error && (
+          <div
+            className={
+              styles.alertSuccess
+            }
+            role="status"
+          >
+
+            <span>
+              ✓
+            </span>
+
+            <p>
+              {notice}
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                setNotice("")
+              }
+            >
+              ×
+            </button>
+
+          </div>
+        )}
+
+
+        {/* =================================================
+            MOBILE NAV
+        ================================================= */}
 
         <nav
           className={
-            styles.mobileWorkspaceNav
+            styles.mobileNav
           }
-          aria-label="Workspace panels"
         >
 
           <button
@@ -2654,13 +2223,13 @@ function Workspace() {
           <button
             type="button"
             className={
-              mobilePanel === "builder"
+              mobilePanel === "workspace"
                 ? styles.mobileNavActive
                 : ""
             }
             onClick={() =>
               setMobilePanel(
-                "builder"
+                "workspace"
               )
             }
           >
@@ -2670,13 +2239,13 @@ function Workspace() {
           <button
             type="button"
             className={
-              mobilePanel === "inspector"
+              mobilePanel === "activity"
                 ? styles.mobileNavActive
                 : ""
             }
             onClick={() =>
               setMobilePanel(
-                "inspector"
+                "activity"
               )
             }
           >
@@ -2686,85 +2255,9 @@ function Workspace() {
         </nav>
 
 
-        {/* ALERTS */}
-
-        {error && (
-          <div
-            className={
-              styles.errorBanner
-            }
-            role="alert"
-          >
-
-            <div
-              className={
-                styles.alertIcon
-              }
-            >
-              !
-            </div>
-
-            <div
-              className={
-                styles.alertContent
-              }
-            >
-
-              <strong>
-                Workspace error
-              </strong>
-
-              <p>
-                {error}
-              </p>
-
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setError("")
-              }
-              aria-label="Dismiss error"
-            >
-              ×
-            </button>
-
-          </div>
-        )}
-
-
-        {notice && !error && (
-          <div
-            className={
-              styles.noticeBanner
-            }
-            role="status"
-          >
-
-            <span>
-              ✓
-            </span>
-
-            <p>
-              {notice}
-            </p>
-
-            <button
-              type="button"
-              onClick={() =>
-                setNotice("")
-              }
-              aria-label="Dismiss notice"
-            >
-              ×
-            </button>
-
-          </div>
-        )}
-
-
-        {/* MAIN IDE */}
+        {/* =================================================
+            BODY
+        ================================================= */}
 
         <section
           className={
@@ -2772,14 +2265,16 @@ function Workspace() {
           }
         >
 
-          {/* PROJECT SIDEBAR */}
+          {/* =================================================
+              PROJECTS
+          ================================================= */}
 
           <aside
             className={`
               ${styles.projectRail}
               ${
                 mobilePanel === "projects"
-                  ? styles.mobilePanelVisible
+                  ? styles.mobileVisible
                   : ""
               }
             `}
@@ -2792,24 +2287,19 @@ function Workspace() {
             >
 
               <div>
-
                 <span>
                   PROJECTS
                 </span>
 
-                <strong>
+                <b>
                   {projectCount}
-                </strong>
-
+                </b>
               </div>
 
               <button
                 type="button"
                 onClick={
                   handleNewProject
-                }
-                className={
-                  styles.createProjectButton
                 }
               >
                 + New
@@ -2821,23 +2311,18 @@ function Workspace() {
             <button
               type="button"
               className={
-                styles.createProjectCard
+                styles.newProjectCard
               }
               onClick={
                 handleNewProject
               }
             >
 
-              <span
-                className={
-                  styles.createProjectIcon
-                }
-              >
+              <span>
                 +
               </span>
 
-              <span>
-
+              <div>
                 <strong>
                   Create a Project
                 </strong>
@@ -2845,8 +2330,7 @@ function Workspace() {
                 <small>
                   Start from an idea
                 </small>
-
-              </span>
+              </div>
 
               <b>
                 →
@@ -2868,15 +2352,7 @@ function Workspace() {
                     styles.projectLoading
                   }
                 >
-
-                  <span />
-                  <span />
-                  <span />
-
-                  <small>
-                    Loading projects...
-                  </small>
-
+                  Loading projects...
                 </div>
 
               ) : projects.length === 0 ? (
@@ -2887,17 +2363,13 @@ function Workspace() {
                   }
                 >
 
-                  <div>
-                    ◇
-                  </div>
-
                   <strong>
                     No projects yet
                   </strong>
 
                   <p>
-                    Projects created through the
-                    backend will appear here.
+                    Start with an idea and let
+                    ZyrionOS build the application.
                   </p>
 
                   <button
@@ -2916,18 +2388,13 @@ function Workspace() {
                 projects.map(
                   project => {
 
-                    const name =
-                      getProjectName(
-                        project
-                      );
-
                     const id =
                       getProjectId(
                         project
                       );
 
-                    const frameworkName =
-                      getProjectFramework(
+                    const name =
+                      getProjectName(
                         project
                       );
 
@@ -2941,7 +2408,7 @@ function Workspace() {
                       <button
                         key={
                           id ||
-                          `${name}-${frameworkName}`
+                          name
                         }
                         type="button"
                         className={`
@@ -2961,7 +2428,7 @@ function Workspace() {
 
                         <span
                           className={
-                            styles.projectIcon
+                            styles.projectAvatar
                           }
                         >
                           {name
@@ -2971,7 +2438,7 @@ function Workspace() {
 
                         <span
                           className={
-                            styles.projectItemText
+                            styles.projectItemCopy
                           }
                         >
 
@@ -2980,17 +2447,15 @@ function Workspace() {
                           </strong>
 
                           <small>
-                            {frameworkName}
+                            {getProjectFramework(
+                              project
+                            )}
                           </small>
 
                         </span>
 
                         {active && (
-                          <span
-                            className={
-                              styles.activeIndicator
-                            }
-                          />
+                          <i />
                         )}
 
                       </button>
@@ -3004,69 +2469,53 @@ function Workspace() {
           </aside>
 
 
-          {/* CENTRAL WORKSPACE */}
+          {/* =================================================
+              MAIN
+          ================================================= */}
 
           <section
             className={`
-              ${styles.buildArea}
+              ${styles.mainWorkspace}
               ${
-                mobilePanel === "builder"
-                  ? styles.mobilePanelVisible
+                mobilePanel === "workspace"
+                  ? styles.mobileVisible
                   : ""
               }
             `}
           >
 
+            {/* TOP TOOLBAR */}
+
             <div
               className={
-                styles.buildToolbar
+                styles.workspaceToolbar
               }
             >
 
               <div
                 className={
-                  styles.buildMode
+                  styles.workspaceTitle
                 }
               >
 
-                <span
-                  className={
-                    operationRunning
-                      ? styles.liveDotRunning
-                      : styles.liveDot
-                  }
-                />
+                <span>
+                  AI APP BUILDER
+                </span>
 
-                <div>
-
-                  <strong>
-                    ZyrionOS AI
-                  </strong>
-
-                  <small>
-                    {operationRunning
-                      ? operationTitle
-                      : "Ready"}
-                  </small>
-
-                </div>
+                <strong>
+                  {activeView === "preview"
+                    ? "Live Preview"
+                    : "Project Files"}
+                </strong>
 
               </div>
 
 
               <div
                 className={
-                  styles.toolbarRight
+                  styles.toolbarActions
                 }
               >
-
-                <span
-                  className={
-                    styles.frameworkLabel
-                  }
-                >
-                  Framework
-                </span>
 
                 <select
                   value={
@@ -3077,11 +2526,11 @@ function Workspace() {
                       event.target.value
                     )
                   }
-                  className={
-                    styles.frameworkSelect
-                  }
                   disabled={
                     loading
+                  }
+                  className={
+                    styles.frameworkSelect
                   }
                 >
 
@@ -3098,189 +2547,196 @@ function Workspace() {
 
                 </select>
 
+
+                <button
+                  type="button"
+                  className={
+                    activeView === "preview"
+                      ? styles.toolbarActive
+                      : styles.toolbarButton
+                  }
+                  onClick={() =>
+                    setActiveView(
+                      "preview"
+                    )
+                  }
+                >
+                  Preview
+                </button>
+
+
+                <button
+                  type="button"
+                  className={
+                    activeView === "code"
+                      ? styles.toolbarActive
+                      : styles.toolbarButton
+                  }
+                  onClick={() =>
+                    setActiveView(
+                      "code"
+                    )
+                  }
+                >
+                  Code
+                </button>
+
               </div>
 
             </div>
 
 
-            {operationRunning && (
-              <div
-                className={
-                  styles.operationBar
-                }
-              >
-
-                <div
-                  className={
-                    styles.operationPulse
-                  }
-                />
-
-                <div
-                  className={
-                    styles.operationCopy
-                  }
-                >
-
-                  <strong>
-                    {operationTitle}
-                  </strong>
-
-                  <span>
-                    {operationDescription}
-                  </span>
-
-                </div>
-
-                <div
-                  className={
-                    styles.operationTimer
-                  }
-                >
-                  {elapsedSeconds}s
-                </div>
-
-              </div>
-            )}
-
+            {/* =================================================
+                PREVIEW / CODE
+            ================================================= */}
 
             <div
               className={
-                styles.canvas
+                styles.visualArea
               }
             >
 
-              {!aiResponse &&
-              !loading ? (
+              {activeView === "preview" ? (
 
                 <div
+                  ref={
+                    previewRef
+                  }
                   className={
-                    styles.emptyWorkspace
+                    previewFullscreen
+                      ? `${styles.previewShell} ${styles.previewFullscreen}`
+                      : styles.previewShell
                   }
                 >
 
                   <div
                     className={
-                      styles.aiOrb
-                    }
-                  >
-                    Z
-                  </div>
-
-                  <span
-                    className={
-                      styles.eyebrow
-                    }
-                  >
-                    ZYRIONOS AI COMMAND CENTER
-                  </span>
-
-                  <h2>
-                    What do you want to build?
-                  </h2>
-
-                  <p>
-                    Describe an application,
-                    automation, feature or
-                    business system. Your request
-                    is sent through the connected
-                    project backend.
-                  </p>
-
-                  <div
-                    className={
-                      styles.quickPrompts
+                      styles.previewHeader
                     }
                   >
 
-                    {QUICK_PROMPTS.map(
-                      item => (
-                        <button
-                          key={
-                            item.prompt
-                          }
-                          type="button"
-                          onClick={() =>
-                            handleQuickPrompt(
-                              item.prompt
-                            )
-                          }
-                        >
+                    <div
+                      className={
+                        styles.browserDots
+                      }
+                    >
+                      <i />
+                      <i />
+                      <i />
+                    </div>
 
-                          <span>
-                            +
-                          </span>
+                    <span>
+                      {projectName}
+                    </span>
 
-                          {item.label}
+                    <div
+                      className={
+                        styles.previewAddress
+                      }
+                    >
+                      {previewUrl ||
+                        "Preview environment"}
+                    </div>
 
-                        </button>
-                      )
+                    <span
+                      className={
+                        previewAvailable
+                          ? styles.previewReady
+                          : styles.previewPending
+                      }
+                    >
+                      {previewAvailable
+                        ? "LIVE"
+                        : previewStatus
+                          ? previewStatus
+                          : "PREVIEW"}
+                    </span>
+
+                    {previewAvailable && (
+                      <button
+                        type="button"
+                        onClick={
+                          handlePreviewFullscreen
+                        }
+                      >
+                        {previewFullscreen
+                          ? "Exit"
+                          : "Fullscreen"}
+                      </button>
                     )}
 
                   </div>
 
-                </div>
-
-              ) : loading ? (
-
-                <div
-                  className={
-                    styles.buildingState
-                  }
-                >
 
                   <div
                     className={
-                      styles.loadingOrb
-                    }
-                  >
-                    Z
-                  </div>
-
-                  <span
-                    className={
-                      styles.eyebrow
-                    }
-                  >
-                    ZYRIONOS AI
-                  </span>
-
-                  <h2>
-                    {operationTitle}
-                  </h2>
-
-                  <p>
-                    {operationDescription}
-                  </p>
-
-                  <div
-                    className={
-                      styles.indeterminateProgress
-                    }
-                  >
-                    <span />
-                  </div>
-
-                  <div
-                    className={
-                      styles.processingStatus
+                      styles.previewContent
                     }
                   >
 
-                    <span
-                      className={
-                        styles.processingSpinner
-                      }
-                    />
+                    {previewAvailable ? (
 
-                    <span>
-                      Waiting for the connected
-                      backend response
-                    </span>
+                      <iframe
+                        title={
+                          `${projectName} application preview`
+                        }
+                        src={
+                          previewUrl
+                        }
+                        className={
+                          styles.previewFrame
+                        }
+                        allow="fullscreen"
+                      />
 
-                    <strong>
-                      {elapsedSeconds}s
-                    </strong>
+                    ) : (
+
+                      <div
+                        className={
+                          styles.previewEmpty
+                        }
+                      >
+
+                        <div
+                          className={
+                            styles.previewIcon
+                          }
+                        >
+                          Z
+                        </div>
+
+                        <span>
+                          APPLICATION PREVIEW
+                        </span>
+
+                        <h2>
+                          Your app will appear here
+                        </h2>
+
+                        <p>
+                          ZyrionOS has generated
+                          {generatedFiles.length > 0
+                            ? ` ${generatedFiles.length} project files`
+                            : " your application files"}
+                          . The preview surface is
+                          waiting for a real preview
+                          runtime URL from the backend.
+                        </p>
+
+                        {generatedFiles.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={
+                              openFilesDrawer
+                            }
+                          >
+                            Inspect generated app
+                          </button>
+                        )}
+
+                      </div>
+
+                    )}
 
                   </div>
 
@@ -3290,468 +2746,308 @@ function Workspace() {
 
                 <div
                   className={
-                    styles.resultArea
+                    styles.codeSurface
                   }
                 >
 
                   <div
                     className={
-                      styles.resultHeader
+                      styles.codeSurfaceHeader
                     }
                   >
 
                     <div>
-
                       <span>
-                        PROJECT WORKSPACE
+                        PROJECT FILES
                       </span>
 
-                      <h2>
-                        {selectedProject
-                          ? projectName
-                          : "Build result"}
-                      </h2>
-
+                      <b>
+                        {generatedFiles.length}
+                      </b>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={
+                        openFilesDrawer
+                      }
+                    >
+                      Open Files
+                    </button>
+
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.codeSurfaceBody
+                    }
+                  >
 
                     <div
                       className={
-                        deploymentIsLive
-                          ? styles.liveBadge
-                          : styles.readyBadge
+                        styles.codeFileList
                       }
                     >
 
-                      <i />
+                      {generatedFiles.map(
+                        file => {
 
-                      {deploymentIsLive
-                        ? "Live"
-                        : "Ready"}
+                          const path =
+                            getFilePath(
+                              file
+                            );
+
+                          const active =
+                            selectedFile ===
+                            file;
+
+                          return (
+                            <button
+                              key={
+                                file?._id ||
+                                file?.id ||
+                                path
+                              }
+                              type="button"
+                              className={
+                                active
+                                  ? styles.codeFileActive
+                                  : styles.codeFile
+                              }
+                              onClick={() =>
+                                setSelectedFile(
+                                  file
+                                )
+                              }
+                            >
+                              <span>
+                                ◇
+                              </span>
+
+                              {path}
+                            </button>
+                          );
+                        }
+                      )}
 
                     </div>
 
-                  </div>
 
-
-                  <div
-                    className={
-                      styles.resultTabs
-                    }
-                  >
-
-                    <button
-                      type="button"
+                    <pre
                       className={
-                        activeTab === "preview"
-                          ? styles.resultTabActive
-                          : ""
-                      }
-                      onClick={() =>
-                        setActiveTab(
-                          "preview"
-                        )
+                        styles.codeEditor
                       }
                     >
-                      Preview
-                    </button>
-
-                    <button
-                      type="button"
-                      className={
-                        activeTab === "code"
-                          ? styles.resultTabActive
-                          : ""
-                      }
-                      onClick={() =>
-                        setActiveTab(
-                          "code"
-                        )
-                      }
-                    >
-                      Code
-                      <span>
-                        {generatedFiles.length}
-                      </span>
-                    </button>
-
-                  </div>
-
-
-                  <div
-                    className={
-                      styles.resultContent
-                    }
-                  >
-
-                    {activeTab === "preview" && (
-
-                      <div
-                        ref={
-                          previewRef
-                        }
-                        className={
-                          previewFullscreen
-                            ? `${styles.previewPanel} ${styles.previewFullscreen}`
-                            : styles.previewPanel
-                        }
-                      >
-
-                        <div
-                          className={
-                            styles.previewTop
-                          }
-                        >
-
-                          <div
-                            className={
-                              styles.previewWindowDots
-                            }
-                          >
-                            <span />
-                            <span />
-                            <span />
-                          </div>
-
-                          <strong>
-                            Project Preview
-                          </strong>
-
-                          <span
-                            className={
-                              styles.previewUrl
-                            }
-                          >
-                            {liveUrl ||
-                              "Not deployed"}
-                          </span>
-
-                          <span
-                            className={
-                              deploymentIsLive
-                                ? styles.previewLiveState
-                                : styles.previewWaitingState
-                            }
-                          >
-                            {deploymentIsLive
-                              ? "Live"
-                              : "Awaiting deployment"}
-                          </span>
-
-                          {liveUrl && (
-                            <button
-                              type="button"
-                              className={
-                                styles.previewFullscreenButton
-                              }
-                              onClick={
-                                handlePreviewFullscreen
-                              }
-                            >
-                              {previewFullscreen
-                                ? "Exit Fullscreen"
-                                : "Fullscreen"}
-                            </button>
-                          )}
-
-                        </div>
-
-
-                        <div
-                          className={
-                            styles.previewBody
-                          }
-                        >
-
-                          {liveUrl ? (
-
-                            <iframe
-                              title={
-                                `${projectName} preview`
-                              }
-                              src={
-                                liveUrl
-                              }
-                              className={
-                                styles.previewFrame
-                              }
-                              allow="fullscreen"
-                            />
-
-                          ) : (
-
-                            <div
-                              className={
-                                styles.previewPlaceholder
-                              }
-                            >
-
-                              <div
-                                className={
-                                  styles.previewPlaceholderIcon
-                                }
-                              >
-                                ◇
-                              </div>
-
-                              <strong>
-                                Live preview is not
-                                available yet
-                              </strong>
-
-                              <p>
-                                Deploy the selected
-                                project to receive a
-                                live application URL.
-                              </p>
-
-                              <button
-                                type="button"
-                                onClick={
-                                  handleDeploy
-                                }
-                                disabled={
-                                  deploying ||
-                                  !selectedProjectId
-                                }
-                              >
-                                {deploying
-                                  ? "Deploying..."
-                                  : "Deploy Project"}
-                              </button>
-
-                            </div>
-
-                          )}
-
-                        </div>
-
-                      </div>
-                    )}
-
-
-                    {activeTab === "code" && (
-
-                      <div
-                        className={
-                          styles.codePanel
-                        }
-                      >
-
-                        <div
-                          className={
-                            styles.codeHeader
-                          }
-                        >
-
-                          <div>
-
-                            <span>
-                              PROJECT FILES
-                            </span>
-
-                            <strong>
-                              {generatedFiles.length}
-                            </strong>
-
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setActiveTab(
-                                "preview"
-                              )
-                            }
-                          >
-                            Preview
-                          </button>
-
-                        </div>
-
-
-                        <div
-                          className={
-                            styles.codeLayout
-                          }
-                        >
-
-                          <div
-                            className={
-                              styles.fileExplorer
-                            }
-                          >
-
-                            {generatedFiles.length ===
-                            0 ? (
-
-                              <div
-                                className={
-                                  styles.noFiles
-                                }
-                              >
-
-                                <span>
-                                  ◇
-                                </span>
-
-                                <strong>
-                                  No files available
-                                </strong>
-
-                                <small>
-                                  The backend has not
-                                  returned project files.
-                                </small>
-
-                              </div>
-
-                            ) : (
-
-                              generatedFiles.map(
-                                file => {
-
-                                  const path =
-                                    getFilePath(
-                                      file
-                                    );
-
-                                  const active =
-                                    selectedFile ===
-                                    file;
-
-                                  return (
-                                    <button
-                                      key={
-                                        file?._id ||
-                                        file?.id ||
-                                        path
-                                      }
-                                      type="button"
-                                      className={`
-                                        ${styles.file}
-                                        ${
-                                          active
-                                            ? styles.fileActive
-                                            : ""
-                                        }
-                                      `}
-                                      onClick={() =>
-                                        setSelectedFile(
-                                          file
-                                        )
-                                      }
-                                    >
-
-                                      <span>
-                                        ◇
-                                      </span>
-
-                                      <span>
-                                        {path}
-                                      </span>
-
-                                    </button>
-                                  );
-                                }
-                              )
-                            )}
-
-                          </div>
-
-
-                          <div
-                            className={
-                              styles.editor
-                            }
-                          >
-
-                            <div
-                              className={
-                                styles.editorHeader
-                              }
-                            >
-
-                              <span>
-                                {selectedFile
-                                  ? getFilePath(
-                                      selectedFile
-                                    )
-                                  : "No file selected"}
-                              </span>
-
-                              <small>
-                                Read-only
-                              </small>
-
-                            </div>
-
-                            <pre>
-                              {filePreview}
-                            </pre>
-
-                          </div>
-
-                        </div>
-
-                      </div>
-                    )}
+                      {getFileContent(
+                        selectedFile
+                      )}
+                    </pre>
 
                   </div>
 
                 </div>
+
               )}
 
             </div>
 
 
-            {/* COMMAND AREA */}
+            {/* =================================================
+                CHAT
+            ================================================= */}
 
-            <div
+            <section
               className={
-                styles.commandArea
+                styles.chatArea
               }
             >
 
               <div
                 className={
-                  styles.commandBox
+                  styles.chatHeader
+                }
+              >
+
+                <div>
+
+                  <span>
+                    ZYRIONOS AI
+                  </span>
+
+                  <strong>
+                    Build with conversation
+                  </strong>
+
+                </div>
+
+                <div
+                  className={
+                    styles.chatHeaderStatus
+                  }
+                >
+
+                  <i
+                    className={
+                      operationRunning
+                        ? styles.chatStatusRunning
+                        : styles.chatStatusReady
+                    }
+                  />
+
+                  {operationRunning
+                    ? "Working"
+                    : "Ready"}
+
+                </div>
+
+              </div>
+
+
+              <div
+                className={
+                  styles.chatMessages
+                }
+              >
+
+                {chatMessages.length === 0 ? (
+
+                  <div
+                    className={
+                      styles.chatWelcome
+                    }
+                  >
+
+                    <strong>
+                      What should we build?
+                    </strong>
+
+                    <span>
+                      Describe the product, feature
+                      or change in normal language.
+                      ZyrionOS will send it through
+                      the real build pipeline.
+                    </span>
+
+                  </div>
+
+                ) : (
+
+                  chatMessages.map(
+                    message => (
+                      <div
+                        key={
+                          message.id
+                        }
+                        className={
+                          message.role === "user"
+                            ? styles.chatMessageUser
+                            : message.error
+                            ? styles.chatMessageError
+                            : styles.chatMessageAI
+                        }
+                      >
+
+                        <div
+                          className={
+                            styles.chatMessageAvatar
+                          }
+                        >
+                          {message.role === "user"
+                            ? "U"
+                            : "Z"}
+                        </div>
+
+                        <div
+                          className={
+                            styles.chatMessageBody
+                          }
+                        >
+
+                          <div
+                            className={
+                              styles.chatMessageMeta
+                            }
+                          >
+                            <strong>
+                              {message.role === "user"
+                                ? "You"
+                                : "ZyrionOS AI"}
+                            </strong>
+
+                            <small>
+                              {message.timestamp}
+                            </small>
+                          </div>
+
+                          <p>
+                            {message.content}
+                          </p>
+
+                          {message.fileCount && (
+                            <button
+                              type="button"
+                              className={
+                                styles.chatFilesButton
+                              }
+                              onClick={
+                                openFilesDrawer
+                              }
+                            >
+                              View {message.fileCount} generated files
+                            </button>
+                          )}
+
+                        </div>
+
+                      </div>
+                    )
+                  )
+                )}
+
+                <div
+                  ref={
+                    chatEndRef
+                  }
+                />
+
+              </div>
+
+
+              <form
+                className={
+                  styles.chatComposer
+                }
+                onSubmit={
+                  handleChatSubmit
                 }
               >
 
                 <div
                   className={
-                    styles.commandTop
+                    styles.chatComposerTop
                   }
                 >
 
-                  <span
-                    className={
-                      styles.commandSpark
-                    }
-                  >
+                  <span>
                     ✦
                   </span>
 
-                  <span>
+                  <strong>
                     {selectedProject
-                      ? "ZyrionOS AI · Improve your project"
-                      : "ZyrionOS AI · Build your idea"}
-                  </span>
+                      ? `Editing ${projectName}`
+                      : "New application"}
+                  </strong>
 
-                  <span
-                    className={
-                      styles.commandState
-                    }
-                  >
-                    {loading
-                      ? "Processing"
-                      : "Ready"}
-                  </span>
+                  <small>
+                    {framework}
+                  </small>
 
                 </div>
 
 
                 <textarea
+                  data-zyrionos-chat-input="true"
                   value={
                     prompt
                   }
@@ -3763,57 +3059,40 @@ function Workspace() {
                   onKeyDown={
                     handlePromptKeyDown
                   }
-                  placeholder={
-                    selectedProject
-                      ? "Describe a change or feature you want to build..."
-                      : "Describe the application, product or system you want to build..."
-                  }
                   disabled={
                     loading
                   }
-                  rows={3}
-                  aria-label={
+                  rows={2}
+                  placeholder={
                     selectedProject
-                      ? "Describe a project change"
-                      : "Describe what you want to build"
+                      ? "Tell ZyrionOS what to change..."
+                      : "Describe the application you want to build..."
                   }
                 />
 
 
                 <div
                   className={
-                    styles.commandFooter
+                    styles.chatComposerBottom
                   }
                 >
 
                   <div
                     className={
-                      styles.commandHints
+                      styles.chatHints
                     }
                   >
-
-                    <span>
-                      Enter
-                    </span>
-
-                    <b>
-                      to run
-                    </b>
-
+                    Enter to build
                     <span>
                       Shift + Enter
                     </span>
-
-                    <b>
-                      for new line
-                    </b>
-
+                    new line
                   </div>
 
 
                   <div
                     className={
-                      styles.commandActions
+                      styles.chatActions
                     }
                   >
 
@@ -3821,14 +3100,13 @@ function Workspace() {
                       <button
                         type="button"
                         className={
-                          styles.reviewAction
+                          styles.reviewButton
+                        }
+                        disabled={
+                          loading
                         }
                         onClick={
                           handleReviewFix
-                        }
-                        disabled={
-                          loading ||
-                          !selectedProjectId
                         }
                       >
                         Review / Fix
@@ -3837,132 +3115,47 @@ function Workspace() {
 
 
                     <button
-                      type="button"
-                      onClick={
-                        handlePrimaryAction
+                      type="submit"
+                      className={
+                        styles.buildButton
                       }
                       disabled={
                         loading ||
                         !prompt.trim()
                       }
-                      className={
-                        styles.generateAction
-                      }
                     >
-
                       {loading
                         ? "Working..."
                         : selectedProject
-                        ? "Build Change"
-                        : "Build"}
+                        ? "Apply Change"
+                        : "Build App"}
 
                       <span>
                         ↑
                       </span>
-
                     </button>
 
                   </div>
 
                 </div>
 
-              </div>
+              </form>
 
-
-              {/* ACTION STRIP */}
-
-              <div
-                className={
-                  styles.builderActions
-                }
-              >
-
-                {BUILDER_ACTIONS.map(
-                  action => {
-
-                    const isDeploy =
-                      action.id ===
-                      "deploy";
-
-                    const isReview =
-                      action.id ===
-                      "review";
-
-                    return (
-                      <button
-                        key={
-                          action.id
-                        }
-                        type="button"
-                        className={
-                          styles.builderAction
-                        }
-                        onClick={
-                          isDeploy
-                            ? handleDeploy
-                            : isReview
-                            ? handleReviewFix
-                            : selectedProject
-                            ? handleBuildChange
-                            : handleGenerate
-                        }
-                        disabled={
-                          loading ||
-                          deploying ||
-                          (
-                            (
-                              isDeploy ||
-                              isReview
-                            ) &&
-                            !selectedProjectId
-                          )
-                        }
-                      >
-
-                        <span
-                          className={
-                            styles.builderActionIcon
-                          }
-                        >
-                          {isDeploy
-                            ? "↗"
-                            : isReview
-                            ? "✓"
-                            : "✦"}
-                        </span>
-
-                        <span>
-
-                          <strong>
-                            {action.label}
-                          </strong>
-
-                          <small>
-                            {action.description}
-                          </small>
-
-                        </span>
-
-                      </button>
-                    );
-                  }
-                )}
-
-              </div>
-
-            </div>
+            </section>
 
           </section>
 
 
-          {/* INSPECTOR */}
+          {/* =================================================
+              ACTIVITY
+          ================================================= */}
 
           <aside
             className={`
-              ${styles.inspector}
+              ${styles.activityPanel}
               ${
-                mobilePanel === "inspector"
-                  ? styles.mobilePanelVisible
+                mobilePanel === "activity"
+                  ? styles.mobileVisible
                   : ""
               }
             `}
@@ -3970,7 +3163,7 @@ function Workspace() {
 
             <div
               className={
-                styles.inspectorHeader
+                styles.activityPanelHeader
               }
             >
 
@@ -3981,7 +3174,7 @@ function Workspace() {
                 </span>
 
                 <strong>
-                  Activity
+                  Agent Activity
                 </strong>
 
               </div>
@@ -3989,8 +3182,8 @@ function Workspace() {
               <span
                 className={
                   operationRunning
-                    ? styles.inspectorRunning
-                    : styles.inspectorReady
+                    ? styles.activityRunning
+                    : styles.activityReady
                 }
               >
                 {operationRunning
@@ -4003,46 +3196,30 @@ function Workspace() {
 
             <div
               className={
-                styles.inspectorContent
+                styles.activityPanelBody
               }
             >
 
               <div
                 className={
-                  styles.operationCard
+                  styles.currentOperation
                 }
               >
 
-                <div
-                  className={
-                    styles.operationCardTop
-                  }
-                >
-
-                  <span>
-                    CURRENT OPERATION
-                  </span>
-
-                  <i
-                    className={
-                      operationRunning
-                        ? styles.statusRunning
-                        : styles.statusReady
-                    }
-                  />
-
-                </div>
+                <span>
+                  CURRENT OPERATION
+                </span>
 
                 <strong>
                   {operationRunning
-                    ? operationTitle
+                    ? operation
                     : "Workspace ready"}
                 </strong>
 
                 <p>
                   {operationRunning
-                    ? operationDescription
-                    : "No operation is currently running."}
+                    ? `Processing for ${elapsedSeconds}s`
+                    : "Waiting for the next request."}
                 </p>
 
                 {operationRunning && (
@@ -4060,86 +3237,48 @@ function Workspace() {
 
               <div
                 className={
-                  styles.inspectorCard
+                  styles.agentPipeline
                 }
               >
 
-                <span
-                  className={
-                    styles.cardLabel
-                  }
-                >
-                  PROJECT
+                <span>
+                  AI PIPELINE
                 </span>
 
-                <strong>
-                  {projectName}
-                </strong>
+                <div>
+                  <i className={styles.pipelineDone} />
+                  Master Agent
+                </div>
 
-                <small>
-                  {getProjectFramework(
-                    selectedProject
-                  )}
-                </small>
+                <div>
+                  <i className={styles.pipelineDone} />
+                  Intent Agent
+                </div>
 
-              </div>
+                <div>
+                  <i className={styles.pipelineDone} />
+                  Planning Agent
+                </div>
 
+                <div>
+                  <i
+                    className={
+                      operationRunning
+                        ? styles.pipelineActive
+                        : styles.pipelineDone
+                    }
+                  />
+                  Builder Agent
+                </div>
 
-              <div
-                className={
-                  styles.inspectorCard
-                }
-              >
+                <div>
+                  <i className={styles.pipelinePending} />
+                  Test / Review
+                </div>
 
-                <span
-                  className={
-                    styles.cardLabel
-                  }
-                >
-                  PROJECT FILES
-                </span>
-
-                <strong>
-                  {generatedFiles.length}
-                </strong>
-
-                <small>
-                  Real files returned by the
-                  connected backend.
-                </small>
-
-              </div>
-
-
-              <div
-                className={
-                  styles.inspectorCard
-                }
-              >
-
-                <span
-                  className={
-                    styles.cardLabel
-                  }
-                >
-                  DEPLOYMENT
-                </span>
-
-                <div
-                  className={
-                    deploymentIsLive
-                      ? styles.statusSuccess
-                      : deploymentStatus ===
-                        "Deployment failed"
-                      ? styles.statusError
-                      : styles.statusPending
-                  }
-                >
-
-                  <i />
-
-                  {deploymentStatus}
-
+                <div>
+                  <i className={styles.pipelinePending} />
+                  Deploy
                 </div>
 
               </div>
@@ -4147,43 +3286,43 @@ function Workspace() {
 
               <div
                 className={
-                  styles.activityCard
+                  styles.activityListCard
                 }
               >
 
                 <div
                   className={
-                    styles.activityHeader
+                    styles.activityListHeader
                   }
                 >
 
                   <span>
-                    ACTIVITY
+                    ACTIVITY LOG
                   </span>
 
-                  <strong>
+                  <b>
                     {activityLog.length}
-                  </strong>
+                  </b>
 
                 </div>
 
 
                 {activityLog.length === 0 ? (
 
-                  <div
+                  <p
                     className={
                       styles.activityEmpty
                     }
                   >
-                    Waiting for the next
-                    workspace operation.
-                  </div>
+                    Real backend activity will
+                    appear here during a build.
+                  </p>
 
                 ) : (
 
                   <div
                     className={
-                      styles.activityList
+                      styles.activityItems
                     }
                   >
 
@@ -4201,21 +3340,17 @@ function Workspace() {
                             }
                           >
 
-                            <span
+                            <i
                               className={
-                                item.type ===
-                                "success"
-                                  ? styles.activitySuccess
-                                  : item.type ===
-                                    "error"
-                                  ? styles.activityError
-                                  : item.type ===
-                                    "warning"
-                                  ? styles.activityWarning
-                                  : item.type ===
-                                    "active"
-                                  ? styles.activityActive
-                                  : styles.activityInfo
+                                item.type === "success"
+                                  ? styles.dotSuccess
+                                  : item.type === "error"
+                                  ? styles.dotError
+                                  : item.type === "warning"
+                                  ? styles.dotWarning
+                                  : item.type === "active"
+                                  ? styles.dotActive
+                                  : styles.dotInfo
                               }
                             />
 
@@ -4243,90 +3378,60 @@ function Workspace() {
               </div>
 
 
-              {liveUrl && (
-
-                <div
-                  className={
-                    styles.liveCard
-                  }
-                >
-
-                  <span>
-                    LIVE APPLICATION
-                  </span>
-
-                  <strong>
-                    Deployment available
-                  </strong>
-
-                  <div
-                    className={
-                      styles.liveCardActions
-                    }
-                  >
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActiveTab(
-                          "preview"
-                        )
-                      }
-                    >
-                      Open Preview
-                    </button>
-
-                    <a
-                      href={
-                        liveUrl
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      New tab →
-                    </a>
-
-                  </div>
-
-                </div>
-              )}
-
-
-              <button
-                type="button"
+              <div
                 className={
-                  styles.inspectorSubscription
-                }
-                onClick={
-                  handleSubscription
+                  styles.projectStats
                 }
               >
 
-                <span
-                  className={
-                    styles.subscriptionIcon
-                  }
-                >
-                  ✦
-                </span>
-
-                <span>
+                <div>
+                  <span>
+                    PROJECT FILES
+                  </span>
 
                   <strong>
-                    Build Your Future
+                    {generatedFiles.length}
                   </strong>
+                </div>
 
-                  <small>
-                    Manage subscription
-                  </small>
+                <div>
+                  <span>
+                    FRAMEWORK
+                  </span>
 
-                </span>
+                  <strong>
+                    {framework}
+                  </strong>
+                </div>
 
-                <b>
-                  →
-                </b>
+                <div>
+                  <span>
+                    DEPLOYMENT
+                  </span>
 
-              </button>
+                  <strong>
+                    {deploymentStatus}
+                  </strong>
+                </div>
+
+              </div>
+
+
+              {previewAvailable && (
+                <button
+                  type="button"
+                  className={
+                    styles.openPreviewButton
+                  }
+                  onClick={() =>
+                    setActiveView(
+                      "preview"
+                    )
+                  }
+                >
+                  Open Live Preview
+                </button>
+              )}
 
             </div>
 
@@ -4334,26 +3439,296 @@ function Workspace() {
             <button
               type="button"
               className={
-                styles.inspectorDeploy
+                styles.activityDeployButton
               }
               disabled={
-                deploying ||
-                !selectedProjectId
+                !selectedProjectId ||
+                generatedFiles.length === 0
               }
               onClick={
                 handleDeploy
               }
             >
-
-              {deploying
-                ? "Deploying..."
-                : "Deploy Project"}
-
+              Deploy to Production
             </button>
 
           </aside>
 
         </section>
+
+
+        {/* =================================================
+            FILE DRAWER
+        ================================================= */}
+
+        {filesDrawerOpen && (
+          <div
+            className={
+              styles.drawerOverlay
+            }
+            onClick={
+              closeFilesDrawer
+            }
+          >
+
+            <aside
+              className={
+                styles.filesDrawer
+              }
+              onClick={event =>
+                event.stopPropagation()
+              }
+            >
+
+              <div
+                className={
+                  styles.drawerHeader
+                }
+              >
+
+                <div>
+                  <span>
+                    PROJECT
+                  </span>
+
+                  <strong>
+                    Files
+                  </strong>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={
+                    closeFilesDrawer
+                  }
+                >
+                  ×
+                </button>
+
+              </div>
+
+
+              <div
+                className={
+                  styles.drawerProject
+                }
+              >
+
+                <strong>
+                  {projectName}
+                </strong>
+
+                <small>
+                  {generatedFiles.length} generated
+                  files · {framework}
+                </small>
+
+              </div>
+
+
+              <div
+                className={
+                  styles.drawerFiles
+                }
+              >
+
+                {generatedFiles.length === 0 ? (
+
+                  <div
+                    className={
+                      styles.drawerEmpty
+                    }
+                  >
+                    No project files available.
+                  </div>
+
+                ) : (
+
+                  generatedFiles.map(
+                    file => {
+
+                      const path =
+                        getFilePath(
+                          file
+                        );
+
+                      const active =
+                        selectedFile ===
+                        file;
+
+                      return (
+                        <button
+                          key={
+                            file?._id ||
+                            file?.id ||
+                            path
+                          }
+                          type="button"
+                          className={
+                            active
+                              ? styles.drawerFileActive
+                              : styles.drawerFile
+                          }
+                          onClick={() =>
+                            handleFileSelect(
+                              file
+                            )
+                          }
+                        >
+
+                          <span>
+                            ◇
+                          </span>
+
+                          <strong>
+                            {path}
+                          </strong>
+
+                        </button>
+                      );
+                    }
+                  )
+                )}
+
+              </div>
+
+
+              <div
+                className={
+                  styles.drawerFooter
+                }
+              >
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeFilesDrawer();
+                    setActiveView("code");
+                  }}
+                >
+                  Open Code View
+                </button>
+
+              </div>
+
+            </aside>
+
+          </div>
+        )}
+
+
+        {/* =================================================
+            ACTIVITY MOBILE DRAWER
+        ================================================= */}
+
+        {activityDrawerOpen && (
+          <div
+            className={
+              styles.drawerOverlay
+            }
+            onClick={
+              closeActivityDrawer
+            }
+          >
+
+            <aside
+              className={
+                styles.activityDrawer
+              }
+              onClick={event =>
+                event.stopPropagation()
+              }
+            >
+
+              <div
+                className={
+                  styles.drawerHeader
+                }
+              >
+
+                <div>
+                  <span>
+                    SYSTEM
+                  </span>
+
+                  <strong>
+                    Activity
+                  </strong>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={
+                    closeActivityDrawer
+                  }
+                >
+                  ×
+                </button>
+
+              </div>
+
+
+              <div
+                className={
+                  styles.activityDrawerBody
+                }
+              >
+
+                {activityLog.length === 0 ? (
+
+                  <p>
+                    No activity yet.
+                  </p>
+
+                ) : (
+
+                  activityLog
+                    .slice()
+                    .reverse()
+                    .map(
+                      item => (
+                        <div
+                          key={
+                            item.id
+                          }
+                          className={
+                            styles.activityItem
+                          }
+                        >
+
+                          <i
+                            className={
+                              item.type === "success"
+                                ? styles.dotSuccess
+                                : item.type === "error"
+                                ? styles.dotError
+                                : item.type === "active"
+                                ? styles.dotActive
+                                : styles.dotInfo
+                            }
+                          />
+
+                          <div>
+                            <p>
+                              {item.message}
+                            </p>
+
+                            <small>
+                              {item.timestamp}
+                            </small>
+                          </div>
+
+                        </div>
+                      )
+                    )
+                )}
+
+              </div>
+
+            </aside>
+
+          </div>
+        )}
 
       </main>
 

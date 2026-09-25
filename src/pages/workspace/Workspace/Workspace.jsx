@@ -289,6 +289,96 @@ function findFile(files, names) {
 }
 
 /* =========================================================
+   PREVIEW CODE DECODER
+   =========================================================
+
+   Some generated JSX is arriving with HTML entities:
+
+      &lt;React.StrictMode&gt;
+
+   instead of:
+
+      <React.StrictMode>
+
+   Sandpack needs real JSX characters.
+
+   IMPORTANT:
+   We only decode angle-bracket entities here.
+   We do NOT globally decode every HTML entity,
+   because generated source code may legitimately
+   contain entities such as &amp; inside strings/HTML.
+========================================================= */
+
+function decodeGeneratedCode(value) {
+  let content = String(value ?? "");
+
+  if (!content) {
+    return content;
+  }
+
+  /*
+   * Handle one or more layers of escaping.
+   *
+   * Example:
+   * &amp;lt;div&amp;gt;
+   *      ↓
+   * &lt;div&gt;
+   *      ↓
+   * <div>
+   */
+  for (let index = 0; index < 3; index += 1) {
+    const decoded = content
+      .replace(/&amp;lt;/gi, "&lt;")
+      .replace(/&amp;gt;/gi, "&gt;")
+      .replace(/&#38;lt;/gi, "&lt;")
+      .replace(/&#38;gt;/gi, "&gt;")
+      .replace(/&#x26;lt;/gi, "&lt;")
+      .replace(/&#x26;gt;/gi, "&gt;")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&#60;/gi, "<")
+      .replace(/&#62;/gi, ">")
+      .replace(/&#x3c;/gi, "<")
+      .replace(/&#x3e;/gi, ">");
+
+    if (decoded === content) {
+      break;
+    }
+
+    content = decoded;
+  }
+
+  return content;
+}
+
+function isPreviewCodeFile(path) {
+  const extension = String(path || "")
+    .split(".")
+    .pop()
+    ?.toLowerCase();
+
+  return [
+    "js",
+    "jsx",
+    "ts",
+    "tsx",
+    "mjs",
+    "cjs",
+  ].includes(extension);
+}
+
+function getPreviewFileContent(file) {
+  const content = getFileContent(file);
+  const path = getFilePath(file);
+
+  if (!isPreviewCodeFile(path)) {
+    return content;
+  }
+
+  return decodeGeneratedCode(content);
+}
+
+/* =========================================================
    SANDPACK HELPERS
 ========================================================= */
 
@@ -346,33 +436,10 @@ function getSandpackDependencies(files) {
     return {};
   }
 
-  const dependencies = {
+  return {
     ...(packageJson.dependencies || {}),
     ...(packageJson.devDependencies || {}),
   };
-
-  /*
-   * Sandpack already provides React runtime
-   * dependencies through its React template.
-   *
-   * Keeping generated versions for all other
-   * packages allows the generated project to
-   * use its own dependency graph.
-   */
-  return dependencies;
-}
-
-function getRelativeFileContent(
-  files,
-  names
-) {
-  const file = findFile(files, names);
-
-  if (!file) {
-    return null;
-  }
-
-  return getFileContent(file);
 }
 
 /* =========================================================
@@ -384,18 +451,6 @@ function getReactEntryFile(files) {
     return null;
   }
 
-  /*
-   * Prefer actual application entry files.
-   *
-   * CRA:
-   *   src/index.js
-   *
-   * Vite:
-   *   src/main.jsx
-   *
-   * Other React:
-   *   src/main.js
-   */
   const entry = findFile(files, [
     "src/index.js",
     "src/index.jsx",
@@ -453,9 +508,7 @@ function hasReactRuntimeFiles(files) {
 
   const hasReact =
     Boolean(allDependencies.react) ||
-    Boolean(
-      getReactAppFile(files)
-    );
+    Boolean(getReactAppFile(files));
 
   const entry =
     getReactEntryFile(files);
@@ -469,31 +522,25 @@ function hasReactRuntimeFiles(files) {
    SANDBOX FILE NORMALIZATION
 ========================================================= */
 
-/*
- * Generated projects can be CRA-style while
- * Sandpack's React template expects its own
- * browser entry structure.
- *
- * We therefore create a small, isolated preview
- * entry that imports the generated application
- * entry. The generated source files themselves
- * remain untouched.
- */
-
 function createSandpackPreviewFiles(files) {
   if (!Array.isArray(files)) {
     return {
       files: {},
-      entry: "/src/__zyrionos_preview_entry.jsx",
+      entry:
+        "/src/__zyrionos_preview_entry.jsx",
     };
   }
 
   const result = {};
 
   files.forEach((file) => {
-    const rawPath = getFilePath(file);
+    const rawPath =
+      getFilePath(file);
+
     const path =
-      normalizeSandpackPath(rawPath);
+      normalizeSandpackPath(
+        rawPath
+      );
 
     if (
       !path ||
@@ -503,9 +550,9 @@ function createSandpackPreviewFiles(files) {
     }
 
     /*
-     * public/index.html is not copied as the
-     * application HTML entry. Sandpack owns
-     * the browser document.
+     * Sandpack owns the browser document.
+     * Therefore generated public/index.html
+     * is not used as the runtime HTML.
      */
     if (
       path.toLowerCase() ===
@@ -514,8 +561,16 @@ function createSandpackPreviewFiles(files) {
       return;
     }
 
+    /*
+     * IMPORTANT:
+     * Code is decoded only for the preview
+     * runtime.
+     *
+     * The actual saved project file remains
+     * untouched.
+     */
     result[path] = {
-      code: getFileContent(file),
+      code: getPreviewFileContent(file),
     };
   });
 
@@ -525,7 +580,8 @@ function createSandpackPreviewFiles(files) {
   if (!entry) {
     return {
       files: result,
-      entry: "/src/__zyrionos_preview_entry.jsx",
+      entry:
+        "/src/__zyrionos_preview_entry.jsx",
     };
   }
 
@@ -535,19 +591,21 @@ function createSandpackPreviewFiles(files) {
     );
 
   /*
-   * The generated CRA/Vite entry already
-   * mounts React to #root.
+   * Generated CRA/Vite entry already mounts
+   * React to #root.
    *
-   * Importing that entry is therefore enough.
+   * The preview wrapper simply imports it.
    */
-  result["/src/__zyrionos_preview_entry.jsx"] = {
+  result[
+    "/src/__zyrionos_preview_entry.jsx"
+  ] = {
     code: `import ${JSON.stringify(
       entryPath
     )};`,
   };
 
   /*
-   * Sandpack's browser document needs a root.
+   * Sandpack needs a browser root.
    */
   result["/index.html"] = {
     code: `<!doctype html>
@@ -756,20 +814,28 @@ function Workspace() {
     useRef(false);
 
   const projectName =
-    getProjectName(selectedProject);
+    getProjectName(
+      selectedProject
+    );
 
   const selectedProjectId =
-    getProjectId(selectedProject);
+    getProjectId(
+      selectedProject
+    );
 
   const projectCount =
     projects.length;
 
   const previewUrl =
     liveUrl ||
-    getPreviewUrl(selectedProject);
+    getPreviewUrl(
+      selectedProject
+    );
 
   const previewStatus =
-    getPreviewStatus(selectedProject);
+    getPreviewStatus(
+      selectedProject
+    );
 
   const operationRunning =
     operation !== "idle";
@@ -831,8 +897,10 @@ function Workspace() {
         );
 
       return {
-        files: normalized.files,
-        entry: normalized.entry,
+        files:
+          normalized.files,
+        entry:
+          normalized.entry,
         dependencies:
           getSandpackDependencies(
             generatedFiles
@@ -913,7 +981,10 @@ function Workspace() {
 
   const addActivity =
     useCallback(
-      (message, type = "info") => {
+      (
+        message,
+        type = "info"
+      ) => {
         setActivityLog(
           (previous) =>
             [
@@ -940,7 +1011,10 @@ function Workspace() {
 
   const startOperation =
     useCallback(
-      (type, message) => {
+      (
+        type,
+        message
+      ) => {
         setOperation(type);
         setOperationStartedAt(
           Date.now()
@@ -956,7 +1030,10 @@ function Workspace() {
 
   const finishOperation =
     useCallback(
-      (success, message) => {
+      (
+        success,
+        message
+      ) => {
         addActivity(
           message,
           success
@@ -964,8 +1041,13 @@ function Workspace() {
             : "error"
         );
 
-        setOperation("idle");
-        setOperationStartedAt(null);
+        setOperation(
+          "idle"
+        );
+
+        setOperationStartedAt(
+          null
+        );
       },
       [addActivity]
     );
@@ -994,7 +1076,10 @@ function Workspace() {
             null
           );
 
-        setGeneratedFiles(files);
+        setGeneratedFiles(
+          files
+        );
+
         setSelectedFile(
           files[0] || null
         );
@@ -1007,7 +1092,9 @@ function Workspace() {
         );
 
         setLiveUrl(
-          getPreviewUrl(project)
+          getPreviewUrl(
+            project
+          )
         );
 
         const projectFramework =
@@ -1038,7 +1125,9 @@ function Workspace() {
         preferredProjectId = ""
       ) => {
         try {
-          setProjectLoading(true);
+          setProjectLoading(
+            true
+          );
 
           const response =
             await getProjects();
@@ -1048,7 +1137,9 @@ function Workspace() {
               response
             );
 
-          setProjects(normalized);
+          setProjects(
+            normalized
+          );
 
           const currentId =
             preferredProjectId ||
@@ -1065,7 +1156,9 @@ function Workspace() {
                       project
                     )
                   ) ===
-                  String(currentId)
+                  String(
+                    currentId
+                  )
               );
 
             if (preferred) {
@@ -1078,7 +1171,8 @@ function Workspace() {
           }
 
           if (
-            normalized.length > 0
+            normalized.length >
+            0
           ) {
             applySelectedProject(
               normalized[0]
@@ -1103,7 +1197,9 @@ function Workspace() {
               "Not deployed"
             );
 
-            setLiveUrl("");
+            setLiveUrl(
+              ""
+            );
           }
 
           return normalized;
@@ -1127,7 +1223,9 @@ function Workspace() {
           );
         }
       },
-      [applySelectedProject]
+      [
+        applySelectedProject,
+      ]
     );
 
   /* =======================================================
@@ -1183,7 +1281,9 @@ function Workspace() {
           project
         );
       },
-      [applySelectedProject]
+      [
+        applySelectedProject,
+      ]
     );
 
   /* =======================================================
@@ -1199,7 +1299,9 @@ function Workspace() {
         null
       );
 
-      setGeneratedFiles([]);
+      setGeneratedFiles(
+        []
+      );
 
       setSelectedFile(
         null
@@ -1207,7 +1309,9 @@ function Workspace() {
 
       setPrompt("");
 
-      setChatMessages([]);
+      setChatMessages(
+        []
+      );
 
       setLiveUrl("");
 
@@ -1239,7 +1343,10 @@ function Workspace() {
       setNotice("");
       setActivityLog([]);
 
-      setOperation("idle");
+      setOperation(
+        "idle"
+      );
+
       setOperationStartedAt(
         null
       );
@@ -1255,6 +1362,7 @@ function Workspace() {
         setPrompt(value);
         setError("");
         setNotice("");
+
         setMobilePanel(
           "workspace"
         );
@@ -1305,7 +1413,9 @@ function Workspace() {
         try {
           setError("");
           setNotice("");
-          setLoading(true);
+          setLoading(
+            true
+          );
 
           setActiveView(
             "preview"
@@ -1353,7 +1463,9 @@ function Workspace() {
                   "",
                   "Return the complete project files required for the implementation.",
                   "Preserve working functionality unless the requested change requires modifying it.",
-                ].join("\n")
+                ].join(
+                  "\n"
+                )
               : userPrompt;
 
           addActivity(
@@ -1635,14 +1747,18 @@ function Workspace() {
             ]
           );
 
-          setError(message);
+          setError(
+            message
+          );
 
           finishOperation(
             false,
             "The build could not be completed."
           );
         } finally {
-          setLoading(false);
+          setLoading(
+            false
+          );
         }
       },
       [
@@ -1675,7 +1791,9 @@ function Workspace() {
           return;
         }
 
-        handleBuild(prompt);
+        handleBuild(
+          prompt
+        );
       },
       [
         loading,
@@ -1715,14 +1833,18 @@ function Workspace() {
                 prompt.trim(),
                 "",
                 "Return the complete project files required for the implementation.",
-              ].join("\n")
+              ].join(
+                "\n"
+              )
             : [
                 "Review the current project.",
                 "",
                 "Check for implementation errors, broken user experience, responsive issues, accessibility problems, and incomplete functionality.",
                 "",
                 "Return the complete project files required for any fixes.",
-              ].join("\n");
+              ].join(
+                "\n"
+              );
 
         setPrompt(
           reviewInstruction
@@ -1778,8 +1900,7 @@ function Workspace() {
       );
 
       /*
-       * IMPORTANT:
-       * Existing billing/deployment route
+       * Existing Deploy → Billing flow
        * intentionally preserved.
        */
       window.location.assign(
@@ -1861,11 +1982,17 @@ function Workspace() {
   const handleFileSelect =
     useCallback(
       (file) => {
-        setSelectedFile(file);
+        setSelectedFile(
+          file
+        );
+
         setFilesDrawerOpen(
           false
         );
-        setActiveView("code");
+
+        setActiveView(
+          "code"
+        );
       },
       []
     );
@@ -1898,7 +2025,9 @@ function Workspace() {
 
   const renderProjectPreview =
     useCallback(
-      (fullscreen = false) => {
+      (
+        fullscreen = false
+      ) => {
         /*
          * 1. DEPLOYED PREVIEW
          */
@@ -1934,12 +2063,16 @@ function Workspace() {
                   : styles.previewSandpack
               }
               style={{
-                width: "100%",
-                height: "100%",
-                minHeight: fullscreen
-                  ? "100%"
-                  : "420px",
-                overflow: "hidden",
+                width:
+                  "100%",
+                height:
+                  "100%",
+                minHeight:
+                  fullscreen
+                    ? "100%"
+                    : "420px",
+                overflow:
+                  "hidden",
               }}
             >
               <SandpackProvider
@@ -1955,11 +2088,14 @@ function Workspace() {
                     sandpackRuntime.dependencies,
                 }}
                 options={{
-                  autorun: true,
-                  autoReload: true,
+                  autorun:
+                    true,
+                  autoReload:
+                    true,
                   recompileMode:
                     "delayed",
-                  recompileDelay: 300,
+                  recompileDelay:
+                    300,
                 }}
               >
                 <SandpackPreview
@@ -1973,8 +2109,10 @@ function Workspace() {
                     false
                   }
                   style={{
-                    width: "100%",
-                    height: "100%",
+                    width:
+                      "100%",
+                    height:
+                      "100%",
                     minHeight:
                       fullscreen
                         ? "100%"
@@ -2102,7 +2240,7 @@ function Workspace() {
             <div
               className={
                 styles.brandCopy
-              }
+            }
             >
               <span>
                 ZYRIONOS WORKSPACE
@@ -2172,7 +2310,9 @@ function Workspace() {
             >
               Files
               <b>
-                {generatedFiles.length}
+                {
+                  generatedFiles.length
+                }
               </b>
             </button>
 
@@ -2241,7 +2381,9 @@ function Workspace() {
                 Workspace error
               </strong>
 
-              <p>{error}</p>
+              <p>
+                {error}
+              </p>
             </div>
 
             <button
@@ -2256,28 +2398,31 @@ function Workspace() {
           </div>
         )}
 
-        {notice && !error && (
-          <div
-            className={
-              styles.alertSuccess
-            }
-            role="status"
-          >
-            <span>✓</span>
-
-            <p>{notice}</p>
-
-            <button
-              type="button"
-              onClick={() =>
-                setNotice("")
+        {notice &&
+          !error && (
+            <div
+              className={
+                styles.alertSuccess
               }
-              aria-label="Close notice"
+              role="status"
             >
-              ×
-            </button>
-          </div>
-        )}
+              <span>✓</span>
+
+              <p>
+                {notice}
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setNotice("")
+                }
+                aria-label="Close notice"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
         {/* =================================================
             MOBILE NAV
@@ -2435,7 +2580,9 @@ function Workspace() {
                       )
                     }
                   >
-                    {item.label}
+                    {
+                      item.label
+                    }
                   </button>
                 )
               )}
@@ -2551,7 +2698,9 @@ function Workspace() {
                               name
                             }
                           >
-                            {name}
+                            {
+                              name
+                            }
                           </strong>
 
                           <small>
@@ -2596,8 +2745,6 @@ function Workspace() {
               }
             `}
           >
-            {/* TOOLBAR */}
-
             <div
               className={
                 styles.workspaceToolbar
@@ -2657,7 +2804,9 @@ function Workspace() {
                           item
                         }
                       >
-                        {item}
+                        {
+                          item
+                        }
                       </option>
                     )
                   )}
@@ -2698,8 +2847,6 @@ function Workspace() {
                 </button>
               </div>
             </div>
-
-            {/* WORK SURFACE */}
 
             <div
               className={
@@ -2899,7 +3046,9 @@ function Workspace() {
               )}
             </div>
 
-            {/* CHAT */}
+            {/* =================================================
+                CHAT
+            ================================================= */}
 
             <section
               className={

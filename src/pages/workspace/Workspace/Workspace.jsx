@@ -64,7 +64,10 @@ function unwrapApiResponse(response) {
     return null;
   }
 
-  const root = response?.data !== undefined ? response.data : response;
+  const root =
+    response?.data !== undefined
+      ? response.data
+      : response;
 
   if (
     root &&
@@ -80,7 +83,9 @@ function unwrapApiResponse(response) {
 
 function extractProjectFromResponse(response) {
   const root =
-    response?.data !== undefined ? response.data : response;
+    response?.data !== undefined
+      ? response.data
+      : response;
 
   const candidates = [
     root?.project,
@@ -113,11 +118,20 @@ function extractProjectFromResponse(response) {
 }
 
 function getProjectId(project) {
-  return project?._id || project?.id || project?.projectId || "";
+  return (
+    project?._id ||
+    project?.id ||
+    project?.projectId ||
+    ""
+  );
 }
 
 function getProjectName(project) {
-  return project?.projectName || project?.name || "New Project";
+  return (
+    project?.projectName ||
+    project?.name ||
+    "New Project"
+  );
 }
 
 function getProjectFramework(project) {
@@ -126,7 +140,9 @@ function getProjectFramework(project) {
 
 function normalizeProjects(response) {
   const root =
-    response?.data !== undefined ? response.data : response;
+    response?.data !== undefined
+      ? response.data
+      : response;
 
   const candidates = [
     root?.projects,
@@ -143,7 +159,9 @@ function normalizeProjects(response) {
     }
   }
 
-  return Array.isArray(root) ? root : [];
+  return Array.isArray(root)
+    ? root
+    : [];
 }
 
 /* =========================================================
@@ -182,7 +200,10 @@ function buildProjectName(promptValue) {
     return "New Project";
   }
 
-  return title.charAt(0).toUpperCase() + title.slice(1);
+  return (
+    title.charAt(0).toUpperCase() +
+    title.slice(1)
+  );
 }
 
 /* =========================================================
@@ -234,11 +255,17 @@ function getFileContent(file) {
     return "No project file selected.";
   }
 
-  if (file.content !== undefined && file.content !== null) {
+  if (
+    file.content !== undefined &&
+    file.content !== null
+  ) {
     return String(file.content);
   }
 
-  if (file.code !== undefined && file.code !== null) {
+  if (
+    file.code !== undefined &&
+    file.code !== null
+  ) {
     return String(file.code);
   }
 
@@ -247,7 +274,9 @@ function getFileContent(file) {
 
 function findFile(files, names) {
   const normalized = names.map((name) =>
-    String(name).replace(/^\.?\//, "").toLowerCase()
+    String(name)
+      .replace(/^\.?\//, "")
+      .toLowerCase()
   );
 
   return files.find((file) => {
@@ -260,10 +289,7 @@ function findFile(files, names) {
 }
 
 /* =========================================================
-   LIVE PREVIEW HELPERS
-   Only used when there is no deployed preview URL.
-   The existing backend/deployment preview URL remains
-   the first priority.
+   SANDPACK HELPERS
 ========================================================= */
 
 function normalizeSandpackPath(path) {
@@ -281,9 +307,10 @@ function normalizeSandpackPath(path) {
 }
 
 function getPackageJson(files) {
-  const packageFile = findFile(files, [
-    "package.json",
-  ]);
+  const packageFile = findFile(
+    files,
+    ["package.json"]
+  );
 
   if (!packageFile) {
     return null;
@@ -312,55 +339,79 @@ function getPackageJson(files) {
 }
 
 function getSandpackDependencies(files) {
-  const packageJson = getPackageJson(files);
+  const packageJson =
+    getPackageJson(files);
 
   if (!packageJson) {
     return {};
   }
 
-  return {
+  const dependencies = {
     ...(packageJson.dependencies || {}),
     ...(packageJson.devDependencies || {}),
   };
+
+  /*
+   * Sandpack already provides React runtime
+   * dependencies through its React template.
+   *
+   * Keeping generated versions for all other
+   * packages allows the generated project to
+   * use its own dependency graph.
+   */
+  return dependencies;
 }
 
-function createSandpackFiles(files) {
-  if (!Array.isArray(files)) {
-    return {};
+function getRelativeFileContent(
+  files,
+  names
+) {
+  const file = findFile(files, names);
+
+  if (!file) {
+    return null;
   }
 
-  const result = {};
-
-  files.forEach((file) => {
-    const rawPath = getFilePath(file);
-    const path = normalizeSandpackPath(rawPath);
-
-    if (!path || path === "/Unnamed file") {
-      return;
-    }
-
-    result[path] = {
-      code: getFileContent(file),
-    };
-  });
-
-  return result;
+  return getFileContent(file);
 }
 
+/* =========================================================
+   REACT ENTRY DETECTION
+========================================================= */
+
 function getReactEntryFile(files) {
+  if (!Array.isArray(files)) {
+    return null;
+  }
+
+  /*
+   * Prefer actual application entry files.
+   *
+   * CRA:
+   *   src/index.js
+   *
+   * Vite:
+   *   src/main.jsx
+   *
+   * Other React:
+   *   src/main.js
+   */
   const entry = findFile(files, [
     "src/index.js",
     "src/index.jsx",
     "src/index.ts",
     "src/index.tsx",
+
     "src/main.js",
     "src/main.jsx",
     "src/main.ts",
     "src/main.tsx",
+
     "index.js",
     "index.jsx",
     "index.ts",
     "index.tsx",
+
     "main.js",
     "main.jsx",
     "main.ts",
@@ -370,50 +421,156 @@ function getReactEntryFile(files) {
   return entry || null;
 }
 
+function getReactAppFile(files) {
+  return findFile(files, [
+    "src/App.js",
+    "src/App.jsx",
+    "src/App.ts",
+    "src/App.tsx",
+
+    "App.js",
+    "App.jsx",
+    "App.ts",
+    "App.tsx",
+  ]);
+}
+
 function hasReactRuntimeFiles(files) {
-  if (!Array.isArray(files) || files.length === 0) {
+  if (
+    !Array.isArray(files) ||
+    files.length === 0
+  ) {
     return false;
   }
 
-  const packageJson = getPackageJson(files);
-
-  if (!packageJson) {
-    return false;
-  }
+  const packageJson =
+    getPackageJson(files);
 
   const allDependencies = {
-    ...(packageJson.dependencies || {}),
-    ...(packageJson.devDependencies || {}),
+    ...(packageJson?.dependencies || {}),
+    ...(packageJson?.devDependencies || {}),
   };
 
   const hasReact =
     Boolean(allDependencies.react) ||
-    Boolean(findFile(files, [
-      "src/App.js",
-      "src/App.jsx",
-      "src/App.tsx",
-      "src/App.ts",
-      "App.js",
-      "App.jsx",
-      "App.tsx",
-      "App.ts",
-    ]));
+    Boolean(
+      getReactAppFile(files)
+    );
 
-  const entry = getReactEntryFile(files);
+  const entry =
+    getReactEntryFile(files);
 
-  return Boolean(hasReact && entry);
+  return Boolean(
+    hasReact && entry
+  );
 }
 
-function getSandpackEntry(files) {
-  const entry = getReactEntryFile(files);
+/* =========================================================
+   SANDBOX FILE NORMALIZATION
+========================================================= */
 
-  if (!entry) {
-    return "/src/index.js";
+/*
+ * Generated projects can be CRA-style while
+ * Sandpack's React template expects its own
+ * browser entry structure.
+ *
+ * We therefore create a small, isolated preview
+ * entry that imports the generated application
+ * entry. The generated source files themselves
+ * remain untouched.
+ */
+
+function createSandpackPreviewFiles(files) {
+  if (!Array.isArray(files)) {
+    return {
+      files: {},
+      entry: "/src/__zyrionos_preview_entry.jsx",
+    };
   }
 
-  return normalizeSandpackPath(
-    getFilePath(entry)
-  );
+  const result = {};
+
+  files.forEach((file) => {
+    const rawPath = getFilePath(file);
+    const path =
+      normalizeSandpackPath(rawPath);
+
+    if (
+      !path ||
+      path === "/Unnamed file"
+    ) {
+      return;
+    }
+
+    /*
+     * public/index.html is not copied as the
+     * application HTML entry. Sandpack owns
+     * the browser document.
+     */
+    if (
+      path.toLowerCase() ===
+      "/public/index.html"
+    ) {
+      return;
+    }
+
+    result[path] = {
+      code: getFileContent(file),
+    };
+  });
+
+  const entry =
+    getReactEntryFile(files);
+
+  if (!entry) {
+    return {
+      files: result,
+      entry: "/src/__zyrionos_preview_entry.jsx",
+    };
+  }
+
+  const entryPath =
+    normalizeSandpackPath(
+      getFilePath(entry)
+    );
+
+  /*
+   * The generated CRA/Vite entry already
+   * mounts React to #root.
+   *
+   * Importing that entry is therefore enough.
+   */
+  result["/src/__zyrionos_preview_entry.jsx"] = {
+    code: `import ${JSON.stringify(
+      entryPath
+    )};`,
+  };
+
+  /*
+   * Sandpack's browser document needs a root.
+   */
+  result["/index.html"] = {
+    code: `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>ZyrionOS Preview</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`,
+  };
+
+  return {
+    files: result,
+    entry:
+      "/src/__zyrionos_preview_entry.jsx",
+  };
 }
 
 /* =========================================================
@@ -497,15 +654,23 @@ function getErrorMessage(error, fallback) {
    CHAT
 ========================================================= */
 
-function createMessage(role, content, extra = {}) {
+function createMessage(
+  role,
+  content,
+  extra = {}
+) {
   return {
     id: `${Date.now()}-${Math.random()}`,
     role,
     content,
-    timestamp: new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
+    timestamp:
+      new Date().toLocaleTimeString(
+        [],
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      ),
     ...extra,
   };
 }
@@ -515,95 +680,175 @@ function createMessage(role, content, extra = {}) {
 ========================================================= */
 
 function Workspace() {
-  const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const selectedProjectRef = useRef(null);
+  const [projects, setProjects] =
+    useState([]);
 
-  const [prompt, setPrompt] = useState("");
-  const [framework, setFramework] = useState("React");
+  const [selectedProject, setSelectedProject] =
+    useState(null);
 
-  const [loading, setLoading] = useState(false);
-  const [generatedFiles, setGeneratedFiles] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const selectedProjectRef =
+    useRef(null);
 
-  const [chatMessages, setChatMessages] = useState([]);
+  const [prompt, setPrompt] =
+    useState("");
+
+  const [framework, setFramework] =
+    useState("React");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [generatedFiles, setGeneratedFiles] =
+    useState([]);
+
+  const [selectedFile, setSelectedFile] =
+    useState(null);
+
+  const [chatMessages, setChatMessages] =
+    useState([]);
 
   const [deploymentStatus, setDeploymentStatus] =
     useState("Not deployed");
 
-  const [liveUrl, setLiveUrl] = useState("");
+  const [liveUrl, setLiveUrl] =
+    useState("");
 
-  const [activeView, setActiveView] = useState("preview");
-  const [mobilePanel, setMobilePanel] = useState("workspace");
+  const [activeView, setActiveView] =
+    useState("preview");
 
-  const [filesDrawerOpen, setFilesDrawerOpen] = useState(false);
-  const [activityDrawerOpen, setActivityDrawerOpen] = useState(false);
+  const [mobilePanel, setMobilePanel] =
+    useState("workspace");
 
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [projectLoading, setProjectLoading] = useState(true);
+  const [filesDrawerOpen, setFilesDrawerOpen] =
+    useState(false);
 
-  const [operation, setOperation] = useState("idle");
-  const [operationStartedAt, setOperationStartedAt] = useState(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [activityLog, setActivityLog] = useState([]);
+  const [activityDrawerOpen, setActivityDrawerOpen] =
+    useState(false);
 
-  const [previewFullscreen, setPreviewFullscreen] = useState(false);
+  const [error, setError] =
+    useState("");
 
-  const chatEndRef = useRef(null);
-  const initialLoadStarted = useRef(false);
+  const [notice, setNotice] =
+    useState("");
 
-  const projectName = getProjectName(selectedProject);
-  const selectedProjectId = getProjectId(selectedProject);
-  const projectCount = projects.length;
+  const [projectLoading, setProjectLoading] =
+    useState(true);
+
+  const [operation, setOperation] =
+    useState("idle");
+
+  const [operationStartedAt, setOperationStartedAt] =
+    useState(null);
+
+  const [elapsedSeconds, setElapsedSeconds] =
+    useState(0);
+
+  const [activityLog, setActivityLog] =
+    useState([]);
+
+  const [previewFullscreen, setPreviewFullscreen] =
+    useState(false);
+
+  const chatEndRef =
+    useRef(null);
+
+  const initialLoadStarted =
+    useRef(false);
+
+  const projectName =
+    getProjectName(selectedProject);
+
+  const selectedProjectId =
+    getProjectId(selectedProject);
+
+  const projectCount =
+    projects.length;
 
   const previewUrl =
-    liveUrl || getPreviewUrl(selectedProject);
+    liveUrl ||
+    getPreviewUrl(selectedProject);
 
-  const previewStatus = getPreviewStatus(selectedProject);
-  const operationRunning = operation !== "idle";
+  const previewStatus =
+    getPreviewStatus(selectedProject);
 
-  const currentOperationLabel = useMemo(() => {
-    if (operation === "build") return "Building";
-    if (operation === "change") return "Applying changes";
-    if (operation === "deploy") return "Deploying";
-    return "Ready";
-  }, [operation]);
+  const operationRunning =
+    operation !== "idle";
 
-  const previewEntryFile = useMemo(() => {
-    return (
-      findFile(generatedFiles, [
-        "index.html",
-        "public/index.html",
-      ]) || null
-    );
-  }, [generatedFiles]);
+  const currentOperationLabel =
+    useMemo(() => {
+      if (operation === "build") {
+        return "Building";
+      }
+
+      if (operation === "change") {
+        return "Applying changes";
+      }
+
+      if (operation === "deploy") {
+        return "Deploying";
+      }
+
+      return "Ready";
+    }, [operation]);
+
+  const previewEntryFile =
+    useMemo(() => {
+      return (
+        findFile(
+          generatedFiles,
+          [
+            "index.html",
+            "public/index.html",
+          ]
+        ) || null
+      );
+    }, [generatedFiles]);
 
   /* =======================================================
-     SANDPACK PREVIEW DATA
-     This is intentionally isolated from the rest of the
-     workspace state. Existing build/deploy logic remains
-     untouched.
+     SANDPACK DATA
   ======================================================= */
 
-  const sandpackFiles = useMemo(() => {
-    return createSandpackFiles(generatedFiles);
-  }, [generatedFiles]);
+  const sandpackRuntime =
+    useMemo(() => {
+      if (
+        framework !== "React" ||
+        !hasReactRuntimeFiles(
+          generatedFiles
+        )
+      ) {
+        return {
+          files: {},
+          entry:
+            "/src/__zyrionos_preview_entry.jsx",
+          dependencies: {},
+          ready: false,
+        };
+      }
 
-  const sandpackDependencies = useMemo(() => {
-    return getSandpackDependencies(generatedFiles);
-  }, [generatedFiles]);
+      const normalized =
+        createSandpackPreviewFiles(
+          generatedFiles
+        );
 
-  const sandpackEntry = useMemo(() => {
-    return getSandpackEntry(generatedFiles);
-  }, [generatedFiles]);
+      return {
+        files: normalized.files,
+        entry: normalized.entry,
+        dependencies:
+          getSandpackDependencies(
+            generatedFiles
+          ),
+        ready:
+          Object.keys(
+            normalized.files
+          ).length > 0,
+      };
+    }, [
+      framework,
+      generatedFiles,
+    ]);
 
-  const canUseSandpack = useMemo(() => {
-    return (
-      framework === "React" &&
-      hasReactRuntimeFiles(generatedFiles)
-    );
-  }, [framework, generatedFiles]);
+  const canUseSandpack =
+    sandpackRuntime.ready;
 
   /* =======================================================
      TIMER
@@ -620,7 +865,9 @@ function Workspace() {
         Math.max(
           0,
           Math.floor(
-            (Date.now() - operationStartedAt) / 1000
+            (Date.now() -
+              operationStartedAt) /
+              1000
           )
         )
       );
@@ -628,12 +875,16 @@ function Workspace() {
 
     updateTimer();
 
-    const timer = window.setInterval(
-      updateTimer,
-      1000
-    );
+    const timer =
+      window.setInterval(
+        updateTimer,
+        1000
+      );
 
-    return () => window.clearInterval(timer);
+    return () =>
+      window.clearInterval(
+        timer
+      );
   }, [operationStartedAt]);
 
   /* =======================================================
@@ -652,173 +903,247 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
-    selectedProjectRef.current = selectedProject;
+    selectedProjectRef.current =
+      selectedProject;
   }, [selectedProject]);
 
   /* =======================================================
      ACTIVITY
   ======================================================= */
 
-  const addActivity = useCallback(
-    (message, type = "info") => {
-      setActivityLog((previous) =>
-        [
-          ...previous,
-          {
-            id: `${Date.now()}-${Math.random()}`,
-            message,
-            type,
-            timestamp: new Date().toLocaleTimeString(
-              [],
+  const addActivity =
+    useCallback(
+      (message, type = "info") => {
+        setActivityLog(
+          (previous) =>
+            [
+              ...previous,
               {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              }
-            ),
-          },
-        ].slice(-40)
-      );
-    },
-    []
-  );
+                id: `${Date.now()}-${Math.random()}`,
+                message,
+                type,
+                timestamp:
+                  new Date().toLocaleTimeString(
+                    [],
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    }
+                  ),
+              },
+            ].slice(-40)
+        );
+      },
+      []
+    );
 
-  const startOperation = useCallback(
-    (type, message) => {
-      setOperation(type);
-      setOperationStartedAt(Date.now());
-      addActivity(message, "active");
-    },
-    [addActivity]
-  );
+  const startOperation =
+    useCallback(
+      (type, message) => {
+        setOperation(type);
+        setOperationStartedAt(
+          Date.now()
+        );
 
-  const finishOperation = useCallback(
-    (success, message) => {
-      addActivity(
-        message,
-        success ? "success" : "error"
-      );
+        addActivity(
+          message,
+          "active"
+        );
+      },
+      [addActivity]
+    );
 
-      setOperation("idle");
-      setOperationStartedAt(null);
-    },
-    [addActivity]
-  );
+  const finishOperation =
+    useCallback(
+      (success, message) => {
+        addActivity(
+          message,
+          success
+            ? "success"
+            : "error"
+        );
+
+        setOperation("idle");
+        setOperationStartedAt(null);
+      },
+      [addActivity]
+    );
 
   /* =======================================================
      APPLY PROJECT
   ======================================================= */
 
-  const applySelectedProject = useCallback(
-    (project) => {
-      if (!project) {
-        return;
-      }
+  const applySelectedProject =
+    useCallback(
+      (project) => {
+        if (!project) {
+          return;
+        }
 
-      selectedProjectRef.current = project;
-      setSelectedProject(project);
+        selectedProjectRef.current =
+          project;
 
-      const files = normalizeProjectFiles(
-        project,
-        null
-      );
+        setSelectedProject(
+          project
+        );
 
-      setGeneratedFiles(files);
-      setSelectedFile(files[0] || null);
+        const files =
+          normalizeProjectFiles(
+            project,
+            null
+          );
 
-      setDeploymentStatus(
-        normalizeDeploymentStatus(
-          project?.deploymentStatus ||
-            project?.deployment?.status
-        )
-      );
+        setGeneratedFiles(files);
+        setSelectedFile(
+          files[0] || null
+        );
 
-      setLiveUrl(getPreviewUrl(project));
+        setDeploymentStatus(
+          normalizeDeploymentStatus(
+            project?.deploymentStatus ||
+              project?.deployment?.status
+          )
+        );
 
-      const projectFramework =
-        getProjectFramework(project);
+        setLiveUrl(
+          getPreviewUrl(project)
+        );
 
-      if (FRAMEWORKS.includes(projectFramework)) {
-        setFramework(projectFramework);
-      }
-    },
-    []
-  );
+        const projectFramework =
+          getProjectFramework(
+            project
+          );
+
+        if (
+          FRAMEWORKS.includes(
+            projectFramework
+          )
+        ) {
+          setFramework(
+            projectFramework
+          );
+        }
+      },
+      []
+    );
 
   /* =======================================================
      LOAD PROJECTS
   ======================================================= */
 
-  const loadProjects = useCallback(
-    async (preferredProjectId = "") => {
-      try {
-        setProjectLoading(true);
+  const loadProjects =
+    useCallback(
+      async (
+        preferredProjectId = ""
+      ) => {
+        try {
+          setProjectLoading(true);
 
-        const response = await getProjects();
-        const normalized = normalizeProjects(response);
+          const response =
+            await getProjects();
 
-        setProjects(normalized);
+          const normalized =
+            normalizeProjects(
+              response
+            );
 
-        const currentId =
-          preferredProjectId ||
-          getProjectId(selectedProjectRef.current);
+          setProjects(normalized);
 
-        if (currentId) {
-          const preferred = normalized.find(
-            (project) =>
-              String(getProjectId(project)) ===
-              String(currentId)
+          const currentId =
+            preferredProjectId ||
+            getProjectId(
+              selectedProjectRef.current
+            );
+
+          if (currentId) {
+            const preferred =
+              normalized.find(
+                (project) =>
+                  String(
+                    getProjectId(
+                      project
+                    )
+                  ) ===
+                  String(currentId)
+              );
+
+            if (preferred) {
+              applySelectedProject(
+                preferred
+              );
+
+              return normalized;
+            }
+          }
+
+          if (
+            normalized.length > 0
+          ) {
+            applySelectedProject(
+              normalized[0]
+            );
+          } else {
+            selectedProjectRef.current =
+              null;
+
+            setSelectedProject(
+              null
+            );
+
+            setGeneratedFiles(
+              []
+            );
+
+            setSelectedFile(
+              null
+            );
+
+            setDeploymentStatus(
+              "Not deployed"
+            );
+
+            setLiveUrl("");
+          }
+
+          return normalized;
+        } catch (err) {
+          console.error(
+            "Workspace project loading error:",
+            err
           );
 
-          if (preferred) {
-            applySelectedProject(preferred);
-            return normalized;
-          }
+          setError(
+            getErrorMessage(
+              err,
+              "Projects could not be loaded."
+            )
+          );
+
+          return [];
+        } finally {
+          setProjectLoading(
+            false
+          );
         }
-
-        if (normalized.length > 0) {
-          applySelectedProject(normalized[0]);
-        } else {
-          selectedProjectRef.current = null;
-          setSelectedProject(null);
-          setGeneratedFiles([]);
-          setSelectedFile(null);
-          setDeploymentStatus("Not deployed");
-          setLiveUrl("");
-        }
-
-        return normalized;
-      } catch (err) {
-        console.error(
-          "Workspace project loading error:",
-          err
-        );
-
-        setError(
-          getErrorMessage(
-            err,
-            "Projects could not be loaded."
-          )
-        );
-
-        return [];
-      } finally {
-        setProjectLoading(false);
-      }
-    },
-    [applySelectedProject]
-  );
+      },
+      [applySelectedProject]
+    );
 
   /* =======================================================
      INITIAL LOAD
   ======================================================= */
 
   useEffect(() => {
-    if (initialLoadStarted.current) {
+    if (
+      initialLoadStarted.current
+    ) {
       return;
     }
 
-    initialLoadStarted.current = true;
+    initialLoadStarted.current =
+      true;
+
     loadProjects();
   }, [loadProjects]);
 
@@ -826,682 +1151,920 @@ function Workspace() {
      PROJECT SELECTION
   ======================================================= */
 
-  const handleSelectProject = useCallback(
-    (project) => {
-      setError("");
-      setNotice("");
-      setActivityLog([]);
-      setChatMessages([]);
+  const handleSelectProject =
+    useCallback(
+      (project) => {
+        setError("");
+        setNotice("");
+        setActivityLog([]);
+        setChatMessages([]);
 
-      setActiveView("preview");
-      setMobilePanel("workspace");
-      setFilesDrawerOpen(false);
-      setActivityDrawerOpen(false);
-      setPreviewFullscreen(false);
+        setActiveView(
+          "preview"
+        );
 
-      applySelectedProject(project);
-    },
-    [applySelectedProject]
-  );
+        setMobilePanel(
+          "workspace"
+        );
+
+        setFilesDrawerOpen(
+          false
+        );
+
+        setActivityDrawerOpen(
+          false
+        );
+
+        setPreviewFullscreen(
+          false
+        );
+
+        applySelectedProject(
+          project
+        );
+      },
+      [applySelectedProject]
+    );
 
   /* =======================================================
      NEW PROJECT
   ======================================================= */
 
-  const handleNewProject = useCallback(() => {
-    selectedProjectRef.current = null;
+  const handleNewProject =
+    useCallback(() => {
+      selectedProjectRef.current =
+        null;
 
-    setSelectedProject(null);
-    setGeneratedFiles([]);
-    setSelectedFile(null);
+      setSelectedProject(
+        null
+      );
 
-    setPrompt("");
-    setChatMessages([]);
+      setGeneratedFiles([]);
 
-    setLiveUrl("");
-    setDeploymentStatus("Not deployed");
+      setSelectedFile(
+        null
+      );
 
-    setActiveView("preview");
-    setMobilePanel("workspace");
+      setPrompt("");
 
-    setFilesDrawerOpen(false);
-    setActivityDrawerOpen(false);
-    setPreviewFullscreen(false);
+      setChatMessages([]);
 
-    setError("");
-    setNotice("");
-    setActivityLog([]);
+      setLiveUrl("");
 
-    setOperation("idle");
-    setOperationStartedAt(null);
-  }, []);
+      setDeploymentStatus(
+        "Not deployed"
+      );
+
+      setActiveView(
+        "preview"
+      );
+
+      setMobilePanel(
+        "workspace"
+      );
+
+      setFilesDrawerOpen(
+        false
+      );
+
+      setActivityDrawerOpen(
+        false
+      );
+
+      setPreviewFullscreen(
+        false
+      );
+
+      setError("");
+      setNotice("");
+      setActivityLog([]);
+
+      setOperation("idle");
+      setOperationStartedAt(
+        null
+      );
+    }, []);
 
   /* =======================================================
      QUICK PROMPT
   ======================================================= */
 
-  const handleQuickPrompt = useCallback((value) => {
-    setPrompt(value);
-    setError("");
-    setNotice("");
-    setMobilePanel("workspace");
+  const handleQuickPrompt =
+    useCallback(
+      (value) => {
+        setPrompt(value);
+        setError("");
+        setNotice("");
+        setMobilePanel(
+          "workspace"
+        );
 
-    window.setTimeout(() => {
-      document
-        .querySelector(
-          '[data-zyrionos-chat-input="true"]'
-        )
-        ?.focus();
-    }, 50);
-  }, []);
+        window.setTimeout(() => {
+          document
+            .querySelector(
+              '[data-zyrionos-chat-input="true"]'
+            )
+            ?.focus();
+        }, 50);
+      },
+      []
+    );
 
   /* =======================================================
      BUILD / CHANGE
   ======================================================= */
 
-  const handleBuild = useCallback(
-    async (suppliedPrompt = "") => {
-      const userPrompt = String(
-        suppliedPrompt || prompt
-      ).trim();
+  const handleBuild =
+    useCallback(
+      async (
+        suppliedPrompt = ""
+      ) => {
+        const userPrompt =
+          String(
+            suppliedPrompt ||
+              prompt
+          ).trim();
 
-      if (!userPrompt) {
-        setError(
-          "Describe what you want to build or change first."
-        );
-        return;
-      }
-
-      if (loading) {
-        return;
-      }
-
-      const isExistingProject =
-        Boolean(selectedProjectId);
-
-      try {
-        setError("");
-        setNotice("");
-        setLoading(true);
-
-        setActiveView("preview");
-        setMobilePanel("workspace");
-
-        setChatMessages((previous) => [
-          ...previous,
-          createMessage("user", userPrompt),
-        ]);
-
-        startOperation(
-          isExistingProject
-            ? "change"
-            : "build",
-          isExistingProject
-            ? "Your change request is being processed..."
-            : "Your application is being built..."
-        );
-
-        addActivity(
-          "Understanding the request...",
-          "active"
-        );
-
-        const instruction = isExistingProject
-          ? [
-              "Update the current project.",
-              "",
-              `Project ID: ${selectedProjectId}`,
-              `Project name: ${projectName}`,
-              `Framework: ${framework}`,
-              "",
-              "User request:",
-              userPrompt,
-              "",
-              "Return the complete project files required for the implementation.",
-              "Preserve working functionality unless the requested change requires modifying it.",
-            ].join("\n")
-          : userPrompt;
-
-        addActivity(
-          "Generating the application files...",
-          "active"
-        );
-
-        const aiResult = await generateCode(
-          instruction,
-          framework
-        );
-
-        addActivity(
-          "Application files generated.",
-          "success"
-        );
-
-        const assistantText =
-          normalizeAIResponse(aiResult);
-
-        const filesFromAI =
-          getGeneratedFiles(aiResult);
-
-        if (filesFromAI.length === 0) {
-          throw new Error(
-            "AI generation completed, but no project files were returned by the backend."
+        if (!userPrompt) {
+          setError(
+            "Describe what you want to build or change first."
           );
+
+          return;
         }
 
-        addActivity(
-          `${filesFromAI.length} project files received.`,
-          "success"
-        );
+        if (loading) {
+          return;
+        }
 
-        setChatMessages((previous) => [
-          ...previous,
-          createMessage(
-            "assistant",
-            assistantText ||
-              `The application is ready. ${filesFromAI.length} files were generated.`,
-            {
-              fileCount: filesFromAI.length,
-            }
-          ),
-        ]);
+        const isExistingProject =
+          Boolean(
+            selectedProjectId
+          );
 
-        /* =================================================
-           CREATE NEW PROJECT
-        ================================================= */
+        try {
+          setError("");
+          setNotice("");
+          setLoading(true);
 
-        if (!isExistingProject) {
-          const generatedProjectName =
-            buildProjectName(userPrompt);
+          setActiveView(
+            "preview"
+          );
+
+          setMobilePanel(
+            "workspace"
+          );
+
+          setChatMessages(
+            (previous) => [
+              ...previous,
+              createMessage(
+                "user",
+                userPrompt
+              ),
+            ]
+          );
+
+          startOperation(
+            isExistingProject
+              ? "change"
+              : "build",
+            isExistingProject
+              ? "Your change request is being processed..."
+              : "Your application is being built..."
+          );
 
           addActivity(
-            "Saving the project to your workspace...",
+            "Understanding the request...",
             "active"
           );
 
-          const projectResponse =
-            await createProject({
-              projectName: generatedProjectName,
-              description: userPrompt,
-              framework,
-              files: filesFromAI,
-            });
+          const instruction =
+            isExistingProject
+              ? [
+                  "Update the current project.",
+                  "",
+                  `Project ID: ${selectedProjectId}`,
+                  `Project name: ${projectName}`,
+                  `Framework: ${framework}`,
+                  "",
+                  "User request:",
+                  userPrompt,
+                  "",
+                  "Return the complete project files required for the implementation.",
+                  "Preserve working functionality unless the requested change requires modifying it.",
+                ].join("\n")
+              : userPrompt;
 
-          let createdProject =
-            extractProjectFromResponse(
-              projectResponse
+          addActivity(
+            "Generating the application files...",
+            "active"
+          );
+
+          const aiResult =
+            await generateCode(
+              instruction,
+              framework
             );
 
-          if (!createdProject) {
-            const unwrapped =
-              unwrapApiResponse(projectResponse);
+          addActivity(
+            "Application files generated.",
+            "success"
+          );
 
-            if (
-              unwrapped &&
-              typeof unwrapped === "object" &&
-              !Array.isArray(unwrapped) &&
-              (
-                unwrapped._id ||
-                unwrapped.id ||
-                unwrapped.projectName ||
-                Array.isArray(unwrapped.files)
-              )
-            ) {
-              createdProject = unwrapped;
-            }
+          const assistantText =
+            normalizeAIResponse(
+              aiResult
+            );
+
+          const filesFromAI =
+            getGeneratedFiles(
+              aiResult
+            );
+
+          if (
+            filesFromAI.length ===
+            0
+          ) {
+            throw new Error(
+              "AI generation completed, but no project files were returned by the backend."
+            );
           }
 
-          if (createdProject) {
-            const savedFiles =
-              normalizeProjectFiles(
-                createdProject,
-                null
+          addActivity(
+            `${filesFromAI.length} project files received.`,
+            "success"
+          );
+
+          setChatMessages(
+            (previous) => [
+              ...previous,
+              createMessage(
+                "assistant",
+                assistantText ||
+                  `The application is ready. ${filesFromAI.length} files were generated.`,
+                {
+                  fileCount:
+                    filesFromAI.length,
+                }
+              ),
+            ]
+          );
+
+          /* =================================================
+             CREATE NEW PROJECT
+          ================================================= */
+
+          if (
+            !isExistingProject
+          ) {
+            const generatedProjectName =
+              buildProjectName(
+                userPrompt
               );
 
-            const finalFiles =
-              savedFiles.length > 0
-                ? savedFiles
-                : filesFromAI;
+            addActivity(
+              "Saving the project to your workspace...",
+              "active"
+            );
 
-            const projectWithFiles = {
-              ...createdProject,
-              projectName:
-                getProjectName(
+            const projectResponse =
+              await createProject({
+                projectName:
+                  generatedProjectName,
+                description:
+                  userPrompt,
+                framework,
+                files:
+                  filesFromAI,
+              });
+
+            let createdProject =
+              extractProjectFromResponse(
+                projectResponse
+              );
+
+            if (
+              !createdProject
+            ) {
+              const unwrapped =
+                unwrapApiResponse(
+                  projectResponse
+                );
+
+              if (
+                unwrapped &&
+                typeof unwrapped ===
+                  "object" &&
+                !Array.isArray(
+                  unwrapped
+                ) &&
+                (
+                  unwrapped._id ||
+                  unwrapped.id ||
+                  unwrapped.projectName ||
+                  Array.isArray(
+                    unwrapped.files
+                  )
+                )
+              ) {
+                createdProject =
+                  unwrapped;
+              }
+            }
+
+            if (
+              createdProject
+            ) {
+              const savedFiles =
+                normalizeProjectFiles(
+                  createdProject,
+                  null
+                );
+
+              const finalFiles =
+                savedFiles.length >
+                0
+                  ? savedFiles
+                  : filesFromAI;
+
+              const projectWithFiles =
+                {
+                  ...createdProject,
+                  projectName:
+                    getProjectName(
+                      createdProject
+                    ) ||
+                    generatedProjectName,
+                  files:
+                    finalFiles,
+                };
+
+              applySelectedProject(
+                projectWithFiles
+              );
+
+              setGeneratedFiles(
+                finalFiles
+              );
+
+              setSelectedFile(
+                finalFiles[0] ||
+                  null
+              );
+
+              const createdId =
+                getProjectId(
                   createdProject
-                ) || generatedProjectName,
-              files: finalFiles,
-            };
+                );
 
-            applySelectedProject(
-              projectWithFiles
-            );
-
-            setGeneratedFiles(finalFiles);
-            setSelectedFile(
-              finalFiles[0] || null
-            );
-
-            const createdId =
-              getProjectId(createdProject);
-
-            if (createdId) {
-              await loadProjects(createdId);
+              if (createdId) {
+                await loadProjects(
+                  createdId
+                );
+              } else {
+                await loadProjects();
+              }
             } else {
               await loadProjects();
             }
+
+            setNotice(
+              `${generatedProjectName} was created and saved to your projects.`
+            );
           } else {
-            await loadProjects();
-          }
+            /* ===============================================
+               UPDATE EXISTING PROJECT
+            =============================================== */
 
-          setNotice(
-            `${generatedProjectName} was created and saved to your projects.`
-          );
-        } else {
-          /* ===============================================
-             UPDATE EXISTING PROJECT
-          =============================================== */
-
-          addActivity(
-            "Saving the updated project...",
-            "active"
-          );
-
-          const updateResponse =
-            await updateProject(
-              selectedProjectId,
-              {
-                files: filesFromAI,
-              }
+            addActivity(
+              "Saving the updated project...",
+              "active"
             );
 
-          const updatedProject =
-            extractProjectFromResponse(
-              updateResponse
-            );
-
-          if (updatedProject) {
-            const returnedFiles =
-              normalizeProjectFiles(
-                updatedProject,
-                null
+            const updateResponse =
+              await updateProject(
+                selectedProjectId,
+                {
+                  files:
+                    filesFromAI,
+                }
               );
 
-            applySelectedProject({
-              ...updatedProject,
-              files:
-                returnedFiles.length > 0
-                  ? returnedFiles
-                  : filesFromAI,
-            });
-          } else {
-            await loadProjects(
-              selectedProjectId
+            const updatedProject =
+              extractProjectFromResponse(
+                updateResponse
+              );
+
+            if (
+              updatedProject
+            ) {
+              const returnedFiles =
+                normalizeProjectFiles(
+                  updatedProject,
+                  null
+                );
+
+              applySelectedProject({
+                ...updatedProject,
+                files:
+                  returnedFiles.length >
+                  0
+                    ? returnedFiles
+                    : filesFromAI,
+              });
+            } else {
+              await loadProjects(
+                selectedProjectId
+              );
+            }
+
+            setGeneratedFiles(
+              filesFromAI
+            );
+
+            setSelectedFile(
+              filesFromAI[0] ||
+                null
+            );
+
+            setNotice(
+              `Changes saved to ${projectName}.`
+            );
+
+            addActivity(
+              "Project changes saved.",
+              "success"
             );
           }
 
-          setGeneratedFiles(filesFromAI);
-          setSelectedFile(
-            filesFromAI[0] || null
+          setPrompt("");
+
+          setActiveView(
+            "preview"
           );
 
-          setNotice(
-            `Changes saved to ${projectName}.`
+          finishOperation(
+            true,
+            isExistingProject
+              ? "Changes completed successfully."
+              : "Project build completed successfully."
+          );
+        } catch (err) {
+          console.error(
+            "Workspace build error:",
+            err
           );
 
-          addActivity(
-            "Project changes saved.",
-            "success"
+          const message =
+            getErrorMessage(
+              err,
+              "The build could not be completed."
+            );
+
+          setChatMessages(
+            (previous) => [
+              ...previous,
+              createMessage(
+                "assistant",
+                message,
+                {
+                  error: true,
+                }
+              ),
+            ]
           );
+
+          setError(message);
+
+          finishOperation(
+            false,
+            "The build could not be completed."
+          );
+        } finally {
+          setLoading(false);
         }
-
-        setPrompt("");
-        setActiveView("preview");
-
-        finishOperation(
-          true,
-          isExistingProject
-            ? "Changes completed successfully."
-            : "Project build completed successfully."
-        );
-      } catch (err) {
-        console.error(
-          "Workspace build error:",
-          err
-        );
-
-        const message = getErrorMessage(
-          err,
-          "The build could not be completed."
-        );
-
-        setChatMessages((previous) => [
-          ...previous,
-          createMessage(
-            "assistant",
-            message,
-            { error: true }
-          ),
-        ]);
-
-        setError(message);
-
-        finishOperation(
-          false,
-          "The build could not be completed."
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    [
-      prompt,
-      loading,
-      selectedProjectId,
-      projectName,
-      framework,
-      startOperation,
-      addActivity,
-      applySelectedProject,
-      loadProjects,
-      finishOperation,
-    ]
-  );
+      },
+      [
+        prompt,
+        loading,
+        selectedProjectId,
+        projectName,
+        framework,
+        startOperation,
+        addActivity,
+        applySelectedProject,
+        loadProjects,
+        finishOperation,
+      ]
+    );
 
   /* =======================================================
      CHAT SUBMIT
   ======================================================= */
 
-  const handleChatSubmit = useCallback(
-    (event) => {
-      event?.preventDefault();
+  const handleChatSubmit =
+    useCallback(
+      (event) => {
+        event?.preventDefault();
 
-      if (loading || !prompt.trim()) {
-        return;
-      }
+        if (
+          loading ||
+          !prompt.trim()
+        ) {
+          return;
+        }
 
-      handleBuild(prompt);
-    },
-    [loading, prompt, handleBuild]
-  );
+        handleBuild(prompt);
+      },
+      [
+        loading,
+        prompt,
+        handleBuild,
+      ]
+    );
 
   /* =======================================================
      REVIEW / FIX
   ======================================================= */
 
-  const handleReviewFix = useCallback(async () => {
-    if (!selectedProjectId) {
-      setError(
-        "Select a project before running Review / Fix."
-      );
-      return;
-    }
+  const handleReviewFix =
+    useCallback(
+      async () => {
+        if (!selectedProjectId) {
+          setError(
+            "Select a project before running Review / Fix."
+          );
 
-    if (loading) {
-      return;
-    }
+          return;
+        }
 
-    const reviewInstruction = prompt.trim()
-      ? [
-          "Review and improve the current project.",
-          "",
-          `Project ID: ${selectedProjectId}`,
-          `Project name: ${projectName}`,
-          "",
-          "Requested review/change:",
-          prompt.trim(),
-          "",
-          "Return the complete project files required for the implementation.",
-        ].join("\n")
-      : [
-          "Review the current project.",
-          "",
-          "Check for implementation errors, broken user experience, responsive issues, accessibility problems, and incomplete functionality.",
-          "",
-          "Return the complete project files required for any fixes.",
-        ].join("\n");
+        if (loading) {
+          return;
+        }
 
-    setPrompt(reviewInstruction);
-    await handleBuild(reviewInstruction);
-  }, [
-    selectedProjectId,
-    loading,
-    prompt,
-    projectName,
-    handleBuild,
-  ]);
+        const reviewInstruction =
+          prompt.trim()
+            ? [
+                "Review and improve the current project.",
+                "",
+                `Project ID: ${selectedProjectId}`,
+                `Project name: ${projectName}`,
+                "",
+                "Requested review/change:",
+                prompt.trim(),
+                "",
+                "Return the complete project files required for the implementation.",
+              ].join("\n")
+            : [
+                "Review the current project.",
+                "",
+                "Check for implementation errors, broken user experience, responsive issues, accessibility problems, and incomplete functionality.",
+                "",
+                "Return the complete project files required for any fixes.",
+              ].join("\n");
+
+        setPrompt(
+          reviewInstruction
+        );
+
+        await handleBuild(
+          reviewInstruction
+        );
+      },
+      [
+        selectedProjectId,
+        loading,
+        prompt,
+        projectName,
+        handleBuild,
+      ]
+    );
 
   /* =======================================================
      DEPLOY
   ======================================================= */
 
-  const handleDeploy = useCallback(() => {
-    const projectId = getProjectId(
-      selectedProject
-    );
+  const handleDeploy =
+    useCallback(() => {
+      const projectId =
+        getProjectId(
+          selectedProject
+        );
 
-    if (!projectId) {
-      setError(
-        "Select a project before deploying."
+      if (!projectId) {
+        setError(
+          "Select a project before deploying."
+        );
+
+        return;
+      }
+
+      if (
+        generatedFiles.length ===
+        0
+      ) {
+        setError(
+          "This project has no generated files to deploy."
+        );
+
+        return;
+      }
+
+      setError("");
+
+      setNotice(
+        "Opening the deployment flow for this project..."
       );
-      return;
-    }
 
-    if (generatedFiles.length === 0) {
-      setError(
-        "This project has no generated files to deploy."
+      /*
+       * IMPORTANT:
+       * Existing billing/deployment route
+       * intentionally preserved.
+       */
+      window.location.assign(
+        `/billing?projectId=${encodeURIComponent(
+          projectId
+        )}&intent=deploy`
       );
-      return;
-    }
-
-    setError("");
-    setNotice(
-      "Opening the deployment flow for this project..."
-    );
-
-    window.location.assign(
-      `/billing?projectId=${encodeURIComponent(
-        projectId
-      )}&intent=deploy`
-    );
-  }, [selectedProject, generatedFiles.length]);
+    }, [
+      selectedProject,
+      generatedFiles.length,
+    ]);
 
   /* =======================================================
      PREVIEW
   ======================================================= */
 
-  const openPreview = useCallback(() => {
-    setActiveView("preview");
-    setMobilePanel("workspace");
-    setPreviewFullscreen(true);
-  }, []);
+  const openPreview =
+    useCallback(() => {
+      setActiveView(
+        "preview"
+      );
 
-  const closePreview = useCallback(() => {
-    setPreviewFullscreen(false);
-  }, []);
+      setMobilePanel(
+        "workspace"
+      );
+
+      setPreviewFullscreen(
+        true
+      );
+    }, []);
+
+  const closePreview =
+    useCallback(() => {
+      setPreviewFullscreen(
+        false
+      );
+    }, []);
 
   /* =======================================================
      FILES / ACTIVITY
   ======================================================= */
 
-  const openFilesDrawer = useCallback(() => {
-    setFilesDrawerOpen(true);
-    setActivityDrawerOpen(false);
-  }, []);
+  const openFilesDrawer =
+    useCallback(() => {
+      setFilesDrawerOpen(
+        true
+      );
 
-  const closeFilesDrawer = useCallback(() => {
-    setFilesDrawerOpen(false);
-  }, []);
+      setActivityDrawerOpen(
+        false
+      );
+    }, []);
 
-  const openActivityDrawer = useCallback(() => {
-    setActivityDrawerOpen(true);
-    setFilesDrawerOpen(false);
-  }, []);
+  const closeFilesDrawer =
+    useCallback(() => {
+      setFilesDrawerOpen(
+        false
+      );
+    }, []);
 
-  const closeActivityDrawer = useCallback(() => {
-    setActivityDrawerOpen(false);
-  }, []);
+  const openActivityDrawer =
+    useCallback(() => {
+      setActivityDrawerOpen(
+        true
+      );
 
-  const handleFileSelect = useCallback((file) => {
-    setSelectedFile(file);
-    setFilesDrawerOpen(false);
-    setActiveView("code");
-  }, []);
+      setFilesDrawerOpen(
+        false
+      );
+    }, []);
+
+  const closeActivityDrawer =
+    useCallback(() => {
+      setActivityDrawerOpen(
+        false
+      );
+    }, []);
+
+  const handleFileSelect =
+    useCallback(
+      (file) => {
+        setSelectedFile(file);
+        setFilesDrawerOpen(
+          false
+        );
+        setActiveView("code");
+      },
+      []
+    );
 
   /* =======================================================
      KEYBOARD
   ======================================================= */
 
-  const handlePromptKeyDown = useCallback(
-    (event) => {
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-        event.preventDefault();
-        handleChatSubmit(event);
-      }
-    },
-    [handleChatSubmit]
-  );
+  const handlePromptKeyDown =
+    useCallback(
+      (event) => {
+        if (
+          event.key ===
+            "Enter" &&
+          !event.shiftKey
+        ) {
+          event.preventDefault();
+
+          handleChatSubmit(
+            event
+          );
+        }
+      },
+      [handleChatSubmit]
+    );
 
   /* =======================================================
      LIVE PROJECT PREVIEW
-     This is the only new runtime layer.
-
-     Priority:
-       1. Deployed preview URL
-       2. Sandpack React runtime
-       3. Existing static HTML fallback
-       4. Empty preview
-
-     Therefore the existing deployment behaviour remains
-     unchanged.
   ======================================================= */
 
-  const renderProjectPreview = useCallback(
-    (fullscreen = false) => {
-      if (previewUrl) {
-        return (
-          <iframe
-            title={`${projectName} application preview`}
-            src={previewUrl}
-            className={
-              fullscreen
-                ? styles.previewFullFrame
-                : styles.previewFrame
-            }
-            allow="fullscreen"
-          />
-        );
-      }
+  const renderProjectPreview =
+    useCallback(
+      (fullscreen = false) => {
+        /*
+         * 1. DEPLOYED PREVIEW
+         */
+        if (previewUrl) {
+          return (
+            <iframe
+              title={`${projectName} application preview`}
+              src={previewUrl}
+              className={
+                fullscreen
+                  ? styles.previewFullFrame
+                  : styles.previewFrame
+              }
+              allow="fullscreen"
+            />
+          );
+        }
 
-      if (
-        canUseSandpack &&
-        Object.keys(sandpackFiles).length > 0
-      ) {
-        return (
-          <div
-            className={
-              fullscreen
-                ? styles.previewSandpackFullscreen
-                : styles.previewSandpack
-            }
-          >
-            <SandpackProvider
-              template="react"
-              files={sandpackFiles}
-              customSetup={{
-                entry: sandpackEntry,
-                dependencies:
-                  sandpackDependencies,
-              }}
-              options={{
-                autorun: true,
-                autoReload: true,
-                recompileMode: "delayed",
-                recompileDelay: 300,
+        /*
+         * 2. LOCAL REACT PREVIEW
+         */
+        if (
+          canUseSandpack &&
+          Object.keys(
+            sandpackRuntime.files
+          ).length > 0
+        ) {
+          return (
+            <div
+              className={
+                fullscreen
+                  ? styles.previewSandpackFullscreen
+                  : styles.previewSandpack
+              }
+              style={{
+                width: "100%",
+                height: "100%",
+                minHeight: fullscreen
+                  ? "100%"
+                  : "420px",
+                overflow: "hidden",
               }}
             >
-              <SandpackPreview
-                showNavigator={false}
-                showRefreshButton
-                showOpenInCodeSandbox={false}
-                style={{
-                  width: "100%",
-                  height: "100%",
+              <SandpackProvider
+                key={`${selectedProjectId}-${generatedFiles.length}-${sandpackRuntime.entry}`}
+                template="react"
+                files={
+                  sandpackRuntime.files
+                }
+                customSetup={{
+                  entry:
+                    sandpackRuntime.entry,
+                  dependencies:
+                    sandpackRuntime.dependencies,
                 }}
-              />
-            </SandpackProvider>
-          </div>
-        );
-      }
+                options={{
+                  autorun: true,
+                  autoReload: true,
+                  recompileMode:
+                    "delayed",
+                  recompileDelay: 300,
+                }}
+              >
+                <SandpackPreview
+                  showNavigator={
+                    false
+                  }
+                  showRefreshButton={
+                    true
+                  }
+                  showOpenInCodeSandbox={
+                    false
+                  }
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    minHeight:
+                      fullscreen
+                        ? "100%"
+                        : "420px",
+                  }}
+                />
+              </SandpackProvider>
+            </div>
+          );
+        }
 
-      if (previewEntryFile) {
+        /*
+         * 3. STATIC HTML FALLBACK
+         */
+        if (
+          previewEntryFile
+        ) {
+          return (
+            <iframe
+              title={`${projectName} HTML preview`}
+              srcDoc={getFileContent(
+                previewEntryFile
+              )}
+              className={
+                fullscreen
+                  ? styles.previewFullFrame
+                  : styles.previewFrame
+              }
+              sandbox="allow-scripts allow-forms allow-modals"
+            />
+          );
+        }
+
+        /*
+         * 4. EMPTY STATE
+         */
         return (
-          <iframe
-            title={`${projectName} HTML preview`}
-            srcDoc={getFileContent(
-              previewEntryFile
-            )}
-            className={
-              fullscreen
-                ? styles.previewFullFrame
-                : styles.previewFrame
-            }
-            sandbox="allow-scripts allow-forms allow-modals"
-          />
-        );
-      }
-
-      return (
-        <div
-          className={
-            styles.previewEmpty
-          }
-        >
           <div
             className={
-              styles.previewIcon
+              styles.previewEmpty
             }
           >
-            Z
-          </div>
-
-          <span>PREVIEW</span>
-
-          <h2>
-            Project generated
-          </h2>
-
-          <p>
-            {generatedFiles.length > 0
-              ? `${generatedFiles.length} files are ready. The backend has not returned a live preview URL yet.`
-              : "Build an application to create the project files."}
-          </p>
-
-          {generatedFiles.length > 0 && (
-            <button
-              type="button"
-              onClick={openFilesDrawer}
+            <div
+              className={
+                styles.previewIcon
+              }
             >
-              View project files
-            </button>
-          )}
-        </div>
-      );
-    },
-    [
-      previewUrl,
-      projectName,
-      canUseSandpack,
-      sandpackFiles,
-      sandpackEntry,
-      sandpackDependencies,
-      previewEntryFile,
-      generatedFiles.length,
-      openFilesDrawer,
-    ]
-  );
+              Z
+            </div>
+
+            <span>
+              PREVIEW
+            </span>
+
+            <h2>
+              Project generated
+            </h2>
+
+            <p>
+              {generatedFiles.length >
+              0
+                ? `${generatedFiles.length} files are ready. The backend has not returned a live preview URL yet.`
+                : "Build an application to create the project files."}
+            </p>
+
+            {generatedFiles.length >
+              0 && (
+              <button
+                type="button"
+                onClick={
+                  openFilesDrawer
+                }
+              >
+                View project files
+              </button>
+            )}
+          </div>
+        );
+      },
+      [
+        previewUrl,
+        projectName,
+        selectedProjectId,
+        generatedFiles.length,
+        canUseSandpack,
+        sandpackRuntime,
+        previewEntryFile,
+        openFilesDrawer,
+      ]
+    );
 
   /* =======================================================
      RENDER
@@ -1509,24 +2072,57 @@ function Workspace() {
 
   return (
     <DashboardLayout>
-      <main className={styles.workspace}>
+      <main
+        className={
+          styles.workspace
+        }
+      >
         {/* =================================================
             HEADER
         ================================================= */}
 
-        <header className={styles.workspaceHeader}>
-          <div className={styles.brandBlock}>
-            <div className={styles.projectMark}>Z</div>
+        <header
+          className={
+            styles.workspaceHeader
+          }
+        >
+          <div
+            className={
+              styles.brandBlock
+            }
+          >
+            <div
+              className={
+                styles.projectMark
+              }
+            >
+              Z
+            </div>
 
-            <div className={styles.brandCopy}>
-              <span>ZYRIONOS WORKSPACE</span>
-              <strong title={projectName}>
+            <div
+              className={
+                styles.brandCopy
+              }
+            >
+              <span>
+                ZYRIONOS WORKSPACE
+              </span>
+
+              <strong
+                title={
+                  projectName
+                }
+              >
                 {projectName}
               </strong>
             </div>
           </div>
 
-          <div className={styles.headerStatus}>
+          <div
+            className={
+              styles.headerStatus
+            }
+          >
             <span
               className={
                 operationRunning
@@ -1542,7 +2138,11 @@ function Workspace() {
             </strong>
 
             {operationRunning && (
-              <span className={styles.statusDots}>
+              <span
+                className={
+                  styles.statusDots
+                }
+              >
                 <i />
                 <i />
                 <i />
@@ -1556,40 +2156,66 @@ function Workspace() {
             )}
           </div>
 
-          <div className={styles.headerActions}>
+          <div
+            className={
+              styles.headerActions
+            }
+          >
             <button
               type="button"
-              className={styles.headerButton}
-              onClick={openFilesDrawer}
+              className={
+                styles.headerButton
+              }
+              onClick={
+                openFilesDrawer
+              }
             >
               Files
-              <b>{generatedFiles.length}</b>
+              <b>
+                {generatedFiles.length}
+              </b>
             </button>
 
             <button
               type="button"
-              className={styles.headerButton}
-              onClick={openActivityDrawer}
+              className={
+                styles.headerButton
+              }
+              onClick={
+                openActivityDrawer
+              }
             >
               Activity
             </button>
 
             <button
               type="button"
-              className={styles.previewTopButton}
-              onClick={openPreview}
-              disabled={generatedFiles.length === 0}
+              className={
+                styles.previewTopButton
+              }
+              onClick={
+                openPreview
+              }
+              disabled={
+                generatedFiles.length ===
+                0
+              }
             >
               Preview
             </button>
 
             <button
               type="button"
-              className={styles.deployButton}
-              onClick={handleDeploy}
+              className={
+                styles.deployButton
+              }
+              onClick={
+                handleDeploy
+              }
               disabled={
                 !selectedProjectId ||
-                generatedFiles.length === 0
+                generatedFiles.length ===
+                  0
               }
             >
               Deploy
@@ -1603,19 +2229,26 @@ function Workspace() {
 
         {error && (
           <div
-            className={styles.alertError}
+            className={
+              styles.alertError
+            }
             role="alert"
           >
             <span>!</span>
 
             <div>
-              <strong>Workspace error</strong>
+              <strong>
+                Workspace error
+              </strong>
+
               <p>{error}</p>
             </div>
 
             <button
               type="button"
-              onClick={() => setError("")}
+              onClick={() =>
+                setError("")
+              }
               aria-label="Close error"
             >
               ×
@@ -1625,15 +2258,20 @@ function Workspace() {
 
         {notice && !error && (
           <div
-            className={styles.alertSuccess}
+            className={
+              styles.alertSuccess
+            }
             role="status"
           >
             <span>✓</span>
+
             <p>{notice}</p>
 
             <button
               type="button"
-              onClick={() => setNotice("")}
+              onClick={() =>
+                setNotice("")
+              }
               aria-label="Close notice"
             >
               ×
@@ -1645,16 +2283,23 @@ function Workspace() {
             MOBILE NAV
         ================================================= */}
 
-        <nav className={styles.mobileNav}>
+        <nav
+          className={
+            styles.mobileNav
+          }
+        >
           <button
             type="button"
             className={
-              mobilePanel === "projects"
+              mobilePanel ===
+              "projects"
                 ? styles.mobileNavActive
                 : ""
             }
             onClick={() =>
-              setMobilePanel("projects")
+              setMobilePanel(
+                "projects"
+              )
             }
           >
             Projects
@@ -1663,12 +2308,15 @@ function Workspace() {
           <button
             type="button"
             className={
-              mobilePanel === "workspace"
+              mobilePanel ===
+              "workspace"
                 ? styles.mobileNavActive
                 : ""
             }
             onClick={() =>
-              setMobilePanel("workspace")
+              setMobilePanel(
+                "workspace"
+              )
             }
           >
             Workspace
@@ -1677,12 +2325,15 @@ function Workspace() {
           <button
             type="button"
             className={
-              mobilePanel === "activity"
+              mobilePanel ===
+              "activity"
                 ? styles.mobileNavActive
                 : ""
             }
             onClick={() =>
-              setMobilePanel("activity")
+              setMobilePanel(
+                "activity"
+              )
             }
           >
             Activity
@@ -1693,7 +2344,11 @@ function Workspace() {
             BODY
         ================================================= */}
 
-        <section className={styles.workspaceBody}>
+        <section
+          className={
+            styles.workspaceBody
+          }
+        >
           {/* =================================================
               PROJECTS
           ================================================= */}
@@ -1702,21 +2357,33 @@ function Workspace() {
             className={`
               ${styles.projectRail}
               ${
-                mobilePanel === "projects"
+                mobilePanel ===
+                "projects"
                   ? styles.mobileVisible
                   : ""
               }
             `}
           >
-            <div className={styles.railHeader}>
+            <div
+              className={
+                styles.railHeader
+              }
+            >
               <div>
-                <span>PROJECTS</span>
-                <b>{projectCount}</b>
+                <span>
+                  PROJECTS
+                </span>
+
+                <b>
+                  {projectCount}
+                </b>
               </div>
 
               <button
                 type="button"
-                onClick={handleNewProject}
+                onClick={
+                  handleNewProject
+                }
               >
                 + New
               </button>
@@ -1724,129 +2391,192 @@ function Workspace() {
 
             <button
               type="button"
-              className={styles.newProjectCard}
-              onClick={handleNewProject}
+              className={
+                styles.newProjectCard
+              }
+              onClick={
+                handleNewProject
+              }
             >
               <span>+</span>
 
               <div>
-                <strong>Create a Project</strong>
-                <small>Start from an idea</small>
+                <strong>
+                  Create a Project
+                </strong>
+
+                <small>
+                  Start from an idea
+                </small>
               </div>
 
               <b>→</b>
             </button>
 
-            <div className={styles.quickPromptList}>
-              <span>START WITH</span>
+            <div
+              className={
+                styles.quickPromptList
+              }
+            >
+              <span>
+                START WITH
+              </span>
 
-              {QUICK_PROMPTS.map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() =>
-                    handleQuickPrompt(
-                      item.prompt
-                    )
-                  }
-                >
-                  {item.label}
-                </button>
-              ))}
+              {QUICK_PROMPTS.map(
+                (item) => (
+                  <button
+                    key={
+                      item.label
+                    }
+                    type="button"
+                    onClick={() =>
+                      handleQuickPrompt(
+                        item.prompt
+                      )
+                    }
+                  >
+                    {item.label}
+                  </button>
+                )
+              )}
             </div>
 
-            <div className={styles.projectList}>
+            <div
+              className={
+                styles.projectList
+              }
+            >
               {projectLoading ? (
-                <div className={styles.projectLoading}>
+                <div
+                  className={
+                    styles.projectLoading
+                  }
+                >
                   Loading projects...
                 </div>
-              ) : projects.length === 0 ? (
-                <div className={styles.noProjects}>
-                  <strong>No projects yet</strong>
+              ) : projects.length ===
+                0 ? (
+                <div
+                  className={
+                    styles.noProjects
+                  }
+                >
+                  <strong>
+                    No projects yet
+                  </strong>
+
                   <p>
-                    Start with an idea and your
-                    project will be saved here.
+                    Start with an
+                    idea and your
+                    project will be
+                    saved here.
                   </p>
 
                   <button
                     type="button"
-                    onClick={handleNewProject}
+                    onClick={
+                      handleNewProject
+                    }
                   >
                     Start building
                   </button>
                 </div>
               ) : (
-                projects.map((project) => {
-                  const id = getProjectId(project);
-                  const name = getProjectName(project);
+                projects.map(
+                  (project) => {
+                    const id =
+                      getProjectId(
+                        project
+                      );
 
-                  const active =
-                    String(id) ===
-                    String(selectedProjectId);
+                    const name =
+                      getProjectName(
+                        project
+                      );
 
-                  const files =
-                    normalizeProjectFiles(
-                      project,
-                      null
-                    );
+                    const active =
+                      String(
+                        id
+                      ) ===
+                      String(
+                        selectedProjectId
+                      );
 
-                  return (
-                    <button
-                      key={id || name}
-                      type="button"
-                      className={`
-                        ${styles.projectItem}
-                        ${
-                          active
-                            ? styles.projectItemActive
-                            : ""
+                    const files =
+                      normalizeProjectFiles(
+                        project,
+                        null
+                      );
+
+                    return (
+                      <button
+                        key={
+                          id ||
+                          name
                         }
-                      `}
-                      onClick={() =>
-                        handleSelectProject(
-                          project
-                        )
-                      }
-                    >
-                      <span
-                        className={
-                          styles.projectAvatar
-                        }
-                      >
-                        {name
-                          .charAt(0)
-                          .toUpperCase()}
-                      </span>
-
-                      <span
-                        className={
-                          styles.projectItemCopy
-                        }
-                      >
-                        <strong title={name}>
-                          {name}
-                        </strong>
-
-                        <small>
-                          {getProjectFramework(
-                            project
-                          )}
-                          {files.length > 0
-                            ? ` · ${files.length} files`
-                            : ""}
-                        </small>
-                      </span>
-
-                      {active && (
-                        <i
-                          className={
-                            styles.projectActiveIndicator
+                        type="button"
+                        className={`
+                          ${styles.projectItem}
+                          ${
+                            active
+                              ? styles.projectItemActive
+                              : ""
                           }
-                        />
-                      )}
-                    </button>
-                  );
-                })
+                        `}
+                        onClick={() =>
+                          handleSelectProject(
+                            project
+                          )
+                        }
+                      >
+                        <span
+                          className={
+                            styles.projectAvatar
+                          }
+                        >
+                          {name
+                            .charAt(
+                              0
+                            )
+                            .toUpperCase()}
+                        </span>
+
+                        <span
+                          className={
+                            styles.projectItemCopy
+                          }
+                        >
+                          <strong
+                            title={
+                              name
+                            }
+                          >
+                            {name}
+                          </strong>
+
+                          <small>
+                            {getProjectFramework(
+                              project
+                            )}
+
+                            {files.length >
+                            0
+                              ? ` · ${files.length} files`
+                              : ""}
+                          </small>
+                        </span>
+
+                        {active && (
+                          <i
+                            className={
+                              styles.projectActiveIndicator
+                            }
+                          />
+                        )}
+                      </button>
+                    );
+                  }
+                )
               )}
             </div>
           </aside>
@@ -1859,7 +2589,8 @@ function Workspace() {
             className={`
               ${styles.mainWorkspace}
               ${
-                mobilePanel === "workspace"
+                mobilePanel ===
+                "workspace"
                   ? styles.mobileVisible
                   : ""
               }
@@ -1867,45 +2598,83 @@ function Workspace() {
           >
             {/* TOOLBAR */}
 
-            <div className={styles.workspaceToolbar}>
-              <div className={styles.workspaceTitle}>
-                <span>APPLICATION</span>
-                <strong title={projectName}>
+            <div
+              className={
+                styles.workspaceToolbar
+              }
+            >
+              <div
+                className={
+                  styles.workspaceTitle
+                }
+              >
+                <span>
+                  APPLICATION
+                </span>
+
+                <strong
+                  title={
+                    projectName
+                  }
+                >
                   {projectName}
                 </strong>
               </div>
 
-              <div className={styles.toolbarActions}>
+              <div
+                className={
+                  styles.toolbarActions
+                }
+              >
                 <select
-                  value={framework}
-                  onChange={(event) =>
+                  value={
+                    framework
+                  }
+                  onChange={(
+                    event
+                  ) =>
                     setFramework(
-                      event.target.value
+                      event
+                        .target
+                        .value
                     )
                   }
-                  disabled={loading}
-                  className={styles.frameworkSelect}
+                  disabled={
+                    loading
+                  }
+                  className={
+                    styles.frameworkSelect
+                  }
                   aria-label="Framework"
                 >
-                  {FRAMEWORKS.map((item) => (
-                    <option
-                      key={item}
-                      value={item}
-                    >
-                      {item}
-                    </option>
-                  ))}
+                  {FRAMEWORKS.map(
+                    (item) => (
+                      <option
+                        key={
+                          item
+                        }
+                        value={
+                          item
+                        }
+                      >
+                        {item}
+                      </option>
+                    )
+                  )}
                 </select>
 
                 <button
                   type="button"
                   className={
-                    activeView === "preview"
+                    activeView ===
+                    "preview"
                       ? styles.toolbarActive
                       : styles.toolbarButton
                   }
                   onClick={() =>
-                    setActiveView("preview")
+                    setActiveView(
+                      "preview"
+                    )
                   }
                 >
                   Preview
@@ -1914,12 +2683,15 @@ function Workspace() {
                 <button
                   type="button"
                   className={
-                    activeView === "code"
+                    activeView ===
+                    "code"
                       ? styles.toolbarActive
                       : styles.toolbarButton
                   }
                   onClick={() =>
-                    setActiveView("code")
+                    setActiveView(
+                      "code"
+                    )
                   }
                 >
                   Code
@@ -1929,11 +2701,28 @@ function Workspace() {
 
             {/* WORK SURFACE */}
 
-            <div className={styles.visualArea}>
-              {activeView === "preview" ? (
-                <div className={styles.previewShell}>
-                  <div className={styles.previewHeader}>
-                    <div className={styles.browserDots}>
+            <div
+              className={
+                styles.visualArea
+              }
+            >
+              {activeView ===
+              "preview" ? (
+                <div
+                  className={
+                    styles.previewShell
+                  }
+                >
+                  <div
+                    className={
+                      styles.previewHeader
+                    }
+                  >
+                    <div
+                      className={
+                        styles.browserDots
+                      }
+                    >
                       <i />
                       <i />
                       <i />
@@ -1943,12 +2732,18 @@ function Workspace() {
                       className={
                         styles.previewProjectName
                       }
-                      title={projectName}
+                      title={
+                        projectName
+                      }
                     >
                       {projectName}
                     </span>
 
-                    <div className={styles.previewAddress}>
+                    <div
+                      className={
+                        styles.previewAddress
+                      }
+                    >
                       {previewUrl
                         ? previewUrl
                         : canUseSandpack
@@ -1979,73 +2774,125 @@ function Workspace() {
 
                     <button
                       type="button"
-                      onClick={openPreview}
+                      onClick={
+                        openPreview
+                      }
                       disabled={
-                        generatedFiles.length === 0
+                        generatedFiles.length ===
+                        0
                       }
                     >
                       Open
                     </button>
                   </div>
 
-                  <div className={styles.previewContent}>
-                    {renderProjectPreview(false)}
+                  <div
+                    className={
+                      styles.previewContent
+                    }
+                  >
+                    {renderProjectPreview(
+                      false
+                    )}
                   </div>
                 </div>
               ) : (
-                <div className={styles.codeSurface}>
+                <div
+                  className={
+                    styles.codeSurface
+                  }
+                >
                   <div
                     className={
                       styles.codeSurfaceHeader
                     }
                   >
                     <div>
-                      <span>PROJECT FILES</span>
-                      <b>{generatedFiles.length}</b>
+                      <span>
+                        PROJECT FILES
+                      </span>
+
+                      <b>
+                        {
+                          generatedFiles.length
+                        }
+                      </b>
                     </div>
 
                     <button
                       type="button"
-                      onClick={openFilesDrawer}
+                      onClick={
+                        openFilesDrawer
+                      }
                     >
                       Open Files
                     </button>
                   </div>
 
-                  <div className={styles.codeSurfaceBody}>
-                    <div className={styles.codeFileList}>
-                      {generatedFiles.map((file) => {
-                        const path = getFilePath(file);
-                        const active =
-                          selectedFile === file;
+                  <div
+                    className={
+                      styles.codeSurfaceBody
+                    }
+                  >
+                    <div
+                      className={
+                        styles.codeFileList
+                      }
+                    >
+                      {generatedFiles.map(
+                        (file) => {
+                          const path =
+                            getFilePath(
+                              file
+                            );
 
-                        return (
-                          <button
-                            key={
-                              file?._id ||
-                              file?.id ||
-                              path
-                            }
-                            type="button"
-                            className={
-                              active
-                                ? styles.codeFileActive
-                                : styles.codeFile
-                            }
-                            onClick={() =>
-                              setSelectedFile(file)
-                            }
-                            title={path}
-                          >
-                            <span>◇</span>
-                            {path}
-                          </button>
-                        );
-                      })}
+                          const active =
+                            selectedFile ===
+                            file;
+
+                          return (
+                            <button
+                              key={
+                                file?._id ||
+                                file?.id ||
+                                path
+                              }
+                              type="button"
+                              className={
+                                active
+                                  ? styles.codeFileActive
+                                  : styles.codeFile
+                              }
+                              onClick={() =>
+                                setSelectedFile(
+                                  file
+                                )
+                              }
+                              title={
+                                path
+                              }
+                            >
+                              <span>
+                                ◇
+                              </span>
+
+                              {
+                                path
+                              }
+                            </button>
+                          );
+                        }
+                      )}
                     </div>
 
-                    <pre className={styles.codeEditor}>
-                      {getFileContent(selectedFile)}
+                    <pre
+                      className={
+                        styles.codeEditor
+                      }
+                    >
+                      {getFileContent(
+                        selectedFile
+                      )}
                     </pre>
                   </div>
                 </div>
@@ -2054,12 +2901,24 @@ function Workspace() {
 
             {/* CHAT */}
 
-            <section className={styles.chatArea}>
-              <div className={styles.chatHeader}>
+            <section
+              className={
+                styles.chatArea
+              }
+            >
+              <div
+                className={
+                  styles.chatHeader
+                }
+              >
                 <div>
-                  <span>ZYRIONOS AI</span>
+                  <span>
+                    ZYRIONOS AI
+                  </span>
+
                   <strong>
-                    Build with conversation
+                    Build with
+                    conversation
                   </strong>
                 </div>
 
@@ -2078,7 +2937,10 @@ function Workspace() {
 
                   {operationRunning ? (
                     <>
-                      <span>Working</span>
+                      <span>
+                        Working
+                      </span>
+
                       <span
                         className={
                           styles.chatDots
@@ -2095,16 +2957,29 @@ function Workspace() {
                 </div>
               </div>
 
-              <div className={styles.chatMessages}>
-                {chatMessages.length === 0 ? (
-                  <div className={styles.chatWelcome}>
+              <div
+                className={
+                  styles.chatMessages
+                }
+              >
+                {chatMessages.length ===
+                0 ? (
+                  <div
+                    className={
+                      styles.chatWelcome
+                    }
+                  >
                     <strong>
-                      What should we build?
+                      What should
+                      we build?
                     </strong>
 
                     <span>
-                      Describe the application or
-                      change in normal language.
+                      Describe the
+                      application
+                      or change in
+                      normal
+                      language.
                     </span>
 
                     <div
@@ -2112,10 +2987,15 @@ function Workspace() {
                         styles.chatQuickPrompts
                       }
                     >
-                      {QUICK_PROMPTS.slice(0, 3).map(
+                      {QUICK_PROMPTS.slice(
+                        0,
+                        3
+                      ).map(
                         (item) => (
                           <button
-                            key={item.label}
+                            key={
+                              item.label
+                            }
                             type="button"
                             onClick={() =>
                               handleQuickPrompt(
@@ -2123,88 +3003,120 @@ function Workspace() {
                               )
                             }
                           >
-                            {item.label}
+                            {
+                              item.label
+                            }
                           </button>
                         )
                       )}
                     </div>
                   </div>
                 ) : (
-                  chatMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={
-                        message.role === "user"
-                          ? styles.chatMessageUser
-                          : message.error
-                          ? styles.chatMessageError
-                          : styles.chatMessageAI
-                      }
-                    >
+                  chatMessages.map(
+                    (message) => (
                       <div
-                        className={
-                          styles.chatMessageAvatar
+                        key={
+                          message.id
                         }
-                      >
-                        {message.role === "user"
-                          ? "U"
-                          : "Z"}
-                      </div>
-
-                      <div
                         className={
-                          styles.chatMessageBody
+                          message.role ===
+                          "user"
+                            ? styles.chatMessageUser
+                            : message.error
+                            ? styles.chatMessageError
+                            : styles.chatMessageAI
                         }
                       >
                         <div
                           className={
-                            styles.chatMessageMeta
+                            styles.chatMessageAvatar
                           }
                         >
-                          <strong>
-                            {message.role ===
-                            "user"
-                              ? "You"
-                              : "ZyrionOS AI"}
-                          </strong>
-
-                          <small>
-                            {message.timestamp}
-                          </small>
+                          {message.role ===
+                          "user"
+                            ? "U"
+                            : "Z"}
                         </div>
 
-                        <p>{message.content}</p>
-
-                        {message.fileCount && (
-                          <button
-                            type="button"
+                        <div
+                          className={
+                            styles.chatMessageBody
+                          }
+                        >
+                          <div
                             className={
-                              styles.chatFilesButton
-                            }
-                            onClick={
-                              openFilesDrawer
+                              styles.chatMessageMeta
                             }
                           >
-                            View{" "}
-                            {message.fileCount}{" "}
-                            generated files
-                          </button>
-                        )}
+                            <strong>
+                              {message.role ===
+                              "user"
+                                ? "You"
+                                : "ZyrionOS AI"}
+                            </strong>
+
+                            <small>
+                              {
+                                message.timestamp
+                              }
+                            </small>
+                          </div>
+
+                          <p>
+                            {
+                              message.content
+                            }
+                          </p>
+
+                          {message.fileCount && (
+                            <button
+                              type="button"
+                              className={
+                                styles.chatFilesButton
+                              }
+                              onClick={
+                                openFilesDrawer
+                              }
+                            >
+                              View{" "}
+                              {
+                                message.fileCount
+                              }{" "}
+                              generated
+                              files
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    )
+                  )
                 )}
 
-                <div ref={chatEndRef} />
+                <div
+                  ref={
+                    chatEndRef
+                  }
+                />
               </div>
 
               <form
-                className={styles.chatComposer}
-                onSubmit={handleChatSubmit}
+                className={
+                  styles.chatComposer
+                }
+                onSubmit={
+                  handleChatSubmit
+                }
               >
-                <div className={styles.chatComposerTop}>
+                <div
+                  className={
+                    styles.chatComposerTop
+                  }
+                >
                   <div>
-                    <span>✦</span>
+                    <span>
+                      ✦
+                    </span>
+
                     <strong>
                       {selectedProject
                         ? `Editing ${projectName}`
@@ -2212,17 +3124,30 @@ function Workspace() {
                     </strong>
                   </div>
 
-                  <small>{framework}</small>
+                  <small>
+                    {framework}
+                  </small>
                 </div>
 
                 <textarea
                   data-zyrionos-chat-input="true"
-                  value={prompt}
-                  onChange={(event) =>
-                    setPrompt(event.target.value)
+                  value={
+                    prompt
                   }
-                  onKeyDown={handlePromptKeyDown}
-                  disabled={loading}
+                  onChange={(
+                    event
+                  ) =>
+                    setPrompt(
+                      event.target
+                        .value
+                    )
+                  }
+                  onKeyDown={
+                    handlePromptKeyDown
+                  }
+                  disabled={
+                    loading
+                  }
                   rows={3}
                   placeholder={
                     selectedProject
@@ -2236,24 +3161,40 @@ function Workspace() {
                     styles.chatComposerBottom
                   }
                 >
-                  <div className={styles.chatHints}>
+                  <div
+                    className={
+                      styles.chatHints
+                    }
+                  >
                     <span>
-                      Enter to build
+                      Enter to
+                      build
                     </span>
+
                     <span>
-                      Shift + Enter for a new line
+                      Shift + Enter
+                      for a new
+                      line
                     </span>
                   </div>
 
-                  <div className={styles.chatActions}>
+                  <div
+                    className={
+                      styles.chatActions
+                    }
+                  >
                     {selectedProject && (
                       <button
                         type="button"
                         className={
                           styles.reviewButton
                         }
-                        disabled={loading}
-                        onClick={handleReviewFix}
+                        disabled={
+                          loading
+                        }
+                        onClick={
+                          handleReviewFix
+                        }
                       >
                         Review / Fix
                       </button>
@@ -2261,7 +3202,9 @@ function Workspace() {
 
                     <button
                       type="submit"
-                      className={styles.buildButton}
+                      className={
+                        styles.buildButton
+                      }
                       disabled={
                         loading ||
                         !prompt.trim()
@@ -2273,7 +3216,9 @@ function Workspace() {
                         ? "Apply Change"
                         : "Build App"}
 
-                      <span>↑</span>
+                      <span>
+                        ↑
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -2289,16 +3234,26 @@ function Workspace() {
             className={`
               ${styles.activityPanel}
               ${
-                mobilePanel === "activity"
+                mobilePanel ===
+                "activity"
                   ? styles.mobileVisible
                   : ""
               }
             `}
           >
-            <div className={styles.activityPanelHeader}>
+            <div
+              className={
+                styles.activityPanelHeader
+              }
+            >
               <div>
-                <span>WORKSPACE</span>
-                <strong>Activity</strong>
+                <span>
+                  WORKSPACE
+                </span>
+
+                <strong>
+                  Activity
+                </strong>
               </div>
 
               <span
@@ -2314,9 +3269,19 @@ function Workspace() {
               </span>
             </div>
 
-            <div className={styles.activityPanelBody}>
-              <div className={styles.currentOperation}>
-                <span>CURRENT STATUS</span>
+            <div
+              className={
+                styles.activityPanelBody
+              }
+            >
+              <div
+                className={
+                  styles.currentOperation
+                }
+              >
+                <span>
+                  CURRENT STATUS
+                </span>
 
                 <strong>
                   {operationRunning
@@ -2343,76 +3308,130 @@ function Workspace() {
                 )}
               </div>
 
-              <div className={styles.activityListCard}>
+              <div
+                className={
+                  styles.activityListCard
+                }
+              >
                 <div
                   className={
                     styles.activityListHeader
                   }
                 >
-                  <span>ACTIVITY</span>
-                  <b>{activityLog.length}</b>
+                  <span>
+                    ACTIVITY
+                  </span>
+
+                  <b>
+                    {
+                      activityLog.length
+                    }
+                  </b>
                 </div>
 
-                {activityLog.length === 0 ? (
-                  <p className={styles.activityEmpty}>
-                    Activity will appear here while
-                    your project is being built.
+                {activityLog.length ===
+                0 ? (
+                  <p
+                    className={
+                      styles.activityEmpty
+                    }
+                  >
+                    Activity will
+                    appear here
+                    while your
+                    project is
+                    being built.
                   </p>
                 ) : (
-                  <div className={styles.activityItems}>
+                  <div
+                    className={
+                      styles.activityItems
+                    }
+                  >
                     {activityLog
                       .slice()
                       .reverse()
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          className={
-                            styles.activityItem
-                          }
-                        >
-                          <i
-                            className={
-                              item.type === "success"
-                                ? styles.dotSuccess
-                                : item.type ===
-                                  "error"
-                                ? styles.dotError
-                                : item.type ===
-                                  "active"
-                                ? styles.dotActive
-                                : styles.dotInfo
+                      .map(
+                        (item) => (
+                          <div
+                            key={
+                              item.id
                             }
-                          />
+                            className={
+                              styles.activityItem
+                            }
+                          >
+                            <i
+                              className={
+                                item.type ===
+                                "success"
+                                  ? styles.dotSuccess
+                                  : item.type ===
+                                    "error"
+                                  ? styles.dotError
+                                  : item.type ===
+                                    "active"
+                                  ? styles.dotActive
+                                  : styles.dotInfo
+                              }
+                            />
 
-                          <div>
-                            <p>{item.message}</p>
-                            <small>
-                              {item.timestamp}
-                            </small>
+                            <div>
+                              <p>
+                                {
+                                  item.message
+                                }
+                              </p>
+
+                              <small>
+                                {
+                                  item.timestamp
+                                }
+                              </small>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      )}
                   </div>
                 )}
               </div>
 
-              <div className={styles.projectStats}>
+              <div
+                className={
+                  styles.projectStats
+                }
+              >
                 <div>
-                  <span>PROJECT FILES</span>
+                  <span>
+                    PROJECT FILES
+                  </span>
+
                   <strong>
-                    {generatedFiles.length}
+                    {
+                      generatedFiles.length
+                    }
                   </strong>
                 </div>
 
                 <div>
-                  <span>FRAMEWORK</span>
-                  <strong>{framework}</strong>
+                  <span>
+                    FRAMEWORK
+                  </span>
+
+                  <strong>
+                    {framework}
+                  </strong>
                 </div>
 
                 <div>
-                  <span>DEPLOYMENT</span>
+                  <span>
+                    DEPLOYMENT
+                  </span>
+
                   <strong>
-                    {deploymentStatus}
+                    {
+                      deploymentStatus
+                    }
                   </strong>
                 </div>
               </div>
@@ -2426,89 +3445,150 @@ function Workspace() {
 
         {filesDrawerOpen && (
           <div
-            className={styles.drawerOverlay}
-            onClick={closeFilesDrawer}
+            className={
+              styles.drawerOverlay
+            }
+            onClick={
+              closeFilesDrawer
+            }
           >
             <aside
-              className={styles.filesDrawer}
+              className={
+                styles.filesDrawer
+              }
               onClick={(event) =>
                 event.stopPropagation()
               }
             >
-              <div className={styles.drawerHeader}>
+              <div
+                className={
+                  styles.drawerHeader
+                }
+              >
                 <div>
-                  <span>PROJECT</span>
-                  <strong>Files</strong>
+                  <span>
+                    PROJECT
+                  </span>
+
+                  <strong>
+                    Files
+                  </strong>
                 </div>
 
                 <button
                   type="button"
-                  onClick={closeFilesDrawer}
+                  onClick={
+                    closeFilesDrawer
+                  }
                   aria-label="Close files"
                 >
                   ×
                 </button>
               </div>
 
-              <div className={styles.drawerProject}>
-                <strong>{projectName}</strong>
+              <div
+                className={
+                  styles.drawerProject
+                }
+              >
+                <strong>
+                  {projectName}
+                </strong>
+
                 <small>
-                  {generatedFiles.length} generated
-                  files · {framework}
+                  {
+                    generatedFiles.length
+                  }{" "}
+                  generated
+                  files ·{" "}
+                  {framework}
                 </small>
               </div>
 
-              <div className={styles.drawerFiles}>
-                {generatedFiles.length === 0 ? (
-                  <div className={styles.drawerEmpty}>
-                    No project files available.
+              <div
+                className={
+                  styles.drawerFiles
+                }
+              >
+                {generatedFiles.length ===
+                0 ? (
+                  <div
+                    className={
+                      styles.drawerEmpty
+                    }
+                  >
+                    No project
+                    files
+                    available.
                   </div>
                 ) : (
-                  generatedFiles.map((file) => {
-                    const path =
-                      getFilePath(file);
+                  generatedFiles.map(
+                    (file) => {
+                      const path =
+                        getFilePath(
+                          file
+                        );
 
-                    const active =
-                      selectedFile === file;
+                      const active =
+                        selectedFile ===
+                        file;
 
-                    return (
-                      <button
-                        key={
-                          file?._id ||
-                          file?.id ||
-                          path
-                        }
-                        type="button"
-                        className={
-                          active
-                            ? styles.drawerFileActive
-                            : styles.drawerFile
-                        }
-                        onClick={() =>
-                          handleFileSelect(
-                            file
-                          )
-                        }
-                      >
-                        <span>◇</span>
-                        <strong title={path}>
-                          {path}
-                        </strong>
-                      </button>
-                    );
-                  })
+                      return (
+                        <button
+                          key={
+                            file?._id ||
+                            file?.id ||
+                            path
+                          }
+                          type="button"
+                          className={
+                            active
+                              ? styles.drawerFileActive
+                              : styles.drawerFile
+                          }
+                          onClick={() =>
+                            handleFileSelect(
+                              file
+                            )
+                          }
+                        >
+                          <span>
+                            ◇
+                          </span>
+
+                          <strong
+                            title={
+                              path
+                            }
+                          >
+                            {
+                              path
+                            }
+                          </strong>
+                        </button>
+                      );
+                    }
+                  )
                 )}
               </div>
 
-              <div className={styles.drawerFooter}>
+              <div
+                className={
+                  styles.drawerFooter
+                }
+              >
                 <button
                   type="button"
                   onClick={() => {
                     closeFilesDrawer();
-                    setActiveView("code");
+
+                    setActiveView(
+                      "code"
+                    );
                   }}
                 >
-                  Open Code View
+                  Open Code
+                  View
                 </button>
               </div>
             </aside>
@@ -2521,66 +3601,102 @@ function Workspace() {
 
         {activityDrawerOpen && (
           <div
-            className={styles.drawerOverlay}
-            onClick={closeActivityDrawer}
+            className={
+              styles.drawerOverlay
+            }
+            onClick={
+              closeActivityDrawer
+            }
           >
             <aside
-              className={styles.activityDrawer}
+              className={
+                styles.activityDrawer
+              }
               onClick={(event) =>
                 event.stopPropagation()
               }
             >
-              <div className={styles.drawerHeader}>
+              <div
+                className={
+                  styles.drawerHeader
+                }
+              >
                 <div>
-                  <span>WORKSPACE</span>
-                  <strong>Activity</strong>
+                  <span>
+                    WORKSPACE
+                  </span>
+
+                  <strong>
+                    Activity
+                  </strong>
                 </div>
 
                 <button
                   type="button"
-                  onClick={closeActivityDrawer}
+                  onClick={
+                    closeActivityDrawer
+                  }
                   aria-label="Close activity"
                 >
                   ×
                 </button>
               </div>
 
-              <div className={styles.activityDrawerBody}>
-                {activityLog.length === 0 ? (
-                  <p>No activity yet.</p>
+              <div
+                className={
+                  styles.activityDrawerBody
+                }
+              >
+                {activityLog.length ===
+                0 ? (
+                  <p>
+                    No activity yet.
+                  </p>
                 ) : (
                   activityLog
                     .slice()
                     .reverse()
-                    .map((item) => (
-                      <div
-                        key={item.id}
-                        className={
-                          styles.activityItem
-                        }
-                      >
-                        <i
-                          className={
-                            item.type === "success"
-                              ? styles.dotSuccess
-                              : item.type ===
-                                "error"
-                              ? styles.dotError
-                              : item.type ===
-                                "active"
-                              ? styles.dotActive
-                              : styles.dotInfo
+                    .map(
+                      (item) => (
+                        <div
+                          key={
+                            item.id
                           }
-                        />
+                          className={
+                            styles.activityItem
+                          }
+                        >
+                          <i
+                            className={
+                              item.type ===
+                              "success"
+                                ? styles.dotSuccess
+                                : item.type ===
+                                  "error"
+                                ? styles.dotError
+                                : item.type ===
+                                  "active"
+                                ? styles.dotActive
+                                : styles.dotInfo
+                            }
+                          />
 
-                        <div>
-                          <p>{item.message}</p>
-                          <small>
-                            {item.timestamp}
-                          </small>
+                          <div>
+                            <p>
+                              {
+                                item.message
+                              }
+                            </p>
+
+                            <small>
+                              {
+                                item.timestamp
+                              }
+                            </small>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    )
                 )}
               </div>
             </aside>
@@ -2593,15 +3709,28 @@ function Workspace() {
 
         {previewFullscreen && (
           <div
-            className={styles.previewOverlay}
+            className={
+              styles.previewOverlay
+            }
             role="dialog"
             aria-modal="true"
             aria-label="Application preview"
           >
-            <div className={styles.previewOverlayHeader}>
+            <div
+              className={
+                styles.previewOverlayHeader
+              }
+            >
               <div>
-                <span>PREVIEW</span>
-                <strong title={projectName}>
+                <span>
+                  PREVIEW
+                </span>
+
+                <strong
+                  title={
+                    projectName
+                  }
+                >
                   {projectName}
                 </strong>
               </div>
@@ -2613,7 +3742,9 @@ function Workspace() {
               >
                 {previewUrl && (
                   <a
-                    href={previewUrl}
+                    href={
+                      previewUrl
+                    }
                     target="_blank"
                     rel="noreferrer"
                     className={
@@ -2626,7 +3757,9 @@ function Workspace() {
 
                 <button
                   type="button"
-                  onClick={closePreview}
+                  onClick={
+                    closePreview
+                  }
                   className={
                     styles.previewCloseButton
                   }
@@ -2636,8 +3769,14 @@ function Workspace() {
               </div>
             </div>
 
-            <div className={styles.previewOverlayBody}>
-              {renderProjectPreview(true)}
+            <div
+              className={
+                styles.previewOverlayBody
+              }
+            >
+              {renderProjectPreview(
+                true
+              )}
             </div>
           </div>
         )}

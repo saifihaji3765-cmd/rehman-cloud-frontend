@@ -20,6 +20,11 @@ import {
   normalizeAIResponse,
 } from "../../../services/aiService";
 
+import {
+  SandpackProvider,
+  SandpackPreview,
+} from "@codesandbox/sandpack-react";
+
 import styles from "./Workspace.module.css";
 
 const FRAMEWORKS = [
@@ -143,8 +148,6 @@ function normalizeProjects(response) {
 
 /* =========================================================
    PROJECT NAMING
-   Keeps dashboard names readable instead of saving the
-   entire natural-language prompt as the project title.
 ========================================================= */
 
 function buildProjectName(promptValue) {
@@ -254,6 +257,163 @@ function findFile(files, names) {
 
     return normalized.includes(path);
   });
+}
+
+/* =========================================================
+   LIVE PREVIEW HELPERS
+   Only used when there is no deployed preview URL.
+   The existing backend/deployment preview URL remains
+   the first priority.
+========================================================= */
+
+function normalizeSandpackPath(path) {
+  let normalized = String(path || "")
+    .replace(/\\/g, "/")
+    .trim();
+
+  normalized = normalized.replace(/^\.?\//, "");
+
+  if (!normalized) {
+    return "";
+  }
+
+  return `/${normalized}`;
+}
+
+function getPackageJson(files) {
+  const packageFile = findFile(files, [
+    "package.json",
+  ]);
+
+  if (!packageFile) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(
+      getFileContent(packageFile)
+    );
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed;
+    }
+  } catch (error) {
+    console.warn(
+      "Unable to parse generated package.json:",
+      error
+    );
+  }
+
+  return null;
+}
+
+function getSandpackDependencies(files) {
+  const packageJson = getPackageJson(files);
+
+  if (!packageJson) {
+    return {};
+  }
+
+  return {
+    ...(packageJson.dependencies || {}),
+    ...(packageJson.devDependencies || {}),
+  };
+}
+
+function createSandpackFiles(files) {
+  if (!Array.isArray(files)) {
+    return {};
+  }
+
+  const result = {};
+
+  files.forEach((file) => {
+    const rawPath = getFilePath(file);
+    const path = normalizeSandpackPath(rawPath);
+
+    if (!path || path === "/Unnamed file") {
+      return;
+    }
+
+    result[path] = {
+      code: getFileContent(file),
+    };
+  });
+
+  return result;
+}
+
+function getReactEntryFile(files) {
+  const entry = findFile(files, [
+    "src/index.js",
+    "src/index.jsx",
+    "src/index.ts",
+    "src/index.tsx",
+    "src/main.js",
+    "src/main.jsx",
+    "src/main.ts",
+    "src/main.tsx",
+    "index.js",
+    "index.jsx",
+    "index.ts",
+    "index.tsx",
+    "main.js",
+    "main.jsx",
+    "main.ts",
+    "main.tsx",
+  ]);
+
+  return entry || null;
+}
+
+function hasReactRuntimeFiles(files) {
+  if (!Array.isArray(files) || files.length === 0) {
+    return false;
+  }
+
+  const packageJson = getPackageJson(files);
+
+  if (!packageJson) {
+    return false;
+  }
+
+  const allDependencies = {
+    ...(packageJson.dependencies || {}),
+    ...(packageJson.devDependencies || {}),
+  };
+
+  const hasReact =
+    Boolean(allDependencies.react) ||
+    Boolean(findFile(files, [
+      "src/App.js",
+      "src/App.jsx",
+      "src/App.tsx",
+      "src/App.ts",
+      "App.js",
+      "App.jsx",
+      "App.tsx",
+      "App.ts",
+    ]));
+
+  const entry = getReactEntryFile(files);
+
+  return Boolean(hasReact && entry);
+}
+
+function getSandpackEntry(files) {
+  const entry = getReactEntryFile(files);
+
+  if (!entry) {
+    return "/src/index.js";
+  }
+
+  return normalizeSandpackPath(
+    getFilePath(entry)
+  );
 }
 
 /* =========================================================
@@ -420,6 +580,32 @@ function Workspace() {
   }, [generatedFiles]);
 
   /* =======================================================
+     SANDPACK PREVIEW DATA
+     This is intentionally isolated from the rest of the
+     workspace state. Existing build/deploy logic remains
+     untouched.
+  ======================================================= */
+
+  const sandpackFiles = useMemo(() => {
+    return createSandpackFiles(generatedFiles);
+  }, [generatedFiles]);
+
+  const sandpackDependencies = useMemo(() => {
+    return getSandpackDependencies(generatedFiles);
+  }, [generatedFiles]);
+
+  const sandpackEntry = useMemo(() => {
+    return getSandpackEntry(generatedFiles);
+  }, [generatedFiles]);
+
+  const canUseSandpack = useMemo(() => {
+    return (
+      framework === "React" &&
+      hasReactRuntimeFiles(generatedFiles)
+    );
+  }, [framework, generatedFiles]);
+
+  /* =======================================================
      TIMER
   ======================================================= */
 
@@ -471,8 +657,6 @@ function Workspace() {
 
   /* =======================================================
      ACTIVITY
-     User-facing activity is intentionally abstracted.
-     Internal agent names are not exposed in the UI.
   ======================================================= */
 
   const addActivity = useCallback(
@@ -1088,8 +1272,6 @@ function Workspace() {
 
   /* =======================================================
      DEPLOY
-     Existing billing/deployment architecture is preserved.
-     Only the single top-level Deploy action is exposed.
   ======================================================= */
 
   const handleDeploy = useCallback(() => {
@@ -1180,6 +1362,145 @@ function Workspace() {
       }
     },
     [handleChatSubmit]
+  );
+
+  /* =======================================================
+     LIVE PROJECT PREVIEW
+     This is the only new runtime layer.
+
+     Priority:
+       1. Deployed preview URL
+       2. Sandpack React runtime
+       3. Existing static HTML fallback
+       4. Empty preview
+
+     Therefore the existing deployment behaviour remains
+     unchanged.
+  ======================================================= */
+
+  const renderProjectPreview = useCallback(
+    (fullscreen = false) => {
+      if (previewUrl) {
+        return (
+          <iframe
+            title={`${projectName} application preview`}
+            src={previewUrl}
+            className={
+              fullscreen
+                ? styles.previewFullFrame
+                : styles.previewFrame
+            }
+            allow="fullscreen"
+          />
+        );
+      }
+
+      if (
+        canUseSandpack &&
+        Object.keys(sandpackFiles).length > 0
+      ) {
+        return (
+          <div
+            className={
+              fullscreen
+                ? styles.previewSandpackFullscreen
+                : styles.previewSandpack
+            }
+          >
+            <SandpackProvider
+              template="react"
+              files={sandpackFiles}
+              customSetup={{
+                entry: sandpackEntry,
+                dependencies:
+                  sandpackDependencies,
+              }}
+              options={{
+                autorun: true,
+                autoReload: true,
+                recompileMode: "delayed",
+                recompileDelay: 300,
+              }}
+            >
+              <SandpackPreview
+                showNavigator={false}
+                showRefreshButton
+                showOpenInCodeSandbox={false}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            </SandpackProvider>
+          </div>
+        );
+      }
+
+      if (previewEntryFile) {
+        return (
+          <iframe
+            title={`${projectName} HTML preview`}
+            srcDoc={getFileContent(
+              previewEntryFile
+            )}
+            className={
+              fullscreen
+                ? styles.previewFullFrame
+                : styles.previewFrame
+            }
+            sandbox="allow-scripts allow-forms allow-modals"
+          />
+        );
+      }
+
+      return (
+        <div
+          className={
+            styles.previewEmpty
+          }
+        >
+          <div
+            className={
+              styles.previewIcon
+            }
+          >
+            Z
+          </div>
+
+          <span>PREVIEW</span>
+
+          <h2>
+            Project generated
+          </h2>
+
+          <p>
+            {generatedFiles.length > 0
+              ? `${generatedFiles.length} files are ready. The backend has not returned a live preview URL yet.`
+              : "Build an application to create the project files."}
+          </p>
+
+          {generatedFiles.length > 0 && (
+            <button
+              type="button"
+              onClick={openFilesDrawer}
+            >
+              View project files
+            </button>
+          )}
+        </div>
+      );
+    },
+    [
+      previewUrl,
+      projectName,
+      canUseSandpack,
+      sandpackFiles,
+      sandpackEntry,
+      sandpackDependencies,
+      previewEntryFile,
+      generatedFiles.length,
+      openFilesDrawer,
+    ]
   );
 
   /* =======================================================
@@ -1628,15 +1949,19 @@ function Workspace() {
                     </span>
 
                     <div className={styles.previewAddress}>
-                      {previewUrl ||
-                        (previewEntryFile
-                          ? "Local HTML preview"
-                          : "Preview runtime")}
+                      {previewUrl
+                        ? previewUrl
+                        : canUseSandpack
+                        ? "Local React runtime"
+                        : previewEntryFile
+                        ? "Local HTML preview"
+                        : "Preview runtime"}
                     </div>
 
                     <span
                       className={
                         previewUrl ||
+                        canUseSandpack ||
                         previewEntryFile
                           ? styles.previewReady
                           : styles.previewPending
@@ -1644,6 +1969,8 @@ function Workspace() {
                     >
                       {previewUrl
                         ? "LIVE"
+                        : canUseSandpack
+                        ? "RUNNING"
                         : previewEntryFile
                         ? "READY"
                         : previewStatus ||
@@ -1662,64 +1989,7 @@ function Workspace() {
                   </div>
 
                   <div className={styles.previewContent}>
-                    {previewUrl ? (
-                      <iframe
-                        title={`${projectName} application preview`}
-                        src={previewUrl}
-                        className={
-                          styles.previewFrame
-                        }
-                        allow="fullscreen"
-                      />
-                    ) : previewEntryFile ? (
-                      <iframe
-                        title={`${projectName} HTML preview`}
-                        srcDoc={getFileContent(
-                          previewEntryFile
-                        )}
-                        className={
-                          styles.previewFrame
-                        }
-                        sandbox="allow-scripts allow-forms allow-modals"
-                      />
-                    ) : (
-                      <div
-                        className={
-                          styles.previewEmpty
-                        }
-                      >
-                        <div
-                          className={
-                            styles.previewIcon
-                          }
-                        >
-                          Z
-                        </div>
-
-                        <span>
-                          PREVIEW
-                        </span>
-
-                        <h2>
-                          Project generated
-                        </h2>
-
-                        <p>
-                          {generatedFiles.length > 0
-                            ? `${generatedFiles.length} files are ready. The backend has not returned a live preview runtime URL yet.`
-                            : "Build an application to create the project files."}
-                        </p>
-
-                        {generatedFiles.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={openFilesDrawer}
-                          >
-                            View project files
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    {renderProjectPreview(false)}
                   </div>
                 </div>
               ) : (
@@ -2013,7 +2283,6 @@ function Workspace() {
 
           {/* =================================================
               MOBILE ACTIVITY PANEL
-              No permanent agent pipeline.
           ================================================= */}
 
           <aside
@@ -2368,65 +2637,7 @@ function Workspace() {
             </div>
 
             <div className={styles.previewOverlayBody}>
-              {previewUrl ? (
-                <iframe
-                  title={`${projectName} full preview`}
-                  src={previewUrl}
-                  className={
-                    styles.previewFullFrame
-                  }
-                  allow="fullscreen"
-                />
-              ) : previewEntryFile ? (
-                <iframe
-                  title={`${projectName} HTML preview`}
-                  srcDoc={getFileContent(
-                    previewEntryFile
-                  )}
-                  className={
-                    styles.previewFullFrame
-                  }
-                  sandbox="allow-scripts allow-forms allow-modals"
-                />
-              ) : (
-                <div
-                  className={
-                    styles.previewUnavailable
-                  }
-                >
-                  <div
-                    className={
-                      styles.previewIconLarge
-                    }
-                  >
-                    Z
-                  </div>
-
-                  <span>PREVIEW RUNTIME</span>
-
-                  <h2>
-                    Project files are ready
-                  </h2>
-
-                  <p>
-                    This project does not yet have
-                    a live preview URL or a static
-                    HTML entry file. The preview
-                    screen is intentionally not
-                    faking an application.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closePreview();
-                      setActiveView("code");
-                    }}
-                  >
-                    Open Generated Code
-                  </button>
-                </div>
-              )}
+              {renderProjectPreview(true)}
             </div>
           </div>
         )}

@@ -1,74 +1,33 @@
 import api from "./api";
 
-/*
- * =========================================================
- * ZYRIONOS — AI SERVICE
- * Enterprise AI API Layer
- *
- * Architecture:
- *
- * Workspace / UI
- *      ↓
- * aiService
- *      ↓
- * api.js
- *      ↓
- * ZyrionOS Backend
- *      ↓
- * Master Agent
- *      ↓
- * AI Agents
- *
- * IMPORTANT:
- * - Real backend only
- * - No mock/fake responses
- * - No API keys in frontend
- * - Centralized API communication
- * - AI requests use dedicated longer timeouts
- * =========================================================
- */
+
+/* =========================================================
+   ZYRIONOS AI SERVICE
+   Central frontend AI API layer
+   ========================================================= */
 
 
 /* =========================================================
-   AI REQUEST TIMEOUTS
+   TIMEOUTS
 ========================================================= */
-
-/*
- * AI operations can involve:
- *
- * Intent Agent
- * Planning Agent
- * Builder Agent
- * Review/Fix Agent
- * Master Agent
- *
- * Therefore they must not use the normal
- * 30-second API timeout.
- */
 
 const AI_CHAT_TIMEOUT =
   90000;
 
-
 const AI_CODE_TIMEOUT =
   120000;
 
-
 const AI_DEPLOY_TIMEOUT =
   120000;
-
 
 const AI_THUMBNAIL_TIMEOUT =
   120000;
 
 
 /* =========================================================
-   INTERNAL HELPERS
+   ERROR NORMALIZATION
 ========================================================= */
 
-/**
- * Normalize backend errors into a predictable Error object.
- */
 function normalizeAIError(
   error,
   fallbackMessage
@@ -123,25 +82,18 @@ function normalizeAIError(
   normalizedError.isTimeout =
     Boolean(
       error?.isTimeout ||
-      error?.code ===
-        "ECONNABORTED" ||
-      error?.code ===
-        "ETIMEDOUT"
+      error?.code === "ECONNABORTED" ||
+      error?.code === "ETIMEDOUT"
     );
 
 
   normalizedError.isNetworkError =
     Boolean(
       error?.isNetworkError ||
-      error?.code ===
-        "ERR_NETWORK"
+      error?.code === "ERR_NETWORK"
     );
 
 
-  /*
-   * Preserve request timing information
-   * when available.
-   */
   normalizedError.duration =
     error?.config?.metadata?.duration ??
     null;
@@ -151,9 +103,10 @@ function normalizeAIError(
 }
 
 
-/**
- * Execute an API request through api.js.
- */
+/* =========================================================
+   REQUEST EXECUTOR
+========================================================= */
+
 async function executeAIRequest(
   request,
   fallbackMessage
@@ -174,9 +127,10 @@ async function executeAIRequest(
 }
 
 
-/**
- * Validate required prompt.
- */
+/* =========================================================
+   VALIDATION
+========================================================= */
+
 function validatePrompt(
   value,
   fieldName
@@ -197,9 +151,6 @@ function validatePrompt(
 }
 
 
-/**
- * Validate project ID.
- */
 function validateProjectId(
   projectId
 ) {
@@ -226,9 +177,6 @@ function validateProjectId(
    AI CHAT
 ========================================================= */
 
-/**
- * POST /api/ai/chat
- */
 export async function aiChat(
   prompt
 ) {
@@ -260,26 +208,9 @@ export async function aiChat(
 
 
 /* =========================================================
-   AI CODE GENERATION
+   CODE GENERATION
 ========================================================= */
 
-/**
- * POST /api/ai/generate-code
- *
- * Request:
- *
- * {
- *   prompt,
- *   framework
- * }
- *
- * Response:
- *
- * Backend response is returned
- * unchanged so Workspace can
- * consume the real orchestration
- * and generated files.
- */
 export async function generateCode(
   prompt,
   framework = "React"
@@ -311,12 +242,6 @@ export async function generateCode(
             normalizedFramework,
         },
         {
-          /*
-           * AI code generation has multiple
-           * backend agent stages, so allow
-           * substantially more time than
-           * ordinary API requests.
-           */
           timeout:
             AI_CODE_TIMEOUT,
         }
@@ -331,9 +256,6 @@ export async function generateCode(
    AI DEPLOY AGENT
 ========================================================= */
 
-/**
- * POST /api/ai/deploy-agent
- */
 export async function aiDeploy(
   projectId
 ) {
@@ -364,12 +286,9 @@ export async function aiDeploy(
 
 
 /* =========================================================
-   AI THUMBNAIL
+   THUMBNAIL
 ========================================================= */
 
-/**
- * POST /api/ai/thumbnail
- */
 export async function generateThumbnail(
   prompt
 ) {
@@ -401,31 +320,9 @@ export async function generateThumbnail(
 
 
 /* =========================================================
-   RESPONSE HELPERS
+   AI RESULT
 ========================================================= */
 
-/**
- * Get the actual Master Agent result
- * from the standardized API response.
- *
- * Current backend structure:
- *
- * formatResponse({
- *   success,
- *   message,
- *   data: result
- * })
- *
- * Axios:
- *
- * response.data
- *
- * Therefore:
- *
- * response.data.data
- *
- * contains the Master Agent result.
- */
 export function getAIResult(
   response
 ) {
@@ -434,10 +331,27 @@ export function getAIResult(
     response === undefined ||
     response === null
   ) {
-
     return null;
   }
 
+
+  /*
+   * Axios:
+   *
+   * response.data
+   *
+   * Backend:
+   *
+   * {
+   *   success,
+   *   message,
+   *   data
+   * }
+   *
+   * Therefore:
+   *
+   * response.data.data
+   */
 
   if (
     response?.data?.data !==
@@ -461,22 +375,10 @@ export function getAIResult(
 }
 
 
-/**
- * Extract generated project files
- * from the current Master Agent structure.
- *
- * Current expected path:
- *
- * result
- *   ↓
- * orchestration
- *   ↓
- * buildResult
- *   ↓
- * data
- *   ↓
- * files
- */
+/* =========================================================
+   GENERATED FILE EXTRACTION
+========================================================= */
+
 export function getGeneratedFiles(
   response
 ) {
@@ -489,66 +391,42 @@ export function getGeneratedFiles(
 
   const possibleFileCollections = [
 
-    /*
-     * Current Master Agent structure.
-     */
     result?.orchestration
       ?.buildResult
       ?.data
       ?.files,
 
-
-    /*
-     * Compatibility.
-     */
     result?.orchestration
       ?.buildResult
       ?.files,
 
-
-    /*
-     * Compatibility.
-     */
     result?.buildResult
       ?.data
       ?.files,
 
-
-    /*
-     * Compatibility.
-     */
     result?.buildResult
       ?.files,
 
-
-    /*
-     * Nested data compatibility.
-     */
     result?.data
       ?.orchestration
       ?.buildResult
       ?.data
       ?.files,
 
-
-    /*
-     * Nested data compatibility.
-     */
     result?.data
       ?.orchestration
       ?.buildResult
       ?.files,
 
+    result?.data
+      ?.orchestration
+      ?.buildResult
+      ?.data
+      ?.data
+      ?.files,
 
-    /*
-     * Direct files compatibility.
-     */
     result?.files,
 
-
-    /*
-     * Direct data files compatibility.
-     */
     result?.data?.files,
 
   ];
@@ -572,12 +450,10 @@ export function getGeneratedFiles(
 }
 
 
-/**
- * Convert an AI response into text
- * for UI display.
- *
- * This never creates fake content.
- */
+/* =========================================================
+   RESPONSE TEXT
+========================================================= */
+
 export function normalizeAIResponse(
   response
 ) {
@@ -586,7 +462,6 @@ export function normalizeAIResponse(
     response === undefined ||
     response === null
   ) {
-
     return "";
   }
 
@@ -598,8 +473,7 @@ export function normalizeAIResponse(
 
 
   if (
-    typeof result ===
-    "string"
+    typeof result === "string"
   ) {
 
     return result;
@@ -607,8 +481,7 @@ export function normalizeAIResponse(
 
 
   if (
-    typeof result?.reply ===
-    "string"
+    typeof result?.reply === "string"
   ) {
 
     return result.reply;
@@ -616,8 +489,7 @@ export function normalizeAIResponse(
 
 
   if (
-    typeof result?.text ===
-    "string"
+    typeof result?.text === "string"
   ) {
 
     return result.text;
@@ -625,8 +497,7 @@ export function normalizeAIResponse(
 
 
   if (
-    typeof result?.content ===
-    "string"
+    typeof result?.content === "string"
   ) {
 
     return result.content;
@@ -634,8 +505,7 @@ export function normalizeAIResponse(
 
 
   if (
-    typeof result?.message ===
-    "string"
+    typeof result?.message === "string"
   ) {
 
     return result.message;
@@ -643,8 +513,7 @@ export function normalizeAIResponse(
 
 
   if (
-    typeof response?.data?.message ===
-    "string"
+    typeof response?.data?.message === "string"
   ) {
 
     return response.data.message;
@@ -669,6 +538,40 @@ export function normalizeAIResponse(
 
 
 /* =========================================================
+   AI RESPONSE METADATA
+========================================================= */
+
+export function getAIProviderInfo(
+  response
+) {
+
+  const result =
+    getAIResult(
+      response
+    );
+
+
+  return {
+    provider:
+      result?.provider ||
+      result?.orchestration?.provider ||
+      result?.orchestration?.buildResult?.provider ||
+      null,
+
+    model:
+      result?.model ||
+      result?.orchestration?.model ||
+      result?.orchestration?.buildResult?.model ||
+      null,
+
+    success:
+      result?.success !== false,
+
+  };
+}
+
+
+/* =========================================================
    DEFAULT EXPORT
 ========================================================= */
 
@@ -687,6 +590,8 @@ const aiService = {
   getGeneratedFiles,
 
   normalizeAIResponse,
+
+  getAIProviderInfo,
 
 };
 

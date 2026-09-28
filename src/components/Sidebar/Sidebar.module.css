@@ -1,30 +1,27 @@
 /* =========================================================
    ZYRIONOS
-   ENTERPRISE SIDEBAR SYSTEM
+   ENTERPRISE SIDEBAR V2
    ---------------------------------------------------------
-   Responsibilities:
-   - Primary navigation
-   - Enterprise icon presentation
-   - Active navigation state
-   - Collapsed desktop navigation
-   - Mobile navigation drawer
-   - Accessibility
-   - Responsive behaviour
-   - Reduced motion
+   - White enterprise navigation
+   - Backend control panels
+   - Environment manager
+   - GitHub deployment manager
+   - Responsive drawer
+   - Desktop collapse
 ========================================================= */
 
 
 /* =========================================================
-   01. ROOT SIDEBAR
+   ROOT
 ========================================================= */
 
 .sidebar {
-  --sidebar-width: 272px;
-  --sidebar-collapsed-width: 76px;
+  --sidebar-width: 264px;
+  --sidebar-collapsed-width: 72px;
 
   position: relative;
 
-  z-index: var(--zy-z-sticky, 100);
+  z-index: 100;
 
   display: flex;
   flex-direction: column;
@@ -35,37 +32,31 @@
   height: 100vh;
   height: 100dvh;
 
-  padding: 14px 12px;
+  padding: 14px 11px;
 
-  background:
-    linear-gradient(
-      180deg,
-      #0b1020 0%,
-      #080d19 100%
-    );
+  background: #ffffff;
 
-  border-right:
-    1px solid
-    rgba(148, 163, 184, 0.13);
+  border-right: 1px solid #e5e7eb;
 
-  color:
-    var(--zy-text-primary, #f4f7ff);
+  color: #111827;
 
   overflow: hidden;
 
   isolation: isolate;
 
+  box-sizing: border-box;
+
   transition:
-    width var(--zy-transition-standard, 180ms ease),
-    min-width var(--zy-transition-standard, 180ms ease),
-    transform var(--zy-transition-large, 260ms ease);
+    width 180ms ease,
+    min-width 180ms ease,
+    transform 260ms ease;
 
   scrollbar-width: thin;
 }
 
 
 /* =========================================================
-   02. PREMIUM AMBIENT LIGHT
+   TOP ACCENT
 ========================================================= */
 
 .sidebar::before {
@@ -73,71 +64,39 @@
 
   position: absolute;
 
-  top: -180px;
-  left: -190px;
+  top: 0;
+  left: 0;
 
-  width: 410px;
-  height: 410px;
+  width: 150px;
+  height: 2px;
 
   background:
-    radial-gradient(
-      circle,
-      rgba(108, 99, 255, 0.12),
-      transparent 68%
+    linear-gradient(
+      90deg,
+      #6c63ff,
+      rgba(108, 99, 255, 0)
     );
 
   pointer-events: none;
-
-  z-index: -1;
 }
 
 
 /* =========================================================
-   03. SECONDARY AMBIENT LIGHT
-========================================================= */
-
-.sidebar::after {
-  content: "";
-
-  position: absolute;
-
-  right: -190px;
-  bottom: -230px;
-
-  width: 380px;
-  height: 380px;
-
-  background:
-    radial-gradient(
-      circle,
-      rgba(53, 215, 255, 0.045),
-      transparent 70%
-    );
-
-  pointer-events: none;
-
-  z-index: -1;
-}
-
-
-/* =========================================================
-   04. COLLAPSED SIDEBAR
+   COLLAPSED
 ========================================================= */
 
 .collapsed {
-  width:
-    var(--sidebar-collapsed-width);
+  width: var(--sidebar-collapsed-width);
 
-  min-width:
-    var(--sidebar-collapsed-width);
+  min-width: var(--sidebar-collapsed-width);
 
-  padding-left: 10px;
-  padding-right: 10px;
+  padding-left: 9px;
+  padding-right: 9px;
 }
 
 
 /* =========================================================
-   05. HEADER
+   HEADER
 ========================================================= */
 
 .header {
@@ -151,16 +110,14 @@
   margin-bottom: 12px;
   padding-bottom: 12px;
 
-  border-bottom:
-    1px solid
-    rgba(148, 163, 184, 0.11);
+  border-bottom: 1px solid #eef0f3;
 
   flex-shrink: 0;
 }
 
 
 /* =========================================================
-   06. BRAND
+   BRAND
 ========================================================= */
 
 .brand {
@@ -173,20 +130,19 @@
 
   gap: 10px;
 
-  color:
-    var(--zy-text-primary, #f4f7ff);
+  color: #111827;
 
   text-decoration: none;
 
   border-radius: 10px;
 
   transition:
-    opacity var(--zy-transition-fast, 120ms ease);
+    opacity 120ms ease;
 }
 
 
 .brand:hover {
-  opacity: 0.96;
+  opacity: 0.92;
 }
 
 
@@ -194,12 +150,13 @@
   outline: none;
 
   box-shadow:
-    var(--zy-focus-ring);
+    0 0 0 3px
+    rgba(108, 99, 255, 0.12);
 }
 
 
 /* =========================================================
-   07. BRAND MARK
+   BRAND MARK
 ========================================================= */
 
 .brandMark {
@@ -222,45 +179,22 @@
 
   padding: 7px;
 
-  border:
-    1px solid
-    rgba(129, 121, 255, 0.28);
+  border: 1px solid #ddd6fe;
 
-  border-radius: 10px;
+  border-radius: 9px;
 
-  background:
-    linear-gradient(
-      145deg,
-      rgba(108, 99, 255, 0.20),
-      rgba(17, 24, 42, 0.94)
-    );
+  background: #f5f3ff;
 
-  box-shadow:
-    0 7px 20px
-    rgba(0, 0, 0, 0.22),
-
-    inset 0 1px 0
-    rgba(255, 255, 255, 0.06);
+  box-sizing: border-box;
 }
 
 
 .brandMark span {
   display: block;
 
-  min-width: 0;
-
   border-radius: 2px;
 
-  background:
-    linear-gradient(
-      180deg,
-      #8179ff,
-      #5f57ef
-    );
-
-  box-shadow:
-    0 0 8px
-    rgba(108, 99, 255, 0.18);
+  background: #6c63ff;
 }
 
 
@@ -274,7 +208,7 @@
 
   width: 100%;
 
-  opacity: 0.50;
+  opacity: 0.48;
 }
 
 
@@ -284,7 +218,7 @@
 
 
 /* =========================================================
-   08. BRAND CONTENT
+   BRAND CONTENT
 ========================================================= */
 
 .brandContent {
@@ -298,13 +232,11 @@
 
 
 .brandName {
-  color:
-    var(--zy-text-primary, #f4f7ff);
+  color: #111827;
 
   font-size: 15px;
 
-  font-weight:
-    var(--zy-font-bold, 700);
+  font-weight: 750;
 
   line-height: 1.15;
 
@@ -321,13 +253,11 @@
 .brandTagline {
   margin-top: 3px;
 
-  color:
-    var(--zy-text-muted, #6f7890);
+  color: #9ca3af;
 
   font-size: 9px;
 
-  font-weight:
-    var(--zy-font-medium, 500);
+  font-weight: 600;
 
   line-height: 1.25;
 
@@ -340,7 +270,7 @@
 
 
 /* =========================================================
-   09. COLLAPSE BUTTON
+   COLLAPSE BUTTON
 ========================================================= */
 
 .collapseButton {
@@ -359,36 +289,29 @@
 
   padding: 0;
 
-  border:
-    1px solid
-    transparent;
+  border: 1px solid transparent;
 
-  border-radius: 9px;
+  border-radius: 8px;
 
-  color:
-    var(--zy-text-muted, #6f7890);
+  color: #9ca3af;
 
-  background:
-    transparent;
+  background: transparent;
 
   cursor: pointer;
 
   transition:
-    color var(--zy-transition-fast, 120ms ease),
-    background-color var(--zy-transition-fast, 120ms ease),
-    border-color var(--zy-transition-fast, 120ms ease);
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
 
 .collapseButton:hover {
-  color:
-    var(--zy-text-primary, #f4f7ff);
+  color: #374151;
 
-  background:
-    rgba(255, 255, 255, 0.045);
+  background: #f8fafc;
 
-  border-color:
-    rgba(148, 163, 184, 0.14);
+  border-color: #e5e7eb;
 }
 
 
@@ -396,7 +319,8 @@
   outline: none;
 
   box-shadow:
-    var(--zy-focus-ring);
+    0 0 0 3px
+    rgba(108, 99, 255, 0.10);
 }
 
 
@@ -409,24 +333,22 @@
   line-height: 1;
 
   transition:
-    transform var(--zy-transition-standard, 180ms ease);
+    transform 180ms ease;
 }
 
 
 .chevron {
-  transform:
-    rotate(0deg);
+  transform: rotate(0deg);
 }
 
 
 .chevronCollapsed {
-  transform:
-    rotate(180deg);
+  transform: rotate(180deg);
 }
 
 
 /* =========================================================
-   10. COLLAPSED BRAND
+   COLLAPSED BRAND
 ========================================================= */
 
 .collapsed .brand {
@@ -450,7 +372,7 @@
 
 
 /* =========================================================
-   11. WORKSPACE CONTEXT
+   WORKSPACE CONTEXT
 ========================================================= */
 
 .workspaceContext {
@@ -465,43 +387,28 @@
 
   padding: 8px;
 
-  border:
-    1px solid
-    rgba(148, 163, 184, 0.12);
+  border: 1px solid #e5e7eb;
 
-  border-radius: 12px;
+  border-radius: 11px;
 
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.045),
-      rgba(255, 255, 255, 0.018)
-    );
+  background: #f8fafc;
 
-  box-shadow:
-    inset 0 1px 0
-    rgba(255, 255, 255, 0.025);
+  box-sizing: border-box;
 
   flex-shrink: 0;
 
   transition:
-    background-color var(--zy-transition-fast, 120ms ease),
-    border-color var(--zy-transition-fast, 120ms ease);
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
 
 .workspaceContext:hover {
-  border-color:
-    rgba(129, 121, 255, 0.24);
+  border-color: #d1d5db;
 
-  background:
-    rgba(255, 255, 255, 0.05);
+  background: #ffffff;
 }
 
-
-/* =========================================================
-   12. WORKSPACE ICON
-========================================================= */
 
 .workspaceIcon {
   display: flex;
@@ -515,30 +422,18 @@
 
   flex: 0 0 32px;
 
-  border:
-    1px solid
-    rgba(108, 99, 255, 0.22);
+  border: 1px solid #ddd6fe;
 
-  border-radius: 9px;
+  border-radius: 8px;
 
-  background:
-    linear-gradient(
-      145deg,
-      rgba(108, 99, 255, 0.13),
-      rgba(255, 255, 255, 0.025)
-    );
+  background: #f5f3ff;
 
-  color:
-    #9b96ff;
-
-  box-shadow:
-    inset 0 1px 0
-    rgba(255, 255, 255, 0.04);
+  color: #6c63ff;
 }
 
 
 /* =========================================================
-   13. WORKSPACE CONTENT
+   WORKSPACE CONTENT
 ========================================================= */
 
 .workspaceContent {
@@ -552,13 +447,11 @@
 
 
 .eyebrow {
-  color:
-    var(--zy-text-muted, #6f7890);
+  color: #9ca3af;
 
   font-size: 8px;
 
-  font-weight:
-    var(--zy-font-semibold, 600);
+  font-weight: 700;
 
   letter-spacing: 0.11em;
 
@@ -571,13 +464,11 @@
 .workspaceValue {
   margin-top: 3px;
 
-  color:
-    var(--zy-text-secondary, #a8b1c7);
+  color: #4b5563;
 
   font-size: 11px;
 
-  font-weight:
-    var(--zy-font-medium, 500);
+  font-weight: 600;
 
   line-height: 1.25;
 
@@ -588,10 +479,6 @@
   text-overflow: ellipsis;
 }
 
-
-/* =========================================================
-   14. COLLAPSED WORKSPACE
-========================================================= */
 
 .collapsed .workspaceContext {
   justify-content: center;
@@ -611,7 +498,7 @@
 
 
 /* =========================================================
-   15. NAVIGATION
+   NAVIGATION
 ========================================================= */
 
 .navigation {
@@ -633,30 +520,19 @@
 }
 
 
-/* =========================================================
-   16. NAVIGATION SECTION
-========================================================= */
-
 .navigationSection {
   min-width: 0;
 }
 
 
-/* =========================================================
-   17. SECTION LABEL
-========================================================= */
-
 .sectionLabel {
-  padding:
-    0 10px 7px;
+  padding: 0 10px 7px;
 
-  color:
-    var(--zy-text-disabled, #4e566b);
+  color: #9ca3af;
 
   font-size: 8px;
 
-  font-weight:
-    var(--zy-font-semibold, 600);
+  font-weight: 700;
 
   letter-spacing: 0.12em;
 
@@ -666,22 +542,18 @@
 }
 
 
-/* =========================================================
-   18. NAVIGATION ITEMS
-========================================================= */
-
 .navigationItems {
   display: flex;
   flex-direction: column;
 
-  gap: 4px;
+  gap: 3px;
 
   min-width: 0;
 }
 
 
 /* =========================================================
-   19. NAV ITEM
+   NAV ITEM
 ========================================================= */
 
 .navItem {
@@ -693,44 +565,46 @@
   width: 100%;
   min-width: 0;
 
-  min-height: 44px;
+  min-height: 43px;
 
-  padding:
-    0 9px;
+  padding: 0 8px;
 
-  border:
-    1px solid
-    transparent;
+  border: 1px solid transparent;
 
-  border-radius: 12px;
+  border-radius: 10px;
 
-  color:
-    var(--zy-text-secondary, #a8b1c7);
+  color: #6b7280;
 
   text-decoration: none;
 
+  background: transparent;
+
+  font: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+
   overflow: hidden;
 
+  box-sizing: border-box;
+
   transition:
-    color var(--zy-transition-fast, 120ms ease),
-    background-color var(--zy-transition-fast, 120ms ease),
-    border-color var(--zy-transition-fast, 120ms ease),
-    transform var(--zy-transition-fast, 120ms ease);
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease,
+    transform 120ms ease;
 }
 
 
 .navItem:hover {
-  color:
-    var(--zy-text-primary, #f4f7ff);
+  color: #111827;
 
-  background:
-    rgba(255, 255, 255, 0.045);
+  background: #f8fafc;
 
-  border-color:
-    rgba(148, 163, 184, 0.12);
+  border-color: #eef0f3;
 
-  transform:
-    translateX(1px);
+  transform: translateX(1px);
 }
 
 
@@ -738,7 +612,8 @@
   outline: none;
 
   box-shadow:
-    var(--zy-focus-ring);
+    0 0 0 3px
+    rgba(108, 99, 255, 0.10);
 }
 
 
@@ -750,45 +625,22 @@
 
 
 /* =========================================================
-   20. ACTIVE NAV ITEM
+   ACTIVE
 ========================================================= */
 
 .active {
-  color:
-    #f7f8ff;
+  color: #4338ca;
 
-  background:
-    linear-gradient(
-      90deg,
-      rgba(108, 99, 255, 0.17),
-      rgba(108, 99, 255, 0.055)
-    );
+  background: #f5f3ff;
 
-  border-color:
-    rgba(129, 121, 255, 0.22);
-
-  box-shadow:
-    inset 0 1px 0
-    rgba(255, 255, 255, 0.035),
-
-    0 5px 18px
-    rgba(0, 0, 0, 0.12);
+  border-color: #e9e5ff;
 }
 
 
 .active:hover {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(108, 99, 255, 0.20),
-      rgba(108, 99, 255, 0.07)
-    );
+  background: #f3f1ff;
 }
 
-
-/* =========================================================
-   21. ACTIVE INDICATOR
-========================================================= */
 
 .activeIndicator {
   position: absolute;
@@ -806,21 +658,12 @@
     999px
     0;
 
-  background:
-    linear-gradient(
-      180deg,
-      #8179ff,
-      #5f57ef
-    );
-
-  box-shadow:
-    0 0 13px
-    rgba(108, 99, 255, 0.48);
+  background: #6c63ff;
 
   opacity: 0;
 
   transition:
-    opacity var(--zy-transition-fast, 120ms ease);
+    opacity 120ms ease;
 }
 
 
@@ -830,7 +673,7 @@
 
 
 /* =========================================================
-   22. ICON CONTAINER
+   ICON
 ========================================================= */
 
 .navIconBox {
@@ -838,90 +681,62 @@
   align-items: center;
   justify-content: center;
 
-  width: 30px;
-  height: 30px;
+  width: 31px;
+  height: 31px;
 
-  min-width: 30px;
+  min-width: 31px;
 
-  flex: 0 0 30px;
+  flex: 0 0 31px;
 
-  border:
-    1px solid
-    transparent;
+  border: 1px solid transparent;
 
-  border-radius: 9px;
+  border-radius: 8px;
 
-  background:
-    transparent;
+  background: transparent;
 
   transition:
-    background-color var(--zy-transition-fast, 120ms ease),
-    border-color var(--zy-transition-fast, 120ms ease),
-    box-shadow var(--zy-transition-fast, 120ms ease),
-    transform var(--zy-transition-fast, 120ms ease);
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
-
-/* =========================================================
-   23. ICON
-========================================================= */
 
 .navIcon {
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 21px;
-  height: 21px;
+  width: 20px;
+  height: 20px;
 
-  color:
-    var(--zy-text-muted, #6f7890);
+  color: #9ca3af;
 
   transition:
-    color var(--zy-transition-fast, 120ms ease),
-    transform var(--zy-transition-fast, 120ms ease);
-}
-
-
-.navItem:hover .navIconBox {
-  background:
-    rgba(255, 255, 255, 0.035);
-
-  border-color:
-    rgba(148, 163, 184, 0.08);
+    color 120ms ease,
+    transform 120ms ease;
 }
 
 
 .navItem:hover .navIcon {
-  color:
-    var(--zy-text-secondary, #a8b1c7);
+  color: #6b7280;
 
-  transform:
-    scale(1.04);
+  transform: scale(1.03);
 }
 
 
 .navItem.active .navIconBox {
-  background:
-    rgba(108, 99, 255, 0.13);
+  background: #ede9fe;
 
-  border-color:
-    rgba(129, 121, 255, 0.17);
-
-  box-shadow:
-    inset 0 1px 0
-    rgba(255, 255, 255, 0.035);
+  border-color: #ddd6fe;
 }
 
 
 .navItem.active .navIcon {
-  color:
-    #9b96ff;
+  color: #6c63ff;
 }
 
 
 /* =========================================================
-   24. NAV LABEL
+   LABEL
 ========================================================= */
 
 .navLabel {
@@ -937,15 +752,14 @@
 
   font-size: 13px;
 
-  font-weight:
-    var(--zy-font-medium, 500);
+  font-weight: 600;
 
   line-height: 1.2;
 }
 
 
 /* =========================================================
-   25. NAV BADGE
+   BADGE
 ========================================================= */
 
 .navBadge {
@@ -957,25 +771,19 @@
 
   margin-left: auto;
 
-  padding:
-    2px 6px;
+  padding: 2px 6px;
 
-  border:
-    1px solid
-    rgba(148, 163, 184, 0.13);
+  border: 1px solid #e5e7eb;
 
   border-radius: 999px;
 
-  background:
-    rgba(255, 255, 255, 0.035);
+  background: #ffffff;
 
-  color:
-    var(--zy-text-muted, #6f7890);
+  color: #9ca3af;
 
   font-size: 9px;
 
-  font-weight:
-    var(--zy-font-semibold, 600);
+  font-weight: 700;
 
   line-height: 1.2;
 
@@ -984,7 +792,7 @@
 
 
 /* =========================================================
-   26. COLLAPSED NAVIGATION
+   COLLAPSED NAV
 ========================================================= */
 
 .collapsed .navigation {
@@ -998,17 +806,16 @@
 
 
 .collapsed .navigationItems {
-  gap: 5px;
+  gap: 4px;
 }
 
 
 .collapsed .navItem {
   justify-content: center;
 
-  min-height: 46px;
+  min-height: 45px;
 
-  padding:
-    0 8px;
+  padding: 0 7px;
 }
 
 
@@ -1022,12 +829,6 @@
 }
 
 
-.collapsed .navIcon {
-  width: 21px;
-  height: 21px;
-}
-
-
 .collapsed .navLabel,
 .collapsed .navBadge {
   display: none;
@@ -1035,15 +836,13 @@
 
 
 .collapsed .activeIndicator {
-  left: -1px;
-
-  top: 9px;
-  bottom: 9px;
+  top: 8px;
+  bottom: 8px;
 }
 
 
 /* =========================================================
-   27. BOTTOM AREA
+   BOTTOM
 ========================================================= */
 
 .bottomArea {
@@ -1055,32 +854,14 @@
 }
 
 
-/* =========================================================
-   28. PLATFORM CARD
-========================================================= */
-
 .platformCard {
   padding: 11px;
 
-  border:
-    1px solid
-    rgba(148, 163, 184, 0.12);
+  border: 1px solid #e5e7eb;
 
-  border-radius: 12px;
+  border-radius: 11px;
 
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.045),
-      rgba(255, 255, 255, 0.015)
-    );
-
-  box-shadow:
-    0 8px 24px
-    rgba(0, 0, 0, 0.12),
-
-    inset 0 1px 0
-    rgba(255, 255, 255, 0.025);
+  background: #f8fafc;
 }
 
 
@@ -1090,13 +871,11 @@
 
   gap: 7px;
 
-  color:
-    var(--zy-text-secondary, #a8b1c7);
+  color: #4b5563;
 
   font-size: 10px;
 
-  font-weight:
-    var(--zy-font-semibold, 600);
+  font-weight: 700;
 
   line-height: 1.2;
 }
@@ -1110,34 +889,24 @@
 
   border-radius: 50%;
 
-  background:
-    var(--zy-success, #20c77a);
+  background: #10b981;
 
   box-shadow:
     0 0 0 3px
-    rgba(32, 199, 122, 0.08),
-
-    0 0 10px
-    rgba(32, 199, 122, 0.20);
+    rgba(16, 185, 129, 0.08);
 }
 
 
 .platformDescription {
-  margin:
-    7px 0 0;
+  margin: 7px 0 0;
 
-  color:
-    var(--zy-text-muted, #6f7890);
+  color: #9ca3af;
 
   font-size: 9px;
 
   line-height: 1.45;
 }
 
-
-/* =========================================================
-   29. SIDEBAR META
-========================================================= */
 
 .sidebarMeta {
   display: flex;
@@ -1149,11 +918,9 @@
 
   margin-top: 8px;
 
-  padding:
-    0 4px;
+  padding: 0 4px;
 
-  color:
-    var(--zy-text-disabled, #4e566b);
+  color: #b0b6c1;
 
   font-size: 8px;
 
@@ -1162,7 +929,7 @@
 
 
 .metaSeparator {
-  opacity: 0.45;
+  color: #d1d5db;
 }
 
 
@@ -1176,28 +943,19 @@
 
   margin-inline: auto;
 
-  border:
-    1px solid
-    rgba(148, 163, 184, 0.12);
+  border: 1px solid #e5e7eb;
 
-  border-radius: 9px;
+  border-radius: 8px;
 
-  background:
-    rgba(255, 255, 255, 0.025);
+  background: #f8fafc;
 
-  color:
-    var(--zy-text-muted, #6f7890);
+  color: #6b7280;
 
   font-size: 11px;
 
-  font-weight:
-    var(--zy-font-bold, 700);
+  font-weight: 750;
 }
 
-
-/* =========================================================
-   30. COLLAPSED BOTTOM
-========================================================= */
 
 .collapsed .platformCard {
   display: none;
@@ -1212,7 +970,7 @@
 
 
 /* =========================================================
-   31. MOBILE MENU BUTTON
+   MOBILE MENU BUTTON
 ========================================================= */
 
 .mobileMenuButton {
@@ -1220,103 +978,53 @@
 
   position: fixed;
 
-  top:
-    max(
-      12px,
-      env(safe-area-inset-top)
-    );
+  top: 12px;
+  left: 12px;
 
-  left:
-    max(
-      12px,
-      env(safe-area-inset-left)
-    );
-
-  z-index:
-    calc(var(--zy-z-modal, 1000) + 10);
+  z-index: 1010;
 
   align-items: center;
   justify-content: center;
 
   flex-direction: column;
 
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
 
-  min-height: 46px;
+  padding: 8px;
 
-  padding: 9px;
+  border: 1px solid #e5e7eb;
 
-  border:
-    1px solid
-    rgba(148, 163, 184, 0.20);
+  border-radius: 11px;
 
-  border-radius: 12px;
+  background: #ffffff;
 
-  background:
-    rgba(11, 16, 32, 0.96);
-
-  color:
-    var(--zy-text-primary, #f4f7ff);
+  color: #374151;
 
   box-shadow:
-    0 10px 30px
-    rgba(0, 0, 0, 0.30);
+    0 8px 24px
+    rgba(15, 23, 42, 0.10);
 
   cursor: pointer;
-
-  -webkit-tap-highlight-color:
-    transparent;
-
-  transition:
-    background-color var(--zy-transition-fast, 120ms ease),
-    border-color var(--zy-transition-fast, 120ms ease),
-    transform var(--zy-transition-fast, 120ms ease);
-}
-
-
-.mobileMenuButton:hover {
-  border-color:
-    rgba(129, 121, 255, 0.32);
-
-  background:
-    #11182a;
-}
-
-
-.mobileMenuButton:active {
-  transform:
-    scale(0.96);
-}
-
-
-.mobileMenuButton:focus-visible {
-  outline: none;
-
-  box-shadow:
-    var(--zy-focus-ring),
-    0 10px 30px
-    rgba(0, 0, 0, 0.30);
 }
 
 
 .mobileMenuButton span {
   display: block;
 
-  width: 24px;
+  width: 22px;
   height: 2px;
 
   margin: 3px 0;
 
   border-radius: 999px;
 
-  background:
-    var(--zy-text-secondary, #a8b1c7);
+  background: currentColor;
 }
 
 
 /* =========================================================
-   32. MOBILE BACKDROP
+   MOBILE BACKDROP
 ========================================================= */
 
 .mobileBackdrop {
@@ -1326,13 +1034,10 @@
 
   inset: 0;
 
-  z-index:
-    calc(var(--zy-z-modal, 1000) - 2);
+  z-index: 998;
 
   width: 100%;
   height: 100%;
-
-  min-height: 0;
 
   margin: 0;
   padding: 0;
@@ -1340,22 +1045,16 @@
   border: 0;
 
   background:
-    rgba(2, 4, 10, 0.68);
+    rgba(15, 23, 42, 0.38);
 
   opacity: 0;
 
   pointer-events: none;
 
-  cursor: default;
+  backdrop-filter: blur(3px);
 
   transition:
-    opacity var(--zy-transition-standard, 180ms ease);
-
-  -webkit-backdrop-filter:
-    blur(3px);
-
-  backdrop-filter:
-    blur(3px);
+    opacity 180ms ease;
 }
 
 
@@ -1367,7 +1066,7 @@
 
 
 /* =========================================================
-   33. MOBILE CLOSE BUTTON
+   MOBILE CLOSE
 ========================================================= */
 
 .mobileCloseButton {
@@ -1376,80 +1075,949 @@
   align-items: center;
   justify-content: center;
 
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
 
-  min-height: 38px;
-
-  flex: 0 0 38px;
-
-  margin-left: 6px;
+  margin-left: 5px;
 
   padding: 0;
 
-  border:
-    1px solid
-    rgba(148, 163, 184, 0.13);
+  border: 1px solid #e5e7eb;
 
-  border-radius: 10px;
+  border-radius: 9px;
 
-  background:
-    rgba(255, 255, 255, 0.025);
+  background: #f8fafc;
 
-  color:
-    var(--zy-text-secondary, #a8b1c7);
-
-  font-size: 24px;
-
-  font-weight: 300;
-
-  line-height: 1;
+  color: #6b7280;
 
   cursor: pointer;
-
-  -webkit-tap-highlight-color:
-    transparent;
-
-  transition:
-    color var(--zy-transition-fast, 120ms ease),
-    background-color var(--zy-transition-fast, 120ms ease),
-    border-color var(--zy-transition-fast, 120ms ease);
-}
-
-
-.mobileCloseButton:hover {
-  color:
-    var(--zy-text-primary, #f4f7ff);
-
-  background:
-    rgba(255, 255, 255, 0.055);
-
-  border-color:
-    rgba(148, 163, 184, 0.20);
-}
-
-
-.mobileCloseButton:focus-visible {
-  outline: none;
-
-  box-shadow:
-    var(--zy-focus-ring);
 }
 
 
 /* =========================================================
-   34. LARGE DESKTOP
+   BACKEND CONTROL PANEL OVERLAY
 ========================================================= */
 
-@media (min-width: 1201px) {
-  .sidebar {
-    --sidebar-width: 272px;
+.panelOverlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 1200;
+
+  display: flex;
+
+  align-items: stretch;
+
+  justify-content: flex-start;
+
+  padding-left:
+    max(
+      var(--sidebar-width),
+      264px
+    );
+
+  background:
+    rgba(15, 23, 42, 0.16);
+
+  backdrop-filter: blur(2px);
+}
+
+
+/* =========================================================
+   CONTROL PANEL
+========================================================= */
+
+.controlPanel {
+  width:
+    min(
+      520px,
+      calc(100vw - var(--sidebar-width) - 32px)
+    );
+
+  min-width: 420px;
+
+  height: 100%;
+
+  background: #ffffff;
+
+  border-right: 1px solid #e5e7eb;
+
+  box-shadow:
+    20px 0 60px
+    rgba(15, 23, 42, 0.10);
+
+  display: flex;
+
+  flex-direction: column;
+
+  animation:
+    panelIn 180ms ease-out;
+}
+
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+
+    transform:
+      translateX(-12px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateX(0);
   }
 }
 
 
 /* =========================================================
-   35. STANDARD DESKTOP
+   PANEL HEADER
+========================================================= */
+
+.panelHeader {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 18px;
+
+  padding: 22px 22px 18px;
+
+  border-bottom: 1px solid #eef0f3;
+
+  flex-shrink: 0;
+}
+
+
+.panelEyebrow {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #6c63ff;
+
+  font-size: 8px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.12em;
+}
+
+
+.panelHeader h2 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 20px;
+
+  line-height: 1.2;
+
+  letter-spacing: -0.02em;
+}
+
+
+.panelHeader p {
+  margin: 7px 0 0;
+
+  max-width: 390px;
+
+  color: #6b7280;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+}
+
+
+.panelHeaderActions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+}
+
+
+/* =========================================================
+   PANEL BODY
+========================================================= */
+
+.panelBody {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 14px;
+
+  padding: 18px 22px 26px;
+
+  overflow-y: auto;
+
+  flex: 1;
+}
+
+
+/* =========================================================
+   ICON BUTTON
+========================================================= */
+
+.iconButton {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+
+  padding: 0;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #6b7280;
+
+  cursor: pointer;
+
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+
+.iconButton:hover {
+  background: #f8fafc;
+
+  border-color: #d1d5db;
+
+  color: #111827;
+}
+
+
+.iconButton:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   FIELD
+========================================================= */
+
+.fieldLabel {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 6px;
+
+  color: #374151;
+
+  font-size: 11px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   INPUT / SELECT
+========================================================= */
+
+.input,
+.select {
+  width: 100%;
+
+  min-height: 40px;
+
+  padding:
+    0 11px;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #111827;
+
+  font: inherit;
+
+  font-size: 12px;
+
+  outline: none;
+
+  box-sizing: border-box;
+
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
+}
+
+
+.input::placeholder {
+  color: #a1a1aa;
+}
+
+
+.input:hover,
+.select:hover {
+  border-color: #d1d5db;
+}
+
+
+.input:focus,
+.select:focus {
+  border-color: #a5b4fc;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(108, 99, 255, 0.09);
+}
+
+
+.select:disabled,
+.input:disabled {
+  background: #f8fafc;
+
+  color: #9ca3af;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   FORM GRID
+========================================================= */
+
+.formGrid {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 10px;
+}
+
+
+/* =========================================================
+   CHECKBOX
+========================================================= */
+
+.checkboxRow {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  color: #6b7280;
+
+  font-size: 11px;
+
+  cursor: pointer;
+}
+
+
+.checkboxRow input {
+  width: 15px;
+  height: 15px;
+
+  accent-color: #6c63ff;
+}
+
+
+/* =========================================================
+   SECTION HEADER
+========================================================= */
+
+.sectionHeader {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  margin-top: 2px;
+}
+
+
+.sectionHeader h3 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 13px;
+
+  font-weight: 750;
+}
+
+
+.sectionHeader span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #9ca3af;
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.primaryButton,
+.secondaryButton {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  min-height: 40px;
+
+  padding:
+    0 14px;
+
+  border-radius: 9px;
+
+  font: inherit;
+
+  font-size: 11px;
+
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+
+.primaryButton {
+  width: 100%;
+
+  border: 1px solid #6c63ff;
+
+  background: #6c63ff;
+
+  color: #ffffff;
+
+  box-shadow:
+    0 5px 14px
+    rgba(108, 99, 255, 0.18);
+}
+
+
+.primaryButton:hover {
+  background: #5f57ef;
+
+  border-color: #5f57ef;
+
+  box-shadow:
+    0 7px 18px
+    rgba(108, 99, 255, 0.22);
+}
+
+
+.primaryButton:active,
+.secondaryButton:active {
+  transform: translateY(1px);
+}
+
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+
+  transform: none;
+
+  box-shadow: none;
+}
+
+
+.secondaryButton {
+  flex-shrink: 0;
+
+  border: 1px solid #e5e7eb;
+
+  background: #ffffff;
+
+  color: #4b5563;
+}
+
+
+.secondaryButton:hover {
+  background: #f8fafc;
+
+  border-color: #d1d5db;
+
+  color: #111827;
+}
+
+
+/* =========================================================
+   VARIABLE LIST
+========================================================= */
+
+.variableList {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 6px;
+
+  max-height: 230px;
+
+  overflow-y: auto;
+}
+
+
+.variableRow {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  min-height: 50px;
+
+  padding: 8px 10px;
+
+  border: 1px solid #eef0f3;
+
+  border-radius: 9px;
+
+  background: #fafafa;
+}
+
+
+.variableIdentity {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+
+.variableKey {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  color: #111827;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+
+.variableMeta {
+  color: #9ca3af;
+
+  font-size: 8px;
+}
+
+
+.secretValue,
+.plainValue {
+  flex-shrink: 0;
+
+  color: #6c63ff;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+  font-size: 9px;
+
+  font-weight: 700;
+}
+
+
+.plainValue {
+  color: #059669;
+}
+
+
+/* =========================================================
+   ENVIRONMENT FORM
+========================================================= */
+
+.variableForm {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 11px;
+
+  padding-top: 4px;
+}
+
+
+/* =========================================================
+   CONNECTION STATUS
+========================================================= */
+
+.connectionStatus {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  min-height: 54px;
+
+  padding: 9px 10px;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 10px;
+
+  background: #f8fafc;
+}
+
+
+.connectionIcon {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 9px;
+
+  background: #111827;
+
+  color: #ffffff;
+}
+
+
+.connectionStatus div:nth-child(2) {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+
+  flex: 1;
+}
+
+
+.connectionStatus strong {
+  color: #111827;
+
+  font-size: 11px;
+}
+
+
+.connectionStatus span {
+  color: #9ca3af;
+
+  font-size: 9px;
+}
+
+
+.connectedDot,
+.disconnectedDot {
+  width: 8px;
+  height: 8px;
+
+  flex: 0 0 8px;
+
+  border-radius: 50%;
+}
+
+
+.connectedDot {
+  background: #10b981;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(16, 185, 129, 0.10);
+}
+
+
+.disconnectedDot {
+  background: #d1d5db;
+}
+
+
+/* =========================================================
+   DEPLOY SUMMARY
+========================================================= */
+
+.deploySummary {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 8px;
+}
+
+
+.deploySummary > div {
+  min-width: 0;
+
+  padding: 10px;
+
+  border: 1px solid #eef0f3;
+
+  border-radius: 9px;
+
+  background: #fafafa;
+}
+
+
+.deploySummary span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #9ca3af;
+
+  font-size: 8px;
+
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.05em;
+}
+
+
+.deploySummary strong {
+  display: block;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  color: #374151;
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   DEPLOYMENT RESULT
+========================================================= */
+
+.deploymentResult {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding: 10px;
+
+  border: 1px solid #d1fae5;
+
+  border-radius: 9px;
+
+  background: #f0fdf4;
+}
+
+
+.deploymentResult div {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+
+.deploymentResult span {
+  color: #059669;
+
+  font-size: 9px;
+}
+
+
+.deploymentResult strong {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  color: #047857;
+
+  font-size: 10px;
+}
+
+
+.deploymentResult > span:last-child {
+  flex-shrink: 0;
+
+  padding: 4px 7px;
+
+  border-radius: 999px;
+
+  background: #dcfce7;
+
+  color: #047857;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+
+.errorMessage,
+.successMessage {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 8px;
+
+  padding: 9px 10px;
+
+  border-radius: 9px;
+
+  font-size: 10px;
+
+  line-height: 1.4;
+}
+
+
+.errorMessage {
+  border: 1px solid #fecaca;
+
+  background: #fef2f2;
+
+  color: #b91c1c;
+}
+
+
+.successMessage {
+  border: 1px solid #bbf7d0;
+
+  background: #f0fdf4;
+
+  color: #047857;
+}
+
+
+.errorMessage svg,
+.successMessage svg {
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   LOADING / EMPTY
+========================================================= */
+
+.loadingState,
+.emptyState {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-direction: column;
+
+  gap: 7px;
+
+  min-height: 120px;
+
+  padding: 18px;
+
+  border: 1px dashed #d1d5db;
+
+  border-radius: 10px;
+
+  background: #fafafa;
+
+  text-align: center;
+
+  color: #9ca3af;
+
+  font-size: 10px;
+}
+
+
+.emptyState svg {
+  color: #6c63ff;
+}
+
+
+.emptyState strong {
+  color: #4b5563;
+
+  font-size: 11px;
+}
+
+
+.emptyState span {
+  max-width: 250px;
+
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   DESKTOP PANEL WIDTH
 ========================================================= */
 
 @media (max-width: 1200px) and (min-width: 769px) {
@@ -1457,27 +2025,32 @@
     --sidebar-width: 248px;
   }
 
-  .navLabel {
-    font-size: 12.5px;
+  .panelOverlay {
+    padding-left: 248px;
+  }
+
+  .controlPanel {
+    width:
+      min(
+        500px,
+        calc(100vw - 248px - 24px)
+      );
   }
 }
 
 
 /* =========================================================
-   36. MOBILE DRAWER
+   MOBILE DRAWER
 ========================================================= */
 
 @media (max-width: 768px) {
-
   .mobileMenuButton {
     display: flex;
   }
 
-
   .mobileBackdrop {
     display: block;
   }
-
 
   .sidebar {
     position: fixed;
@@ -1485,18 +2058,15 @@
     top: 0;
     left: 0;
 
-    width:
-      min(88vw, 360px);
+    width: min(88vw, 360px);
 
-    min-width:
-      min(88vw, 360px);
+    min-width: min(88vw, 360px);
 
     height: 100dvh;
 
     max-height: 100dvh;
 
-    z-index:
-      var(--zy-z-modal, 1000);
+    z-index: 1000;
 
     padding:
       max(14px, env(safe-area-inset-top))
@@ -1509,21 +2079,18 @@
 
     box-shadow:
       18px 0 50px
-      rgba(0, 0, 0, 0.38);
+      rgba(15, 23, 42, 0.16);
 
     transition:
-      transform var(--zy-transition-large, 260ms ease);
+      transform 260ms ease;
 
-    overscroll-behavior:
-      contain;
+    overscroll-behavior: contain;
   }
-
 
   .sidebar.mobileOpen {
     transform:
       translate3d(0, 0, 0);
   }
-
 
   .header {
     min-height: 58px;
@@ -1533,38 +2100,28 @@
     padding-bottom: 14px;
   }
 
-
   .brandMark {
     width: 34px;
     height: 34px;
 
     flex-basis: 34px;
-
-    padding: 7px;
-
-    border-radius: 10px;
   }
-
 
   .brandName {
     font-size: 16px;
   }
 
-
   .brandTagline {
     font-size: 10px;
   }
-
 
   .collapseButton {
     display: none;
   }
 
-
   .mobileCloseButton {
     display: flex;
   }
-
 
   .workspaceContext {
     min-height: 52px;
@@ -1573,7 +2130,6 @@
 
     padding: 9px;
   }
-
 
   .workspaceIcon {
     width: 34px;
@@ -1584,13 +2140,9 @@
     flex-basis: 34px;
   }
 
-
   .navigation {
     gap: 18px;
-
-    padding-right: 2px;
   }
-
 
   .sectionLabel {
     padding:
@@ -1599,21 +2151,13 @@
     font-size: 9px;
   }
 
-
-  .navigationItems {
-    gap: 4px;
-  }
-
-
   .navItem {
     min-height: 48px;
 
-    padding:
-      0 12px;
+    padding: 0 12px;
 
-    border-radius: 12px;
+    border-radius: 11px;
   }
-
 
   .navIconBox {
     width: 32px;
@@ -1624,70 +2168,21 @@
     flex-basis: 32px;
   }
 
-
-  .navIcon {
-    width: 21px;
-    height: 21px;
-  }
-
-
   .navLabel {
     margin-left: 12px;
 
     font-size: 14px;
-
-    font-weight:
-      var(--zy-font-medium, 500);
   }
-
-
-  .bottomArea {
-    padding-top: 14px;
-  }
-
-
-  .platformCard {
-    padding: 12px;
-  }
-
-
-  .platformDescription {
-    font-size: 10px;
-  }
-
-
-  .sidebarMeta {
-    min-height: 24px;
-
-    margin-top: 9px;
-
-    font-size: 9px;
-  }
-
-
-  /* -------------------------------------------------------
-     Mobile drawer must never inherit collapsed presentation
-  ------------------------------------------------------- */
 
   .sidebar.collapsed {
-    width:
-      min(88vw, 360px);
+    width: min(88vw, 360px);
 
-    min-width:
-      min(88vw, 360px);
-
-    padding:
-      max(14px, env(safe-area-inset-top))
-      14px
-      max(14px, env(safe-area-inset-bottom))
-      max(14px, env(safe-area-inset-left));
+    min-width: min(88vw, 360px);
   }
-
 
   .sidebar.collapsed .brand {
     justify-content: flex-start;
   }
-
 
   .sidebar.collapsed .brandContent,
   .sidebar.collapsed .workspaceContent,
@@ -1698,41 +2193,25 @@
     display: block;
   }
 
-
   .sidebar.collapsed .brandMark {
     margin-inline: 0;
   }
-
 
   .sidebar.collapsed .workspaceContext {
     justify-content: flex-start;
   }
 
-
   .sidebar.collapsed .workspaceIcon {
     margin-inline: 0;
   }
-
-
-  .sidebar.collapsed .navigation {
-    gap: 18px;
-  }
-
-
-  .sidebar.collapsed .navigationItems {
-    gap: 4px;
-  }
-
 
   .sidebar.collapsed .navItem {
     justify-content: flex-start;
 
     min-height: 48px;
 
-    padding:
-      0 12px;
+    padding: 0 12px;
   }
-
 
   .sidebar.collapsed .navIconBox {
     width: 32px;
@@ -1741,134 +2220,160 @@
     min-width: 32px;
 
     flex-basis: 32px;
-
-    margin-inline: 0;
   }
-
 
   .sidebar.collapsed .navLabel {
     margin-left: 12px;
   }
 
+  /* -------------------------------------------------------
+     BACKEND PANEL ON MOBILE
+  ------------------------------------------------------- */
 
-  .sidebar.collapsed .platformCard {
-    display: block;
+  .panelOverlay {
+    z-index: 1200;
+
+    align-items: stretch;
+
+    justify-content: stretch;
+
+    padding: 0;
+
+    background:
+      rgba(15, 23, 42, 0.22);
   }
 
+  .controlPanel {
+    width: 100%;
 
-  .sidebar.collapsed .sidebarMeta {
-    justify-content: flex-start;
+    min-width: 0;
 
-    padding: 0 4px;
+    height: 100%;
+
+    border-right: 0;
+
+    box-shadow: none;
   }
 
+  .panelHeader {
+    padding:
+      max(18px, env(safe-area-inset-top))
+      16px
+      15px;
+  }
 
-  .sidebar.collapsed .collapsedMeta {
-    display: none;
+  .panelBody {
+    padding:
+      16px
+      16px
+      max(
+        22px,
+        env(safe-area-inset-bottom)
+      );
+  }
+
+  .deploySummary {
+    grid-template-columns: 1fr;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
   }
 }
 
 
 /* =========================================================
-   37. SMALL MOBILE
+   SMALL MOBILE
 ========================================================= */
 
 @media (max-width: 480px) {
-
   .sidebar {
-    width:
-      min(90vw, 340px);
+    width: min(90vw, 340px);
 
-    min-width:
-      min(90vw, 340px);
+    min-width: min(90vw, 340px);
   }
-
 
   .sidebar.collapsed {
-    width:
-      min(90vw, 340px);
+    width: min(90vw, 340px);
 
-    min-width:
-      min(90vw, 340px);
+    min-width: min(90vw, 340px);
   }
 
-
   .mobileMenuButton {
-    top:
-      max(
-        10px,
-        env(safe-area-inset-top)
-      );
-
-    left:
-      max(
-        10px,
-        env(safe-area-inset-left)
-      );
+    top: 10px;
+    left: 10px;
 
     width: 44px;
     height: 44px;
   }
 
-
-  .header {
-    min-height: 56px;
+  .panelHeader h2 {
+    font-size: 18px;
   }
 
-
-  .navItem {
-    min-height: 46px;
+  .panelHeader p {
+    font-size: 10px;
   }
 
+  .panelHeaderActions {
+    gap: 4px;
+  }
 
-  .navLabel {
-    font-size: 13.5px;
+  .iconButton {
+    width: 34px;
+    height: 34px;
   }
 }
 
 
 /* =========================================================
-   38. VERY SMALL DEVICES
+   VERY SMALL
 ========================================================= */
 
 @media (max-width: 360px) {
-
-  .sidebar,
-  .sidebar.collapsed {
-    width: 92vw;
-    min-width: 92vw;
-  }
-
-
   .sidebar {
+    width: 92vw;
+
+    min-width: 92vw;
+
     padding-left: 10px;
+
     padding-right: 10px;
   }
 
+  .sidebar.collapsed {
+    width: 92vw;
+
+    min-width: 92vw;
+  }
 
   .brand {
     gap: 8px;
   }
 
-
   .brandName {
     font-size: 15px;
   }
 
-
   .navItem {
     padding-left: 10px;
+
     padding-right: 10px;
+  }
+
+  .panelBody {
+    padding-left: 12px;
+
+    padding-right: 12px;
   }
 }
 
 
 /* =========================================================
-   39. REDUCED MOTION
+   REDUCED MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
   .sidebar,
   .brand,
   .navItem,
@@ -1878,88 +2383,83 @@
   .mobileCloseButton,
   .navIcon,
   .navIconBox,
-  .activeIndicator {
+  .activeIndicator,
+  .controlPanel {
     transition: none;
+
+    animation: none;
   }
 }
 
 
 /* =========================================================
-   40. FORCED COLORS / HIGH CONTRAST
+   FORCED COLORS
 ========================================================= */
 
 @media (forced-colors: active) {
-
   .sidebar,
   .workspaceContext,
   .platformCard,
   .navItem,
   .mobileMenuButton,
   .mobileCloseButton,
-  .navIconBox {
-    border-color:
-      CanvasText;
+  .navIconBox,
+  .controlPanel,
+  .input,
+  .select,
+  .primaryButton,
+  .secondaryButton {
+    border-color: CanvasText;
   }
-
 
   .active {
-    background:
-      Highlight;
+    background: Highlight;
 
-    color:
-      HighlightText;
+    color: HighlightText;
   }
-
 
   .active .navIcon {
-    color:
-      HighlightText;
+    color: HighlightText;
   }
 
-
   .activeIndicator {
-    background:
-      HighlightText;
+    background: HighlightText;
   }
 }
 
 
 /* =========================================================
-   41. TOUCH DEVICE REFINEMENT
+   TOUCH
 ========================================================= */
 
 @media (hover: none) and (pointer: coarse) {
-
   .navItem:hover {
     transform: none;
   }
-
-
-  .navItem:active {
-    transform:
-      scale(0.99);
-  }
-
 
   .navItem {
     min-height: 48px;
   }
 
-
   .mobileMenuButton,
   .mobileCloseButton {
-    -webkit-user-select: none;
     user-select: none;
+
+    -webkit-user-select: none;
+
+    -webkit-tap-highlight-color:
+      transparent;
   }
 }
 
 
 /* =========================================================
-   42. SAFE AREA
+   SAFE AREA
 ========================================================= */
 
-@supports (padding: env(safe-area-inset-bottom)) {
-
+@supports (
+  padding: env(safe-area-inset-bottom)
+) {
   .sidebar {
     padding-bottom:
       max(
@@ -1968,8 +2468,3 @@
       );
   }
 }
-
-
-/* =========================================================
-   END OF ENTERPRISE SIDEBAR SYSTEM
-========================================================= */

@@ -624,6 +624,11 @@ function Settings() {
   const [selectedEnvironmentName, setSelectedEnvironmentName] =
     useState("");
 
+  /*
+   * IMPORTANT:
+   * selectedEnvironment is the loaded backend environment
+   * object. Do NOT redeclare it with useMemo.
+   */
   const [selectedEnvironment, setSelectedEnvironment] =
     useState(null);
 
@@ -735,19 +740,13 @@ function Settings() {
   );
 
 
-  const selectedEnvironment = useMemo(
-    () =>
-      selectedEnvironmentName
-        ? environments.find(
-            (environment) =>
-              getEnvironmentName(environment).toLowerCase() ===
-              selectedEnvironmentName.toLowerCase()
-          ) || null
-        : null,
-    [environments, selectedEnvironmentName]
-  );
-
-
+  /*
+   * DO NOT add another:
+   *
+   * const selectedEnvironment = useMemo(...)
+   *
+   * The state above is the single source of truth.
+   */
   const environmentVariables =
     getVariableList(selectedEnvironment);
 
@@ -1481,7 +1480,11 @@ function Settings() {
 
   const handleDeleteEnvironmentVariable =
     async (key) => {
-      if (!selectedProjectId || !selectedEnvironmentName || !key) {
+      if (
+        !selectedProjectId ||
+        !selectedEnvironmentName ||
+        !key
+      ) {
         return;
       }
 
@@ -3050,8 +3053,6 @@ function Settings() {
                     </div>
 
 
-                    {/* PROJECT + ENVIRONMENT */}
-
                     <div
                       className={
                         styles.formGridTwo
@@ -3147,8 +3148,6 @@ function Settings() {
                     </div>
 
 
-                    {/* MESSAGE */}
-
                     {environmentError && (
                       <div
                         className={
@@ -3183,8 +3182,6 @@ function Settings() {
                       </div>
                     )}
 
-
-                    {/* VARIABLE FORM */}
 
                     <form
                       className={
@@ -3517,8 +3514,6 @@ function Settings() {
                     </form>
 
 
-                    {/* VARIABLE LIST */}
-
                     <div
                       className={
                         styles.variableSection
@@ -3801,8 +3796,6 @@ function Settings() {
                     </div>
 
 
-                    {/* CONNECTION */}
-
                     <div
                       className={
                         styles.githubConnectionCard
@@ -3983,8 +3976,6 @@ function Settings() {
                       </div>
                     )}
 
-
-                    {/* PROJECT */}
 
                     <div
                       className={
@@ -4309,8 +4300,6 @@ function Settings() {
                     </div>
 
 
-                    {/* DEPLOYMENT ACTIONS */}
-
                     <div
                       className={
                         styles.githubActionBar
@@ -4433,8 +4422,6 @@ function Settings() {
                     </div>
 
 
-                    {/* READINESS */}
-
                     {githubReadiness && (
                       <div
                         className={
@@ -4459,18 +4446,19 @@ function Settings() {
 
                           <p>
                             {githubReadiness?.message ||
-                              githubReadiness?.status ||
-                              githubReadiness?.ready ===
-                                true
-                              ? "Backend returned deployment readiness data."
-                              : "Backend returned a readiness response."}
+                            githubReadiness?.status
+                              ? githubReadiness?.message ||
+                                githubReadiness?.status
+                              : githubReadiness?.ready === true
+                                ? "Backend returned deployment readiness data."
+                                : "Backend returned a readiness response."}
                           </p>
                         </div>
 
                         <span
                           className={
                             githubReadiness?.ready ===
-                              false
+                            false
                               ? styles.readinessBad
                               : styles.readinessGood
                           }
@@ -4485,6 +4473,7 @@ function Settings() {
 
                   </div>
                 )}
+
 
               </section>
             )}

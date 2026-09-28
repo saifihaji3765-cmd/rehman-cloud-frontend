@@ -18,6 +18,16 @@ import deploymentService from "../../../services/deploymentService.js";
 
 
 /* =========================================================
+   API BASE
+========================================================= */
+
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  "https://api.zyrionos.com"
+).replace(/\/+$/, "");
+
+
+/* =========================================================
    ICON SYSTEM
 ========================================================= */
 
@@ -339,9 +349,15 @@ const sections = [
     icon: "billing",
   },
   {
+    id: "environment",
+    label: "Environment",
+    description: "Project variables and secrets",
+    icon: "environment",
+  },
+  {
     id: "integrations",
     label: "Integrations",
-    description: "Environment and GitHub controls",
+    description: "GitHub and deployment services",
     icon: "integrations",
   },
   {
@@ -360,7 +376,7 @@ const sections = [
 
 
 /* =========================================================
-   GENERIC DATA HELPERS
+   GENERIC HELPERS
 ========================================================= */
 
 function getInitials(user) {
@@ -374,7 +390,9 @@ function getInitials(user) {
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
+    .map((part) =>
+      part.charAt(0).toUpperCase()
+    )
     .join("");
 }
 
@@ -390,14 +408,18 @@ function getDisplayName(user) {
 
 
 function getEmail(user) {
-  return user?.email || "Account email unavailable";
+  return (
+    user?.email ||
+    "Account email unavailable"
+  );
 }
 
 
 function getPayload(response) {
   if (!response) return null;
 
-  const body = response?.data ?? response;
+  const body =
+    response?.data ?? response;
 
   if (body?.data !== undefined) {
     return body.data;
@@ -408,7 +430,8 @@ function getPayload(response) {
 
 
 function getList(response, keys = []) {
-  const payload = getPayload(response);
+  const payload =
+    getPayload(response);
 
   if (Array.isArray(payload)) {
     return payload;
@@ -419,7 +442,11 @@ function getList(response, keys = []) {
       return payload[key];
     }
 
-    if (Array.isArray(payload?.data?.[key])) {
+    if (
+      Array.isArray(
+        payload?.data?.[key]
+      )
+    ) {
       return payload.data[key];
     }
   }
@@ -429,7 +456,8 @@ function getList(response, keys = []) {
 
 
 function getObject(response, keys = []) {
-  const payload = getPayload(response);
+  const payload =
+    getPayload(response);
 
   if (!payload) {
     return null;
@@ -445,7 +473,10 @@ function getObject(response, keys = []) {
 }
 
 
-function getErrorMessage(error, fallback) {
+function getErrorMessage(
+  error,
+  fallback
+) {
   return (
     error?.response?.data?.message ||
     error?.data?.message ||
@@ -485,7 +516,9 @@ function getEnvironmentName(environment) {
 
 
 function getVariableList(environment) {
-  return Array.isArray(environment?.variables)
+  return Array.isArray(
+    environment?.variables
+  )
     ? environment.variables
     : [];
 }
@@ -568,11 +601,55 @@ function getSubscriptionData(response) {
 
 
 /* =========================================================
+   ENVIRONMENT DRAFT
+========================================================= */
+
+function createEnvironmentDraft(
+  overrides = {}
+) {
+  return {
+    id:
+      overrides.id ||
+      `${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}`,
+
+    originalKey:
+      overrides.originalKey || "",
+
+    key:
+      overrides.key || "",
+
+    value:
+      overrides.value || "",
+
+    type:
+      overrides.type || "string",
+
+    scope:
+      overrides.scope || "runtime",
+
+    required:
+      Boolean(overrides.required),
+
+    isSecret:
+      overrides.isSecret !== false,
+
+    enabled:
+      overrides.enabled !== false,
+
+    visible: false,
+  };
+}
+
+
+/* =========================================================
    SETTINGS
 ========================================================= */
 
 function Settings() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
   const {
     user,
@@ -581,133 +658,169 @@ function Settings() {
 
 
   /* -------------------------------------------------------
-     GENERAL SETTINGS STATE
+     GENERAL
   ------------------------------------------------------- */
 
-  const [activeSection, setActiveSection] =
-    useState("profile");
+  const [
+    activeSection,
+    setActiveSection,
+  ] = useState("profile");
 
-  const [subscription, setSubscription] =
-    useState(null);
+  const [
+    subscription,
+    setSubscription,
+  ] = useState(null);
 
-  const [subscriptionLoading, setSubscriptionLoading] =
-    useState(false);
+  const [
+    subscriptionLoading,
+    setSubscriptionLoading,
+  ] = useState(false);
 
-  const [subscriptionError, setSubscriptionError] =
-    useState("");
+  const [
+    subscriptionError,
+    setSubscriptionError,
+  ] = useState("");
 
-  const [mobileSectionsOpen, setMobileSectionsOpen] =
-    useState(false);
+  const [
+    mobileSectionsOpen,
+    setMobileSectionsOpen,
+  ] = useState(false);
 
 
   /* -------------------------------------------------------
-     INTEGRATION STATE
+     PROJECT
   ------------------------------------------------------- */
 
-  const [projects, setProjects] =
-    useState([]);
+  const [
+    projects,
+    setProjects,
+  ] = useState([]);
 
-  const [selectedProjectId, setSelectedProjectId] =
-    useState("");
-
-  const [integrationTab, setIntegrationTab] =
-    useState("environment");
+  const [
+    selectedProjectId,
+    setSelectedProjectId,
+  ] = useState("");
 
 
   /* -------------------------------------------------------
-     ENVIRONMENT STATE
+     ENVIRONMENT
   ------------------------------------------------------- */
 
-  const [environments, setEnvironments] =
-    useState([]);
+  const [
+    environments,
+    setEnvironments,
+  ] = useState([]);
 
-  const [selectedEnvironmentName, setSelectedEnvironmentName] =
-    useState("");
+  const [
+    selectedEnvironmentName,
+    setSelectedEnvironmentName,
+  ] = useState("");
 
-  /*
-   * IMPORTANT:
-   * selectedEnvironment is the loaded backend environment
-   * object. Do NOT redeclare it with useMemo.
-   */
-  const [selectedEnvironment, setSelectedEnvironment] =
-    useState(null);
+  const [
+    selectedEnvironment,
+    setSelectedEnvironment,
+  ] = useState(null);
 
-  const [environmentLoading, setEnvironmentLoading] =
-    useState(false);
+  const [
+    environmentLoading,
+    setEnvironmentLoading,
+  ] = useState(false);
 
-  const [environmentSaving, setEnvironmentSaving] =
-    useState(false);
+  const [
+    environmentSavingAll,
+    setEnvironmentSavingAll,
+  ] = useState(false);
 
-  const [environmentDeletingKey, setEnvironmentDeletingKey] =
-    useState("");
+  const [
+    environmentDeletingKey,
+    setEnvironmentDeletingKey,
+  ] = useState("");
 
-  const [environmentError, setEnvironmentError] =
-    useState("");
+  const [
+    environmentError,
+    setEnvironmentError,
+  ] = useState("");
 
-  const [environmentMessage, setEnvironmentMessage] =
-    useState("");
+  const [
+    environmentMessage,
+    setEnvironmentMessage,
+  ] = useState("");
 
-  const [environmentForm, setEnvironmentForm] =
-    useState({
-      key: "",
-      value: "",
-      type: "string",
-      scope: "runtime",
-      required: false,
-      isSecret: true,
-      enabled: true,
-    });
-
-  const [visibleNewValue, setVisibleNewValue] =
-    useState(false);
-
-  const [editingEnvironmentKey, setEditingEnvironmentKey] =
-    useState("");
+  const [
+    environmentDrafts,
+    setEnvironmentDrafts,
+  ] = useState(() => [
+    createEnvironmentDraft(),
+  ]);
 
 
   /* -------------------------------------------------------
-     GITHUB STATE
+     GITHUB
   ------------------------------------------------------- */
 
-  const [githubConnections, setGithubConnections] =
-    useState([]);
+  const [
+    githubConnections,
+    setGithubConnections,
+  ] = useState([]);
 
-  const [selectedConnectionId, setSelectedConnectionId] =
-    useState("");
+  const [
+    selectedConnectionId,
+    setSelectedConnectionId,
+  ] = useState("");
 
-  const [githubRepositories, setGithubRepositories] =
-    useState([]);
+  const [
+    githubRepositories,
+    setGithubRepositories,
+  ] = useState([]);
 
-  const [selectedRepository, setSelectedRepository] =
-    useState(null);
+  const [
+    selectedRepository,
+    setSelectedRepository,
+  ] = useState(null);
 
-  const [githubBranches, setGithubBranches] =
-    useState([]);
+  const [
+    githubBranches,
+    setGithubBranches,
+  ] = useState([]);
 
-  const [selectedBranch, setSelectedBranch] =
-    useState("");
+  const [
+    selectedBranch,
+    setSelectedBranch,
+  ] = useState("");
 
-  const [githubLoading, setGithubLoading] =
-    useState(false);
+  const [
+    githubLoading,
+    setGithubLoading,
+  ] = useState(false);
 
-  const [githubActionLoading, setGithubActionLoading] =
-    useState(false);
+  const [
+    githubActionLoading,
+    setGithubActionLoading,
+  ] = useState(false);
 
-  const [githubError, setGithubError] =
-    useState("");
+  const [
+    githubError,
+    setGithubError,
+  ] = useState("");
 
-  const [githubMessage, setGithubMessage] =
-    useState("");
+  const [
+    githubMessage,
+    setGithubMessage,
+  ] = useState("");
 
-  const [githubReadiness, setGithubReadiness] =
-    useState(null);
+  const [
+    githubReadiness,
+    setGithubReadiness,
+  ] = useState(null);
 
-  const [githubPreparedContract, setGithubPreparedContract] =
-    useState(null);
+  const [
+    githubPreparedContract,
+    setGithubPreparedContract,
+  ] = useState(null);
 
 
   /* -------------------------------------------------------
-     PROJECT DATA
+     MEMOS
   ------------------------------------------------------- */
 
   const profile = useMemo(
@@ -729,440 +842,541 @@ function Settings() {
   );
 
 
-  const selectedProject = useMemo(
-    () =>
-      projects.find(
-        (project) =>
-          String(getProjectId(project)) ===
-          String(selectedProjectId)
-      ) || null,
-    [projects, selectedProjectId]
-  );
+  const selectedProject =
+    useMemo(
+      () =>
+        projects.find(
+          (project) =>
+            String(
+              getProjectId(project)
+            ) ===
+            String(
+              selectedProjectId
+            )
+        ) || null,
+      [
+        projects,
+        selectedProjectId,
+      ]
+    );
 
 
-  /*
-   * DO NOT add another:
-   *
-   * const selectedEnvironment = useMemo(...)
-   *
-   * The state above is the single source of truth.
-   */
   const environmentVariables =
-    getVariableList(selectedEnvironment);
+    getVariableList(
+      selectedEnvironment
+    );
 
 
-  /* -------------------------------------------------------
+  /* =======================================================
      SUBSCRIPTION
-  ------------------------------------------------------- */
+  ======================================================= */
 
-  const loadSubscription = async () => {
-    setSubscriptionLoading(true);
-    setSubscriptionError("");
-
-    try {
-      const response = await getSubscription();
-
-      setSubscription(
-        getSubscriptionData(response)
+  const loadSubscription =
+    useCallback(async () => {
+      setSubscriptionLoading(
+        true
       );
-    } catch (error) {
-      setSubscription(null);
 
-      setSubscriptionError(
-        getErrorMessage(
-          error,
-          "Unable to load subscription information."
-        )
-      );
-    } finally {
-      setSubscriptionLoading(false);
-    }
-  };
+      setSubscriptionError("");
 
-
-  /* -------------------------------------------------------
-     PROJECT LOADING
-  ------------------------------------------------------- */
-
-  const loadProjects = useCallback(
-    async (preserveSelection = true) => {
       try {
         const response =
-          await workspaceService.getProjects();
+          await getSubscription();
 
-        const list = getList(response, [
-          "projects",
-          "items",
-        ]);
+        setSubscription(
+          getSubscriptionData(
+            response
+          )
+        );
+      } catch (error) {
+        setSubscription(null);
 
-        setProjects(list);
+        setSubscriptionError(
+          getErrorMessage(
+            error,
+            "Unable to load subscription information."
+          )
+        );
+      } finally {
+        setSubscriptionLoading(
+          false
+        );
+      }
+    }, []);
 
-        if (!list.length) {
-          setSelectedProjectId("");
+
+  /* =======================================================
+     PROJECTS
+  ======================================================= */
+
+  const loadProjects =
+    useCallback(
+      async (
+        preserveSelection = true
+      ) => {
+        try {
+          const response =
+            await workspaceService.getProjects();
+
+          const list =
+            getList(response, [
+              "projects",
+              "items",
+            ]);
+
+          setProjects(list);
+
+          if (!list.length) {
+            setSelectedProjectId("");
+            return;
+          }
+
+          const currentStillExists =
+            preserveSelection &&
+            list.some(
+              (project) =>
+                String(
+                  getProjectId(project)
+                ) ===
+                String(
+                  selectedProjectId
+                )
+            );
+
+          if (!currentStillExists) {
+            setSelectedProjectId(
+              String(
+                getProjectId(
+                  list[0]
+                )
+              )
+            );
+          }
+        } catch (error) {
+          setProjects([]);
+
+          setEnvironmentError(
+            getErrorMessage(
+              error,
+              "Unable to load projects."
+            )
+          );
+        }
+      },
+      [selectedProjectId]
+    );
+
+
+  /* =======================================================
+     LOAD SINGLE ENVIRONMENT
+  ======================================================= */
+
+  const loadEnvironment =
+    useCallback(
+      async (
+        projectId,
+        environmentName
+      ) => {
+        if (
+          !projectId ||
+          !environmentName
+        ) {
+          setSelectedEnvironment(
+            null
+          );
           return;
         }
 
-        const currentStillExists =
-          preserveSelection &&
-          list.some(
-            (project) =>
-              String(getProjectId(project)) ===
-              String(selectedProjectId)
-          );
-
-        if (!currentStillExists) {
-          setSelectedProjectId(
-            String(getProjectId(list[0]))
-          );
-        }
-      } catch (error) {
-        setProjects([]);
-
-        setEnvironmentError(
-          getErrorMessage(
-            error,
-            "Unable to load projects."
-          )
+        setEnvironmentLoading(
+          true
         );
-      }
-    },
-    [selectedProjectId]
-  );
 
+        setEnvironmentError("");
 
-  /* -------------------------------------------------------
-     LOAD ENVIRONMENT LIST
-  ------------------------------------------------------- */
+        try {
+          const response =
+            await environmentService.getEnvironment(
+              projectId,
+              environmentName
+            );
 
-  const loadEnvironmentList = useCallback(
-    async (projectId) => {
-      if (!projectId) {
-        setEnvironments([]);
-        setSelectedEnvironmentName("");
-        setSelectedEnvironment(null);
-        return;
-      }
+          const environment =
+            getObject(response, [
+              "environment",
+            ]);
 
-      setEnvironmentLoading(true);
-      setEnvironmentError("");
-      setEnvironmentMessage("");
+          setSelectedEnvironment(
+            environment
+          );
+        } catch (error) {
+          setSelectedEnvironment(
+            null
+          );
 
-      try {
-        const response =
-          await environmentService.listEnvironments(
-            projectId,
+          setEnvironmentError(
+            getErrorMessage(
+              error,
+              "Unable to load environment."
+            )
+          );
+        } finally {
+          setEnvironmentLoading(
             false
           );
+        }
+      },
+      []
+    );
 
-        const list = getList(response, [
-          "environments",
-          "items",
-        ]);
 
-        setEnvironments(list);
+  /* =======================================================
+     LOAD ENVIRONMENT LIST
+  ======================================================= */
 
-        const first =
-          list.find(
-            (item) =>
-              getEnvironmentName(item).toLowerCase() ===
-              "development"
-          ) ||
-          list[0] ||
-          null;
+  const loadEnvironmentList =
+    useCallback(
+      async (projectId) => {
+        if (!projectId) {
+          setEnvironments([]);
+          setSelectedEnvironmentName("");
+          setSelectedEnvironment(null);
+          return;
+        }
 
-        const nextName =
-          getEnvironmentName(first);
-
-        setSelectedEnvironmentName(
-          nextName
+        setEnvironmentLoading(
+          true
         );
 
-        if (nextName) {
-          await loadEnvironment(
-            projectId,
+        setEnvironmentError("");
+
+        try {
+          const response =
+            await environmentService.listEnvironments(
+              projectId,
+              false
+            );
+
+          const list =
+            getList(response, [
+              "environments",
+              "items",
+            ]);
+
+          setEnvironments(list);
+
+          const currentName =
+            selectedEnvironmentName;
+
+          const currentExists =
+            currentName &&
+            list.some(
+              (item) =>
+                getEnvironmentName(
+                  item
+                ) === currentName
+            );
+
+          const preferred =
+            currentExists
+              ? list.find(
+                  (item) =>
+                    getEnvironmentName(
+                      item
+                    ) === currentName
+                )
+              : list.find(
+                  (item) =>
+                    getEnvironmentName(
+                      item
+                    ).toLowerCase() ===
+                    "development"
+                ) ||
+                list[0];
+
+          const nextName =
+            getEnvironmentName(
+              preferred
+            );
+
+          setSelectedEnvironmentName(
             nextName
           );
-        } else {
+
+          if (!nextName) {
+            setSelectedEnvironment(
+              null
+            );
+          }
+        } catch (error) {
+          setEnvironments([]);
           setSelectedEnvironment(null);
+          setSelectedEnvironmentName("");
+
+          setEnvironmentError(
+            getErrorMessage(
+              error,
+              "Unable to load environments."
+            )
+          );
+        } finally {
+          setEnvironmentLoading(
+            false
+          );
         }
-      } catch (error) {
-        setEnvironments([]);
-        setSelectedEnvironment(null);
-        setSelectedEnvironmentName("");
-
-        setEnvironmentError(
-          getErrorMessage(
-            error,
-            "Unable to load environments."
-          )
-        );
-      } finally {
-        setEnvironmentLoading(false);
-      }
-    },
-    []
-  );
+      },
+      [
+        selectedEnvironmentName,
+      ]
+    );
 
 
-  /* -------------------------------------------------------
-     LOAD SINGLE ENVIRONMENT
-  ------------------------------------------------------- */
+  /* =======================================================
+     GITHUB CONNECTIONS
+  ======================================================= */
 
-  const loadEnvironment = useCallback(
-    async (projectId, environmentName) => {
-      if (!projectId || !environmentName) {
-        setSelectedEnvironment(null);
-        return;
-      }
+  const loadGithubConnections =
+    useCallback(
+      async (projectId) => {
+        if (!projectId) {
+          setGithubConnections([]);
+          setSelectedConnectionId("");
+          return;
+        }
 
-      setEnvironmentLoading(true);
-      setEnvironmentError("");
+        setGithubLoading(true);
+        setGithubError("");
+        setGithubMessage("");
 
-      try {
-        const response =
-          await environmentService.getEnvironment(
-            projectId,
-            environmentName
+        try {
+          const response =
+            await githubService.getConnections({
+              projectId,
+            });
+
+          const list =
+            getList(response, [
+              "connections",
+              "items",
+            ]);
+
+          setGithubConnections(
+            list
           );
 
-        const environment =
-          getObject(response, [
-            "environment",
-          ]);
+          const active =
+            list.find(
+              (connection) =>
+                String(
+                  connection?.status ||
+                    ""
+                ).toLowerCase() ===
+                "active"
+            ) ||
+            list[0] ||
+            null;
 
-        setSelectedEnvironment(
-          environment
-        );
-      } catch (error) {
-        setSelectedEnvironment(null);
+          setSelectedConnectionId(
+            getConnectionId(active)
+          );
+        } catch (error) {
+          setGithubConnections([]);
+          setSelectedConnectionId("");
 
-        setEnvironmentError(
-          getErrorMessage(
-            error,
-            "Unable to load environment."
-          )
-        );
-      } finally {
-        setEnvironmentLoading(false);
-      }
-    },
-    []
-  );
-
-
-  /* -------------------------------------------------------
-     LOAD GITHUB CONNECTIONS
-  ------------------------------------------------------- */
-
-  const loadGithubConnections = useCallback(
-    async (projectId) => {
-      if (!projectId) {
-        setGithubConnections([]);
-        setSelectedConnectionId("");
-        return;
-      }
-
-      setGithubLoading(true);
-      setGithubError("");
-      setGithubMessage("");
-
-      try {
-        const response =
-          await githubService.getConnections({
-            projectId,
-          });
-
-        const list = getList(response, [
-          "connections",
-          "items",
-        ]);
-
-        setGithubConnections(list);
-
-        const active =
-          list.find(
-            (connection) =>
-              String(
-                connection?.status || ""
-              ).toLowerCase() === "active"
-          ) ||
-          list[0] ||
-          null;
-
-        setSelectedConnectionId(
-          getConnectionId(active)
-        );
-      } catch (error) {
-        setGithubConnections([]);
-        setSelectedConnectionId("");
-
-        setGithubError(
-          getErrorMessage(
-            error,
-            "Unable to load GitHub connections."
-          )
-        );
-      } finally {
-        setGithubLoading(false);
-      }
-    },
-    []
-  );
+          setGithubError(
+            getErrorMessage(
+              error,
+              "Unable to load GitHub connections."
+            )
+          );
+        } finally {
+          setGithubLoading(false);
+        }
+      },
+      []
+    );
 
 
-  /* -------------------------------------------------------
-     LOAD GITHUB REPOSITORIES
-  ------------------------------------------------------- */
+  /* =======================================================
+     GITHUB REPOSITORIES
+  ======================================================= */
 
-  const loadGithubRepositories = useCallback(
-    async (
-      projectId,
-      connectionId
-    ) => {
-      if (!projectId || !connectionId) {
-        setGithubRepositories([]);
-        setSelectedRepository(null);
-        setGithubBranches([]);
-        setSelectedBranch("");
-        return;
-      }
+  const loadGithubRepositories =
+    useCallback(
+      async (
+        projectId,
+        connectionId
+      ) => {
+        if (
+          !projectId ||
+          !connectionId
+        ) {
+          setGithubRepositories([]);
+          setSelectedRepository(null);
+          setGithubBranches([]);
+          setSelectedBranch("");
+          return;
+        }
 
-      setGithubLoading(true);
-      setGithubError("");
+        setGithubLoading(true);
+        setGithubError("");
 
-      try {
-        const response =
-          await githubService.getRepositories({
-            projectId,
-            connectionId,
-          });
+        try {
+          const response =
+            await githubService.getRepositories({
+              projectId,
+              connectionId,
+            });
 
-        const list = getList(response, [
-          "repositories",
-          "repos",
-          "items",
-        ]);
+          const list =
+            getList(response, [
+              "repositories",
+              "repos",
+              "items",
+            ]);
 
-        setGithubRepositories(list);
+          setGithubRepositories(
+            list
+          );
 
-        const first =
-          list[0] || null;
+          setSelectedRepository(
+            list[0] || null
+          );
+        } catch (error) {
+          setGithubRepositories([]);
+          setSelectedRepository(null);
+          setGithubBranches([]);
+          setSelectedBranch("");
 
-        setSelectedRepository(first);
-      } catch (error) {
-        setGithubRepositories([]);
-        setSelectedRepository(null);
-        setGithubBranches([]);
-        setSelectedBranch("");
-
-        setGithubError(
-          getErrorMessage(
-            error,
-            "Unable to load GitHub repositories."
-          )
-        );
-      } finally {
-        setGithubLoading(false);
-      }
-    },
-    []
-  );
-
-
-  /* -------------------------------------------------------
-     LOAD GITHUB BRANCHES
-  ------------------------------------------------------- */
-
-  const loadGithubBranches = useCallback(
-    async (
-      projectId,
-      connectionId,
-      repository
-    ) => {
-      if (
-        !projectId ||
-        !connectionId ||
-        !repository
-      ) {
-        setGithubBranches([]);
-        setSelectedBranch("");
-        return;
-      }
-
-      const repoName =
-        getRepositoryName(repository);
-
-      const owner =
-        getRepositoryOwner(repository);
-
-      if (!repoName) {
-        setGithubBranches([]);
-        setSelectedBranch("");
-        return;
-      }
-
-      setGithubLoading(true);
-      setGithubError("");
-
-      try {
-        const response =
-          await githubService.getBranches({
-            projectId,
-            connectionId,
-            owner,
-            repo:
-              repository?.name ||
-              repoName.split("/").pop(),
-            repository: repoName,
-          });
-
-        const list = getList(response, [
-          "branches",
-          "items",
-        ]);
-
-        setGithubBranches(list);
-
-        const defaultBranch =
-          repository?.defaultBranch ||
-          repository?.default_branch ||
-          list.find(
-            (branch) =>
-              getBranchName(branch) === "main"
-          ) ||
-          list.find(
-            (branch) =>
-              getBranchName(branch) === "master"
-          ) ||
-          list[0];
-
-        setSelectedBranch(
-          getBranchName(defaultBranch)
-        );
-      } catch (error) {
-        setGithubBranches([]);
-        setSelectedBranch("");
-
-        setGithubError(
-          getErrorMessage(
-            error,
-            "Unable to load repository branches."
-          )
-        );
-      } finally {
-        setGithubLoading(false);
-      }
-    },
-    []
-  );
+          setGithubError(
+            getErrorMessage(
+              error,
+              "Unable to load GitHub repositories."
+            )
+          );
+        } finally {
+          setGithubLoading(false);
+        }
+      },
+      []
+    );
 
 
-  /* -------------------------------------------------------
-     LOAD INTEGRATION DATA
-  ------------------------------------------------------- */
+  /* =======================================================
+     GITHUB BRANCHES
+  ======================================================= */
+
+  const loadGithubBranches =
+    useCallback(
+      async (
+        projectId,
+        connectionId,
+        repository
+      ) => {
+        if (
+          !projectId ||
+          !connectionId ||
+          !repository
+        ) {
+          setGithubBranches([]);
+          setSelectedBranch("");
+          return;
+        }
+
+        const repoName =
+          getRepositoryName(
+            repository
+          );
+
+        const owner =
+          getRepositoryOwner(
+            repository
+          );
+
+        if (!repoName) {
+          setGithubBranches([]);
+          setSelectedBranch("");
+          return;
+        }
+
+        setGithubLoading(true);
+        setGithubError("");
+
+        try {
+          const response =
+            await githubService.getBranches({
+              projectId,
+              connectionId,
+              owner,
+              repo:
+                repository?.name ||
+                repoName
+                  .split("/")
+                  .pop(),
+              repository:
+                repoName,
+            });
+
+          const list =
+            getList(response, [
+              "branches",
+              "items",
+            ]);
+
+          setGithubBranches(
+            list
+          );
+
+          const defaultBranch =
+            repository?.defaultBranch ||
+            repository?.default_branch ||
+            list.find(
+              (branch) =>
+                getBranchName(
+                  branch
+                ) === "main"
+            ) ||
+            list.find(
+              (branch) =>
+                getBranchName(
+                  branch
+                ) === "master"
+            ) ||
+            list[0];
+
+          setSelectedBranch(
+            getBranchName(
+              defaultBranch
+            )
+          );
+        } catch (error) {
+          setGithubBranches([]);
+          setSelectedBranch("");
+
+          setGithubError(
+            getErrorMessage(
+              error,
+              "Unable to load repository branches."
+            )
+          );
+        } finally {
+          setGithubLoading(false);
+        }
+      },
+      []
+    );
+
+
+  /* =======================================================
+     DATA EFFECTS
+  ======================================================= */
 
   useEffect(() => {
-    if (activeSection !== "integrations") {
+    if (
+      activeSection !==
+        "environment" &&
+      activeSection !==
+        "integrations"
+    ) {
       return;
     }
 
@@ -1175,7 +1389,8 @@ function Settings() {
 
   useEffect(() => {
     if (
-      activeSection !== "integrations" ||
+      activeSection !==
+        "environment" ||
       !selectedProjectId
     ) {
       return;
@@ -1184,6 +1399,21 @@ function Settings() {
     loadEnvironmentList(
       selectedProjectId
     );
+  }, [
+    activeSection,
+    selectedProjectId,
+    loadEnvironmentList,
+  ]);
+
+
+  useEffect(() => {
+    if (
+      activeSection !==
+        "integrations" ||
+      !selectedProjectId
+    ) {
+      return;
+    }
 
     loadGithubConnections(
       selectedProjectId
@@ -1191,13 +1421,14 @@ function Settings() {
   }, [
     activeSection,
     selectedProjectId,
-    loadEnvironmentList,
     loadGithubConnections,
   ]);
 
 
   useEffect(() => {
     if (
+      activeSection !==
+        "environment" ||
       !selectedProjectId ||
       !selectedEnvironmentName
     ) {
@@ -1209,6 +1440,7 @@ function Settings() {
       selectedEnvironmentName
     );
   }, [
+    activeSection,
     selectedProjectId,
     selectedEnvironmentName,
     loadEnvironment,
@@ -1217,6 +1449,8 @@ function Settings() {
 
   useEffect(() => {
     if (
+      activeSection !==
+        "integrations" ||
       !selectedProjectId ||
       !selectedConnectionId
     ) {
@@ -1228,6 +1462,7 @@ function Settings() {
       selectedConnectionId
     );
   }, [
+    activeSection,
     selectedProjectId,
     selectedConnectionId,
     loadGithubRepositories,
@@ -1236,6 +1471,8 @@ function Settings() {
 
   useEffect(() => {
     if (
+      activeSection !==
+        "integrations" ||
       !selectedProjectId ||
       !selectedConnectionId ||
       !selectedRepository
@@ -1249,6 +1486,7 @@ function Settings() {
       selectedRepository
     );
   }, [
+    activeSection,
     selectedProjectId,
     selectedConnectionId,
     selectedRepository,
@@ -1256,78 +1494,194 @@ function Settings() {
   ]);
 
 
-  /* -------------------------------------------------------
+  /* =======================================================
      SECTION CHANGE
-  ------------------------------------------------------- */
+  ======================================================= */
 
-  const handleSectionChange = (sectionId) => {
-    setActiveSection(sectionId);
-    setMobileSectionsOpen(false);
+  const handleSectionChange =
+    (sectionId) => {
+      setActiveSection(
+        sectionId
+      );
 
-    if (
-      sectionId === "billing" &&
-      !subscription
-    ) {
-      loadSubscription();
-    }
-  };
+      setMobileSectionsOpen(
+        false
+      );
+
+      if (
+        sectionId === "billing"
+      ) {
+        loadSubscription();
+      }
+    };
 
 
   /* =======================================================
      ENVIRONMENT ACTIONS
   ======================================================= */
 
-  const handleEnvironmentProjectChange = (
-    event
-  ) => {
-    const projectId =
-      event.target.value;
+  const handleEnvironmentProjectChange =
+    (event) => {
+      const projectId =
+        event.target.value;
 
-    setSelectedProjectId(
-      projectId
-    );
+      setSelectedProjectId(
+        projectId
+      );
 
-    setSelectedEnvironmentName("");
-    setSelectedEnvironment(null);
-    setEnvironmentMessage("");
-    setEnvironmentError("");
-  };
+      setSelectedEnvironmentName(
+        ""
+      );
 
+      setSelectedEnvironment(
+        null
+      );
 
-  const handleEnvironmentChange = (
-    event
-  ) => {
-    const name =
-      event.target.value;
+      setEnvironmentMessage("");
+      setEnvironmentError("");
 
-    setSelectedEnvironmentName(
-      name
-    );
-
-    setEnvironmentMessage("");
-    setEnvironmentError("");
-  };
+      setEnvironmentDrafts([
+        createEnvironmentDraft(),
+      ]);
+    };
 
 
-  const resetEnvironmentForm = () => {
-    setEnvironmentForm({
-      key: "",
-      value: "",
-      type: "string",
-      scope: "runtime",
-      required: false,
-      isSecret: true,
-      enabled: true,
-    });
+  const handleEnvironmentChange =
+    (event) => {
+      const name =
+        event.target.value;
 
-    setEditingEnvironmentKey("");
-    setVisibleNewValue(false);
-  };
+      setSelectedEnvironmentName(
+        name
+      );
+
+      setEnvironmentMessage("");
+      setEnvironmentError("");
+
+      setEnvironmentDrafts([
+        createEnvironmentDraft(),
+      ]);
+    };
 
 
-  const handleEnvironmentSubmit =
+  const handleEnvironmentDraftChange =
+    (draftId, field, value) => {
+      setEnvironmentDrafts(
+        (current) =>
+          current.map(
+            (draft) =>
+              draft.id === draftId
+                ? {
+                    ...draft,
+                    [field]:
+                      value,
+                  }
+                : draft
+          )
+      );
+    };
+
+
+  const addEnvironmentDraft =
+    () => {
+      setEnvironmentDrafts(
+        (current) => [
+          ...current,
+          createEnvironmentDraft(),
+        ]
+      );
+    };
+
+
+  const removeEnvironmentDraft =
+    (draftId) => {
+      setEnvironmentDrafts(
+        (current) => {
+          const next =
+            current.filter(
+              (draft) =>
+                draft.id !==
+                draftId
+            );
+
+          return next.length
+            ? next
+            : [createEnvironmentDraft()];
+        }
+      );
+    };
+
+
+  const editEnvironmentVariable =
+    (variable) => {
+      const key =
+        variable?.key || "";
+
+      if (!key) {
+        return;
+      }
+
+      setEnvironmentError("");
+      setEnvironmentMessage(
+        `Enter a new value to replace ${key}.`
+      );
+
+      setEnvironmentDrafts(
+        (current) => {
+          const withoutSame =
+            current.filter(
+              (draft) =>
+                draft.originalKey !==
+                key
+            );
+
+          const hasOnlyEmptyDraft =
+            withoutSame.length === 1 &&
+            !withoutSame[0]
+              .originalKey &&
+            !withoutSame[0]
+              .key &&
+            !withoutSame[0]
+              .value;
+
+          const base =
+            hasOnlyEmptyDraft
+              ? []
+              : withoutSame;
+
+          return [
+            ...base,
+            createEnvironmentDraft({
+              originalKey:
+                key,
+              key,
+              value: "",
+              type:
+                variable?.type ||
+                "string",
+              scope:
+                variable?.scope ||
+                "runtime",
+              required:
+                Boolean(
+                  variable?.required
+                ),
+              isSecret:
+                variable?.isSecret !==
+                false,
+              enabled:
+                variable?.enabled !==
+                false,
+            }),
+          ];
+        }
+      );
+    };
+
+
+  const handleSaveEnvironmentVariables =
     async (event) => {
-      event.preventDefault();
+      event?.preventDefault();
 
       if (!selectedProjectId) {
         setEnvironmentError(
@@ -1336,88 +1690,171 @@ function Settings() {
         return;
       }
 
-      if (!selectedEnvironmentName) {
+      if (
+        !selectedEnvironmentName
+      ) {
         setEnvironmentError(
           "Select an environment first."
         );
         return;
       }
 
-      const key =
-        environmentForm.key.trim();
+      const draftsToSave =
+        environmentDrafts.filter(
+          (draft) =>
+            draft.key.trim() ||
+            draft.value
+        );
 
-      const value =
-        environmentForm.value;
-
-      if (!key) {
+      if (!draftsToSave.length) {
         setEnvironmentError(
-          "Environment key is required."
+          "Add at least one environment variable before saving."
         );
         return;
       }
 
-      if (!value) {
-        setEnvironmentError(
-          "Environment value is required."
+      const seenKeys =
+        new Set();
+
+      for (
+        const draft of draftsToSave
+      ) {
+        const normalizedKey =
+          draft.key
+            .trim()
+            .toUpperCase();
+
+        if (!normalizedKey) {
+          setEnvironmentError(
+            "Every variable must have a key."
+          );
+          return;
+        }
+
+        if (
+          !draft.value
+        ) {
+          setEnvironmentError(
+            `Enter a value for ${normalizedKey}.`
+          );
+          return;
+        }
+
+        if (
+          seenKeys.has(
+            normalizedKey
+          )
+        ) {
+          setEnvironmentError(
+            `Duplicate variable key: ${normalizedKey}.`
+          );
+          return;
+        }
+
+        seenKeys.add(
+          normalizedKey
         );
-        return;
       }
 
-      setEnvironmentSaving(true);
+      setEnvironmentSavingAll(
+        true
+      );
+
       setEnvironmentError("");
       setEnvironmentMessage("");
 
+      const savedIds =
+        [];
+
       try {
-        if (editingEnvironmentKey) {
-          await environmentService.updateVariable(
-            selectedProjectId,
-            selectedEnvironmentName,
-            editingEnvironmentKey,
-            {
-              key,
-              value,
-              isSecret:
-                environmentForm.isSecret,
-              type:
-                environmentForm.type,
-              scope:
-                environmentForm.scope,
-              required:
-                environmentForm.required,
-              enabled:
-                environmentForm.enabled,
-            }
-          );
+        for (
+          const draft of draftsToSave
+        ) {
+          const key =
+            draft.key.trim();
 
-          setEnvironmentMessage(
-            `${key} was updated successfully.`
-          );
-        } else {
-          await environmentService.addVariable(
-            selectedProjectId,
-            selectedEnvironmentName,
-            {
-              key,
-              value,
-              isSecret:
-                environmentForm.isSecret,
-              type:
-                environmentForm.type,
-              scope:
-                environmentForm.scope,
-              required:
-                environmentForm.required,
-              enabled:
-                environmentForm.enabled,
-            }
-          );
+          const payload = {
+            key,
+            value:
+              draft.value,
+            isSecret:
+              draft.isSecret,
+            type:
+              draft.type,
+            scope:
+              draft.scope,
+            required:
+              draft.required,
+            enabled:
+              draft.enabled,
+          };
 
-          setEnvironmentMessage(
-            `${key} was added successfully.`
+          if (
+            draft.originalKey
+          ) {
+            await environmentService.updateVariable(
+              selectedProjectId,
+              selectedEnvironmentName,
+              draft.originalKey,
+              payload
+            );
+          } else {
+            await environmentService.addVariable(
+              selectedProjectId,
+              selectedEnvironmentName,
+              payload
+            );
+          }
+
+          savedIds.push(
+            draft.id
           );
         }
 
-        resetEnvironmentForm();
+        setEnvironmentMessage(
+          `${savedIds.length} environment variable${
+            savedIds.length !== 1
+              ? "s"
+              : ""
+          } saved successfully.`
+        );
+      } catch (error) {
+        const savedCount =
+          savedIds.length;
+
+        setEnvironmentError(
+          savedCount
+            ? `${savedCount} variable${
+                savedCount !== 1
+                  ? "s"
+                  : ""
+              } saved. The remaining variable could not be saved: ${getErrorMessage(
+                error,
+                "Backend rejected the environment variable."
+              )}`
+            : getErrorMessage(
+                error,
+                "Environment variables could not be saved."
+              )
+        );
+      } finally {
+        setEnvironmentDrafts(
+          (current) => {
+            const remaining =
+              current.filter(
+                (draft) =>
+                  !savedIds.includes(
+                    draft.id
+                  )
+              );
+
+            return remaining.length
+              ? remaining
+              : [
+                  createEnvironmentDraft(),
+                ];
+          }
+        );
 
         await loadEnvironment(
           selectedProjectId,
@@ -1427,54 +1864,11 @@ function Settings() {
         await loadEnvironmentList(
           selectedProjectId
         );
-      } catch (error) {
-        setEnvironmentError(
-          getErrorMessage(
-            error,
-            "Environment variable could not be saved."
-          )
+
+        setEnvironmentSavingAll(
+          false
         );
-      } finally {
-        setEnvironmentSaving(false);
       }
-    };
-
-
-  const handleEditEnvironmentVariable =
-    (variable) => {
-      const key =
-        variable?.key || "";
-
-      if (!key) {
-        return;
-      }
-
-      setEditingEnvironmentKey(
-        key
-      );
-
-      setEnvironmentForm({
-        key,
-        value: "",
-        type:
-          variable?.type ||
-          "string",
-        scope:
-          variable?.scope ||
-          "runtime",
-        required:
-          Boolean(variable?.required),
-        isSecret:
-          variable?.isSecret !== false,
-        enabled:
-          variable?.enabled !== false,
-      });
-
-      setVisibleNewValue(false);
-
-      setEnvironmentMessage(
-        `Enter a new value to replace ${key}.`
-      );
     };
 
 
@@ -1488,7 +1882,10 @@ function Settings() {
         return;
       }
 
-      setEnvironmentDeletingKey(key);
+      setEnvironmentDeletingKey(
+        key
+      );
+
       setEnvironmentError("");
       setEnvironmentMessage("");
 
@@ -1503,11 +1900,22 @@ function Settings() {
           `${key} was deleted successfully.`
         );
 
-        if (
-          editingEnvironmentKey === key
-        ) {
-          resetEnvironmentForm();
-        }
+        setEnvironmentDrafts(
+          (current) =>
+            current.filter(
+              (draft) =>
+                draft.originalKey !==
+                key
+            ).length
+              ? current.filter(
+                  (draft) =>
+                    draft.originalKey !==
+                    key
+                )
+              : [
+                  createEnvironmentDraft(),
+                ]
+        );
 
         await loadEnvironment(
           selectedProjectId,
@@ -1525,7 +1933,9 @@ function Settings() {
           )
         );
       } finally {
-        setEnvironmentDeletingKey("");
+        setEnvironmentDeletingKey(
+          ""
+        );
       }
     };
 
@@ -1534,11 +1944,18 @@ function Settings() {
      GITHUB ACTIONS
   ======================================================= */
 
-  const handleConnectGithub = () => {
-    window.location.assign(
-      "/api/auth/github"
-    );
-  };
+  const handleConnectGithub =
+    () => {
+      /*
+       * IMPORTANT:
+       * OAuth must start from the real backend.
+       * Using /api/auth/github would resolve against
+       * the Amplify frontend domain.
+       */
+      window.location.assign(
+        `${API_BASE_URL}/api/auth/github`
+      );
+    };
 
 
   const handleGithubRefresh =
@@ -1564,8 +1981,9 @@ function Settings() {
       const repository =
         githubRepositories.find(
           (item) =>
-            getRepositoryName(item) ===
-            repositoryName
+            getRepositoryName(
+              item
+            ) === repositoryName
         ) || null;
 
       setSelectedRepository(
@@ -1573,7 +1991,9 @@ function Settings() {
       );
 
       setGithubReadiness(null);
-      setGithubPreparedContract(null);
+      setGithubPreparedContract(
+        null
+      );
       setGithubMessage("");
       setGithubError("");
     };
@@ -1586,7 +2006,9 @@ function Settings() {
       );
 
       setGithubReadiness(null);
-      setGithubPreparedContract(null);
+      setGithubPreparedContract(
+        null
+      );
       setGithubMessage("");
       setGithubError("");
     };
@@ -1659,7 +2081,10 @@ function Settings() {
         return;
       }
 
-      setGithubActionLoading(true);
+      setGithubActionLoading(
+        true
+      );
+
       setGithubError("");
       setGithubMessage("");
 
@@ -1683,7 +2108,9 @@ function Settings() {
           "Deployment readiness check completed."
         );
       } catch (error) {
-        setGithubReadiness(null);
+        setGithubReadiness(
+          null
+        );
 
         setGithubError(
           getErrorMessage(
@@ -1692,7 +2119,9 @@ function Settings() {
           )
         );
       } finally {
-        setGithubActionLoading(false);
+        setGithubActionLoading(
+          false
+        );
       }
     };
 
@@ -1711,7 +2140,10 @@ function Settings() {
         return;
       }
 
-      setGithubActionLoading(true);
+      setGithubActionLoading(
+        true
+      );
+
       setGithubError("");
       setGithubMessage("");
 
@@ -1737,7 +2169,9 @@ function Settings() {
           "Deployment contract prepared successfully."
         );
       } catch (error) {
-        setGithubPreparedContract(null);
+        setGithubPreparedContract(
+          null
+        );
 
         setGithubError(
           getErrorMessage(
@@ -1746,7 +2180,9 @@ function Settings() {
           )
         );
       } finally {
-        setGithubActionLoading(false);
+        setGithubActionLoading(
+          false
+        );
       }
     };
 
@@ -1755,16 +2191,20 @@ function Settings() {
     async () => {
       if (
         !selectedProjectId ||
+        !selectedConnectionId ||
         !selectedRepository ||
         !selectedBranch
       ) {
         setGithubError(
-          "Select a project, repository and branch first."
+          "Select project, GitHub connection, repository and branch first."
         );
         return;
       }
 
-      setGithubActionLoading(true);
+      setGithubActionLoading(
+        true
+      );
+
       setGithubError("");
       setGithubMessage("");
 
@@ -1829,14 +2269,16 @@ function Settings() {
           )
         );
       } finally {
-        setGithubActionLoading(false);
+        setGithubActionLoading(
+          false
+        );
       }
     };
 
 
-  /* -------------------------------------------------------
-     BILLING DATA
-  ------------------------------------------------------- */
+  /* =======================================================
+     BILLING
+  ======================================================= */
 
   const subscriptionName =
     subscription?.planName ||
@@ -1854,16 +2296,29 @@ function Settings() {
     null;
 
 
-  /* -------------------------------------------------------
+  /* =======================================================
      AUTH LOADING
-  ------------------------------------------------------- */
+  ======================================================= */
 
   if (authLoading) {
     return (
       <DashboardLayout>
-        <div className={styles.page}>
-          <div className={styles.loadingState}>
-            <div className={styles.loadingSpinner} />
+        <div
+          className={
+            styles.page
+          }
+        >
+          <div
+            className={
+              styles.loadingState
+            }
+          >
+            <div
+              className={
+                styles.loadingSpinner
+              }
+            />
+
             <span>
               Loading settings...
             </span>
@@ -1880,46 +2335,87 @@ function Settings() {
 
   return (
     <DashboardLayout>
-      <div className={styles.page}>
+      <div
+        className={styles.page}
+      >
 
-        <header className={styles.header}>
-          <div className={styles.headerCopy}>
+        {/* HEADER */}
+        <header
+          className={styles.header}
+        >
+          <div
+            className={
+              styles.headerCopy
+            }
+          >
+            <div
+              className={
+                styles.breadcrumb
+              }
+            >
+              <span>
+                Platform
+              </span>
 
-            <div className={styles.breadcrumb}>
-              <span>Platform</span>
               <Icon
                 name="chevron"
                 size={13}
               />
-              <span>Settings</span>
+
+              <span>
+                Settings
+              </span>
             </div>
 
-            <div className={styles.titleRow}>
+            <div
+              className={
+                styles.titleRow
+              }
+            >
               <div>
-                <h1 className={styles.title}>
+                <h1
+                  className={
+                    styles.title
+                  }
+                >
                   Settings
                 </h1>
 
-                <p className={styles.subtitle}>
-                  Manage your ZyrionOS account,
-                  integrations, environments and
-                  deployment controls from one
-                  authenticated control center.
+                <p
+                  className={
+                    styles.subtitle
+                  }
+                >
+                  Manage your ZyrionOS
+                  account, environments,
+                  GitHub integrations and
+                  deployment controls from
+                  one authenticated control
+                  center.
                 </p>
               </div>
 
-              <div className={styles.liveBadge}>
+              <div
+                className={
+                  styles.liveBadge
+                }
+              >
                 <span />
                 Backend connected
               </div>
             </div>
-
           </div>
 
-          <div className={styles.headerActions}>
+          <div
+            className={
+              styles.headerActions
+            }
+          >
             <button
               type="button"
-              className={styles.secondaryButton}
+              className={
+                styles.secondaryButton
+              }
               onClick={() =>
                 navigate("/billing")
               }
@@ -1928,24 +2424,28 @@ function Settings() {
                 name="billing"
                 size={16}
               />
+
               Billing
             </button>
           </div>
         </header>
 
 
-        {/* =================================================
-            MOBILE SECTION SELECTOR
-        ================================================== */}
-
-        <div className={styles.mobileSectionSelector}>
-
+        {/* MOBILE SECTION SELECTOR */}
+        <div
+          className={
+            styles.mobileSectionSelector
+          }
+        >
           <button
             type="button"
-            className={styles.mobileSectionButton}
+            className={
+              styles.mobileSectionButton
+            }
             onClick={() =>
               setMobileSectionsOpen(
-                (current) => !current
+                (current) =>
+                  !current
               )
             }
             aria-expanded={
@@ -2002,52 +2502,57 @@ function Settings() {
                 styles.mobileSectionMenu
               }
             >
-              {sections.map((section) => (
-                <button
-                  type="button"
-                  key={section.id}
-                  className={
-                    activeSection ===
-                    section.id
-                      ? styles.mobileSectionItemActive
-                      : styles.mobileSectionItem
-                  }
-                  onClick={() =>
-                    handleSectionChange(
+              {sections.map(
+                (section) => (
+                  <button
+                    type="button"
+                    key={section.id}
+                    className={
+                      activeSection ===
                       section.id
-                    )
-                  }
-                >
-                  <Icon
-                    name={section.icon}
-                    size={17}
-                  />
-
-                  <span>
-                    {section.label}
-                  </span>
-
-                  {activeSection ===
-                    section.id && (
+                        ? styles.mobileSectionItemActive
+                        : styles.mobileSectionItem
+                    }
+                    onClick={() =>
+                      handleSectionChange(
+                        section.id
+                      )
+                    }
+                  >
                     <Icon
-                      name="check"
-                      size={16}
+                      name={
+                        section.icon
+                      }
+                      size={17}
                     />
-                  )}
-                </button>
-              ))}
+
+                    <span>
+                      {section.label}
+                    </span>
+
+                    {activeSection ===
+                      section.id && (
+                      <Icon
+                        name="check"
+                        size={16}
+                      />
+                    )}
+                  </button>
+                )
+              )}
             </div>
           )}
-
         </div>
 
 
-        {/* =================================================
-            SETTINGS LAYOUT
-        ================================================== */}
+        {/* SETTINGS LAYOUT */}
+        <div
+          className={
+            styles.settingsLayout
+          }
+        >
 
-        <div className={styles.settingsLayout}>
-
+          {/* SIDEBAR */}
           <aside
             className={
               styles.settingsNavigation
@@ -2063,75 +2568,91 @@ function Settings() {
             </div>
 
             <nav>
-              {sections.map((section) => (
-                <button
-                  type="button"
-                  key={section.id}
-                  className={
-                    activeSection ===
-                    section.id
-                      ? styles.settingsNavActive
-                      : styles.settingsNavItem
-                  }
-                  onClick={() =>
-                    handleSectionChange(
+              {sections.map(
+                (section) => (
+                  <button
+                    type="button"
+                    key={section.id}
+                    className={
+                      activeSection ===
                       section.id
-                    )
-                  }
-                >
-                  <span
-                    className={
-                      styles.settingsNavIcon
+                        ? styles.settingsNavActive
+                        : styles.settingsNavItem
+                    }
+                    onClick={() =>
+                      handleSectionChange(
+                        section.id
+                      )
                     }
                   >
-                    <Icon
-                      name={section.icon}
-                      size={17}
-                    />
-                  </span>
-
-                  <span
-                    className={
-                      styles.settingsNavText
-                    }
-                  >
-                    <strong>
-                      {section.label}
-                    </strong>
-
-                    <small>
-                      {section.description}
-                    </small>
-                  </span>
-
-                  {activeSection ===
-                    section.id && (
                     <span
                       className={
-                        styles.settingsNavIndicator
+                        styles.settingsNavIcon
                       }
-                    />
-                  )}
-                </button>
-              ))}
+                    >
+                      <Icon
+                        name={
+                          section.icon
+                        }
+                        size={17}
+                      />
+                    </span>
+
+                    <span
+                      className={
+                        styles.settingsNavText
+                      }
+                    >
+                      <strong>
+                        {
+                          section.label
+                        }
+                      </strong>
+
+                      <small>
+                        {
+                          section.description
+                        }
+                      </small>
+                    </span>
+
+                    {activeSection ===
+                      section.id && (
+                      <span
+                        className={
+                          styles.settingsNavIndicator
+                        }
+                      />
+                    )}
+                  </button>
+                )
+              )}
             </nav>
           </aside>
 
 
+          {/* CONTENT */}
           <main
-            className={styles.settingsContent}
+            className={
+              styles.settingsContent
+            }
           >
 
             {/* =================================================
                 PROFILE
             ================================================== */}
 
-            {activeSection === "profile" && (
+            {activeSection ===
+              "profile" && (
               <section
-                className={styles.section}
+                className={
+                  styles.section
+                }
               >
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -2147,8 +2668,9 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Your authenticated account
-                      identity and provider information.
+                      Your authenticated
+                      account identity and
+                      provider information.
                     </p>
                   </div>
                 </div>
@@ -2165,7 +2687,9 @@ function Settings() {
                   >
                     {profile.avatar ? (
                       <img
-                        src={profile.avatar}
+                        src={
+                          profile.avatar
+                        }
                         alt=""
                       />
                     ) : (
@@ -2192,8 +2716,9 @@ function Settings() {
                           styles.providerBadge
                         }
                       >
-                        {profile.provider}
-                        {" "}
+                        {
+                          profile.provider
+                        }{" "}
                         authentication
                       </span>
                     )}
@@ -2201,7 +2726,9 @@ function Settings() {
                 </div>
 
                 <div
-                  className={styles.cardGrid}
+                  className={
+                    styles.cardGrid
+                  }
                 >
                   <div
                     className={
@@ -2262,13 +2789,15 @@ function Settings() {
 
                   <div>
                     <strong>
-                      Account identity is managed
-                      by authentication.
+                      Account identity is
+                      managed by
+                      authentication.
                     </strong>
 
                     <p>
-                      This page does not invent or
-                      locally override account identity.
+                      This page does not
+                      locally override account
+                      identity.
                     </p>
                   </div>
                 </div>
@@ -2280,12 +2809,17 @@ function Settings() {
                 SECURITY
             ================================================== */}
 
-            {activeSection === "security" && (
+            {activeSection ===
+              "security" && (
               <section
-                className={styles.section}
+                className={
+                  styles.section
+                }
               >
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -2301,8 +2835,9 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Authentication state is
-                      controlled by the backend.
+                      Authentication state
+                      is controlled by the
+                      backend.
                     </p>
                   </div>
                 </div>
@@ -2333,8 +2868,9 @@ function Settings() {
                     </h3>
 
                     <p>
-                      ZyrionOS uses the connected
-                      authentication system for account
+                      ZyrionOS uses the
+                      connected authentication
+                      system for account
                       protection.
                     </p>
                   </div>
@@ -2356,12 +2892,17 @@ function Settings() {
                 SESSIONS
             ================================================== */}
 
-            {activeSection === "sessions" && (
+            {activeSection ===
+              "sessions" && (
               <section
-                className={styles.section}
+                className={
+                  styles.section
+                }
               >
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -2377,9 +2918,10 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Session-management controls
-                      are shown only when a real backend
-                      session contract is available.
+                      Session-management
+                      controls are shown only
+                      when a real backend
+                      contract exists.
                     </p>
                   </div>
                 </div>
@@ -2401,13 +2943,14 @@ function Settings() {
                   </div>
 
                   <h3>
-                    Session controls are not
-                    connected yet
+                    Session controls are
+                    not connected yet
                   </h3>
 
                   <p>
-                    No fake sessions or device
-                    records are displayed.
+                    No fake sessions or
+                    device records are
+                    displayed.
                   </p>
 
                   <span
@@ -2426,12 +2969,17 @@ function Settings() {
                 NOTIFICATIONS
             ================================================== */}
 
-            {activeSection === "notifications" && (
+            {activeSection ===
+              "notifications" && (
               <section
-                className={styles.section}
+                className={
+                  styles.section
+                }
               >
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -2447,9 +2995,10 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Notification controls remain
-                      read-only until the preferences
-                      API exists.
+                      Notification controls
+                      remain read-only until
+                      the preferences API
+                      exists.
                     </p>
                   </div>
                 </div>
@@ -2471,13 +3020,14 @@ function Settings() {
                   </div>
 
                   <h3>
-                    Notification API not connected
+                    Notification API not
+                    connected
                   </h3>
 
                   <p>
-                    No local toggles are pretending
-                    to save data to a backend that does
-                    not exist.
+                    No local toggles pretend
+                    to save data to a backend
+                    that does not exist.
                   </p>
 
                   <span
@@ -2496,12 +3046,17 @@ function Settings() {
                 AI
             ================================================== */}
 
-            {activeSection === "ai" && (
+            {activeSection ===
+              "ai" && (
               <section
-                className={styles.section}
+                className={
+                  styles.section
+                }
               >
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -2517,8 +3072,10 @@ function Settings() {
                     </h2>
 
                     <p>
-                      AI execution remains controlled
-                      by the connected backend services.
+                      AI execution remains
+                      controlled by the
+                      connected backend
+                      services.
                     </p>
                   </div>
                 </div>
@@ -2545,14 +3102,17 @@ function Settings() {
                     </h3>
 
                     <p>
-                      AI requests continue through
-                      the existing centralized AI service.
+                      AI requests continue
+                      through the existing
+                      centralized AI service.
                     </p>
                   </div>
                 </div>
 
                 <div
-                  className={styles.cardGrid}
+                  className={
+                    styles.cardGrid
+                  }
                 >
                   <div
                     className={
@@ -2572,8 +3132,9 @@ function Settings() {
                     </strong>
 
                     <p>
-                      No hard-coded model is presented
-                      as the active production provider.
+                      No hard-coded model is
+                      presented as the active
+                      production provider.
                     </p>
                   </div>
 
@@ -2595,8 +3156,9 @@ function Settings() {
                     </strong>
 
                     <p>
-                      AI operations remain tied to the
-                      actual project workflow.
+                      AI operations remain
+                      tied to the actual
+                      project workflow.
                     </p>
                   </div>
                 </div>
@@ -2608,12 +3170,17 @@ function Settings() {
                 WORKSPACE
             ================================================== */}
 
-            {activeSection === "workspace" && (
+            {activeSection ===
+              "workspace" && (
               <section
-                className={styles.section}
+                className={
+                  styles.section
+                }
               >
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -2629,7 +3196,8 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Open the main project-building
+                      Open the main
+                      project-building
                       environment.
                     </p>
                   </div>
@@ -2641,7 +3209,9 @@ function Settings() {
                     styles.navigationActionCard
                   }
                   onClick={() =>
-                    navigate("/workspace")
+                    navigate(
+                      "/workspace"
+                    )
                   }
                 >
                   <div
@@ -2665,8 +3235,9 @@ function Settings() {
                     </h3>
 
                     <p>
-                      Projects, AI builds, code,
-                      preview and deployment.
+                      Projects, AI builds,
+                      code, preview and
+                      deployment.
                     </p>
                   </div>
 
@@ -2683,12 +3254,17 @@ function Settings() {
                 BILLING
             ================================================== */}
 
-            {activeSection === "billing" && (
+            {activeSection ===
+              "billing" && (
               <section
-                className={styles.section}
+                className={
+                  styles.section
+                }
               >
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -2704,8 +3280,9 @@ function Settings() {
                     </h2>
 
                     <p>
-                      View real subscription information
-                      from the billing service.
+                      View real subscription
+                      information from the
+                      billing service.
                     </p>
                   </div>
                 </div>
@@ -2741,7 +3318,9 @@ function Settings() {
 
                     <button
                       type="button"
-                      onClick={loadSubscription}
+                      onClick={
+                        loadSubscription
+                      }
                       className={
                         styles.retryButton
                       }
@@ -2791,7 +3370,9 @@ function Settings() {
                         {billingCycle && (
                           <p>
                             Billing cycle:{" "}
-                            {billingCycle}
+                            {
+                              billingCycle
+                            }
                           </p>
                         )}
 
@@ -2801,7 +3382,9 @@ function Settings() {
                               styles.subscriptionStatus
                             }
                           >
-                            {subscriptionStatus}
+                            {
+                              subscriptionStatus
+                            }
                           </span>
                         )}
                       </div>
@@ -2812,10 +3395,13 @@ function Settings() {
                           styles.primaryButton
                         }
                         onClick={() =>
-                          navigate("/billing")
+                          navigate(
+                            "/billing"
+                          )
                         }
                       >
                         Manage Billing
+
                         <Icon
                           name="arrow"
                           size={16}
@@ -2848,8 +3434,9 @@ function Settings() {
                       </h3>
 
                       <p>
-                        The billing service did not
-                        return a subscription record.
+                        The billing service
+                        did not return a
+                        subscription record.
                       </p>
 
                       <button
@@ -2858,10 +3445,13 @@ function Settings() {
                           styles.secondaryButton
                         }
                         onClick={() =>
-                          navigate("/billing")
+                          navigate(
+                            "/billing"
+                          )
                         }
                       >
                         Open Billing
+
                         <Icon
                           name="arrow"
                           size={15}
@@ -2874,14 +3464,943 @@ function Settings() {
 
 
             {/* =================================================
-                INTEGRATIONS
+                ENVIRONMENT
             ================================================== */}
 
-            {activeSection === "integrations" && (
+            {activeSection ===
+              "environment" && (
+              <section
+                className={`${styles.section} ${styles.environmentSection}`}
+              >
+                <div
+                  className={
+                    styles.sectionHeader
+                  }
+                >
+                  <div>
+                    <span
+                      className={
+                        styles.sectionEyebrow
+                      }
+                    >
+                      CONFIGURATION
+                    </span>
+
+                    <h2>
+                      Environment
+                    </h2>
+
+                    <p>
+                      Manage project environment
+                      variables and secrets through
+                      the authenticated backend.
+                    </p>
+                  </div>
+
+                  <div
+                    className={
+                      styles.integrationStatus
+                    }
+                  >
+                    <span />
+                    Backend connected
+                  </div>
+                </div>
+
+
+                {/* PROJECT / ENVIRONMENT */}
+                <div
+                  className={
+                    styles.formGridTwo
+                  }
+                >
+                  <label
+                    className={
+                      styles.field
+                    }
+                  >
+                    <span>
+                      PROJECT
+                    </span>
+
+                    <select
+                      value={
+                        selectedProjectId
+                      }
+                      onChange={
+                        handleEnvironmentProjectChange
+                      }
+                      disabled={
+                        environmentLoading
+                      }
+                    >
+                      <option value="">
+                        Select project
+                      </option>
+
+                      {projects.map(
+                        (project) => (
+                          <option
+                            key={getProjectId(
+                              project
+                            )}
+                            value={getProjectId(
+                              project
+                            )}
+                          >
+                            {getProjectName(
+                              project
+                            )}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+
+                  <label
+                    className={
+                      styles.field
+                    }
+                  >
+                    <span>
+                      ENVIRONMENT
+                    </span>
+
+                    <select
+                      value={
+                        selectedEnvironmentName
+                      }
+                      onChange={
+                        handleEnvironmentChange
+                      }
+                      disabled={
+                        !selectedProjectId ||
+                        environmentLoading
+                      }
+                    >
+                      <option value="">
+                        Select environment
+                      </option>
+
+                      {environments.map(
+                        (environment) => {
+                          const name =
+                            getEnvironmentName(
+                              environment
+                            );
+
+                          return (
+                            <option
+                              key={name}
+                              value={name}
+                            >
+                              {name}
+                            </option>
+                          );
+                        }
+                      )}
+                    </select>
+                  </label>
+                </div>
+
+
+                <div
+                  className={
+                    styles.environmentToolbar
+                  }
+                >
+                  <div>
+                    <strong>
+                      {selectedEnvironmentName ||
+                        "No environment selected"}
+                    </strong>
+
+                    <span>
+                      {environmentVariables.length}{" "}
+                      stored variable
+                      {environmentVariables.length !==
+                      1
+                        ? "s"
+                        : ""}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={
+                      styles.iconButton
+                    }
+                    onClick={() => {
+                      if (
+                        selectedProjectId
+                      ) {
+                        loadEnvironmentList(
+                          selectedProjectId
+                        );
+                      }
+                    }}
+                    disabled={
+                      environmentLoading
+                    }
+                    title="Refresh environment"
+                  >
+                    <Icon
+                      name="refresh"
+                      size={16}
+                    />
+                  </button>
+                </div>
+
+
+                {environmentError && (
+                  <div
+                    className={
+                      styles.inlineError
+                    }
+                  >
+                    <Icon
+                      name="danger"
+                      size={16}
+                    />
+
+                    <span>
+                      {environmentError}
+                    </span>
+                  </div>
+                )}
+
+                {environmentMessage && (
+                  <div
+                    className={
+                      styles.inlineSuccess
+                    }
+                  >
+                    <Icon
+                      name="check"
+                      size={16}
+                    />
+
+                    <span>
+                      {environmentMessage}
+                    </span>
+                  </div>
+                )}
+
+
+                {/* VARIABLE DRAFTS */}
+                <form
+                  onSubmit={
+                    handleSaveEnvironmentVariables
+                  }
+                >
+                  <div
+                    className={
+                      styles.environmentDraftHeader
+                    }
+                  >
+                    <div>
+                      <span
+                        className={
+                          styles.formSectionTitleLabel
+                        }
+                      >
+                        VARIABLE QUEUE
+                      </span>
+
+                      <small>
+                        Add multiple variables
+                        first, then save them
+                        together to the backend.
+                      </small>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={
+                        styles.secondaryButton
+                      }
+                      onClick={
+                        addEnvironmentDraft
+                      }
+                      disabled={
+                        environmentSavingAll ||
+                        !selectedProjectId ||
+                        !selectedEnvironmentName
+                      }
+                    >
+                      <Icon
+                        name="plus"
+                        size={15}
+                      />
+
+                      Add Variable
+                    </button>
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.environmentDraftList
+                    }
+                  >
+                    {environmentDrafts.map(
+                      (
+                        draft,
+                        index
+                      ) => (
+                        <div
+                          key={
+                            draft.id
+                          }
+                          className={
+                            styles.environmentForm
+                          }
+                        >
+                          <div
+                            className={
+                              styles.formSectionTitle
+                            }
+                          >
+                            <div>
+                              <span>
+                                {draft.originalKey
+                                  ? `UPDATE VARIABLE: ${draft.originalKey}`
+                                  : `VARIABLE ${String(
+                                      index + 1
+                                    ).padStart(
+                                      2,
+                                      "0"
+                                    )}`}
+                              </span>
+
+                              <small>
+                                {draft.originalKey
+                                  ? "Enter the replacement value. The old secret is never returned."
+                                  : "This value will be sent directly to the authenticated backend."}
+                              </small>
+                            </div>
+
+                            <button
+                              type="button"
+                              className={
+                                styles.dangerTextButton
+                              }
+                              onClick={() =>
+                                removeEnvironmentDraft(
+                                  draft.id
+                                )
+                              }
+                              disabled={
+                                environmentSavingAll
+                              }
+                            >
+                              <Icon
+                                name="trash"
+                                size={14}
+                              />
+
+                              Remove
+                            </button>
+                          </div>
+
+
+                          <div
+                            className={
+                              styles.formGridTwo
+                            }
+                          >
+                            <label
+                              className={
+                                styles.field
+                              }
+                            >
+                              <span>
+                                KEY
+                              </span>
+
+                              <div
+                                className={
+                                  styles.inputWithIcon
+                                }
+                              >
+                                <Icon
+                                  name="key"
+                                  size={15}
+                                />
+
+                                <input
+                                  type="text"
+                                  value={
+                                    draft.key
+                                  }
+                                  onChange={(
+                                    event
+                                  ) =>
+                                    handleEnvironmentDraftChange(
+                                      draft.id,
+                                      "key",
+                                      event
+                                        .target
+                                        .value
+                                        .toUpperCase()
+                                    )
+                                  }
+                                  placeholder="OPENAI_API_KEY"
+                                  autoComplete="off"
+                                  disabled={
+                                    Boolean(
+                                      draft.originalKey
+                                    )
+                                  }
+                                />
+                              </div>
+                            </label>
+
+                            <label
+                              className={
+                                styles.field
+                              }
+                            >
+                              <span>
+                                VALUE
+                              </span>
+
+                              <div
+                                className={
+                                  styles.inputWithAction
+                                }
+                              >
+                                <input
+                                  type={
+                                    draft.visible
+                                      ? "text"
+                                      : "password"
+                                  }
+                                  value={
+                                    draft.value
+                                  }
+                                  onChange={(
+                                    event
+                                  ) =>
+                                    handleEnvironmentDraftChange(
+                                      draft.id,
+                                      "value",
+                                      event
+                                        .target
+                                        .value
+                                    )
+                                  }
+                                  placeholder={
+                                    draft.originalKey
+                                      ? "Enter replacement value"
+                                      : "Enter API key or value"
+                                  }
+                                  autoComplete="new-password"
+                                />
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleEnvironmentDraftChange(
+                                      draft.id,
+                                      "visible",
+                                      !draft.visible
+                                    )
+                                  }
+                                  className={
+                                    styles.inputAction
+                                  }
+                                  title={
+                                    draft.visible
+                                      ? "Hide typed value"
+                                      : "Show typed value"
+                                  }
+                                >
+                                  <Icon
+                                    name={
+                                      draft.visible
+                                        ? "eyeOff"
+                                        : "eye"
+                                    }
+                                    size={16}
+                                  />
+                                </button>
+                              </div>
+                            </label>
+                          </div>
+
+
+                          <div
+                            className={
+                              styles.formGridThree
+                            }
+                          >
+                            <label
+                              className={
+                                styles.field
+                              }
+                            >
+                              <span>
+                                TYPE
+                              </span>
+
+                              <select
+                                value={
+                                  draft.type
+                                }
+                                onChange={(
+                                  event
+                                ) =>
+                                  handleEnvironmentDraftChange(
+                                    draft.id,
+                                    "type",
+                                    event
+                                      .target
+                                      .value
+                                  )
+                                }
+                              >
+                                <option value="string">
+                                  String
+                                </option>
+
+                                <option value="number">
+                                  Number
+                                </option>
+
+                                <option value="boolean">
+                                  Boolean
+                                </option>
+
+                                <option value="json">
+                                  JSON
+                                </option>
+                              </select>
+                            </label>
+
+                            <label
+                              className={
+                                styles.field
+                              }
+                            >
+                              <span>
+                                SCOPE
+                              </span>
+
+                              <select
+                                value={
+                                  draft.scope
+                                }
+                                onChange={(
+                                  event
+                                ) =>
+                                  handleEnvironmentDraftChange(
+                                    draft.id,
+                                    "scope",
+                                    event
+                                      .target
+                                      .value
+                                  )
+                                }
+                              >
+                                <option value="runtime">
+                                  Runtime
+                                </option>
+
+                                <option value="build">
+                                  Build
+                                </option>
+
+                                <option value="both">
+                                  Build + Runtime
+                                </option>
+                              </select>
+                            </label>
+
+                            <div
+                              className={
+                                styles.environmentCheckboxStack
+                              }
+                            >
+                              <label
+                                className={
+                                  styles.checkboxField
+                                }
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    draft.required
+                                  }
+                                  onChange={(
+                                    event
+                                  ) =>
+                                    handleEnvironmentDraftChange(
+                                      draft.id,
+                                      "required",
+                                      event
+                                        .target
+                                        .checked
+                                    )
+                                  }
+                                />
+
+                                <span>
+                                  Required
+                                </span>
+                              </label>
+
+                              <label
+                                className={
+                                  styles.checkboxField
+                                }
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    draft.isSecret
+                                  }
+                                  onChange={(
+                                    event
+                                  ) =>
+                                    handleEnvironmentDraftChange(
+                                      draft.id,
+                                      "isSecret",
+                                      event
+                                        .target
+                                        .checked
+                                    )
+                                  }
+                                />
+
+                                <span>
+                                  Secret
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+
+
+                          <div
+                            className={
+                              styles.environmentFormFooter
+                            }
+                          >
+                            <div
+                              className={
+                                styles.secretNotice
+                              }
+                            >
+                              <Icon
+                                name="security"
+                                size={15}
+                              />
+
+                              <span>
+                                Secret values are
+                                never displayed from
+                                backend responses.
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.environmentSaveBar
+                    }
+                  >
+                    <div>
+                      <strong>
+                        {environmentDrafts.length}{" "}
+                        variable
+                        {environmentDrafts.length !==
+                        1
+                          ? "s"
+                          : ""}{" "}
+                        in queue
+                      </strong>
+
+                      <span>
+                        Save sends each queued
+                        variable through the real
+                        environment API.
+                      </span>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className={
+                        styles.primaryButton
+                      }
+                      disabled={
+                        environmentSavingAll ||
+                        !selectedProjectId ||
+                        !selectedEnvironmentName
+                      }
+                    >
+                      {environmentSavingAll ? (
+                        <>
+                          <span
+                            className={
+                              styles.buttonSpinner
+                            }
+                          />
+
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Icon
+                            name="check"
+                            size={15}
+                          />
+
+                          Save Variables
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+
+                {/* STORED VARIABLES */}
+                <div
+                  className={
+                    styles.variableSection
+                  }
+                >
+                  <div
+                    className={
+                      styles.formSectionTitle
+                    }
+                  >
+                    <div>
+                      <span>
+                        STORED VARIABLES
+                      </span>
+
+                      <small>
+                        Metadata is visible;
+                        secret values remain
+                        hidden.
+                      </small>
+                    </div>
+
+                    <span
+                      className={
+                        styles.countBadge
+                      }
+                    >
+                      {
+                        environmentVariables.length
+                      }
+                    </span>
+                  </div>
+
+                  {environmentLoading ? (
+                    <div
+                      className={
+                        styles.smallLoading
+                      }
+                    >
+                      <div
+                        className={
+                          styles.loadingSpinner
+                        }
+                      />
+
+                      Loading environment...
+                    </div>
+                  ) : environmentVariables.length ? (
+                    <div
+                      className={
+                        styles.variableList
+                      }
+                    >
+                      {environmentVariables.map(
+                        (variable) => {
+                          const key =
+                            variable?.key ||
+                            "Unnamed";
+
+                          return (
+                            <div
+                              key={key}
+                              className={
+                                styles.variableRow
+                              }
+                            >
+                              <div
+                                className={
+                                  styles.variableMain
+                                }
+                              >
+                                <div
+                                  className={
+                                    styles.variableKey
+                                  }
+                                >
+                                  <Icon
+                                    name="key"
+                                    size={15}
+                                  />
+
+                                  <strong>
+                                    {key}
+                                  </strong>
+                                </div>
+
+                                <div
+                                  className={
+                                    styles.variableMeta
+                                  }
+                                >
+                                  <span>
+                                    {variable?.scope ||
+                                      "runtime"}
+                                  </span>
+
+                                  <span>
+                                    {variable?.type ||
+                                      "string"}
+                                  </span>
+
+                                  {variable?.required && (
+                                    <span>
+                                      required
+                                    </span>
+                                  )}
+
+                                  {variable?.enabled ===
+                                    false && (
+                                    <span>
+                                      disabled
+                                    </span>
+                                  )}
+
+                                  {variable?.isSecret && (
+                                    <span
+                                      className={
+                                        styles.secretBadge
+                                      }
+                                    >
+                                      secret
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div
+                                className={
+                                  styles.variableValue
+                                }
+                              >
+                                <code>
+                                  {variable?.isSecret
+                                    ? "••••••••••••••••"
+                                    : variable?.hasValue
+                                      ? "configured"
+                                      : "not configured"}
+                                </code>
+                              </div>
+
+                              <div
+                                className={
+                                  styles.variableActions
+                                }
+                              >
+                                <button
+                                  type="button"
+                                  className={
+                                    styles.smallActionButton
+                                  }
+                                  onClick={() =>
+                                    editEnvironmentVariable(
+                                      variable
+                                    )
+                                  }
+                                  title="Replace value"
+                                >
+                                  Edit
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className={
+                                    styles.dangerActionButton
+                                  }
+                                  onClick={() =>
+                                    handleDeleteEnvironmentVariable(
+                                      key
+                                    )
+                                  }
+                                  disabled={
+                                    environmentDeletingKey ===
+                                    key
+                                  }
+                                  title="Delete variable"
+                                >
+                                  {environmentDeletingKey ===
+                                  key ? (
+                                    <span
+                                      className={
+                                        styles.buttonSpinner
+                                      }
+                                    />
+                                  ) : (
+                                    <Icon
+                                      name="trash"
+                                      size={15}
+                                    />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      className={
+                        styles.emptyIntegration
+                      }
+                    >
+                      <Icon
+                        name="key"
+                        size={22}
+                      />
+
+                      <strong>
+                        No variables configured
+                      </strong>
+
+                      <span>
+                        Add your first backend
+                        environment variable
+                        above.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+
+            {/* =================================================
+                INTEGRATIONS / GITHUB
+            ================================================== */}
+
+            {activeSection ===
+              "integrations" && (
               <section
                 className={`${styles.section} ${styles.integrationSection}`}
               >
-
                 <div
                   className={
                     styles.sectionHeader
@@ -2901,9 +4420,10 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Real environment variables,
-                      GitHub repositories and deployment
-                      controls.
+                      Connect GitHub, choose
+                      repositories and branches,
+                      then hand the deployment to
+                      the backend.
                     </p>
                   </div>
 
@@ -2918,325 +4438,367 @@ function Settings() {
                 </div>
 
 
-                {/* =============================================
-                    INTEGRATION TABS
-                ============================================== */}
-
+                {/* PROJECT */}
                 <div
                   className={
-                    styles.integrationTabs
+                    styles.formGridTwo
                   }
                 >
-                  <button
-                    type="button"
+                  <label
                     className={
-                      integrationTab ===
-                      "environment"
-                        ? styles.integrationTabActive
-                        : styles.integrationTab
+                      styles.field
                     }
-                    onClick={() =>
-                      setIntegrationTab(
-                        "environment"
-                      )
+                  >
+                    <span>
+                      ZYRIONOS PROJECT
+                    </span>
+
+                    <select
+                      value={
+                        selectedProjectId
+                      }
+                      onChange={(event) =>
+                        setSelectedProjectId(
+                          event.target.value
+                        )
+                      }
+                    >
+                      <option value="">
+                        Select project
+                      </option>
+
+                      {projects.map(
+                        (project) => (
+                          <option
+                            key={getProjectId(
+                              project
+                            )}
+                            value={getProjectId(
+                              project
+                            )}
+                          >
+                            {getProjectName(
+                              project
+                            )}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+
+                  <div
+                    className={
+                      styles.githubProjectHint
                     }
                   >
                     <Icon
-                      name="environment"
-                      size={17}
+                      name="info"
+                      size={15}
                     />
 
-                    Environment
-
                     <span>
-                      Variables
+                      GitHub is connected
+                      through the authenticated
+                      backend OAuth workflow.
                     </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={
-                      integrationTab ===
-                      "github"
-                        ? styles.integrationTabActive
-                        : styles.integrationTab
-                    }
-                    onClick={() =>
-                      setIntegrationTab(
-                        "github"
-                      )
-                    }
-                  >
-                    <Icon
-                      name="github"
-                      size={17}
-                    />
-
-                    GitHub
-
-                    <span>
-                      Repository & Deploy
-                    </span>
-                  </button>
+                  </div>
                 </div>
 
 
-                {/* =============================================
-                    ENVIRONMENT PANEL
-                ============================================== */}
-
-                {integrationTab ===
-                  "environment" && (
+                {/* GITHUB PANEL */}
+                <div
+                  className={
+                    styles.integrationPanel
+                  }
+                >
                   <div
                     className={
-                      styles.integrationPanel
+                      styles.integrationPanelHeader
                     }
                   >
+                    <div>
+                      <div
+                        className={
+                          styles.panelTitleRow
+                        }
+                      >
+                        <div
+                          className={
+                            styles.githubPanelIcon
+                          }
+                        >
+                          <Icon
+                            name="github"
+                            size={21}
+                          />
+                        </div>
+
+                        <div>
+                          <h3>
+                            GitHub
+                          </h3>
+
+                          <p>
+                            Connect GitHub, choose a
+                            repository and branch,
+                            then deploy through the
+                            backend.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={
+                        styles.iconButton
+                      }
+                      onClick={
+                        handleGithubRefresh
+                      }
+                      disabled={
+                        githubLoading ||
+                        !selectedProjectId
+                      }
+                      title="Refresh GitHub"
+                    >
+                      <Icon
+                        name="refresh"
+                        size={16}
+                      />
+                    </button>
+                  </div>
+
+
+                  {/* CONNECTION */}
+                  <div
+                    className={
+                      styles.githubConnectionCard
+                    }
+                  >
+                    <div
+                      className={
+                        styles.githubConnectionIcon
+                      }
+                    >
+                      <Icon
+                        name="github"
+                        size={23}
+                      />
+                    </div>
 
                     <div
                       className={
-                        styles.integrationPanelHeader
+                        styles.githubConnectionCopy
                       }
                     >
-                      <div>
-                        <div
+                      <span
+                        className={
+                          styles.cardLabel
+                        }
+                      >
+                        GITHUB CONNECTION
+                      </span>
+
+                      {githubConnections.length ? (
+                        <>
+                          <strong>
+                            {
+                              getConnectionLabel(
+                                githubConnections.find(
+                                  (item) =>
+                                    String(
+                                      getConnectionId(
+                                        item
+                                      )
+                                    ) ===
+                                    String(
+                                      selectedConnectionId
+                                    )
+                                ) ||
+                                  githubConnections[0]
+                              )
+                            }
+                          </strong>
+
+                          <p>
+                            {
+                              githubConnections.length
+                            }{" "}
+                            connection
+                            {githubConnections.length !==
+                            1
+                              ? "s"
+                              : ""}{" "}
+                            available for this
+                            project.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <strong>
+                            No GitHub connection
+                          </strong>
+
+                          <p>
+                            Connect your GitHub
+                            account using the real
+                            OAuth flow.
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    <div
+                      className={
+                        styles.githubConnectionActions
+                      }
+                    >
+                      {githubConnections.length >
+                        0 && (
+                        <label
                           className={
-                            styles.panelTitleRow
+                            styles.connectionSelect
                           }
                         >
-                          <div
-                            className={
-                              styles.panelIcon
+                          <span>
+                            CONNECTION
+                          </span>
+
+                          <select
+                            value={
+                              selectedConnectionId
+                            }
+                            onChange={(event) =>
+                              setSelectedConnectionId(
+                                event
+                                  .target
+                                  .value
+                              )
                             }
                           >
-                            <Icon
-                              name="environment"
-                              size={20}
-                            />
-                          </div>
-
-                          <div>
-                            <h3>
-                              Environment Variables
-                            </h3>
-
-                            <p>
-                              Add and manage real
-                              project configuration
-                              values.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                            {githubConnections.map(
+                              (
+                                connection
+                              ) => (
+                                <option
+                                  key={getConnectionId(
+                                    connection
+                                  )}
+                                  value={getConnectionId(
+                                    connection
+                                  )}
+                                >
+                                  {getConnectionLabel(
+                                    connection
+                                  )}
+                                </option>
+                              )
+                            )}
+                          </select>
+                        </label>
+                      )}
 
                       <button
                         type="button"
                         className={
-                          styles.iconButton
+                          githubConnections.length
+                            ? styles.secondaryButton
+                            : styles.primaryButton
                         }
-                        onClick={() =>
-                          selectedProjectId &&
-                          loadEnvironmentList(
-                            selectedProjectId
-                          )
+                        onClick={
+                          handleConnectGithub
                         }
-                        disabled={
-                          environmentLoading
-                        }
-                        title="Refresh environments"
                       >
                         <Icon
-                          name="refresh"
-                          size={16}
+                          name="github"
+                          size={15}
                         />
+
+                        {githubConnections.length
+                          ? "Add / Reconnect"
+                          : "Connect GitHub"}
                       </button>
                     </div>
+                  </div>
 
 
+                  {githubError && (
                     <div
                       className={
-                        styles.formGridTwo
+                        styles.inlineError
                       }
                     >
-                      <label
-                        className={
-                          styles.field
-                        }
-                      >
-                        <span>
-                          PROJECT
-                        </span>
+                      <Icon
+                        name="danger"
+                        size={16}
+                      />
 
-                        <select
-                          value={
-                            selectedProjectId
-                          }
-                          onChange={
-                            handleEnvironmentProjectChange
-                          }
-                          disabled={
-                            environmentLoading
-                          }
-                        >
-                          <option value="">
-                            Select project
-                          </option>
-
-                          {projects.map(
-                            (project) => (
-                              <option
-                                key={getProjectId(
-                                  project
-                                )}
-                                value={getProjectId(
-                                  project
-                                )}
-                              >
-                                {getProjectName(
-                                  project
-                                )}
-                              </option>
-                            )
-                          )}
-                        </select>
-                      </label>
-
-                      <label
-                        className={
-                          styles.field
-                        }
-                      >
-                        <span>
-                          ENVIRONMENT
-                        </span>
-
-                        <select
-                          value={
-                            selectedEnvironmentName
-                          }
-                          onChange={
-                            handleEnvironmentChange
-                          }
-                          disabled={
-                            !selectedProjectId ||
-                            environmentLoading
-                          }
-                        >
-                          <option value="">
-                            Select environment
-                          </option>
-
-                          {environments.map(
-                            (environment) => {
-                              const name =
-                                getEnvironmentName(
-                                  environment
-                                );
-
-                              return (
-                                <option
-                                  key={name}
-                                  value={name}
-                                >
-                                  {name}
-                                </option>
-                              );
-                            }
-                          )}
-                        </select>
-                      </label>
+                      <span>
+                        {githubError}
+                      </span>
                     </div>
+                  )}
 
-
-                    {environmentError && (
-                      <div
-                        className={
-                          styles.inlineError
-                        }
-                      >
-                        <Icon
-                          name="danger"
-                          size={16}
-                        />
-
-                        <span>
-                          {environmentError}
-                        </span>
-                      </div>
-                    )}
-
-                    {environmentMessage && (
-                      <div
-                        className={
-                          styles.inlineSuccess
-                        }
-                      >
-                        <Icon
-                          name="check"
-                          size={16}
-                        />
-
-                        <span>
-                          {environmentMessage}
-                        </span>
-                      </div>
-                    )}
-
-
-                    <form
+                  {githubMessage && (
+                    <div
                       className={
-                        styles.environmentForm
-                      }
-                      onSubmit={
-                        handleEnvironmentSubmit
+                        styles.inlineSuccess
                       }
                     >
-                      <div
+                      <Icon
+                        name="check"
+                        size={16}
+                      />
+
+                      <span>
+                        {githubMessage}
+                      </span>
+                    </div>
+                  )}
+
+
+                  {/* WORKFLOW */}
+                  <div
+                    className={
+                      styles.githubWorkflow
+                    }
+                  >
+
+                    {/* STEP 01 */}
+                    <div
+                      className={
+                        styles.workflowStep
+                      }
+                    >
+                      <span
                         className={
-                          styles.formSectionTitle
+                          styles.workflowNumber
                         }
                       >
-                        <div>
-                          <span>
-                            {editingEnvironmentKey
-                              ? "ROTATE / UPDATE SECRET"
-                              : "ADD VARIABLE"}
-                          </span>
+                        01
+                      </span>
 
-                          <small>
-                            The entered value is sent
-                            directly to the authenticated
-                            backend.
-                          </small>
+                      <div
+                        className={
+                          styles.workflowContent
+                        }
+                      >
+                        <div
+                          className={
+                            styles.workflowTitle
+                          }
+                        >
+                          Repository
                         </div>
 
-                        {editingEnvironmentKey && (
-                          <button
-                            type="button"
-                            className={
-                              styles.textButton
-                            }
-                            onClick={
-                              resetEnvironmentForm
-                            }
-                          >
-                            Cancel edit
-                          </button>
-                        )}
-                      </div>
-
-                      <div
-                        className={
-                          styles.formGridTwo
-                        }
-                      >
                         <label
                           className={
                             styles.field
                           }
                         >
                           <span>
-                            KEY
+                            GITHUB REPOSITORY
                           </span>
 
                           <div
@@ -3245,1042 +4807,33 @@ function Settings() {
                             }
                           >
                             <Icon
-                              name="key"
+                              name="repository"
                               size={15}
                             />
 
-                            <input
-                              type="text"
-                              value={
-                                environmentForm.key
-                              }
-                              onChange={(event) =>
-                                setEnvironmentForm(
-                                  (current) => ({
-                                    ...current,
-                                    key:
-                                      event.target
-                                        .value,
-                                  })
-                                )
-                              }
-                              placeholder="OPENAI_API_KEY"
-                              autoComplete="off"
-                            />
-                          </div>
-                        </label>
-
-                        <label
-                          className={
-                            styles.field
-                          }
-                        >
-                          <span>
-                            VALUE
-                          </span>
-
-                          <div
-                            className={
-                              styles.inputWithAction
-                            }
-                          >
-                            <input
-                              type={
-                                visibleNewValue
-                                  ? "text"
-                                  : "password"
-                              }
-                              value={
-                                environmentForm.value
-                              }
-                              onChange={(event) =>
-                                setEnvironmentForm(
-                                  (current) => ({
-                                    ...current,
-                                    value:
-                                      event.target
-                                        .value,
-                                  })
-                                )
-                              }
-                              placeholder={
-                                editingEnvironmentKey
-                                  ? "Enter replacement value"
-                                  : "Enter API key or value"
-                              }
-                              autoComplete="new-password"
-                            />
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setVisibleNewValue(
-                                  (current) =>
-                                    !current
-                                )
-                              }
-                              className={
-                                styles.inputAction
-                              }
-                              title={
-                                visibleNewValue
-                                  ? "Hide value"
-                                  : "Show typed value"
-                              }
-                            >
-                              <Icon
-                                name={
-                                  visibleNewValue
-                                    ? "eyeOff"
-                                    : "eye"
-                                }
-                                size={16}
-                              />
-                            </button>
-                          </div>
-                        </label>
-                      </div>
-
-
-                      <div
-                        className={
-                          styles.formGridThree
-                        }
-                      >
-                        <label
-                          className={
-                            styles.field
-                          }
-                        >
-                          <span>
-                            TYPE
-                          </span>
-
-                          <select
-                            value={
-                              environmentForm.type
-                            }
-                            onChange={(event) =>
-                              setEnvironmentForm(
-                                (current) => ({
-                                  ...current,
-                                  type:
-                                    event.target
-                                      .value,
-                                })
-                              )
-                            }
-                          >
-                            <option value="string">
-                              String
-                            </option>
-                            <option value="number">
-                              Number
-                            </option>
-                            <option value="boolean">
-                              Boolean
-                            </option>
-                            <option value="json">
-                              JSON
-                            </option>
-                          </select>
-                        </label>
-
-                        <label
-                          className={
-                            styles.field
-                          }
-                        >
-                          <span>
-                            SCOPE
-                          </span>
-
-                          <select
-                            value={
-                              environmentForm.scope
-                            }
-                            onChange={(event) =>
-                              setEnvironmentForm(
-                                (current) => ({
-                                  ...current,
-                                  scope:
-                                    event.target
-                                      .value,
-                                })
-                              )
-                            }
-                          >
-                            <option value="runtime">
-                              Runtime
-                            </option>
-                            <option value="build">
-                              Build
-                            </option>
-                            <option value="both">
-                              Build + Runtime
-                            </option>
-                          </select>
-                        </label>
-
-                        <label
-                          className={
-                            styles.checkboxField
-                          }
-                        >
-                          <input
-                            type="checkbox"
-                            checked={
-                              environmentForm.required
-                            }
-                            onChange={(event) =>
-                              setEnvironmentForm(
-                                (current) => ({
-                                  ...current,
-                                  required:
-                                    event.target
-                                      .checked,
-                                })
-                              )
-                            }
-                          />
-
-                          <span>
-                            Required variable
-                          </span>
-                        </label>
-                      </div>
-
-
-                      <div
-                        className={
-                          styles.environmentFormFooter
-                        }
-                      >
-                        <div
-                          className={
-                            styles.secretNotice
-                          }
-                        >
-                          <Icon
-                            name="security"
-                            size={15}
-                          />
-
-                          <span>
-                            Secret values are never
-                            read back and displayed
-                            in plaintext.
-                          </span>
-                        </div>
-
-                        <button
-                          type="submit"
-                          className={
-                            styles.primaryButton
-                          }
-                          disabled={
-                            environmentSaving ||
-                            !selectedProjectId ||
-                            !selectedEnvironmentName
-                          }
-                        >
-                          {environmentSaving ? (
-                            <>
-                              <span
-                                className={
-                                  styles.buttonSpinner
-                                }
-                              />
-                              Saving...
-                            </>
-                          ) : (
-                            <>
-                              <Icon
-                                name={
-                                  editingEnvironmentKey
-                                    ? "check"
-                                    : "plus"
-                                }
-                                size={15}
-                              />
-
-                              {editingEnvironmentKey
-                                ? "Update Variable"
-                                : "Add Variable"}
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </form>
-
-
-                    <div
-                      className={
-                        styles.variableSection
-                      }
-                    >
-                      <div
-                        className={
-                          styles.formSectionTitle
-                        }
-                      >
-                        <div>
-                          <span>
-                            STORED VARIABLES
-                          </span>
-
-                          <small>
-                            Metadata is visible;
-                            secret values remain hidden.
-                          </small>
-                        </div>
-
-                        <span
-                          className={
-                            styles.countBadge
-                          }
-                        >
-                          {environmentVariables.length}
-                        </span>
-                      </div>
-
-                      {environmentLoading ? (
-                        <div
-                          className={
-                            styles.smallLoading
-                          }
-                        >
-                          <div
-                            className={
-                              styles.loadingSpinner
-                            }
-                          />
-                          Loading environment...
-                        </div>
-                      ) : environmentVariables.length ? (
-                        <div
-                          className={
-                            styles.variableList
-                          }
-                        >
-                          {environmentVariables.map(
-                            (variable) => {
-                              const key =
-                                variable?.key ||
-                                "Unnamed";
-
-                              return (
-                                <div
-                                  key={key}
-                                  className={
-                                    styles.variableRow
-                                  }
-                                >
-                                  <div
-                                    className={
-                                      styles.variableMain
-                                    }
-                                  >
-                                    <div
-                                      className={
-                                        styles.variableKey
-                                      }
-                                    >
-                                      <Icon
-                                        name="key"
-                                        size={15}
-                                      />
-
-                                      <strong>
-                                        {key}
-                                      </strong>
-                                    </div>
-
-                                    <div
-                                      className={
-                                        styles.variableMeta
-                                      }
-                                    >
-                                      <span>
-                                        {variable?.scope ||
-                                          "runtime"}
-                                      </span>
-
-                                      <span>
-                                        {variable?.type ||
-                                          "string"}
-                                      </span>
-
-                                      {variable?.required && (
-                                        <span>
-                                          required
-                                        </span>
-                                      )}
-
-                                      {variable?.isSecret && (
-                                        <span
-                                          className={
-                                            styles.secretBadge
-                                          }
-                                        >
-                                          secret
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  <div
-                                    className={
-                                      styles.variableValue
-                                    }
-                                  >
-                                    <code>
-                                      {variable?.isSecret
-                                        ? "••••••••••••••••"
-                                        : variable?.hasValue
-                                          ? "configured"
-                                          : "not configured"}
-                                    </code>
-                                  </div>
-
-                                  <div
-                                    className={
-                                      styles.variableActions
-                                    }
-                                  >
-                                    <button
-                                      type="button"
-                                      className={
-                                        styles.smallActionButton
-                                      }
-                                      onClick={() =>
-                                        handleEditEnvironmentVariable(
-                                          variable
-                                        )
-                                      }
-                                      title="Replace value"
-                                    >
-                                      Edit
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      className={
-                                        styles.dangerActionButton
-                                      }
-                                      onClick={() =>
-                                        handleDeleteEnvironmentVariable(
-                                          key
-                                        )
-                                      }
-                                      disabled={
-                                        environmentDeletingKey ===
-                                        key
-                                      }
-                                      title="Delete variable"
-                                    >
-                                      {environmentDeletingKey ===
-                                      key ? (
-                                        <span
-                                          className={
-                                            styles.buttonSpinner
-                                          }
-                                        />
-                                      ) : (
-                                        <Icon
-                                          name="trash"
-                                          size={15}
-                                        />
-                                      )}
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            }
-                          )}
-                        </div>
-                      ) : (
-                        <div
-                          className={
-                            styles.emptyIntegration
-                          }
-                        >
-                          <Icon
-                            name="key"
-                            size={22}
-                          />
-
-                          <strong>
-                            No variables configured
-                          </strong>
-
-                          <span>
-                            Add your first backend
-                            environment variable above.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-                )}
-
-
-                {/* =============================================
-                    GITHUB PANEL
-                ============================================== */}
-
-                {integrationTab ===
-                  "github" && (
-                  <div
-                    className={
-                      styles.integrationPanel
-                    }
-                  >
-
-                    <div
-                      className={
-                        styles.integrationPanelHeader
-                      }
-                    >
-                      <div>
-                        <div
-                          className={
-                            styles.panelTitleRow
-                          }
-                        >
-                          <div
-                            className={
-                              styles.githubPanelIcon
-                            }
-                          >
-                            <Icon
-                              name="github"
-                              size={21}
-                            />
-                          </div>
-
-                          <div>
-                            <h3>
-                              GitHub
-                            </h3>
-
-                            <p>
-                              Connect GitHub, choose a
-                              repository and branch, then
-                              prepare and deploy through
-                              the backend.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        className={
-                          styles.iconButton
-                        }
-                        onClick={
-                          handleGithubRefresh
-                        }
-                        disabled={
-                          githubLoading
-                        }
-                        title="Refresh GitHub"
-                      >
-                        <Icon
-                          name="refresh"
-                          size={16}
-                        />
-                      </button>
-                    </div>
-
-
-                    <div
-                      className={
-                        styles.githubConnectionCard
-                      }
-                    >
-                      <div
-                        className={
-                          styles.githubConnectionIcon
-                        }
-                      >
-                        <Icon
-                          name="github"
-                          size={23}
-                        />
-                      </div>
-
-                      <div
-                        className={
-                          styles.githubConnectionCopy
-                        }
-                      >
-                        <span
-                          className={
-                            styles.cardLabel
-                          }
-                        >
-                          GITHUB CONNECTION
-                        </span>
-
-                        {githubConnections.length ? (
-                          <>
-                            <strong>
-                              {
-                                getConnectionLabel(
-                                  githubConnections.find(
-                                    (item) =>
-                                      String(
-                                        getConnectionId(
-                                          item
-                                        )
-                                      ) ===
-                                      String(
-                                        selectedConnectionId
-                                      )
-                                  ) ||
-                                  githubConnections[0]
-                                )
-                              }
-                            </strong>
-
-                            <p>
-                              {githubConnections.length}{" "}
-                              connection
-                              {githubConnections.length !==
-                              1
-                                ? "s"
-                                : ""}{" "}
-                              available for this
-                              project.
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <strong>
-                              No GitHub connection
-                            </strong>
-
-                            <p>
-                              Use the real GitHub OAuth
-                              flow to connect your account.
-                            </p>
-                          </>
-                        )}
-                      </div>
-
-                      <div
-                        className={
-                          styles.githubConnectionActions
-                        }
-                      >
-                        {githubConnections.length >
-                          0 && (
-                          <label
-                            className={
-                              styles.connectionSelect
-                            }
-                          >
-                            <span>
-                              CONNECTION
-                            </span>
-
                             <select
-                              value={
-                                selectedConnectionId
-                              }
-                              onChange={(event) =>
-                                setSelectedConnectionId(
-                                  event.target
-                                    .value
-                                )
-                              }
-                            >
-                              {githubConnections.map(
-                                (connection) => (
-                                  <option
-                                    key={getConnectionId(
-                                      connection
-                                    )}
-                                    value={getConnectionId(
-                                      connection
-                                    )}
-                                  >
-                                    {getConnectionLabel(
-                                      connection
-                                    )}
-                                  </option>
-                                )
+                              value={getRepositoryName(
+                                selectedRepository
                               )}
-                            </select>
-                          </label>
-                        )}
-
-                        <button
-                          type="button"
-                          className={
-                            githubConnections.length
-                              ? styles.secondaryButton
-                              : styles.primaryButton
-                          }
-                          onClick={
-                            handleConnectGithub
-                          }
-                        >
-                          <Icon
-                            name="github"
-                            size={15}
-                          />
-
-                          {githubConnections.length
-                            ? "Add / Reconnect"
-                            : "Connect GitHub"}
-                        </button>
-                      </div>
-                    </div>
-
-
-                    {githubError && (
-                      <div
-                        className={
-                          styles.inlineError
-                        }
-                      >
-                        <Icon
-                          name="danger"
-                          size={16}
-                        />
-
-                        <span>
-                          {githubError}
-                        </span>
-                      </div>
-                    )}
-
-                    {githubMessage && (
-                      <div
-                        className={
-                          styles.inlineSuccess
-                        }
-                      >
-                        <Icon
-                          name="check"
-                          size={16}
-                        />
-
-                        <span>
-                          {githubMessage}
-                        </span>
-                      </div>
-                    )}
-
-
-                    <div
-                      className={
-                        styles.githubWorkflow
-                      }
-                    >
-                      <div
-                        className={
-                          styles.workflowStep
-                        }
-                      >
-                        <span
-                          className={
-                            styles.workflowNumber
-                          }
-                        >
-                          01
-                        </span>
-
-                        <div
-                          className={
-                            styles.workflowContent
-                          }
-                        >
-                          <div
-                            className={
-                              styles.workflowTitle
-                            }
-                          >
-                            Project
-                          </div>
-
-                          <label
-                            className={
-                              styles.field
-                            }
-                          >
-                            <span>
-                              ZYRIONOS PROJECT
-                            </span>
-
-                            <select
-                              value={
-                                selectedProjectId
+                              onChange={
+                                handleGithubRepositoryChange
                               }
-                              onChange={(event) =>
-                                setSelectedProjectId(
-                                  event.target
-                                    .value
-                                )
+                              disabled={
+                                !selectedConnectionId ||
+                                githubLoading
                               }
                             >
                               <option value="">
-                                Select project
+                                Select repository
                               </option>
 
-                              {projects.map(
-                                (project) => (
-                                  <option
-                                    key={getProjectId(
-                                      project
-                                    )}
-                                    value={getProjectId(
-                                      project
-                                    )}
-                                  >
-                                    {getProjectName(
-                                      project
-                                    )}
-                                  </option>
-                                )
-                              )}
-                            </select>
-                          </label>
-                        </div>
-                      </div>
-
-
-                      <div
-                        className={
-                          styles.workflowStep
-                        }
-                      >
-                        <span
-                          className={
-                            styles.workflowNumber
-                          }
-                        >
-                          02
-                        </span>
-
-                        <div
-                          className={
-                            styles.workflowContent
-                          }
-                        >
-                          <div
-                            className={
-                              styles.workflowTitle
-                            }
-                          >
-                            Repository
-                          </div>
-
-                          <label
-                            className={
-                              styles.field
-                            }
-                          >
-                            <span>
-                              GITHUB REPOSITORY
-                            </span>
-
-                            <div
-                              className={
-                                styles.inputWithIcon
-                              }
-                            >
-                              <Icon
-                                name="repository"
-                                size={15}
-                              />
-
-                              <select
-                                value={
-                                  getRepositoryName(
-                                    selectedRepository
-                                  )
-                                }
-                                onChange={
-                                  handleGithubRepositoryChange
-                                }
-                                disabled={
-                                  !selectedConnectionId ||
-                                  githubLoading
-                                }
-                              >
-                                <option value="">
-                                  Select repository
-                                </option>
-
-                                {githubRepositories.map(
-                                  (repository) => {
-                                    const name =
-                                      getRepositoryName(
-                                        repository
-                                      );
-
-                                    return (
-                                      <option
-                                        key={name}
-                                        value={name}
-                                      >
-                                        {name}
-                                      </option>
-                                    );
-                                  }
-                                )}
-                              </select>
-                            </div>
-                          </label>
-                        </div>
-                      </div>
-
-
-                      <div
-                        className={
-                          styles.workflowStep
-                        }
-                      >
-                        <span
-                          className={
-                            styles.workflowNumber
-                          }
-                        >
-                          03
-                        </span>
-
-                        <div
-                          className={
-                            styles.workflowContent
-                          }
-                        >
-                          <div
-                            className={
-                              styles.workflowTitle
-                            }
-                          >
-                            Branch
-                          </div>
-
-                          <label
-                            className={
-                              styles.field
-                            }
-                          >
-                            <span>
-                              GIT BRANCH
-                            </span>
-
-                            <div
-                              className={
-                                styles.inputWithIcon
-                              }
-                            >
-                              <Icon
-                                name="branch"
-                                size={15}
-                              />
-
-                              <select
-                                value={
-                                  selectedBranch
-                                }
-                                onChange={
-                                  handleGithubBranchChange
-                                }
-                                disabled={
-                                  !selectedRepository ||
-                                  githubLoading
-                                }
-                              >
-                                <option value="">
-                                  Select branch
-                                </option>
-
-                                {githubBranches.map(
-                                  (branch) => {
-                                    const name =
-                                      getBranchName(
-                                        branch
-                                      );
-
-                                    return (
-                                      <option
-                                        key={name}
-                                        value={name}
-                                      >
-                                        {name}
-                                      </option>
-                                    );
-                                  }
-                                )}
-                              </select>
-                            </div>
-                          </label>
-                        </div>
-                      </div>
-
-
-                      <div
-                        className={
-                          styles.workflowStep
-                        }
-                      >
-                        <span
-                          className={
-                            styles.workflowNumber
-                          }
-                        >
-                          04
-                        </span>
-
-                        <div
-                          className={
-                            styles.workflowContent
-                          }
-                        >
-                          <div
-                            className={
-                              styles.workflowTitle
-                            }
-                          >
-                            Environment
-                          </div>
-
-                          <label
-                            className={
-                              styles.field
-                            }
-                          >
-                            <span>
-                              DEPLOYMENT ENVIRONMENT
-                            </span>
-
-                            <select
-                              value={
-                                selectedEnvironmentName
-                              }
-                              onChange={(event) =>
-                                setSelectedEnvironmentName(
-                                  event.target
-                                    .value
-                                )
-                              }
-                            >
-                              <option value="">
-                                Select environment
-                              </option>
-
-                              {environments.map(
-                                (environment) => {
+                              {githubRepositories.map(
+                                (
+                                  repository
+                                ) => {
                                   const name =
-                                    getEnvironmentName(
-                                      environment
+                                    getRepositoryName(
+                                      repository
                                     );
 
                                   return (
@@ -4294,187 +4847,375 @@ function Settings() {
                                 }
                               )}
                             </select>
-                          </label>
-                        </div>
+                          </div>
+                        </label>
                       </div>
                     </div>
 
 
+                    {/* STEP 02 */}
                     <div
                       className={
-                        styles.githubActionBar
+                        styles.workflowStep
                       }
                     >
-                      <div>
-                        <span
-                          className={
-                            styles.cardLabel
-                          }
-                        >
-                          DEPLOYMENT CONTROL
-                        </span>
-
-                        <strong>
-                          {getRepositoryName(
-                            selectedRepository
-                          ) || "No repository selected"}
-                        </strong>
-
-                        <p>
-                          Branch:{" "}
-                          {selectedBranch ||
-                            "not selected"}
-                          {" · "}
-                          Environment:{" "}
-                          {selectedEnvironmentName ||
-                            "not selected"}
-                        </p>
-                      </div>
-
-                      <div
+                      <span
                         className={
-                          styles.githubActionButtons
+                          styles.workflowNumber
                         }
                       >
-                        <button
-                          type="button"
-                          className={
-                            styles.secondaryButton
-                          }
-                          onClick={
-                            handleGithubReadiness
-                          }
-                          disabled={
-                            githubActionLoading ||
-                            !selectedRepository ||
-                            !selectedBranch
-                          }
-                        >
-                          {githubActionLoading ? (
-                            <span
-                              className={
-                                styles.buttonSpinner
-                              }
-                            />
-                          ) : (
-                            <Icon
-                              name="security"
-                              size={15}
-                            />
-                          )}
+                        02
+                      </span>
 
-                          Check Readiness
-                        </button>
-
-                        <button
-                          type="button"
-                          className={
-                            styles.secondaryButton
-                          }
-                          onClick={
-                            handlePrepareGithubDeployment
-                          }
-                          disabled={
-                            githubActionLoading ||
-                            !selectedRepository ||
-                            !selectedBranch
-                          }
-                        >
-                          <Icon
-                            name="repository"
-                            size={15}
-                          />
-
-                          Prepare
-                        </button>
-
-                        <button
-                          type="button"
-                          className={
-                            styles.primaryButton
-                          }
-                          onClick={
-                            handleGithubDeploy
-                          }
-                          disabled={
-                            githubActionLoading ||
-                            !selectedRepository ||
-                            !selectedBranch ||
-                            !selectedProjectId
-                          }
-                        >
-                          {githubActionLoading ? (
-                            <span
-                              className={
-                                styles.buttonSpinner
-                              }
-                            />
-                          ) : (
-                            <Icon
-                              name="deploy"
-                              size={15}
-                            />
-                          )}
-
-                          Deploy
-                        </button>
-                      </div>
-                    </div>
-
-
-                    {githubReadiness && (
                       <div
                         className={
-                          styles.readinessCard
+                          styles.workflowContent
                         }
                       >
                         <div
                           className={
-                            styles.readinessIcon
+                            styles.workflowTitle
                           }
                         >
-                          <Icon
-                            name="check"
-                            size={18}
-                          />
+                          Branch
                         </div>
 
-                        <div>
-                          <strong>
-                            Deployment readiness
-                          </strong>
-
-                          <p>
-                            {githubReadiness?.message ||
-                            githubReadiness?.status
-                              ? githubReadiness?.message ||
-                                githubReadiness?.status
-                              : githubReadiness?.ready === true
-                                ? "Backend returned deployment readiness data."
-                                : "Backend returned a readiness response."}
-                          </p>
-                        </div>
-
-                        <span
+                        <label
                           className={
-                            githubReadiness?.ready ===
-                            false
-                              ? styles.readinessBad
-                              : styles.readinessGood
+                            styles.field
                           }
                         >
-                          {githubReadiness?.ready ===
-                          false
-                            ? "Not ready"
-                            : "Response received"}
-                        </span>
+                          <span>
+                            GIT BRANCH
+                          </span>
+
+                          <div
+                            className={
+                              styles.inputWithIcon
+                            }
+                          >
+                            <Icon
+                              name="branch"
+                              size={15}
+                            />
+
+                            <select
+                              value={
+                                selectedBranch
+                              }
+                              onChange={
+                                handleGithubBranchChange
+                              }
+                              disabled={
+                                !selectedRepository ||
+                                githubLoading
+                              }
+                            >
+                              <option value="">
+                                Select branch
+                              </option>
+
+                              {githubBranches.map(
+                                (branch) => {
+                                  const name =
+                                    getBranchName(
+                                      branch
+                                    );
+
+                                  return (
+                                    <option
+                                      key={name}
+                                      value={name}
+                                    >
+                                      {name}
+                                    </option>
+                                  );
+                                }
+                              )}
+                            </select>
+                          </div>
+                        </label>
                       </div>
-                    )}
+                    </div>
 
+
+                    {/* STEP 03 */}
+                    <div
+                      className={
+                        styles.workflowStep
+                      }
+                    >
+                      <span
+                        className={
+                          styles.workflowNumber
+                        }
+                      >
+                        03
+                      </span>
+
+                      <div
+                        className={
+                          styles.workflowContent
+                        }
+                      >
+                        <div
+                          className={
+                            styles.workflowTitle
+                          }
+                        >
+                          Deployment Environment
+                        </div>
+
+                        <label
+                          className={
+                            styles.field
+                          }
+                        >
+                          <span>
+                            ENVIRONMENT
+                          </span>
+
+                          <select
+                            value={
+                              selectedEnvironmentName
+                            }
+                            onChange={(event) =>
+                              setSelectedEnvironmentName(
+                                event
+                                  .target
+                                  .value
+                              )
+                            }
+                          >
+                            <option value="">
+                              Select environment
+                            </option>
+
+                            {environments.map(
+                              (
+                                environment
+                              ) => {
+                                const name =
+                                  getEnvironmentName(
+                                    environment
+                                  );
+
+                                return (
+                                  <option
+                                    key={name}
+                                    value={name}
+                                  >
+                                    {name}
+                                  </option>
+                                );
+                              }
+                            )}
+                          </select>
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                )}
 
 
+                  {/* DEPLOYMENT CONTROL */}
+                  <div
+                    className={
+                      styles.githubActionBar
+                    }
+                  >
+                    <div>
+                      <span
+                        className={
+                          styles.cardLabel
+                        }
+                      >
+                        DEPLOYMENT CONTROL
+                      </span>
+
+                      <strong>
+                        {getRepositoryName(
+                          selectedRepository
+                        ) ||
+                          "No repository selected"}
+                      </strong>
+
+                      <p>
+                        Branch:{" "}
+                        {selectedBranch ||
+                          "not selected"}
+                        {" · "}
+                        Environment:{" "}
+                        {selectedEnvironmentName ||
+                          "not selected"}
+                      </p>
+                    </div>
+
+                    <div
+                      className={
+                        styles.githubActionButtons
+                      }
+                    >
+                      <button
+                        type="button"
+                        className={
+                          styles.secondaryButton
+                        }
+                        onClick={
+                          handleGithubReadiness
+                        }
+                        disabled={
+                          githubActionLoading ||
+                          !selectedProjectId ||
+                          !selectedConnectionId ||
+                          !selectedRepository ||
+                          !selectedBranch
+                        }
+                      >
+                        {githubActionLoading ? (
+                          <span
+                            className={
+                              styles.buttonSpinner
+                            }
+                          />
+                        ) : (
+                          <Icon
+                            name="security"
+                            size={15}
+                          />
+                        )}
+
+                        Check Readiness
+                      </button>
+
+                      <button
+                        type="button"
+                        className={
+                          styles.secondaryButton
+                        }
+                        onClick={
+                          handlePrepareGithubDeployment
+                        }
+                        disabled={
+                          githubActionLoading ||
+                          !selectedProjectId ||
+                          !selectedConnectionId ||
+                          !selectedRepository ||
+                          !selectedBranch
+                        }
+                      >
+                        <Icon
+                          name="repository"
+                          size={15}
+                        />
+
+                        Prepare
+                      </button>
+
+                      <button
+                        type="button"
+                        className={
+                          styles.primaryButton
+                        }
+                        onClick={
+                          handleGithubDeploy
+                        }
+                        disabled={
+                          githubActionLoading ||
+                          !selectedProjectId ||
+                          !selectedConnectionId ||
+                          !selectedRepository ||
+                          !selectedBranch
+                        }
+                      >
+                        {githubActionLoading ? (
+                          <span
+                            className={
+                              styles.buttonSpinner
+                            }
+                          />
+                        ) : (
+                          <Icon
+                            name="deploy"
+                            size={15}
+                          />
+                        )}
+
+                        Deploy
+                      </button>
+                    </div>
+                  </div>
+
+
+                  {githubReadiness && (
+                    <div
+                      className={
+                        styles.readinessCard
+                      }
+                    >
+                      <div
+                        className={
+                          styles.readinessIcon
+                        }
+                      >
+                        <Icon
+                          name="check"
+                          size={18}
+                        />
+                      </div>
+
+                      <div>
+                        <strong>
+                          Deployment readiness
+                        </strong>
+
+                        <p>
+                          {githubReadiness?.message ||
+                            githubReadiness?.status ||
+                            (githubReadiness?.ready ===
+                            true
+                              ? "Backend returned deployment readiness data."
+                              : githubReadiness?.ready ===
+                                false
+                                ? "Backend reports that deployment is not ready."
+                                : "Backend returned a readiness response.")}
+                        </p>
+                      </div>
+
+                      <span
+                        className={
+                          githubReadiness?.ready ===
+                          false
+                            ? styles.readinessBad
+                            : styles.readinessGood
+                        }
+                      >
+                        {githubReadiness?.ready ===
+                        false
+                          ? "Not ready"
+                          : "Response received"}
+                      </span>
+                    </div>
+                  )}
+
+                  {githubPreparedContract && (
+                    <div
+                      className={
+                        styles.inlineSuccess
+                      }
+                    >
+                      <Icon
+                        name="check"
+                        size={16}
+                      />
+
+                      <span>
+                        Deployment contract is
+                        prepared and ready for
+                        the deployment handoff.
+                      </span>
+                    </div>
+                  )}
+                </div>
               </section>
             )}
 
@@ -4483,12 +5224,17 @@ function Settings() {
                 PRIVACY
             ================================================== */}
 
-            {activeSection === "privacy" && (
+            {activeSection ===
+              "privacy" && (
               <section
-                className={styles.section}
+                className={
+                  styles.section
+                }
               >
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -4504,8 +5250,10 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Sensitive data remains controlled
-                      by authenticated backend operations.
+                      Sensitive data remains
+                      controlled by
+                      authenticated backend
+                      operations.
                     </p>
                   </div>
                 </div>
@@ -4532,9 +5280,9 @@ function Settings() {
                     </h3>
 
                     <p>
-                      Environment secrets are not
-                      rendered back into the browser
-                      as plaintext.
+                      Environment secrets are
+                      not rendered back into
+                      the browser as plaintext.
                     </p>
                   </div>
 
@@ -4554,12 +5302,15 @@ function Settings() {
                 DANGER
             ================================================== */}
 
-            {activeSection === "danger" && (
+            {activeSection ===
+              "danger" && (
               <section
                 className={`${styles.section} ${styles.dangerSection}`}
               >
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -4575,9 +5326,10 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Destructive operations remain
-                      disabled until their protected
-                      backend contracts exist.
+                      Destructive operations
+                      remain disabled until
+                      their protected backend
+                      contracts exist.
                     </p>
                   </div>
                 </div>
@@ -4604,13 +5356,16 @@ function Settings() {
                     }
                   >
                     <h3>
-                      Destructive account actions
+                      Destructive account
+                      actions
                     </h3>
 
                     <p>
-                      No fake delete button is exposed.
-                      Destructive account APIs must be
-                      authenticated and explicitly connected.
+                      No fake delete button is
+                      exposed. Destructive
+                      account APIs must be
+                      authenticated and
+                      explicitly connected.
                     </p>
                   </div>
 

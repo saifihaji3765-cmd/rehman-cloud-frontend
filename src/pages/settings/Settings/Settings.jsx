@@ -1,11 +1,20 @@
-import React, { useMemo, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
 import styles from "./Settings.module.css";
 
 import { useAuth } from "../../../context/AuthContext.jsx";
 import { getSubscription } from "../../../services/billingService.js";
+import workspaceService from "../../../services/workspaceService.js";
+import environmentService from "../../../services/environmentService.js";
+import githubService from "../../../services/githubService.js";
+import deploymentService from "../../../services/deploymentService.js";
 
 
 /* =========================================================
@@ -102,6 +111,111 @@ function Icon({ name, size = 18 }) {
         </svg>
       );
 
+    case "environment":
+      return (
+        <svg {...common}>
+          <rect x="4" y="4" width="16" height="16" rx="3" />
+          <path d="M8 8h8" />
+          <path d="M8 12h8" />
+          <path d="M8 16h5" />
+          <circle cx="17" cy="16" r="1" />
+        </svg>
+      );
+
+    case "key":
+      return (
+        <svg {...common}>
+          <circle cx="8.5" cy="15.5" r="3.5" />
+          <path d="m11 13 8-8" />
+          <path d="m16 6 2 2" />
+          <path d="m14 8 2 2" />
+        </svg>
+      );
+
+    case "github":
+      return (
+        <svg {...common}>
+          <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3.3-.4 6.7-1.6 6.7-7A5.5 5.5 0 0 0 19.2 4 5.1 5.1 0 0 0 19 1.5S17.8 1.1 15 3a13.4 13.4 0 0 0-6 0C6.2 1.1 5 1.5 5 1.5A5.1 5.1 0 0 0 4.8 4 5.5 5.5 0 0 0 3.3 7.5c0 5.4 3.4 6.6 6.7 7A4.8 4.8 0 0 0 9 18v4" />
+          <path d="M9 18c-3.5 1.5-4-1.5-5.5-1.5" />
+        </svg>
+      );
+
+    case "repository":
+      return (
+        <svg {...common}>
+          <path d="M4 5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v15l-3-2-3 2-3-2-3 2-3-2z" />
+          <path d="M8 7h7" />
+          <path d="M8 11h7" />
+        </svg>
+      );
+
+    case "branch":
+      return (
+        <svg {...common}>
+          <circle cx="6" cy="5" r="2" />
+          <circle cx="18" cy="19" r="2" />
+          <circle cx="18" cy="5" r="2" />
+          <path d="M6 7v5a7 7 0 0 0 7 7h3" />
+          <path d="M13 12a5 5 0 0 0 5-5" />
+        </svg>
+      );
+
+    case "deploy":
+      return (
+        <svg {...common}>
+          <path d="M12 3v12" />
+          <path d="m7 8 5-5 5 5" />
+          <path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+        </svg>
+      );
+
+    case "refresh":
+      return (
+        <svg {...common}>
+          <path d="M20 11a8 8 0 0 0-14.7-4L3 10" />
+          <path d="M3 5v5h5" />
+          <path d="M4 13a8 8 0 0 0 14.7 4L21 14" />
+          <path d="M21 19v-5h-5" />
+        </svg>
+      );
+
+    case "plus":
+      return (
+        <svg {...common}>
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
+      );
+
+    case "trash":
+      return (
+        <svg {...common}>
+          <path d="M4 7h16" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+          <path d="M6 7l1 14h10l1-14" />
+          <path d="M9 7V4h6v3" />
+        </svg>
+      );
+
+    case "eye":
+      return (
+        <svg {...common}>
+          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+          <circle cx="12" cy="12" r="2.5" />
+        </svg>
+      );
+
+    case "eyeOff":
+      return (
+        <svg {...common}>
+          <path d="m3 3 18 18" />
+          <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+          <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-3.1 3.7" />
+          <path d="M6.6 6.6C3.8 8.5 2.5 12 2.5 12s3.5 7 9.5 7c1.1 0 2.1-.2 3-.5" />
+        </svg>
+      );
+
     case "privacy":
       return (
         <svg {...common}>
@@ -117,7 +231,13 @@ function Icon({ name, size = 18 }) {
         <svg {...common}>
           <path d="M12 3 22 20H2z" />
           <path d="M12 9v5" />
-          <circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none" />
+          <circle
+            cx="12"
+            cy="17"
+            r=".8"
+            fill="currentColor"
+            stroke="none"
+          />
         </svg>
       );
 
@@ -149,6 +269,15 @@ function Icon({ name, size = 18 }) {
         <svg {...common}>
           <path d="M5 12h14" />
           <path d="m13 6 6 6-6 6" />
+        </svg>
+      );
+
+    case "info":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v5" />
+          <path d="M12 8h.01" />
         </svg>
       );
 
@@ -212,7 +341,7 @@ const sections = [
   {
     id: "integrations",
     label: "Integrations",
-    description: "Connected services and providers",
+    description: "Environment and GitHub controls",
     icon: "integrations",
   },
   {
@@ -231,7 +360,7 @@ const sections = [
 
 
 /* =========================================================
-   HELPERS
+   GENERIC DATA HELPERS
 ========================================================= */
 
 function getInitials(user) {
@@ -265,6 +394,164 @@ function getEmail(user) {
 }
 
 
+function getPayload(response) {
+  if (!response) return null;
+
+  const body = response?.data ?? response;
+
+  if (body?.data !== undefined) {
+    return body.data;
+  }
+
+  return body;
+}
+
+
+function getList(response, keys = []) {
+  const payload = getPayload(response);
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  for (const key of keys) {
+    if (Array.isArray(payload?.[key])) {
+      return payload[key];
+    }
+
+    if (Array.isArray(payload?.data?.[key])) {
+      return payload.data[key];
+    }
+  }
+
+  return [];
+}
+
+
+function getObject(response, keys = []) {
+  const payload = getPayload(response);
+
+  if (!payload) {
+    return null;
+  }
+
+  for (const key of keys) {
+    if (payload?.[key]) {
+      return payload[key];
+    }
+  }
+
+  return payload;
+}
+
+
+function getErrorMessage(error, fallback) {
+  return (
+    error?.response?.data?.message ||
+    error?.data?.message ||
+    error?.message ||
+    fallback
+  );
+}
+
+
+function getProjectId(project) {
+  return (
+    project?._id ||
+    project?.id ||
+    project?.projectId ||
+    ""
+  );
+}
+
+
+function getProjectName(project) {
+  return (
+    project?.projectName ||
+    project?.name ||
+    project?.title ||
+    getProjectId(project)
+  );
+}
+
+
+function getEnvironmentName(environment) {
+  return String(
+    environment?.name ||
+      environment?.environment ||
+      ""
+  );
+}
+
+
+function getVariableList(environment) {
+  return Array.isArray(environment?.variables)
+    ? environment.variables
+    : [];
+}
+
+
+function getConnectionId(connection) {
+  return (
+    connection?._id ||
+    connection?.id ||
+    connection?.connectionId ||
+    ""
+  );
+}
+
+
+function getConnectionLabel(connection) {
+  return (
+    connection?.githubLogin ||
+    connection?.githubUsername ||
+    connection?.username ||
+    connection?.login ||
+    connection?.name ||
+    connection?.githubUser?.login ||
+    connection?.githubUser?.username ||
+    "GitHub connection"
+  );
+}
+
+
+function getRepositoryName(repository) {
+  return (
+    repository?.fullName ||
+    repository?.full_name ||
+    repository?.name ||
+    repository?.repo ||
+    ""
+  );
+}
+
+
+function getRepositoryOwner(repository) {
+  return (
+    repository?.owner?.login ||
+    repository?.owner?.name ||
+    repository?.owner?.username ||
+    repository?.owner ||
+    repository?.namespace ||
+    ""
+  );
+}
+
+
+function getBranchName(branch) {
+  if (typeof branch === "string") {
+    return branch;
+  }
+
+  return (
+    branch?.name ||
+    branch?.branch ||
+    branch?.ref ||
+    ""
+  );
+}
+
+
 function getSubscriptionData(response) {
   if (!response) return null;
 
@@ -292,6 +579,11 @@ function Settings() {
     loading: authLoading,
   } = useAuth();
 
+
+  /* -------------------------------------------------------
+     GENERAL SETTINGS STATE
+  ------------------------------------------------------- */
+
   const [activeSection, setActiveSection] =
     useState("profile");
 
@@ -309,7 +601,108 @@ function Settings() {
 
 
   /* -------------------------------------------------------
-     USER DATA
+     INTEGRATION STATE
+  ------------------------------------------------------- */
+
+  const [projects, setProjects] =
+    useState([]);
+
+  const [selectedProjectId, setSelectedProjectId] =
+    useState("");
+
+  const [integrationTab, setIntegrationTab] =
+    useState("environment");
+
+
+  /* -------------------------------------------------------
+     ENVIRONMENT STATE
+  ------------------------------------------------------- */
+
+  const [environments, setEnvironments] =
+    useState([]);
+
+  const [selectedEnvironmentName, setSelectedEnvironmentName] =
+    useState("");
+
+  const [selectedEnvironment, setSelectedEnvironment] =
+    useState(null);
+
+  const [environmentLoading, setEnvironmentLoading] =
+    useState(false);
+
+  const [environmentSaving, setEnvironmentSaving] =
+    useState(false);
+
+  const [environmentDeletingKey, setEnvironmentDeletingKey] =
+    useState("");
+
+  const [environmentError, setEnvironmentError] =
+    useState("");
+
+  const [environmentMessage, setEnvironmentMessage] =
+    useState("");
+
+  const [environmentForm, setEnvironmentForm] =
+    useState({
+      key: "",
+      value: "",
+      type: "string",
+      scope: "runtime",
+      required: false,
+      isSecret: true,
+      enabled: true,
+    });
+
+  const [visibleNewValue, setVisibleNewValue] =
+    useState(false);
+
+  const [editingEnvironmentKey, setEditingEnvironmentKey] =
+    useState("");
+
+
+  /* -------------------------------------------------------
+     GITHUB STATE
+  ------------------------------------------------------- */
+
+  const [githubConnections, setGithubConnections] =
+    useState([]);
+
+  const [selectedConnectionId, setSelectedConnectionId] =
+    useState("");
+
+  const [githubRepositories, setGithubRepositories] =
+    useState([]);
+
+  const [selectedRepository, setSelectedRepository] =
+    useState(null);
+
+  const [githubBranches, setGithubBranches] =
+    useState([]);
+
+  const [selectedBranch, setSelectedBranch] =
+    useState("");
+
+  const [githubLoading, setGithubLoading] =
+    useState(false);
+
+  const [githubActionLoading, setGithubActionLoading] =
+    useState(false);
+
+  const [githubError, setGithubError] =
+    useState("");
+
+  const [githubMessage, setGithubMessage] =
+    useState("");
+
+  const [githubReadiness, setGithubReadiness] =
+    useState(null);
+
+  const [githubPreparedContract, setGithubPreparedContract] =
+    useState(null);
+
+
+  /* -------------------------------------------------------
+     PROJECT DATA
   ------------------------------------------------------- */
 
   const profile = useMemo(
@@ -331,8 +724,36 @@ function Settings() {
   );
 
 
+  const selectedProject = useMemo(
+    () =>
+      projects.find(
+        (project) =>
+          String(getProjectId(project)) ===
+          String(selectedProjectId)
+      ) || null,
+    [projects, selectedProjectId]
+  );
+
+
+  const selectedEnvironment = useMemo(
+    () =>
+      selectedEnvironmentName
+        ? environments.find(
+            (environment) =>
+              getEnvironmentName(environment).toLowerCase() ===
+              selectedEnvironmentName.toLowerCase()
+          ) || null
+        : null,
+    [environments, selectedEnvironmentName]
+  );
+
+
+  const environmentVariables =
+    getVariableList(selectedEnvironment);
+
+
   /* -------------------------------------------------------
-     LOAD SUBSCRIPTION ONLY WHEN BILLING SECTION IS OPEN
+     SUBSCRIPTION
   ------------------------------------------------------- */
 
   const loadSubscription = async () => {
@@ -341,22 +762,499 @@ function Settings() {
 
     try {
       const response = await getSubscription();
+
       setSubscription(
         getSubscriptionData(response)
       );
     } catch (error) {
       setSubscription(null);
 
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Unable to load subscription information.";
-
-      setSubscriptionError(message);
+      setSubscriptionError(
+        getErrorMessage(
+          error,
+          "Unable to load subscription information."
+        )
+      );
     } finally {
       setSubscriptionLoading(false);
     }
   };
+
+
+  /* -------------------------------------------------------
+     PROJECT LOADING
+  ------------------------------------------------------- */
+
+  const loadProjects = useCallback(
+    async (preserveSelection = true) => {
+      try {
+        const response =
+          await workspaceService.getProjects();
+
+        const list = getList(response, [
+          "projects",
+          "items",
+        ]);
+
+        setProjects(list);
+
+        if (!list.length) {
+          setSelectedProjectId("");
+          return;
+        }
+
+        const currentStillExists =
+          preserveSelection &&
+          list.some(
+            (project) =>
+              String(getProjectId(project)) ===
+              String(selectedProjectId)
+          );
+
+        if (!currentStillExists) {
+          setSelectedProjectId(
+            String(getProjectId(list[0]))
+          );
+        }
+      } catch (error) {
+        setProjects([]);
+
+        setEnvironmentError(
+          getErrorMessage(
+            error,
+            "Unable to load projects."
+          )
+        );
+      }
+    },
+    [selectedProjectId]
+  );
+
+
+  /* -------------------------------------------------------
+     LOAD ENVIRONMENT LIST
+  ------------------------------------------------------- */
+
+  const loadEnvironmentList = useCallback(
+    async (projectId) => {
+      if (!projectId) {
+        setEnvironments([]);
+        setSelectedEnvironmentName("");
+        setSelectedEnvironment(null);
+        return;
+      }
+
+      setEnvironmentLoading(true);
+      setEnvironmentError("");
+      setEnvironmentMessage("");
+
+      try {
+        const response =
+          await environmentService.listEnvironments(
+            projectId,
+            false
+          );
+
+        const list = getList(response, [
+          "environments",
+          "items",
+        ]);
+
+        setEnvironments(list);
+
+        const first =
+          list.find(
+            (item) =>
+              getEnvironmentName(item).toLowerCase() ===
+              "development"
+          ) ||
+          list[0] ||
+          null;
+
+        const nextName =
+          getEnvironmentName(first);
+
+        setSelectedEnvironmentName(
+          nextName
+        );
+
+        if (nextName) {
+          await loadEnvironment(
+            projectId,
+            nextName
+          );
+        } else {
+          setSelectedEnvironment(null);
+        }
+      } catch (error) {
+        setEnvironments([]);
+        setSelectedEnvironment(null);
+        setSelectedEnvironmentName("");
+
+        setEnvironmentError(
+          getErrorMessage(
+            error,
+            "Unable to load environments."
+          )
+        );
+      } finally {
+        setEnvironmentLoading(false);
+      }
+    },
+    []
+  );
+
+
+  /* -------------------------------------------------------
+     LOAD SINGLE ENVIRONMENT
+  ------------------------------------------------------- */
+
+  const loadEnvironment = useCallback(
+    async (projectId, environmentName) => {
+      if (!projectId || !environmentName) {
+        setSelectedEnvironment(null);
+        return;
+      }
+
+      setEnvironmentLoading(true);
+      setEnvironmentError("");
+
+      try {
+        const response =
+          await environmentService.getEnvironment(
+            projectId,
+            environmentName
+          );
+
+        const environment =
+          getObject(response, [
+            "environment",
+          ]);
+
+        setSelectedEnvironment(
+          environment
+        );
+      } catch (error) {
+        setSelectedEnvironment(null);
+
+        setEnvironmentError(
+          getErrorMessage(
+            error,
+            "Unable to load environment."
+          )
+        );
+      } finally {
+        setEnvironmentLoading(false);
+      }
+    },
+    []
+  );
+
+
+  /* -------------------------------------------------------
+     LOAD GITHUB CONNECTIONS
+  ------------------------------------------------------- */
+
+  const loadGithubConnections = useCallback(
+    async (projectId) => {
+      if (!projectId) {
+        setGithubConnections([]);
+        setSelectedConnectionId("");
+        return;
+      }
+
+      setGithubLoading(true);
+      setGithubError("");
+      setGithubMessage("");
+
+      try {
+        const response =
+          await githubService.getConnections({
+            projectId,
+          });
+
+        const list = getList(response, [
+          "connections",
+          "items",
+        ]);
+
+        setGithubConnections(list);
+
+        const active =
+          list.find(
+            (connection) =>
+              String(
+                connection?.status || ""
+              ).toLowerCase() === "active"
+          ) ||
+          list[0] ||
+          null;
+
+        setSelectedConnectionId(
+          getConnectionId(active)
+        );
+      } catch (error) {
+        setGithubConnections([]);
+        setSelectedConnectionId("");
+
+        setGithubError(
+          getErrorMessage(
+            error,
+            "Unable to load GitHub connections."
+          )
+        );
+      } finally {
+        setGithubLoading(false);
+      }
+    },
+    []
+  );
+
+
+  /* -------------------------------------------------------
+     LOAD GITHUB REPOSITORIES
+  ------------------------------------------------------- */
+
+  const loadGithubRepositories = useCallback(
+    async (
+      projectId,
+      connectionId
+    ) => {
+      if (!projectId || !connectionId) {
+        setGithubRepositories([]);
+        setSelectedRepository(null);
+        setGithubBranches([]);
+        setSelectedBranch("");
+        return;
+      }
+
+      setGithubLoading(true);
+      setGithubError("");
+
+      try {
+        const response =
+          await githubService.getRepositories({
+            projectId,
+            connectionId,
+          });
+
+        const list = getList(response, [
+          "repositories",
+          "repos",
+          "items",
+        ]);
+
+        setGithubRepositories(list);
+
+        const first =
+          list[0] || null;
+
+        setSelectedRepository(first);
+      } catch (error) {
+        setGithubRepositories([]);
+        setSelectedRepository(null);
+        setGithubBranches([]);
+        setSelectedBranch("");
+
+        setGithubError(
+          getErrorMessage(
+            error,
+            "Unable to load GitHub repositories."
+          )
+        );
+      } finally {
+        setGithubLoading(false);
+      }
+    },
+    []
+  );
+
+
+  /* -------------------------------------------------------
+     LOAD GITHUB BRANCHES
+  ------------------------------------------------------- */
+
+  const loadGithubBranches = useCallback(
+    async (
+      projectId,
+      connectionId,
+      repository
+    ) => {
+      if (
+        !projectId ||
+        !connectionId ||
+        !repository
+      ) {
+        setGithubBranches([]);
+        setSelectedBranch("");
+        return;
+      }
+
+      const repoName =
+        getRepositoryName(repository);
+
+      const owner =
+        getRepositoryOwner(repository);
+
+      if (!repoName) {
+        setGithubBranches([]);
+        setSelectedBranch("");
+        return;
+      }
+
+      setGithubLoading(true);
+      setGithubError("");
+
+      try {
+        const response =
+          await githubService.getBranches({
+            projectId,
+            connectionId,
+            owner,
+            repo:
+              repository?.name ||
+              repoName.split("/").pop(),
+            repository: repoName,
+          });
+
+        const list = getList(response, [
+          "branches",
+          "items",
+        ]);
+
+        setGithubBranches(list);
+
+        const defaultBranch =
+          repository?.defaultBranch ||
+          repository?.default_branch ||
+          list.find(
+            (branch) =>
+              getBranchName(branch) === "main"
+          ) ||
+          list.find(
+            (branch) =>
+              getBranchName(branch) === "master"
+          ) ||
+          list[0];
+
+        setSelectedBranch(
+          getBranchName(defaultBranch)
+        );
+      } catch (error) {
+        setGithubBranches([]);
+        setSelectedBranch("");
+
+        setGithubError(
+          getErrorMessage(
+            error,
+            "Unable to load repository branches."
+          )
+        );
+      } finally {
+        setGithubLoading(false);
+      }
+    },
+    []
+  );
+
+
+  /* -------------------------------------------------------
+     LOAD INTEGRATION DATA
+  ------------------------------------------------------- */
+
+  useEffect(() => {
+    if (activeSection !== "integrations") {
+      return;
+    }
+
+    loadProjects();
+  }, [
+    activeSection,
+    loadProjects,
+  ]);
+
+
+  useEffect(() => {
+    if (
+      activeSection !== "integrations" ||
+      !selectedProjectId
+    ) {
+      return;
+    }
+
+    loadEnvironmentList(
+      selectedProjectId
+    );
+
+    loadGithubConnections(
+      selectedProjectId
+    );
+  }, [
+    activeSection,
+    selectedProjectId,
+    loadEnvironmentList,
+    loadGithubConnections,
+  ]);
+
+
+  useEffect(() => {
+    if (
+      !selectedProjectId ||
+      !selectedEnvironmentName
+    ) {
+      return;
+    }
+
+    loadEnvironment(
+      selectedProjectId,
+      selectedEnvironmentName
+    );
+  }, [
+    selectedProjectId,
+    selectedEnvironmentName,
+    loadEnvironment,
+  ]);
+
+
+  useEffect(() => {
+    if (
+      !selectedProjectId ||
+      !selectedConnectionId
+    ) {
+      return;
+    }
+
+    loadGithubRepositories(
+      selectedProjectId,
+      selectedConnectionId
+    );
+  }, [
+    selectedProjectId,
+    selectedConnectionId,
+    loadGithubRepositories,
+  ]);
+
+
+  useEffect(() => {
+    if (
+      !selectedProjectId ||
+      !selectedConnectionId ||
+      !selectedRepository
+    ) {
+      return;
+    }
+
+    loadGithubBranches(
+      selectedProjectId,
+      selectedConnectionId,
+      selectedRepository
+    );
+  }, [
+    selectedProjectId,
+    selectedConnectionId,
+    selectedRepository,
+    loadGithubBranches,
+  ]);
 
 
   /* -------------------------------------------------------
@@ -367,14 +1265,574 @@ function Settings() {
     setActiveSection(sectionId);
     setMobileSectionsOpen(false);
 
-    if (sectionId === "billing" && !subscription) {
+    if (
+      sectionId === "billing" &&
+      !subscription
+    ) {
       loadSubscription();
     }
   };
 
 
+  /* =======================================================
+     ENVIRONMENT ACTIONS
+  ======================================================= */
+
+  const handleEnvironmentProjectChange = (
+    event
+  ) => {
+    const projectId =
+      event.target.value;
+
+    setSelectedProjectId(
+      projectId
+    );
+
+    setSelectedEnvironmentName("");
+    setSelectedEnvironment(null);
+    setEnvironmentMessage("");
+    setEnvironmentError("");
+  };
+
+
+  const handleEnvironmentChange = (
+    event
+  ) => {
+    const name =
+      event.target.value;
+
+    setSelectedEnvironmentName(
+      name
+    );
+
+    setEnvironmentMessage("");
+    setEnvironmentError("");
+  };
+
+
+  const resetEnvironmentForm = () => {
+    setEnvironmentForm({
+      key: "",
+      value: "",
+      type: "string",
+      scope: "runtime",
+      required: false,
+      isSecret: true,
+      enabled: true,
+    });
+
+    setEditingEnvironmentKey("");
+    setVisibleNewValue(false);
+  };
+
+
+  const handleEnvironmentSubmit =
+    async (event) => {
+      event.preventDefault();
+
+      if (!selectedProjectId) {
+        setEnvironmentError(
+          "Select a project first."
+        );
+        return;
+      }
+
+      if (!selectedEnvironmentName) {
+        setEnvironmentError(
+          "Select an environment first."
+        );
+        return;
+      }
+
+      const key =
+        environmentForm.key.trim();
+
+      const value =
+        environmentForm.value;
+
+      if (!key) {
+        setEnvironmentError(
+          "Environment key is required."
+        );
+        return;
+      }
+
+      if (!value) {
+        setEnvironmentError(
+          "Environment value is required."
+        );
+        return;
+      }
+
+      setEnvironmentSaving(true);
+      setEnvironmentError("");
+      setEnvironmentMessage("");
+
+      try {
+        if (editingEnvironmentKey) {
+          await environmentService.updateVariable(
+            selectedProjectId,
+            selectedEnvironmentName,
+            editingEnvironmentKey,
+            {
+              key,
+              value,
+              isSecret:
+                environmentForm.isSecret,
+              type:
+                environmentForm.type,
+              scope:
+                environmentForm.scope,
+              required:
+                environmentForm.required,
+              enabled:
+                environmentForm.enabled,
+            }
+          );
+
+          setEnvironmentMessage(
+            `${key} was updated successfully.`
+          );
+        } else {
+          await environmentService.addVariable(
+            selectedProjectId,
+            selectedEnvironmentName,
+            {
+              key,
+              value,
+              isSecret:
+                environmentForm.isSecret,
+              type:
+                environmentForm.type,
+              scope:
+                environmentForm.scope,
+              required:
+                environmentForm.required,
+              enabled:
+                environmentForm.enabled,
+            }
+          );
+
+          setEnvironmentMessage(
+            `${key} was added successfully.`
+          );
+        }
+
+        resetEnvironmentForm();
+
+        await loadEnvironment(
+          selectedProjectId,
+          selectedEnvironmentName
+        );
+
+        await loadEnvironmentList(
+          selectedProjectId
+        );
+      } catch (error) {
+        setEnvironmentError(
+          getErrorMessage(
+            error,
+            "Environment variable could not be saved."
+          )
+        );
+      } finally {
+        setEnvironmentSaving(false);
+      }
+    };
+
+
+  const handleEditEnvironmentVariable =
+    (variable) => {
+      const key =
+        variable?.key || "";
+
+      if (!key) {
+        return;
+      }
+
+      setEditingEnvironmentKey(
+        key
+      );
+
+      setEnvironmentForm({
+        key,
+        value: "",
+        type:
+          variable?.type ||
+          "string",
+        scope:
+          variable?.scope ||
+          "runtime",
+        required:
+          Boolean(variable?.required),
+        isSecret:
+          variable?.isSecret !== false,
+        enabled:
+          variable?.enabled !== false,
+      });
+
+      setVisibleNewValue(false);
+
+      setEnvironmentMessage(
+        `Enter a new value to replace ${key}.`
+      );
+    };
+
+
+  const handleDeleteEnvironmentVariable =
+    async (key) => {
+      if (!selectedProjectId || !selectedEnvironmentName || !key) {
+        return;
+      }
+
+      setEnvironmentDeletingKey(key);
+      setEnvironmentError("");
+      setEnvironmentMessage("");
+
+      try {
+        await environmentService.deleteVariable(
+          selectedProjectId,
+          selectedEnvironmentName,
+          key
+        );
+
+        setEnvironmentMessage(
+          `${key} was deleted successfully.`
+        );
+
+        if (
+          editingEnvironmentKey === key
+        ) {
+          resetEnvironmentForm();
+        }
+
+        await loadEnvironment(
+          selectedProjectId,
+          selectedEnvironmentName
+        );
+
+        await loadEnvironmentList(
+          selectedProjectId
+        );
+      } catch (error) {
+        setEnvironmentError(
+          getErrorMessage(
+            error,
+            "Environment variable could not be deleted."
+          )
+        );
+      } finally {
+        setEnvironmentDeletingKey("");
+      }
+    };
+
+
+  /* =======================================================
+     GITHUB ACTIONS
+  ======================================================= */
+
+  const handleConnectGithub = () => {
+    window.location.assign(
+      "/api/auth/github"
+    );
+  };
+
+
+  const handleGithubRefresh =
+    async () => {
+      if (!selectedProjectId) {
+        return;
+      }
+
+      setGithubError("");
+      setGithubMessage("");
+
+      await loadGithubConnections(
+        selectedProjectId
+      );
+    };
+
+
+  const handleGithubRepositoryChange =
+    (event) => {
+      const repositoryName =
+        event.target.value;
+
+      const repository =
+        githubRepositories.find(
+          (item) =>
+            getRepositoryName(item) ===
+            repositoryName
+        ) || null;
+
+      setSelectedRepository(
+        repository
+      );
+
+      setGithubReadiness(null);
+      setGithubPreparedContract(null);
+      setGithubMessage("");
+      setGithubError("");
+    };
+
+
+  const handleGithubBranchChange =
+    (event) => {
+      setSelectedBranch(
+        event.target.value
+      );
+
+      setGithubReadiness(null);
+      setGithubPreparedContract(null);
+      setGithubMessage("");
+      setGithubError("");
+    };
+
+
+  const buildGithubDeploymentPayload =
+    () => {
+      const repositoryName =
+        getRepositoryName(
+          selectedRepository
+        );
+
+      const owner =
+        getRepositoryOwner(
+          selectedRepository
+        );
+
+      const repository =
+        selectedRepository?.name ||
+        repositoryName
+          .split("/")
+          .pop();
+
+      return {
+        projectId:
+          selectedProjectId,
+
+        projectName:
+          getProjectName(
+            selectedProject
+          ),
+
+        connectionId:
+          selectedConnectionId,
+
+        owner,
+
+        repository,
+
+        repo:
+          repository,
+
+        repositoryUrl:
+          selectedRepository?.html_url ||
+          selectedRepository?.htmlUrl ||
+          selectedRepository?.url ||
+          "",
+
+        branch:
+          selectedBranch,
+
+        environmentName:
+          selectedEnvironmentName ||
+          "development",
+      };
+    };
+
+
+  const handleGithubReadiness =
+    async () => {
+      if (
+        !selectedProjectId ||
+        !selectedConnectionId ||
+        !selectedRepository ||
+        !selectedBranch
+      ) {
+        setGithubError(
+          "Select project, GitHub connection, repository and branch first."
+        );
+        return;
+      }
+
+      setGithubActionLoading(true);
+      setGithubError("");
+      setGithubMessage("");
+
+      try {
+        const response =
+          await githubService.checkDeploymentReadiness(
+            buildGithubDeploymentPayload()
+          );
+
+        const readiness =
+          getObject(response, [
+            "readiness",
+            "deploymentReadiness",
+          ]);
+
+        setGithubReadiness(
+          readiness
+        );
+
+        setGithubMessage(
+          "Deployment readiness check completed."
+        );
+      } catch (error) {
+        setGithubReadiness(null);
+
+        setGithubError(
+          getErrorMessage(
+            error,
+            "Deployment readiness check failed."
+          )
+        );
+      } finally {
+        setGithubActionLoading(false);
+      }
+    };
+
+
+  const handlePrepareGithubDeployment =
+    async () => {
+      if (
+        !selectedProjectId ||
+        !selectedConnectionId ||
+        !selectedRepository ||
+        !selectedBranch
+      ) {
+        setGithubError(
+          "Complete the GitHub deployment selection first."
+        );
+        return;
+      }
+
+      setGithubActionLoading(true);
+      setGithubError("");
+      setGithubMessage("");
+
+      try {
+        const response =
+          await githubService.prepareDeployment(
+            buildGithubDeploymentPayload()
+          );
+
+        const prepared =
+          getObject(response, [
+            "deployment",
+            "contract",
+            "deploymentContract",
+            "preparedDeployment",
+          ]);
+
+        setGithubPreparedContract(
+          prepared
+        );
+
+        setGithubMessage(
+          "Deployment contract prepared successfully."
+        );
+      } catch (error) {
+        setGithubPreparedContract(null);
+
+        setGithubError(
+          getErrorMessage(
+            error,
+            "Unable to prepare deployment."
+          )
+        );
+      } finally {
+        setGithubActionLoading(false);
+      }
+    };
+
+
+  const handleGithubDeploy =
+    async () => {
+      if (
+        !selectedProjectId ||
+        !selectedRepository ||
+        !selectedBranch
+      ) {
+        setGithubError(
+          "Select a project, repository and branch first."
+        );
+        return;
+      }
+
+      setGithubActionLoading(true);
+      setGithubError("");
+      setGithubMessage("");
+
+      try {
+        let prepared =
+          githubPreparedContract;
+
+        if (!prepared) {
+          const prepareResponse =
+            await githubService.prepareDeployment(
+              buildGithubDeploymentPayload()
+            );
+
+          prepared =
+            getObject(
+              prepareResponse,
+              [
+                "deployment",
+                "contract",
+                "deploymentContract",
+                "preparedDeployment",
+              ]
+            );
+        }
+
+        const payload = {
+          ...(prepared || {}),
+          ...buildGithubDeploymentPayload(),
+        };
+
+        const deploymentResponse =
+          await deploymentService.createDeployment(
+            payload
+          );
+
+        const deployment =
+          getObject(
+            deploymentResponse,
+            [
+              "deployment",
+            ]
+          );
+
+        setGithubPreparedContract(
+          prepared
+        );
+
+        setGithubMessage(
+          deployment?.deploymentId ||
+          deployment?.id
+            ? `Deployment started: ${
+                deployment.deploymentId ||
+                deployment.id
+              }`
+            : "Deployment request accepted by the backend."
+        );
+      } catch (error) {
+        setGithubError(
+          getErrorMessage(
+            error,
+            "Deployment could not be started."
+          )
+        );
+      } finally {
+        setGithubActionLoading(false);
+      }
+    };
+
+
   /* -------------------------------------------------------
-     SUBSCRIPTION PRESENTATION
+     BILLING DATA
   ------------------------------------------------------- */
 
   const subscriptionName =
@@ -403,7 +1861,9 @@ function Settings() {
         <div className={styles.page}>
           <div className={styles.loadingState}>
             <div className={styles.loadingSpinner} />
-            <span>Loading settings...</span>
+            <span>
+              Loading settings...
+            </span>
           </div>
         </div>
       </DashboardLayout>
@@ -417,15 +1877,9 @@ function Settings() {
 
   return (
     <DashboardLayout>
-
       <div className={styles.page}>
 
-        {/* =================================================
-            PAGE HEADER
-        ================================================== */}
-
         <header className={styles.header}>
-
           <div className={styles.headerCopy}>
 
             <div className={styles.breadcrumb}>
@@ -437,20 +1891,29 @@ function Settings() {
               <span>Settings</span>
             </div>
 
-            <h1 className={styles.title}>
-              Settings
-            </h1>
+            <div className={styles.titleRow}>
+              <div>
+                <h1 className={styles.title}>
+                  Settings
+                </h1>
 
-            <p className={styles.subtitle}>
-              Manage your ZyrionOS account,
-              security, AI experience and
-              workspace configuration.
-            </p>
+                <p className={styles.subtitle}>
+                  Manage your ZyrionOS account,
+                  integrations, environments and
+                  deployment controls from one
+                  authenticated control center.
+                </p>
+              </div>
+
+              <div className={styles.liveBadge}>
+                <span />
+                Backend connected
+              </div>
+            </div>
 
           </div>
 
           <div className={styles.headerActions}>
-
             <button
               type="button"
               className={styles.secondaryButton}
@@ -464,9 +1927,7 @@ function Settings() {
               />
               Billing
             </button>
-
           </div>
-
         </header>
 
 
@@ -488,9 +1949,10 @@ function Settings() {
               mobileSectionsOpen
             }
           >
-
             <span
-              className={styles.mobileSectionIcon}
+              className={
+                styles.mobileSectionIcon
+              }
             >
               <Icon
                 name={
@@ -498,14 +1960,17 @@ function Settings() {
                     (item) =>
                       item.id ===
                       activeSection
-                  )?.icon || "profile"
+                  )?.icon ||
+                  "profile"
                 }
                 size={17}
               />
             </span>
 
             <span
-              className={styles.mobileSectionContent}
+              className={
+                styles.mobileSectionContent
+              }
             >
               <strong>
                 {
@@ -526,9 +1991,7 @@ function Settings() {
               name="chevron"
               size={17}
             />
-
           </button>
-
 
           {mobileSectionsOpen && (
             <div
@@ -582,29 +2045,21 @@ function Settings() {
 
         <div className={styles.settingsLayout}>
 
-          {/* =================================================
-              LEFT SETTINGS NAVIGATION
-          ================================================== */}
-
           <aside
             className={
               styles.settingsNavigation
             }
             aria-label="Settings navigation"
           >
-
             <div
               className={
                 styles.navigationHeader
               }
             >
-              <span>
-                SETTINGS
-              </span>
+              SETTINGS
             </div>
 
             <nav>
-
               {sections.map((section) => (
                 <button
                   type="button"
@@ -621,7 +2076,6 @@ function Settings() {
                     )
                   }
                 >
-
                   <span
                     className={
                       styles.settingsNavIcon
@@ -655,18 +2109,11 @@ function Settings() {
                       }
                     />
                   )}
-
                 </button>
               ))}
-
             </nav>
-
           </aside>
 
-
-          {/* =================================================
-              SETTINGS CONTENT
-          ================================================== */}
 
           <main
             className={styles.settingsContent}
@@ -680,11 +2127,9 @@ function Settings() {
               <section
                 className={styles.section}
               >
-
                 <div
                   className={styles.sectionHeader}
                 >
-
                   <div>
                     <span
                       className={
@@ -699,27 +2144,22 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Your account identity
-                      and connected authentication
-                      information.
+                      Your authenticated account
+                      identity and provider information.
                     </p>
                   </div>
-
                 </div>
-
 
                 <div
                   className={
                     styles.profileHero
                   }
                 >
-
                   <div
                     className={
                       styles.profileAvatar
                     }
                   >
-
                     {profile.avatar ? (
                       <img
                         src={profile.avatar}
@@ -728,7 +2168,6 @@ function Settings() {
                     ) : (
                       profile.initials
                     )}
-
                   </div>
 
                   <div
@@ -756,14 +2195,11 @@ function Settings() {
                       </span>
                     )}
                   </div>
-
                 </div>
-
 
                 <div
                   className={styles.cardGrid}
                 >
-
                   <div
                     className={
                       styles.settingCard
@@ -782,12 +2218,10 @@ function Settings() {
                     </strong>
 
                     <p>
-                      Your name currently
-                      associated with the
-                      authenticated account.
+                      Authenticated account
+                      identity.
                     </p>
                   </div>
-
 
                   <div
                     className={
@@ -807,13 +2241,11 @@ function Settings() {
                     </strong>
 
                     <p>
-                      Authentication email
-                      returned by your account.
+                      Email returned by
+                      authentication.
                     </p>
                   </div>
-
                 </div>
-
 
                 <div
                   className={
@@ -827,18 +2259,16 @@ function Settings() {
 
                   <div>
                     <strong>
-                      Account identity is
-                      managed by authentication.
+                      Account identity is managed
+                      by authentication.
                     </strong>
 
                     <p>
-                      Profile information shown
-                      here comes from your
-                      authenticated account.
+                      This page does not invent or
+                      locally override account identity.
                     </p>
                   </div>
                 </div>
-
               </section>
             )}
 
@@ -851,7 +2281,6 @@ function Settings() {
               <section
                 className={styles.section}
               >
-
                 <div
                   className={styles.sectionHeader}
                 >
@@ -869,19 +2298,17 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Manage authentication and
-                      account protection controls.
+                      Authentication state is
+                      controlled by the backend.
                     </p>
                   </div>
                 </div>
-
 
                 <div
                   className={
                     styles.securityCard
                   }
                 >
-
                   <div
                     className={
                       styles.securityIcon
@@ -899,58 +2326,25 @@ function Settings() {
                     }
                   >
                     <h3>
-                      Authentication
+                      Authenticated session
                     </h3>
 
                     <p>
-                      Your account authentication
-                      is handled through the
-                      configured ZyrionOS
-                      authentication flow.
+                      ZyrionOS uses the connected
+                      authentication system for account
+                      protection.
                     </p>
                   </div>
 
                   <div
                     className={
-                      styles.statusUnavailable
+                      styles.statusSuccess
                     }
                   >
                     <span />
-                    Managed by account
+                    Authenticated
                   </div>
-
                 </div>
-
-
-                <div
-                  className={
-                    styles.actionCard
-                  }
-                >
-
-                  <div>
-                    <h3>
-                      Additional security
-                    </h3>
-
-                    <p>
-                      Advanced security controls
-                      will appear here when their
-                      corresponding backend
-                      capabilities are available.
-                    </p>
-                  </div>
-
-                  <span
-                    className={
-                      styles.neutralBadge
-                    }
-                  >
-                    Backend controlled
-                  </span>
-
-                </div>
-
               </section>
             )}
 
@@ -963,7 +2357,6 @@ function Settings() {
               <section
                 className={styles.section}
               >
-
                 <div
                   className={styles.sectionHeader}
                 >
@@ -981,19 +2374,18 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Review account sessions and
-                      connected devices.
+                      Session-management controls
+                      are shown only when a real backend
+                      session contract is available.
                     </p>
                   </div>
                 </div>
-
 
                 <div
                   className={
                     styles.emptyState
                   }
                 >
-
                   <div
                     className={
                       styles.emptyStateIcon
@@ -1006,14 +2398,13 @@ function Settings() {
                   </div>
 
                   <h3>
-                    Session management
+                    Session controls are not
+                    connected yet
                   </h3>
 
                   <p>
-                    Detailed active-session data
-                    will be displayed here once
-                    the backend session-management
-                    contract is connected.
+                    No fake sessions or device
+                    records are displayed.
                   </p>
 
                   <span
@@ -1021,11 +2412,9 @@ function Settings() {
                       styles.neutralBadge
                     }
                   >
-                    No fabricated session data
+                    Protected
                   </span>
-
                 </div>
-
               </section>
             )}
 
@@ -1038,7 +2427,6 @@ function Settings() {
               <section
                 className={styles.section}
               >
-
                 <div
                   className={styles.sectionHeader}
                 >
@@ -1056,60 +2444,59 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Control how ZyrionOS
-                      communicates with you.
+                      Notification controls remain
+                      read-only until the preferences
+                      API exists.
                     </p>
                   </div>
                 </div>
 
-
                 <div
                   className={
-                    styles.preferencePlaceholder
+                    styles.emptyState
                   }
                 >
-
-                  <Icon
-                    name="notifications"
-                    size={22}
-                  />
-
-                  <div>
-                    <h3>
-                      Notification preferences
-                    </h3>
-
-                    <p>
-                      Notification controls will
-                      be connected to the real
-                      preferences API before any
-                      setting is made interactive.
-                    </p>
+                  <div
+                    className={
+                      styles.emptyStateIcon
+                    }
+                  >
+                    <Icon
+                      name="notifications"
+                      size={24}
+                    />
                   </div>
+
+                  <h3>
+                    Notification API not connected
+                  </h3>
+
+                  <p>
+                    No local toggles are pretending
+                    to save data to a backend that does
+                    not exist.
+                  </p>
 
                   <span
                     className={
                       styles.neutralBadge
                     }
                   >
-                    Awaiting preferences API
+                    Backend required
                   </span>
-
                 </div>
-
               </section>
             )}
 
 
             {/* =================================================
-                AI PREFERENCES
+                AI
             ================================================== */}
 
             {activeSection === "ai" && (
               <section
                 className={styles.section}
               >
-
                 <div
                   className={styles.sectionHeader}
                 >
@@ -1127,19 +2514,17 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Configure how ZyrionOS AI
-                      works with your projects.
+                      AI execution remains controlled
+                      by the connected backend services.
                     </p>
                   </div>
                 </div>
-
 
                 <div
                   className={
                     styles.aiHero
                   }
                 >
-
                   <div
                     className={
                       styles.aiIcon
@@ -1157,21 +2542,15 @@ function Settings() {
                     </h3>
 
                     <p>
-                      AI behavior controls will
-                      be connected to the real
-                      AI preference contract.
+                      AI requests continue through
+                      the existing centralized AI service.
                     </p>
                   </div>
-
                 </div>
 
-
                 <div
-                  className={
-                    styles.cardGrid
-                  }
+                  className={styles.cardGrid}
                 >
-
                   <div
                     className={
                       styles.settingCard
@@ -1182,7 +2561,7 @@ function Settings() {
                         styles.cardLabel
                       }
                     >
-                      AI MODEL
+                      MODEL
                     </span>
 
                     <strong>
@@ -1190,9 +2569,8 @@ function Settings() {
                     </strong>
 
                     <p>
-                      The active model must come
-                      from the connected AI service,
-                      not a hard-coded frontend value.
+                      No hard-coded model is presented
+                      as the active production provider.
                     </p>
                   </div>
 
@@ -1206,7 +2584,7 @@ function Settings() {
                         styles.cardLabel
                       }
                     >
-                      AI EXECUTION
+                      EXECUTION
                     </span>
 
                     <strong>
@@ -1214,14 +2592,11 @@ function Settings() {
                     </strong>
 
                     <p>
-                      AI execution remains tied to
-                      the selected project and its
-                      real backend capabilities.
+                      AI operations remain tied to the
+                      actual project workflow.
                     </p>
                   </div>
-
                 </div>
-
               </section>
             )}
 
@@ -1234,7 +2609,6 @@ function Settings() {
               <section
                 className={styles.section}
               >
-
                 <div
                   className={styles.sectionHeader}
                 >
@@ -1248,37 +2622,25 @@ function Settings() {
                     </span>
 
                     <h2>
-                      Workspace Preferences
+                      Workspace
                     </h2>
 
                     <p>
-                      Manage your project-building
+                      Open the main project-building
                       environment.
                     </p>
                   </div>
                 </div>
 
-
-                <div
+                <button
+                  type="button"
                   className={
                     styles.navigationActionCard
                   }
-                  role="button"
-                  tabIndex={0}
                   onClick={() =>
                     navigate("/workspace")
                   }
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === "Enter" ||
-                      event.key === " "
-                    ) {
-                      event.preventDefault();
-                      navigate("/workspace");
-                    }
-                  }}
                 >
-
                   <div
                     className={
                       styles.navigationActionIcon
@@ -1300,9 +2662,8 @@ function Settings() {
                     </h3>
 
                     <p>
-                      Manage projects, AI builds,
-                      code, preview and deployment
-                      from the main workspace.
+                      Projects, AI builds, code,
+                      preview and deployment.
                     </p>
                   </div>
 
@@ -1310,9 +2671,7 @@ function Settings() {
                     name="arrow"
                     size={18}
                   />
-
-                </div>
-
+                </button>
               </section>
             )}
 
@@ -1325,7 +2684,6 @@ function Settings() {
               <section
                 className={styles.section}
               >
-
                 <div
                   className={styles.sectionHeader}
                 >
@@ -1343,12 +2701,11 @@ function Settings() {
                     </h2>
 
                     <p>
-                      View your real subscription
-                      and manage billing.
+                      View real subscription information
+                      from the billing service.
                     </p>
                   </div>
                 </div>
-
 
                 {subscriptionLoading && (
                   <div
@@ -1364,7 +2721,6 @@ function Settings() {
                     Loading subscription...
                   </div>
                 )}
-
 
                 {subscriptionError && (
                   <div
@@ -1392,7 +2748,6 @@ function Settings() {
                   </div>
                 )}
 
-
                 {!subscriptionLoading &&
                   !subscriptionError &&
                   subscription && (
@@ -1401,7 +2756,6 @@ function Settings() {
                         styles.subscriptionCard
                       }
                     >
-
                       <div
                         className={
                           styles.subscriptionIcon
@@ -1447,7 +2801,6 @@ function Settings() {
                             {subscriptionStatus}
                           </span>
                         )}
-
                       </div>
 
                       <button
@@ -1465,10 +2818,8 @@ function Settings() {
                           size={16}
                         />
                       </button>
-
                     </div>
                   )}
-
 
                 {!subscriptionLoading &&
                   !subscriptionError &&
@@ -1478,7 +2829,6 @@ function Settings() {
                         styles.emptyState
                       }
                     >
-
                       <div
                         className={
                           styles.emptyStateIcon
@@ -1491,13 +2841,12 @@ function Settings() {
                       </div>
 
                       <h3>
-                        Subscription information
+                        No subscription record
                       </h3>
 
                       <p>
-                        No subscription record was
-                        returned by the connected
-                        billing service.
+                        The billing service did not
+                        return a subscription record.
                       </p>
 
                       <button
@@ -1515,10 +2864,8 @@ function Settings() {
                           size={15}
                         />
                       </button>
-
                     </div>
                   )}
-
               </section>
             )}
 
@@ -1529,11 +2876,13 @@ function Settings() {
 
             {activeSection === "integrations" && (
               <section
-                className={styles.section}
+                className={`${styles.section} ${styles.integrationSection}`}
               >
 
                 <div
-                  className={styles.sectionHeader}
+                  className={
+                    styles.sectionHeader
+                  }
                 >
                   <div>
                     <span
@@ -1549,45 +2898,1593 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Manage external services
-                      connected to ZyrionOS.
+                      Real environment variables,
+                      GitHub repositories and deployment
+                      controls.
                     </p>
+                  </div>
+
+                  <div
+                    className={
+                      styles.integrationStatus
+                    }
+                  >
+                    <span />
+                    Live backend controls
                   </div>
                 </div>
 
+
+                {/* =============================================
+                    INTEGRATION TABS
+                ============================================== */}
 
                 <div
                   className={
-                    styles.preferencePlaceholder
+                    styles.integrationTabs
                   }
                 >
-
-                  <Icon
-                    name="integrations"
-                    size={22}
-                  />
-
-                  <div>
-                    <h3>
-                      Connected integrations
-                    </h3>
-
-                    <p>
-                      Integration records will
-                      appear here from the real
-                      backend integration contract.
-                    </p>
-                  </div>
-
-                  <span
+                  <button
+                    type="button"
                     className={
-                      styles.neutralBadge
+                      integrationTab ===
+                      "environment"
+                        ? styles.integrationTabActive
+                        : styles.integrationTab
+                    }
+                    onClick={() =>
+                      setIntegrationTab(
+                        "environment"
+                      )
                     }
                   >
-                    Backend controlled
-                  </span>
+                    <Icon
+                      name="environment"
+                      size={17}
+                    />
 
+                    Environment
+
+                    <span>
+                      Variables
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={
+                      integrationTab ===
+                      "github"
+                        ? styles.integrationTabActive
+                        : styles.integrationTab
+                    }
+                    onClick={() =>
+                      setIntegrationTab(
+                        "github"
+                      )
+                    }
+                  >
+                    <Icon
+                      name="github"
+                      size={17}
+                    />
+
+                    GitHub
+
+                    <span>
+                      Repository & Deploy
+                    </span>
+                  </button>
                 </div>
+
+
+                {/* =============================================
+                    ENVIRONMENT PANEL
+                ============================================== */}
+
+                {integrationTab ===
+                  "environment" && (
+                  <div
+                    className={
+                      styles.integrationPanel
+                    }
+                  >
+
+                    <div
+                      className={
+                        styles.integrationPanelHeader
+                      }
+                    >
+                      <div>
+                        <div
+                          className={
+                            styles.panelTitleRow
+                          }
+                        >
+                          <div
+                            className={
+                              styles.panelIcon
+                            }
+                          >
+                            <Icon
+                              name="environment"
+                              size={20}
+                            />
+                          </div>
+
+                          <div>
+                            <h3>
+                              Environment Variables
+                            </h3>
+
+                            <p>
+                              Add and manage real
+                              project configuration
+                              values.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className={
+                          styles.iconButton
+                        }
+                        onClick={() =>
+                          selectedProjectId &&
+                          loadEnvironmentList(
+                            selectedProjectId
+                          )
+                        }
+                        disabled={
+                          environmentLoading
+                        }
+                        title="Refresh environments"
+                      >
+                        <Icon
+                          name="refresh"
+                          size={16}
+                        />
+                      </button>
+                    </div>
+
+
+                    {/* PROJECT + ENVIRONMENT */}
+
+                    <div
+                      className={
+                        styles.formGridTwo
+                      }
+                    >
+                      <label
+                        className={
+                          styles.field
+                        }
+                      >
+                        <span>
+                          PROJECT
+                        </span>
+
+                        <select
+                          value={
+                            selectedProjectId
+                          }
+                          onChange={
+                            handleEnvironmentProjectChange
+                          }
+                          disabled={
+                            environmentLoading
+                          }
+                        >
+                          <option value="">
+                            Select project
+                          </option>
+
+                          {projects.map(
+                            (project) => (
+                              <option
+                                key={getProjectId(
+                                  project
+                                )}
+                                value={getProjectId(
+                                  project
+                                )}
+                              >
+                                {getProjectName(
+                                  project
+                                )}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </label>
+
+                      <label
+                        className={
+                          styles.field
+                        }
+                      >
+                        <span>
+                          ENVIRONMENT
+                        </span>
+
+                        <select
+                          value={
+                            selectedEnvironmentName
+                          }
+                          onChange={
+                            handleEnvironmentChange
+                          }
+                          disabled={
+                            !selectedProjectId ||
+                            environmentLoading
+                          }
+                        >
+                          <option value="">
+                            Select environment
+                          </option>
+
+                          {environments.map(
+                            (environment) => {
+                              const name =
+                                getEnvironmentName(
+                                  environment
+                                );
+
+                              return (
+                                <option
+                                  key={name}
+                                  value={name}
+                                >
+                                  {name}
+                                </option>
+                              );
+                            }
+                          )}
+                        </select>
+                      </label>
+                    </div>
+
+
+                    {/* MESSAGE */}
+
+                    {environmentError && (
+                      <div
+                        className={
+                          styles.inlineError
+                        }
+                      >
+                        <Icon
+                          name="danger"
+                          size={16}
+                        />
+
+                        <span>
+                          {environmentError}
+                        </span>
+                      </div>
+                    )}
+
+                    {environmentMessage && (
+                      <div
+                        className={
+                          styles.inlineSuccess
+                        }
+                      >
+                        <Icon
+                          name="check"
+                          size={16}
+                        />
+
+                        <span>
+                          {environmentMessage}
+                        </span>
+                      </div>
+                    )}
+
+
+                    {/* VARIABLE FORM */}
+
+                    <form
+                      className={
+                        styles.environmentForm
+                      }
+                      onSubmit={
+                        handleEnvironmentSubmit
+                      }
+                    >
+                      <div
+                        className={
+                          styles.formSectionTitle
+                        }
+                      >
+                        <div>
+                          <span>
+                            {editingEnvironmentKey
+                              ? "ROTATE / UPDATE SECRET"
+                              : "ADD VARIABLE"}
+                          </span>
+
+                          <small>
+                            The entered value is sent
+                            directly to the authenticated
+                            backend.
+                          </small>
+                        </div>
+
+                        {editingEnvironmentKey && (
+                          <button
+                            type="button"
+                            className={
+                              styles.textButton
+                            }
+                            onClick={
+                              resetEnvironmentForm
+                            }
+                          >
+                            Cancel edit
+                          </button>
+                        )}
+                      </div>
+
+                      <div
+                        className={
+                          styles.formGridTwo
+                        }
+                      >
+                        <label
+                          className={
+                            styles.field
+                          }
+                        >
+                          <span>
+                            KEY
+                          </span>
+
+                          <div
+                            className={
+                              styles.inputWithIcon
+                            }
+                          >
+                            <Icon
+                              name="key"
+                              size={15}
+                            />
+
+                            <input
+                              type="text"
+                              value={
+                                environmentForm.key
+                              }
+                              onChange={(event) =>
+                                setEnvironmentForm(
+                                  (current) => ({
+                                    ...current,
+                                    key:
+                                      event.target
+                                        .value,
+                                  })
+                                )
+                              }
+                              placeholder="OPENAI_API_KEY"
+                              autoComplete="off"
+                            />
+                          </div>
+                        </label>
+
+                        <label
+                          className={
+                            styles.field
+                          }
+                        >
+                          <span>
+                            VALUE
+                          </span>
+
+                          <div
+                            className={
+                              styles.inputWithAction
+                            }
+                          >
+                            <input
+                              type={
+                                visibleNewValue
+                                  ? "text"
+                                  : "password"
+                              }
+                              value={
+                                environmentForm.value
+                              }
+                              onChange={(event) =>
+                                setEnvironmentForm(
+                                  (current) => ({
+                                    ...current,
+                                    value:
+                                      event.target
+                                        .value,
+                                  })
+                                )
+                              }
+                              placeholder={
+                                editingEnvironmentKey
+                                  ? "Enter replacement value"
+                                  : "Enter API key or value"
+                              }
+                              autoComplete="new-password"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setVisibleNewValue(
+                                  (current) =>
+                                    !current
+                                )
+                              }
+                              className={
+                                styles.inputAction
+                              }
+                              title={
+                                visibleNewValue
+                                  ? "Hide value"
+                                  : "Show typed value"
+                              }
+                            >
+                              <Icon
+                                name={
+                                  visibleNewValue
+                                    ? "eyeOff"
+                                    : "eye"
+                                }
+                                size={16}
+                              />
+                            </button>
+                          </div>
+                        </label>
+                      </div>
+
+
+                      <div
+                        className={
+                          styles.formGridThree
+                        }
+                      >
+                        <label
+                          className={
+                            styles.field
+                          }
+                        >
+                          <span>
+                            TYPE
+                          </span>
+
+                          <select
+                            value={
+                              environmentForm.type
+                            }
+                            onChange={(event) =>
+                              setEnvironmentForm(
+                                (current) => ({
+                                  ...current,
+                                  type:
+                                    event.target
+                                      .value,
+                                })
+                              )
+                            }
+                          >
+                            <option value="string">
+                              String
+                            </option>
+                            <option value="number">
+                              Number
+                            </option>
+                            <option value="boolean">
+                              Boolean
+                            </option>
+                            <option value="json">
+                              JSON
+                            </option>
+                          </select>
+                        </label>
+
+                        <label
+                          className={
+                            styles.field
+                          }
+                        >
+                          <span>
+                            SCOPE
+                          </span>
+
+                          <select
+                            value={
+                              environmentForm.scope
+                            }
+                            onChange={(event) =>
+                              setEnvironmentForm(
+                                (current) => ({
+                                  ...current,
+                                  scope:
+                                    event.target
+                                      .value,
+                                })
+                              )
+                            }
+                          >
+                            <option value="runtime">
+                              Runtime
+                            </option>
+                            <option value="build">
+                              Build
+                            </option>
+                            <option value="both">
+                              Build + Runtime
+                            </option>
+                          </select>
+                        </label>
+
+                        <label
+                          className={
+                            styles.checkboxField
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={
+                              environmentForm.required
+                            }
+                            onChange={(event) =>
+                              setEnvironmentForm(
+                                (current) => ({
+                                  ...current,
+                                  required:
+                                    event.target
+                                      .checked,
+                                })
+                              )
+                            }
+                          />
+
+                          <span>
+                            Required variable
+                          </span>
+                        </label>
+                      </div>
+
+
+                      <div
+                        className={
+                          styles.environmentFormFooter
+                        }
+                      >
+                        <div
+                          className={
+                            styles.secretNotice
+                          }
+                        >
+                          <Icon
+                            name="security"
+                            size={15}
+                          />
+
+                          <span>
+                            Secret values are never
+                            read back and displayed
+                            in plaintext.
+                          </span>
+                        </div>
+
+                        <button
+                          type="submit"
+                          className={
+                            styles.primaryButton
+                          }
+                          disabled={
+                            environmentSaving ||
+                            !selectedProjectId ||
+                            !selectedEnvironmentName
+                          }
+                        >
+                          {environmentSaving ? (
+                            <>
+                              <span
+                                className={
+                                  styles.buttonSpinner
+                                }
+                              />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Icon
+                                name={
+                                  editingEnvironmentKey
+                                    ? "check"
+                                    : "plus"
+                                }
+                                size={15}
+                              />
+
+                              {editingEnvironmentKey
+                                ? "Update Variable"
+                                : "Add Variable"}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+
+
+                    {/* VARIABLE LIST */}
+
+                    <div
+                      className={
+                        styles.variableSection
+                      }
+                    >
+                      <div
+                        className={
+                          styles.formSectionTitle
+                        }
+                      >
+                        <div>
+                          <span>
+                            STORED VARIABLES
+                          </span>
+
+                          <small>
+                            Metadata is visible;
+                            secret values remain hidden.
+                          </small>
+                        </div>
+
+                        <span
+                          className={
+                            styles.countBadge
+                          }
+                        >
+                          {environmentVariables.length}
+                        </span>
+                      </div>
+
+                      {environmentLoading ? (
+                        <div
+                          className={
+                            styles.smallLoading
+                          }
+                        >
+                          <div
+                            className={
+                              styles.loadingSpinner
+                            }
+                          />
+                          Loading environment...
+                        </div>
+                      ) : environmentVariables.length ? (
+                        <div
+                          className={
+                            styles.variableList
+                          }
+                        >
+                          {environmentVariables.map(
+                            (variable) => {
+                              const key =
+                                variable?.key ||
+                                "Unnamed";
+
+                              return (
+                                <div
+                                  key={key}
+                                  className={
+                                    styles.variableRow
+                                  }
+                                >
+                                  <div
+                                    className={
+                                      styles.variableMain
+                                    }
+                                  >
+                                    <div
+                                      className={
+                                        styles.variableKey
+                                      }
+                                    >
+                                      <Icon
+                                        name="key"
+                                        size={15}
+                                      />
+
+                                      <strong>
+                                        {key}
+                                      </strong>
+                                    </div>
+
+                                    <div
+                                      className={
+                                        styles.variableMeta
+                                      }
+                                    >
+                                      <span>
+                                        {variable?.scope ||
+                                          "runtime"}
+                                      </span>
+
+                                      <span>
+                                        {variable?.type ||
+                                          "string"}
+                                      </span>
+
+                                      {variable?.required && (
+                                        <span>
+                                          required
+                                        </span>
+                                      )}
+
+                                      {variable?.isSecret && (
+                                        <span
+                                          className={
+                                            styles.secretBadge
+                                          }
+                                        >
+                                          secret
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    className={
+                                      styles.variableValue
+                                    }
+                                  >
+                                    <code>
+                                      {variable?.isSecret
+                                        ? "••••••••••••••••"
+                                        : variable?.hasValue
+                                          ? "configured"
+                                          : "not configured"}
+                                    </code>
+                                  </div>
+
+                                  <div
+                                    className={
+                                      styles.variableActions
+                                    }
+                                  >
+                                    <button
+                                      type="button"
+                                      className={
+                                        styles.smallActionButton
+                                      }
+                                      onClick={() =>
+                                        handleEditEnvironmentVariable(
+                                          variable
+                                        )
+                                      }
+                                      title="Replace value"
+                                    >
+                                      Edit
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      className={
+                                        styles.dangerActionButton
+                                      }
+                                      onClick={() =>
+                                        handleDeleteEnvironmentVariable(
+                                          key
+                                        )
+                                      }
+                                      disabled={
+                                        environmentDeletingKey ===
+                                        key
+                                      }
+                                      title="Delete variable"
+                                    >
+                                      {environmentDeletingKey ===
+                                      key ? (
+                                        <span
+                                          className={
+                                            styles.buttonSpinner
+                                          }
+                                        />
+                                      ) : (
+                                        <Icon
+                                          name="trash"
+                                          size={15}
+                                        />
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            }
+                          )}
+                        </div>
+                      ) : (
+                        <div
+                          className={
+                            styles.emptyIntegration
+                          }
+                        >
+                          <Icon
+                            name="key"
+                            size={22}
+                          />
+
+                          <strong>
+                            No variables configured
+                          </strong>
+
+                          <span>
+                            Add your first backend
+                            environment variable above.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                )}
+
+
+                {/* =============================================
+                    GITHUB PANEL
+                ============================================== */}
+
+                {integrationTab ===
+                  "github" && (
+                  <div
+                    className={
+                      styles.integrationPanel
+                    }
+                  >
+
+                    <div
+                      className={
+                        styles.integrationPanelHeader
+                      }
+                    >
+                      <div>
+                        <div
+                          className={
+                            styles.panelTitleRow
+                          }
+                        >
+                          <div
+                            className={
+                              styles.githubPanelIcon
+                            }
+                          >
+                            <Icon
+                              name="github"
+                              size={21}
+                            />
+                          </div>
+
+                          <div>
+                            <h3>
+                              GitHub
+                            </h3>
+
+                            <p>
+                              Connect GitHub, choose a
+                              repository and branch, then
+                              prepare and deploy through
+                              the backend.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className={
+                          styles.iconButton
+                        }
+                        onClick={
+                          handleGithubRefresh
+                        }
+                        disabled={
+                          githubLoading
+                        }
+                        title="Refresh GitHub"
+                      >
+                        <Icon
+                          name="refresh"
+                          size={16}
+                        />
+                      </button>
+                    </div>
+
+
+                    {/* CONNECTION */}
+
+                    <div
+                      className={
+                        styles.githubConnectionCard
+                      }
+                    >
+                      <div
+                        className={
+                          styles.githubConnectionIcon
+                        }
+                      >
+                        <Icon
+                          name="github"
+                          size={23}
+                        />
+                      </div>
+
+                      <div
+                        className={
+                          styles.githubConnectionCopy
+                        }
+                      >
+                        <span
+                          className={
+                            styles.cardLabel
+                          }
+                        >
+                          GITHUB CONNECTION
+                        </span>
+
+                        {githubConnections.length ? (
+                          <>
+                            <strong>
+                              {
+                                getConnectionLabel(
+                                  githubConnections.find(
+                                    (item) =>
+                                      String(
+                                        getConnectionId(
+                                          item
+                                        )
+                                      ) ===
+                                      String(
+                                        selectedConnectionId
+                                      )
+                                  ) ||
+                                  githubConnections[0]
+                                )
+                              }
+                            </strong>
+
+                            <p>
+                              {githubConnections.length}{" "}
+                              connection
+                              {githubConnections.length !==
+                              1
+                                ? "s"
+                                : ""}{" "}
+                              available for this
+                              project.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <strong>
+                              No GitHub connection
+                            </strong>
+
+                            <p>
+                              Use the real GitHub OAuth
+                              flow to connect your account.
+                            </p>
+                          </>
+                        )}
+                      </div>
+
+                      <div
+                        className={
+                          styles.githubConnectionActions
+                        }
+                      >
+                        {githubConnections.length >
+                          0 && (
+                          <label
+                            className={
+                              styles.connectionSelect
+                            }
+                          >
+                            <span>
+                              CONNECTION
+                            </span>
+
+                            <select
+                              value={
+                                selectedConnectionId
+                              }
+                              onChange={(event) =>
+                                setSelectedConnectionId(
+                                  event.target
+                                    .value
+                                )
+                              }
+                            >
+                              {githubConnections.map(
+                                (connection) => (
+                                  <option
+                                    key={getConnectionId(
+                                      connection
+                                    )}
+                                    value={getConnectionId(
+                                      connection
+                                    )}
+                                  >
+                                    {getConnectionLabel(
+                                      connection
+                                    )}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </label>
+                        )}
+
+                        <button
+                          type="button"
+                          className={
+                            githubConnections.length
+                              ? styles.secondaryButton
+                              : styles.primaryButton
+                          }
+                          onClick={
+                            handleConnectGithub
+                          }
+                        >
+                          <Icon
+                            name="github"
+                            size={15}
+                          />
+
+                          {githubConnections.length
+                            ? "Add / Reconnect"
+                            : "Connect GitHub"}
+                        </button>
+                      </div>
+                    </div>
+
+
+                    {githubError && (
+                      <div
+                        className={
+                          styles.inlineError
+                        }
+                      >
+                        <Icon
+                          name="danger"
+                          size={16}
+                        />
+
+                        <span>
+                          {githubError}
+                        </span>
+                      </div>
+                    )}
+
+                    {githubMessage && (
+                      <div
+                        className={
+                          styles.inlineSuccess
+                        }
+                      >
+                        <Icon
+                          name="check"
+                          size={16}
+                        />
+
+                        <span>
+                          {githubMessage}
+                        </span>
+                      </div>
+                    )}
+
+
+                    {/* PROJECT */}
+
+                    <div
+                      className={
+                        styles.githubWorkflow
+                      }
+                    >
+                      <div
+                        className={
+                          styles.workflowStep
+                        }
+                      >
+                        <span
+                          className={
+                            styles.workflowNumber
+                          }
+                        >
+                          01
+                        </span>
+
+                        <div
+                          className={
+                            styles.workflowContent
+                          }
+                        >
+                          <div
+                            className={
+                              styles.workflowTitle
+                            }
+                          >
+                            Project
+                          </div>
+
+                          <label
+                            className={
+                              styles.field
+                            }
+                          >
+                            <span>
+                              ZYRIONOS PROJECT
+                            </span>
+
+                            <select
+                              value={
+                                selectedProjectId
+                              }
+                              onChange={(event) =>
+                                setSelectedProjectId(
+                                  event.target
+                                    .value
+                                )
+                              }
+                            >
+                              <option value="">
+                                Select project
+                              </option>
+
+                              {projects.map(
+                                (project) => (
+                                  <option
+                                    key={getProjectId(
+                                      project
+                                    )}
+                                    value={getProjectId(
+                                      project
+                                    )}
+                                  >
+                                    {getProjectName(
+                                      project
+                                    )}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+
+
+                      <div
+                        className={
+                          styles.workflowStep
+                        }
+                      >
+                        <span
+                          className={
+                            styles.workflowNumber
+                          }
+                        >
+                          02
+                        </span>
+
+                        <div
+                          className={
+                            styles.workflowContent
+                          }
+                        >
+                          <div
+                            className={
+                              styles.workflowTitle
+                            }
+                          >
+                            Repository
+                          </div>
+
+                          <label
+                            className={
+                              styles.field
+                            }
+                          >
+                            <span>
+                              GITHUB REPOSITORY
+                            </span>
+
+                            <div
+                              className={
+                                styles.inputWithIcon
+                              }
+                            >
+                              <Icon
+                                name="repository"
+                                size={15}
+                              />
+
+                              <select
+                                value={
+                                  getRepositoryName(
+                                    selectedRepository
+                                  )
+                                }
+                                onChange={
+                                  handleGithubRepositoryChange
+                                }
+                                disabled={
+                                  !selectedConnectionId ||
+                                  githubLoading
+                                }
+                              >
+                                <option value="">
+                                  Select repository
+                                </option>
+
+                                {githubRepositories.map(
+                                  (repository) => {
+                                    const name =
+                                      getRepositoryName(
+                                        repository
+                                      );
+
+                                    return (
+                                      <option
+                                        key={name}
+                                        value={name}
+                                      >
+                                        {name}
+                                      </option>
+                                    );
+                                  }
+                                )}
+                              </select>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+
+                      <div
+                        className={
+                          styles.workflowStep
+                        }
+                      >
+                        <span
+                          className={
+                            styles.workflowNumber
+                          }
+                        >
+                          03
+                        </span>
+
+                        <div
+                          className={
+                            styles.workflowContent
+                          }
+                        >
+                          <div
+                            className={
+                              styles.workflowTitle
+                            }
+                          >
+                            Branch
+                          </div>
+
+                          <label
+                            className={
+                              styles.field
+                            }
+                          >
+                            <span>
+                              GIT BRANCH
+                            </span>
+
+                            <div
+                              className={
+                                styles.inputWithIcon
+                              }
+                            >
+                              <Icon
+                                name="branch"
+                                size={15}
+                              />
+
+                              <select
+                                value={
+                                  selectedBranch
+                                }
+                                onChange={
+                                  handleGithubBranchChange
+                                }
+                                disabled={
+                                  !selectedRepository ||
+                                  githubLoading
+                                }
+                              >
+                                <option value="">
+                                  Select branch
+                                </option>
+
+                                {githubBranches.map(
+                                  (branch) => {
+                                    const name =
+                                      getBranchName(
+                                        branch
+                                      );
+
+                                    return (
+                                      <option
+                                        key={name}
+                                        value={name}
+                                      >
+                                        {name}
+                                      </option>
+                                    );
+                                  }
+                                )}
+                              </select>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+
+                      <div
+                        className={
+                          styles.workflowStep
+                        }
+                      >
+                        <span
+                          className={
+                            styles.workflowNumber
+                          }
+                        >
+                          04
+                        </span>
+
+                        <div
+                          className={
+                            styles.workflowContent
+                          }
+                        >
+                          <div
+                            className={
+                              styles.workflowTitle
+                            }
+                          >
+                            Environment
+                          </div>
+
+                          <label
+                            className={
+                              styles.field
+                            }
+                          >
+                            <span>
+                              DEPLOYMENT ENVIRONMENT
+                            </span>
+
+                            <select
+                              value={
+                                selectedEnvironmentName
+                              }
+                              onChange={(event) =>
+                                setSelectedEnvironmentName(
+                                  event.target
+                                    .value
+                                )
+                              }
+                            >
+                              <option value="">
+                                Select environment
+                              </option>
+
+                              {environments.map(
+                                (environment) => {
+                                  const name =
+                                    getEnvironmentName(
+                                      environment
+                                    );
+
+                                  return (
+                                    <option
+                                      key={name}
+                                      value={name}
+                                    >
+                                      {name}
+                                    </option>
+                                  );
+                                }
+                              )}
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+
+                    {/* DEPLOYMENT ACTIONS */}
+
+                    <div
+                      className={
+                        styles.githubActionBar
+                      }
+                    >
+                      <div>
+                        <span
+                          className={
+                            styles.cardLabel
+                          }
+                        >
+                          DEPLOYMENT CONTROL
+                        </span>
+
+                        <strong>
+                          {getRepositoryName(
+                            selectedRepository
+                          ) || "No repository selected"}
+                        </strong>
+
+                        <p>
+                          Branch:{" "}
+                          {selectedBranch ||
+                            "not selected"}
+                          {" · "}
+                          Environment:{" "}
+                          {selectedEnvironmentName ||
+                            "not selected"}
+                        </p>
+                      </div>
+
+                      <div
+                        className={
+                          styles.githubActionButtons
+                        }
+                      >
+                        <button
+                          type="button"
+                          className={
+                            styles.secondaryButton
+                          }
+                          onClick={
+                            handleGithubReadiness
+                          }
+                          disabled={
+                            githubActionLoading ||
+                            !selectedRepository ||
+                            !selectedBranch
+                          }
+                        >
+                          {githubActionLoading ? (
+                            <span
+                              className={
+                                styles.buttonSpinner
+                              }
+                            />
+                          ) : (
+                            <Icon
+                              name="security"
+                              size={15}
+                            />
+                          )}
+
+                          Check Readiness
+                        </button>
+
+                        <button
+                          type="button"
+                          className={
+                            styles.secondaryButton
+                          }
+                          onClick={
+                            handlePrepareGithubDeployment
+                          }
+                          disabled={
+                            githubActionLoading ||
+                            !selectedRepository ||
+                            !selectedBranch
+                          }
+                        >
+                          <Icon
+                            name="repository"
+                            size={15}
+                          />
+
+                          Prepare
+                        </button>
+
+                        <button
+                          type="button"
+                          className={
+                            styles.primaryButton
+                          }
+                          onClick={
+                            handleGithubDeploy
+                          }
+                          disabled={
+                            githubActionLoading ||
+                            !selectedRepository ||
+                            !selectedBranch ||
+                            !selectedProjectId
+                          }
+                        >
+                          {githubActionLoading ? (
+                            <span
+                              className={
+                                styles.buttonSpinner
+                              }
+                            />
+                          ) : (
+                            <Icon
+                              name="deploy"
+                              size={15}
+                            />
+                          )}
+
+                          Deploy
+                        </button>
+                      </div>
+                    </div>
+
+
+                    {/* READINESS */}
+
+                    {githubReadiness && (
+                      <div
+                        className={
+                          styles.readinessCard
+                        }
+                      >
+                        <div
+                          className={
+                            styles.readinessIcon
+                          }
+                        >
+                          <Icon
+                            name="check"
+                            size={18}
+                          />
+                        </div>
+
+                        <div>
+                          <strong>
+                            Deployment readiness
+                          </strong>
+
+                          <p>
+                            {githubReadiness?.message ||
+                              githubReadiness?.status ||
+                              githubReadiness?.ready ===
+                                true
+                              ? "Backend returned deployment readiness data."
+                              : "Backend returned a readiness response."}
+                          </p>
+                        </div>
+
+                        <span
+                          className={
+                            githubReadiness?.ready ===
+                              false
+                              ? styles.readinessBad
+                              : styles.readinessGood
+                          }
+                        >
+                          {githubReadiness?.ready ===
+                          false
+                            ? "Not ready"
+                            : "Response received"}
+                        </span>
+                      </div>
+                    )}
+
+                  </div>
+                )}
 
               </section>
             )}
@@ -1601,7 +4498,6 @@ function Settings() {
               <section
                 className={styles.section}
               >
-
                 <div
                   className={styles.sectionHeader}
                 >
@@ -1619,19 +4515,17 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Review data-management and
-                      privacy controls.
+                      Sensitive data remains controlled
+                      by authenticated backend operations.
                     </p>
                   </div>
                 </div>
-
 
                 <div
                   className={
                     styles.privacyCard
                   }
                 >
-
                   <div
                     className={
                       styles.privacyIcon
@@ -1645,14 +4539,13 @@ function Settings() {
 
                   <div>
                     <h3>
-                      Data controls
+                      Secure data handling
                     </h3>
 
                     <p>
-                      Data export, deletion and
-                      privacy controls must remain
-                      connected to authenticated
-                      backend operations.
+                      Environment secrets are not
+                      rendered back into the browser
+                      as plaintext.
                     </p>
                   </div>
 
@@ -1661,24 +4554,21 @@ function Settings() {
                       styles.neutralBadge
                     }
                   >
-                    Secure by design
+                    Protected
                   </span>
-
                 </div>
-
               </section>
             )}
 
 
             {/* =================================================
-                DANGER ZONE
+                DANGER
             ================================================== */}
 
             {activeSection === "danger" && (
               <section
                 className={`${styles.section} ${styles.dangerSection}`}
               >
-
                 <div
                   className={styles.sectionHeader}
                 >
@@ -1696,19 +4586,18 @@ function Settings() {
                     </h2>
 
                     <p>
-                      Sensitive actions that can
-                      affect your account or data.
+                      Destructive operations remain
+                      disabled until their protected
+                      backend contracts exist.
                     </p>
                   </div>
                 </div>
-
 
                 <div
                   className={
                     styles.dangerCard
                   }
                 >
-
                   <div
                     className={
                       styles.dangerIcon
@@ -1730,11 +4619,9 @@ function Settings() {
                     </h3>
 
                     <p>
-                      Account deletion and other
-                      irreversible operations will
-                      only be enabled when the
-                      corresponding protected
-                      backend endpoint is available.
+                      No fake delete button is exposed.
+                      Destructive account APIs must be
+                      authenticated and explicitly connected.
                     </p>
                   </div>
 
@@ -1745,18 +4632,13 @@ function Settings() {
                   >
                     Protected
                   </span>
-
                 </div>
-
               </section>
             )}
 
           </main>
-
         </div>
-
       </div>
-
     </DashboardLayout>
   );
 }

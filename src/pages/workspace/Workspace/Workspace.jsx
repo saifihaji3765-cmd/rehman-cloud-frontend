@@ -24,16 +24,12 @@ import environmentService from "../../../services/environmentService";
 import deploymentLogService from "../../../services/deploymentLogService";
 import githubService from "../../../services/githubService";
 
-import {
-  SandpackProvider,
-  SandpackPreview,
-} from "@codesandbox/sandpack-react";
-
 import styles from "./Workspace.module.css";
 
-/* =========================================================
-   CONSTANTS
-========================================================= */
+import {
+  SandpackPreview,
+  SandpackProvider,
+} from "@codesandbox/sandpack-react";
 
 const FRAMEWORKS = [
   "React",
@@ -44,55 +40,505 @@ const FRAMEWORKS = [
   "Other",
 ];
 
-const ENVIRONMENTS = [
-  "development",
-  "preview",
-  "production",
+const QUICK_PROMPTS = [
+  {
+    label: "AI SaaS dashboard",
+    prompt: "Build a production-ready AI SaaS dashboard",
+  },
+  {
+    label: "Landing page",
+    prompt: "Create a production-ready responsive landing page",
+  },
+  {
+    label: "Authentication",
+    prompt: "Add authentication and user accounts",
+  },
+  {
+    label: "Admin control center",
+    prompt: "Build a production-ready admin control center",
+  },
 ];
 
-const QUICK_PROMPTS = [
-  [
-    "AI SaaS dashboard",
-    "Build a production-ready AI SaaS dashboard",
-  ],
-  [
-    "Landing page",
-    "Create a production-ready responsive landing page",
-  ],
-  [
-    "Authentication",
-    "Add authentication and user accounts",
-  ],
-  [
-    "Admin control center",
-    "Build a production-ready admin control center",
-  ],
-];
+/* =========================================================
+   LOCAL PREVIEW RUNTIME
+========================================================= */
+
+function buildSandpackFiles(files) {
+  const result = {};
+
+  for (const file of Array.isArray(files) ? files : []) {
+    const rawPath = getFilePath(file);
+    const content = getFileContent(file);
+
+    if (!rawPath || content === null || content === undefined) {
+      continue;
+    }
+
+    let path = String(rawPath)
+      .trim()
+      .replace(/\\/g, "/")
+      .replace(/^\.\//, "")
+      .replace(/^\/+/, "");
+
+    if (!path) {
+      continue;
+    }
+
+    /* Vite expects index.html at the project root. */
+    if (path.toLowerCase() === "public/index.html") {
+      path = "index.html";
+    }
+
+    result[`/${path}`] = {
+      code: String(content),
+      active: path === "src/App.jsx" || path === "src/App.js",
+    };
+  }
+
+  return result;
+}
+
+function getSandpackDependencies(files) {
+  const packageFile = findFile(files, ["package.json"]);
+
+  if (!packageFile) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(getFileContent(packageFile) || "{}");
+    const dependencies = {
+      ...(parsed?.dependencies || {}),
+    };
+
+    /*
+     * Sandpack already supplies the runtime, but generated Vite/React
+     * projects can legitimately import packages listed as devDependencies.
+     * Including them makes the local preview follow the generated manifest.
+     */
+    for (const [name, version] of Object.entries(
+      parsed?.devDependencies || {}
+    )) {
+      if (!dependencies[name]) {
+        dependencies[name] = version;
+      }
+    }
+
+    delete dependencies["react"];
+    delete dependencies["react-dom"];
+
+    return dependencies;
+  } catch {
+    return {};
+  }
+}
+
+function getSandpackTemplate(framework) {
+  const value = String(framework || "React")
+    .trim()
+    .toLowerCase();
+
+  if (value === "vue") {
+    return "vue";
+  }
+
+  return "react";
+}
+
+function LocalProjectPreview({
+  files,
+  framework,
+  fullscreen = false,
+}) {
+  const sandpackFiles = useMemo(
+    () => buildSandpackFiles(files),
+    [files]
+  );
+
+  const dependencies = useMemo(
+    () => getSandpackDependencies(files),
+    [files]
+  );
+
+  const template = useMemo(
+    () => getSandpackTemplate(framework),
+    [framework]
+  );
+
+  const hasEntry = Boolean(
+    sandpackFiles["/src/index.js"] ||
+      sandpackFiles["/src/main.jsx"] ||
+      sandpackFiles["/src/main.js"] ||
+      sandpackFiles["/src/index.jsx"] ||
+      sandpackFiles["/index.js"] ||
+      sandpackFiles["/App.js"] ||
+      sandpackFiles["/App.jsx"]
+  );
+
+  if (!hasEntry) {
+    return (
+      <div className={styles.previewUnavailable}>
+        <div className={styles.previewIconLarge}>Z</div>
+        <span>PREVIEW RUNTIME</span>
+        <p>
+          No React/Vue entry file was found in the generated project.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={styles.sandpackPreviewHost}
+      style={{
+        width: "100%",
+        height: "100%",
+        minHeight: fullscreen ? "100%" : "520px",
+        overflow: "hidden",
+      }}
+    >
+      <SandpackProvider
+        template={template}
+        files={sandpackFiles}
+        customSetup={{
+          dependencies,
+          entry:
+            sandpackFiles["/src/index.js"]
+              ? "/src/index.js"
+              : sandpackFiles["/src/main.jsx"]
+              ? "/src/main.jsx"
+              : sandpackFiles["/src/main.js"]
+              ? "/src/main.js"
+              : sandpackFiles["/src/index.jsx"]
+              ? "/src/index.jsx"
+              : "/App.js",
+        }}
+        options={{
+          activeFile:
+            sandpackFiles["/src/App.jsx"]
+              ? "/src/App.jsx"
+              : sandpackFiles["/src/App.js"]
+              ? "/src/App.js"
+              : undefined,
+          autorun: true,
+          recompileMode: "delayed",
+        }}
+      >
+        <SandpackPreview
+          showOpenInCodeSandbox={false}
+          showRefreshButton
+          style={{
+            width: "100%",
+            height: "100%",
+            minHeight: fullscreen ? "100%" : "520px",
+            border: "0",
+          }}
+        />
+      </SandpackProvider>
+    </div>
+  );
+}
 
 /* =========================================================
    RESPONSE HELPERS
 ========================================================= */
 
-function unwrap(response) {
-  let value =
-    response?.data !== undefined
-      ? response.data
-      : response;
-
-  if (
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    value.data !== undefined
-  ) {
-    value = value.data;
+function unwrapApiResponse(response) {
+  if (response === undefined || response === null) {
+    return null;
   }
 
-  return value;
+  const root = response?.data !== undefined ? response.data : response;
+
+  if (
+    root &&
+    typeof root === "object" &&
+    !Array.isArray(root) &&
+    root.data !== undefined
+  ) {
+    return root.data;
+  }
+
+  return root;
 }
 
-function listFrom(response, keys = []) {
-  const root = unwrap(response);
+function extractProjectFromResponse(response) {
+  const root =
+    response?.data !== undefined ? response.data : response;
+
+  const candidates = [
+    root?.project,
+    root?.data?.project,
+    root?.data,
+    response?.project,
+    response?.data?.project,
+    response?.data?.data?.project,
+  ];
+
+  for (const candidate of candidates) {
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      !Array.isArray(candidate) &&
+      (
+        candidate._id ||
+        candidate.id ||
+        candidate.projectId ||
+        candidate.projectName ||
+        candidate.name ||
+        Array.isArray(candidate.files)
+      )
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function getProjectId(project) {
+  return project?._id || project?.id || project?.projectId || "";
+}
+
+function getProjectName(project) {
+  return project?.projectName || project?.name || "New Project";
+}
+
+function getProjectFramework(project) {
+  return project?.framework || "React";
+}
+
+function normalizeProjects(response) {
+  const root =
+    response?.data !== undefined ? response.data : response;
+
+  const candidates = [
+    root?.projects,
+    root?.data?.projects,
+    root?.data,
+    response?.projects,
+    response?.data?.projects,
+    response?.data?.data?.projects,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+  }
+
+  return Array.isArray(root) ? root : [];
+}
+
+/* =========================================================
+   PROJECT NAMING
+   Keeps dashboard names readable instead of saving the
+   entire natural-language prompt as the project title.
+========================================================= */
+
+function buildProjectName(promptValue) {
+  const value = String(promptValue || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!value) {
+    return "New Project";
+  }
+
+  const cleaned = value
+    .replace(
+      /^(please\s+)?(build|create|make|develop|design|generate|add)\s+/i,
+      ""
+    )
+    .replace(/\s+(for|with)\s+me$/i, "")
+    .trim();
+
+  const source = cleaned || value;
+
+  const words = source
+    .split(" ")
+    .slice(0, 8);
+
+  const title = words
+    .join(" ")
+    .replace(/[.!?]+$/, "")
+    .trim();
+
+  if (!title) {
+    return "New Project";
+  }
+
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
+/* =========================================================
+   FILE HELPERS
+========================================================= */
+
+function normalizeProjectFiles(project, aiResult) {
+  const possibleCollections = [
+    project?.files,
+    project?.data?.files,
+    project?.project?.files,
+    project?.data?.project?.files,
+
+    aiResult?.files,
+    aiResult?.data?.files,
+    aiResult?.project?.files,
+    aiResult?.data?.project?.files,
+
+    aiResult?.orchestration?.buildResult?.data?.files,
+    aiResult?.orchestration?.buildResult?.files,
+    aiResult?.orchestration?.buildResult?.data?.data?.files,
+
+    aiResult?.data?.orchestration?.buildResult?.data?.files,
+    aiResult?.data?.orchestration?.buildResult?.files,
+    aiResult?.data?.orchestration?.buildResult?.data?.data?.files,
+  ];
+
+  for (const files of possibleCollections) {
+    if (Array.isArray(files)) {
+      return files;
+    }
+  }
+
+  return [];
+}
+
+function getFilePath(file) {
+  return (
+    file?.path ||
+    file?.filePath ||
+    file?.name ||
+    file?.filename ||
+    "Unnamed file"
+  );
+}
+
+function getFileContent(file) {
+  if (!file) {
+    return "No project file selected.";
+  }
+
+  if (file.content !== undefined && file.content !== null) {
+    return String(file.content);
+  }
+
+  if (file.code !== undefined && file.code !== null) {
+    return String(file.code);
+  }
+
+  return "The backend returned this file without readable content.";
+}
+
+function findFile(files, names) {
+  const normalized = names.map((name) =>
+    String(name).replace(/^\.?\//, "").toLowerCase()
+  );
+
+  return files.find((file) => {
+    const path = getFilePath(file)
+      .replace(/^\.?\//, "")
+      .toLowerCase();
+
+    return normalized.includes(path);
+  });
+}
+
+/* =========================================================
+   PREVIEW HELPERS
+========================================================= */
+
+function getPreviewUrl(project) {
+  return (
+    project?.previewUrl ||
+    project?.preview?.url ||
+    project?.preview?.liveUrl ||
+    project?.liveUrl ||
+    project?.deploymentUrl ||
+    project?.deployment?.url ||
+    project?.deployment?.liveUrl ||
+    ""
+  );
+}
+
+function getPreviewStatus(project) {
+  return String(
+    project?.previewStatus ||
+      project?.preview?.status ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+/* =========================================================
+   DEPLOYMENT
+========================================================= */
+
+function normalizeDeploymentStatus(status) {
+  const value = String(status || "")
+    .trim()
+    .toLowerCase();
+
+  switch (value) {
+    case "deployed":
+    case "success":
+    case "successful":
+      return "Deployed";
+
+    case "deploying":
+    case "in_progress":
+    case "in-progress":
+      return "Deploying";
+
+    case "failed":
+    case "error":
+      return "Failed";
+
+    case "building":
+      return "Building";
+
+    case "pending":
+      return "Pending";
+
+    default:
+      return "Not deployed";
+  }
+}
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+function getErrorMessage(error, fallback) {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.response?.data?.details ||
+    error?.data?.message ||
+    error?.message ||
+    fallback
+  );
+}
+
+function getServicePayload(response) {
+  const root = response?.data !== undefined ? response.data : response;
+
+  if (
+    root &&
+    typeof root === "object" &&
+    !Array.isArray(root) &&
+    root.data !== undefined
+  ) {
+    return root.data;
+  }
+
+  return root;
+}
+
+function getServiceList(response, keys = []) {
+  const root = getServicePayload(response);
 
   if (Array.isArray(root)) {
     return root;
@@ -107,1690 +553,1271 @@ function listFrom(response, keys = []) {
   return [];
 }
 
-function objectFrom(response, keys = []) {
-  const root = unwrap(response);
+function getServiceObject(response, keys = []) {
+  const root = getServicePayload(response);
 
-  if (
-    !root ||
-    typeof root !== "object" ||
-    Array.isArray(root)
-  ) {
-    return null;
-  }
-
-  for (const key of keys) {
-    if (
-      root[key] &&
-      typeof root[key] === "object"
-    ) {
-      return root[key];
+  if (root && typeof root === "object" && !Array.isArray(root)) {
+    for (const key of keys) {
+      if (root[key] && typeof root[key] === "object") {
+        return root[key];
+      }
     }
+
+    return root;
   }
 
-  return root;
+  return null;
 }
 
-function errorText(error, fallback) {
-  return (
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
-    error?.data?.message ||
-    error?.message ||
-    fallback
-  );
+function getBackendLogId(log) {
+  return log?._id || log?.id || log?.logId || log?.deploymentLogId || "";
 }
 
-/* =========================================================
-   PROJECT HELPERS
-========================================================= */
-
-function projectId(project) {
-  return (
-    project?._id ||
-    project?.id ||
-    project?.projectId ||
-    ""
-  );
-}
-
-function projectName(project) {
-  return (
-    project?.projectName ||
-    project?.name ||
-    "New Project"
-  );
-}
-
-function projectFiles(project) {
-  if (Array.isArray(project?.files)) {
-    return project.files;
-  }
-
-  if (
-    Array.isArray(
-      project?.project?.files
-    )
-  ) {
-    return project.project.files;
-  }
-
-  return [];
-}
-
-function filePath(file) {
-  return (
-    file?.path ||
-    file?.filePath ||
-    file?.name ||
-    file?.filename ||
-    "Unnamed file"
-  );
-}
-
-function fileContent(file) {
-  if (
-    file?.content !== undefined &&
-    file?.content !== null
-  ) {
-    return String(file.content);
-  }
-
-  if (
-    file?.code !== undefined &&
-    file?.code !== null
-  ) {
-    return String(file.code);
-  }
-
-  return "";
-}
-
-function fileExtension(path = "") {
-  const clean =
-    String(path)
-      .split("?")[0]
-      .split("#")[0];
-
-  const match =
-    clean.match(
-      /\.([a-z0-9]+)$/i
-    );
-
-  return match
-    ? match[1].toLowerCase()
-    : "";
-}
-
-function isHtmlProject(files) {
-  return files.some(
-    (file) =>
-      /(^|\/)index\.html$/i.test(
-        filePath(file)
-      )
-  );
-}
-
-function isReactProject(
-  files,
-  selectedFramework
-) {
-  if (
-    ["React", "Next.js"].includes(
-      selectedFramework
-    )
-  ) {
-    return files.some(
-      (file) =>
-        /\.(jsx|tsx)$/i.test(
-          filePath(file)
-        )
-    );
-  }
-
-  return files.some(
-    (file) =>
-      /\.(jsx|tsx)$/i.test(
-        filePath(file)
-      )
-  );
-}
-
-/* =========================================================
-   DEPLOYMENT HELPERS
-========================================================= */
-
-function deploymentState(value) {
-  const status = String(
-    value || ""
+function getBackendLogStatus(log) {
+  return String(
+    log?.status ||
+      log?.deploymentStatus ||
+      log?.state ||
+      ""
   )
     .trim()
     .toLowerCase();
-
-  if (
-    [
-      "success",
-      "successful",
-      "deployed",
-      "completed",
-      "complete",
-      "live",
-    ].includes(status)
-  ) {
-    return "Deployed";
-  }
-
-  if (
-    [
-      "deploying",
-      "in_progress",
-      "in-progress",
-      "running",
-      "active",
-    ].includes(status)
-  ) {
-    return "Deploying";
-  }
-
-  if (
-    [
-      "building",
-      "build",
-    ].includes(status)
-  ) {
-    return "Building";
-  }
-
-  if (
-    [
-      "failed",
-      "error",
-      "failure",
-    ].includes(status)
-  ) {
-    return "Failed";
-  }
-
-  if (
-    [
-      "pending",
-      "queued",
-    ].includes(status)
-  ) {
-    return "Pending";
-  }
-
-  return "Not deployed";
 }
 
-function deploymentProgress(log) {
-  const value =
-    Number(
-      log?.progress ??
-        log?.percentage ??
-        log?.percent ??
-        log?.progressPercent ??
-        0
-    );
+function normalizeBackendActivityEvent(event, index = 0) {
+  const message =
+    event?.message ||
+    event?.description ||
+    event?.error?.message ||
+    event?.details ||
+    "Deployment activity received.";
 
-  if (
-    Number.isFinite(value) &&
-    value >= 0
-  ) {
-    return Math.min(
-      100,
-      Math.max(0, value)
-    );
-  }
+  const rawType = String(
+    event?.type ||
+      event?.level ||
+      event?.status ||
+      "info"
+  ).toLowerCase();
 
-  return 0;
-}
+  const type = rawType.includes("error") || rawType.includes("fail")
+    ? "error"
+    : rawType.includes("success") || rawType.includes("complete")
+    ? "success"
+    : rawType.includes("warn")
+    ? "info"
+    : rawType.includes("progress") || rawType.includes("active")
+    ? "active"
+    : "info";
 
-function readinessValue(value) {
-  return Boolean(
-    value?.ready === true ||
-      value?.isReady === true ||
-      value?.deploymentReady === true
-  );
-}
+  const timestampValue =
+    event?.timestamp ||
+    event?.createdAt ||
+    event?.updatedAt ||
+    new Date().toISOString();
 
-/* =========================================================
-   MESSAGE
-========================================================= */
-
-function makeMessage(
-  role,
-  content,
-  meta = {}
-) {
   return {
-    id:
-      `${Date.now()}-` +
-      Math.random()
-        .toString(36)
-        .slice(2),
-
-    role,
-
-    content:
-
-      content ||
-      "",
-
-    time:
-      new Date().toLocaleTimeString(
-        [],
-        {
-          hour: "2-digit",
-          minute: "2-digit",
-        }
-      ),
-
-    ...meta,
+    id: `backend-${event?._id || event?.id || index}-${timestampValue}`,
+    message: String(message),
+    type,
+    timestamp: new Date(timestampValue).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }),
+    source: "backend",
   };
 }
 
 /* =========================================================
-   HTML PREVIEW
+   CHAT
 ========================================================= */
 
-function cleanHtmlForPreview(html) {
-  if (!html) {
-    return "";
-  }
-
-  let output =
-    String(html);
-
-  /*
-   * A generated index.html often contains:
-   *
-   * <script type="module" src="/src/main.jsx">
-   *
-   * That path does not exist inside a normal srcDoc iframe.
-   * Leaving it untouched makes the browser show a blank
-   * application or an error.
-   *
-   * Remove only external /src module scripts here.
-   * Inline scripts remain available.
-   */
-
-  output =
-    output.replace(
-      /<script\b[^>]*\bsrc=["']\/src\/[^"']+["'][^>]*>\s*<\/script>/gi,
-      ""
-    );
-
-  output =
-    output.replace(
-      /<script\b[^>]*\bsrc=["']\.?\/src\/[^"']+["'][^>]*>\s*<\/script>/gi,
-      ""
-    );
-
-  /*
-   * Make relative assets work reasonably inside srcDoc.
-   */
-
-  if (
-    !/<base\s/i.test(output)
-  ) {
-    output =
-      output.replace(
-        /<head([^>]*)>/i,
-        `<head$1><base href="/" />`
-      );
-  }
-
-  return output;
+function createMessage(role, content, extra = {}) {
+  return {
+    id: `${Date.now()}-${Math.random()}`,
+    role,
+    content,
+    timestamp: new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    ...extra,
+  };
 }
 
 /* =========================================================
-   SANDPACK FILES
+   COMPONENT
 ========================================================= */
 
-function createSandpackFiles(
-  files
-) {
-  const result = {};
+function Workspace() {
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const selectedProjectRef = useRef(null);
 
-  for (const file of files) {
-    const path =
-      filePath(file);
+  const [prompt, setPrompt] = useState("");
+  const [framework, setFramework] = useState("React");
 
-    if (!path) {
-      continue;
-    }
+  const [loading, setLoading] = useState(false);
+  const [generatedFiles, setGeneratedFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
 
-    let normalized =
-      String(path).trim();
+  const [chatMessages, setChatMessages] = useState([]);
 
-    if (
-      !normalized.startsWith("/")
-    ) {
-      normalized =
-        `/${normalized}`;
-    }
+  const [deploymentStatus, setDeploymentStatus] =
+    useState("Not deployed");
 
-    result[normalized] =
-      {
-        code:
-          fileContent(file),
-      };
-  }
+  const [liveUrl, setLiveUrl] = useState("");
 
-  /*
-   * Sandpack needs a usable entry.
-   * If the generated project does not provide one,
-   * create a tiny fallback entry.
-   */
+  const [activeView, setActiveView] = useState("preview");
+  const [mobilePanel, setMobilePanel] = useState("workspace");
 
-  const hasEntry =
-    Object.keys(result).some(
-      (path) =>
-        /\/(main|index)\.(jsx|tsx|js|ts)$/i.test(
-          path
-        )
-    );
+  const [filesDrawerOpen, setFilesDrawerOpen] = useState(false);
+  const [activityDrawerOpen, setActivityDrawerOpen] = useState(false);
 
-  if (!hasEntry) {
-    result["/src/App.jsx"] = {
-      code: `
-export default function App() {
-  return (
-    <div style={{
-      minHeight: "100vh",
-      display: "grid",
-      placeItems: "center",
-      padding: 32,
-      fontFamily: "Inter, system-ui, sans-serif"
-    }}>
-      <div>
-        <h1>ZyrionOS Preview</h1>
-        <p>The generated project does not expose a browser entry file yet.</p>
-      </div>
-    </div>
-  );
-}
-      `.trim(),
-    };
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [projectLoading, setProjectLoading] = useState(true);
 
-    result["/src/main.jsx"] = {
-      code: `
-import React from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
+  const [operation, setOperation] = useState("idle");
+  const [operationStartedAt, setOperationStartedAt] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [activityLog, setActivityLog] = useState([]);
 
-createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
-      `.trim(),
-    };
-  }
+  const [previewFullscreen, setPreviewFullscreen] = useState(false);
 
-  return result;
-}
+  /* =======================================================
+     BACKEND WORKSPACE CONTEXT
+     These states are metadata/status only. Secrets are never
+     requested from the browser.
+  ======================================================= */
 
-/* =========================================================
-   PREVIEW
-========================================================= */
+  const [environments, setEnvironments] = useState([]);
+  const [activeEnvironment, setActiveEnvironment] =
+    useState("development");
+  const [environmentReadiness, setEnvironmentReadiness] =
+    useState(null);
 
-function Preview({
-  files,
-  liveUrl = "",
-  framework = "React",
-}) {
-  const htmlFile =
-    files.find(
-      (file) =>
-        /(^|\/)index\.html$/i.test(
-          filePath(file)
-        )
-    ) || null;
+  const [deploymentLog, setDeploymentLog] = useState(null);
+  const [deploymentEvents, setDeploymentEvents] = useState([]);
 
-  const hasReactFiles =
-    isReactProject(
-      files,
-      framework
-    );
+  const [githubConnection, setGithubConnection] = useState(null);
+  const [githubRepository, setGithubRepository] = useState(null);
 
-  const html =
-    useMemo(
-      () =>
-        htmlFile
-          ? cleanHtmlForPreview(
-              fileContent(
-                htmlFile
-              )
-            )
-          : "",
-      [htmlFile]
-    );
+  const [backendSyncing, setBackendSyncing] = useState(false);
+  const [backendSyncError, setBackendSyncError] = useState("");
 
-  const sandpackFiles =
-    useMemo(
-      () =>
-        hasReactFiles
-          ? createSandpackFiles(
-              files
-            )
-          : {},
-      [files, hasReactFiles]
-    );
+  const chatEndRef = useRef(null);
+  const initialLoadStarted = useRef(false);
 
-  if (liveUrl) {
+  const projectName = getProjectName(selectedProject);
+  const selectedProjectId = getProjectId(selectedProject);
+  const projectCount = projects.length;
+
+  const previewUrl =
+    liveUrl || getPreviewUrl(selectedProject);
+
+  const previewStatus = getPreviewStatus(selectedProject);
+  const operationRunning = operation !== "idle";
+
+  const currentOperationLabel = useMemo(() => {
+    if (operation === "build") return "Building";
+    if (operation === "change") return "Applying changes";
+    if (operation === "deploy") return "Deploying";
+    return "Ready";
+  }, [operation]);
+
+  const previewEntryFile = useMemo(() => {
     return (
-      <iframe
-        title="Live project preview"
-        className={
-          styles.previewFrame
-        }
-        src={liveUrl}
-        allow="fullscreen"
-      />
+      findFile(generatedFiles, [
+        "index.html",
+        "public/index.html",
+      ]) || null
     );
-  }
+  }, [generatedFiles]);
 
-  /*
-   * React/JSX/TSX projects use a real browser
-   * runtime instead of displaying source code.
-   */
+  /* =======================================================
+     TIMER
+  ======================================================= */
 
-  if (
-    hasReactFiles &&
-    !["Next.js"].includes(
-      framework
-    )
-  ) {
-    const template =
-      files.some(
-        (file) =>
-          /\.tsx$/i.test(
-            filePath(file)
+  useEffect(() => {
+    if (!operationStartedAt) {
+      setElapsedSeconds(0);
+      return undefined;
+    }
+
+    const updateTimer = () => {
+      setElapsedSeconds(
+        Math.max(
+          0,
+          Math.floor(
+            (Date.now() - operationStartedAt) / 1000
           )
-      )
-        ? "react-ts"
-        : "react";
+        )
+      );
+    };
 
-    return (
-      <div
-        className={
-          styles.sandpackShell
-        }
-      >
-        <SandpackProvider
-          template={template}
-          files={
-            sandpackFiles
-          }
-          options={{
-            autorun: true,
-            autoReload: true,
-            recompileMode:
-              "delayed",
-            recompileDelay: 300,
-          }}
-        >
-          <SandpackPreview
-            className={
-              styles.sandpackPreview
-            }
-          />
-        </SandpackProvider>
-      </div>
+    updateTimer();
+
+    const timer = window.setInterval(
+      updateTimer,
+      1000
     );
-  }
 
-  /*
-   * Plain HTML projects use srcDoc.
-   */
+    return () => window.clearInterval(timer);
+  }, [operationStartedAt]);
 
-  if (html) {
-    return (
-      <iframe
-        title="Generated HTML preview"
-        className={
-          styles.previewFrame
-        }
-        srcDoc={html}
-        sandbox="allow-scripts allow-forms allow-modals allow-popups"
-      />
-    );
-  }
+  /* =======================================================
+     CHAT AUTO SCROLL
+  ======================================================= */
 
-  return (
-    <div
-      className={
-        styles.previewEmpty
-      }
-    >
-      <div
-        className={
-          styles.previewIcon
-        }
-      >
-        Z
-      </div>
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }, [chatMessages]);
 
-      <strong>
-        Preview unavailable
-      </strong>
+  /* =======================================================
+     SELECTED PROJECT REF
+  ======================================================= */
 
-      <p>
-        The backend returned project
-        files, but no browser preview
-        entry or live deployment URL
-        was found.
-      </p>
-    </div>
-  );
-}
-
-/* =========================================================
-   MOBILE DRAWER HEADER
-========================================================= */
-
-function MobilePanelHeader({
-  title,
-  subtitle,
-  onClose,
-}) {
-  return (
-    <div
-      className={
-        styles.mobilePanelHeader
-      }
-    >
-      <div>
-        <span>
-          ZYRIONOS
-        </span>
-
-        <strong>
-          {title}
-        </strong>
-
-        {subtitle ? (
-          <small>
-            {subtitle}
-          </small>
-        ) : null}
-      </div>
-
-      <button
-        type="button"
-        onClick={
-          onClose
-        }
-        aria-label="Close panel"
-      >
-        ×
-      </button>
-    </div>
-  );
-}
-
-/* =========================================================
-   WORKSPACE
-========================================================= */
-
-export default function Workspace() {
-  const [
-    projects,
-    setProjects,
-  ] = useState([]);
-
-  const [
-    project,
-    setProject,
-  ] = useState(null);
-
-  const [
-    files,
-    setFiles,
-  ] = useState([]);
-
-  const [
-    selectedFile,
-    setSelectedFile,
-  ] = useState(null);
-
-  const [
-    prompt,
-    setPrompt,
-  ] = useState("");
-
-  const [
-    framework,
-    setFramework,
-  ] = useState("React");
-
-  const [
-    environment,
-    setEnvironment,
-  ] = useState(
-    "development"
-  );
-
-  const [
-    environments,
-    setEnvironments,
-  ] = useState([]);
-
-  const [
-    readiness,
-    setReadiness,
-  ] = useState(null);
-
-  const [
-    deploymentLog,
-    setDeploymentLog,
-  ] = useState(null);
-
-  const [
-    github,
-    setGithub,
-  ] = useState(null);
-
-  const [
-    activity,
-    setActivity,
-  ] = useState([]);
-
-  const [
-    messages,
-    setMessages,
-  ] = useState([]);
-
-  const [
-    view,
-    setView,
-  ] = useState("preview");
-
-  const [
-    mobile,
-    setMobile,
-  ] = useState("workspace");
-
-  const [
-    busy,
-    setBusy,
-  ] = useState(false);
-
-  const [
-    syncing,
-    setSyncing,
-  ] = useState(false);
-
-  const [
-    error,
-    setError,
-  ] = useState("");
-
-  const [
-    notice,
-    setNotice,
-  ] = useState("");
-
-  const endRef =
-    useRef(null);
-
-  const currentId =
-    projectId(project);
+  useEffect(() => {
+    selectedProjectRef.current = selectedProject;
+  }, [selectedProject]);
 
   /* =======================================================
      ACTIVITY
+     User-facing activity is intentionally abstracted.
+     Internal agent names are not exposed in the UI.
   ======================================================= */
 
-  const log =
-    useCallback(
-      (
-        message,
-        type = "info"
-      ) => {
-        setActivity(
-          (previous) =>
-            [
-              ...previous,
+  const addActivity = useCallback(
+    (message, type = "info") => {
+      setActivityLog((previous) =>
+        [
+          ...previous,
+          {
+            id: `${Date.now()}-${Math.random()}`,
+            message,
+            type,
+            timestamp: new Date().toLocaleTimeString(
+              [],
               {
-                id:
-                  `${Date.now()}-` +
-                  Math.random()
-                    .toString(36),
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              }
+            ),
+          },
+        ].slice(-40)
+      );
+    },
+    []
+  );
 
-                message,
+  const startOperation = useCallback(
+    (type, message) => {
+      setOperation(type);
+      setOperationStartedAt(Date.now());
+      addActivity(message, "active");
+    },
+    [addActivity]
+  );
 
-                type,
+  const finishOperation = useCallback(
+    (success, message) => {
+      addActivity(
+        message,
+        success ? "success" : "error"
+      );
 
-                time:
-                  new Date().toLocaleTimeString(),
-              },
-            ].slice(-80)
+      setOperation("idle");
+      setOperationStartedAt(null);
+    },
+    [addActivity]
+  );
+
+  /* =======================================================
+     APPLY PROJECT
+  ======================================================= */
+
+  const applySelectedProject = useCallback(
+    (project) => {
+      if (!project) {
+        return;
+      }
+
+      selectedProjectRef.current = project;
+      setSelectedProject(project);
+
+      const files = normalizeProjectFiles(
+        project,
+        null
+      );
+
+      setGeneratedFiles(files);
+      setSelectedFile(files[0] || null);
+
+      setDeploymentStatus(
+        normalizeDeploymentStatus(
+          project?.deploymentStatus ||
+            project?.deployment?.status
+        )
+      );
+
+      setLiveUrl(getPreviewUrl(project));
+
+      const projectFramework =
+        getProjectFramework(project);
+
+      if (FRAMEWORKS.includes(projectFramework)) {
+        setFramework(projectFramework);
+      }
+    },
+    []
+  );
+
+  /* =======================================================
+     BACKEND CONTEXT SYNC
+  ======================================================= */
+
+  const syncBackendContext = useCallback(
+    async (projectId) => {
+      if (!projectId) {
+        setEnvironments([]);
+        setEnvironmentReadiness(null);
+        setDeploymentLog(null);
+        setDeploymentEvents([]);
+        setGithubConnection(null);
+        setGithubRepository(null);
+        return;
+      }
+
+      setBackendSyncing(true);
+      setBackendSyncError("");
+
+      const results = await Promise.allSettled([
+        environmentService.listEnvironments(projectId),
+        deploymentLogService.getLatestLog({ projectId }),
+        githubService.getConnections({ projectId }),
+      ]);
+
+      const environmentResult = results[0];
+      const deploymentResult = results[1];
+      const githubResult = results[2];
+
+      let firstEnvironment = null;
+
+      if (environmentResult.status === "fulfilled") {
+        const list = getServiceList(environmentResult.value, [
+          "environments",
+          "items",
+        ]);
+
+        setEnvironments(list);
+
+        firstEnvironment =
+          list.find(
+            (item) =>
+              String(item?.name || item?.environment || "").toLowerCase() ===
+              String(activeEnvironment).toLowerCase()
+          ) || list[0] || null;
+
+        if (firstEnvironment) {
+          const name =
+            firstEnvironment?.name ||
+            firstEnvironment?.environment ||
+            "development";
+
+          setActiveEnvironment(String(name));
+
+          try {
+            const readiness =
+              await environmentService.getDeploymentReadiness(
+                projectId,
+                name
+              );
+
+            setEnvironmentReadiness(
+              getServiceObject(readiness, [
+                "readiness",
+                "deploymentReadiness",
+              ])
+            );
+          } catch (readinessError) {
+            setEnvironmentReadiness(null);
+          }
+        } else {
+          setEnvironmentReadiness(null);
+        }
+      } else {
+        setEnvironments([]);
+        setEnvironmentReadiness(null);
+      }
+
+      if (deploymentResult.status === "fulfilled") {
+        const log = getServiceObject(
+          deploymentResult.value,
+          ["log", "deploymentLog", "latest"]
         );
-      },
-      []
-    );
+
+        setDeploymentLog(log);
+
+        const logId = getBackendLogId(log);
+
+        if (logId) {
+          try {
+            const eventsResponse =
+              await deploymentLogService.getEvents(logId, {
+                limit: 40,
+              });
+
+            const events = getServiceList(
+              eventsResponse,
+              ["events", "items"]
+            );
+
+            setDeploymentEvents(
+              events.map((event, index) =>
+                normalizeBackendActivityEvent(
+                  event,
+                  index
+                )
+              )
+            );
+          } catch (eventsError) {
+            setDeploymentEvents([]);
+          }
+        } else {
+          setDeploymentEvents([]);
+        }
+
+        const logStatus = getBackendLogStatus(log);
+        if (logStatus) {
+          setDeploymentStatus(
+            normalizeDeploymentStatus(logStatus)
+          );
+        }
+      } else {
+        setDeploymentLog(null);
+        setDeploymentEvents([]);
+      }
+
+      if (githubResult.status === "fulfilled") {
+        const connections = getServiceList(
+          githubResult.value,
+          ["connections", "items"]
+        );
+
+        const activeConnection =
+          connections.find((item) =>
+            ["active", "connected"].includes(
+              String(item?.status || "").toLowerCase()
+            )
+          ) || connections[0] || null;
+
+        setGithubConnection(activeConnection);
+
+        setGithubRepository(
+          activeConnection?.defaultRepository ||
+            activeConnection?.repository ||
+            activeConnection?.defaultRepo ||
+            null
+        );
+      } else {
+        setGithubConnection(null);
+        setGithubRepository(null);
+      }
+
+      if (
+        environmentResult.status === "rejected" &&
+        deploymentResult.status === "rejected" &&
+        githubResult.status === "rejected"
+      ) {
+        setBackendSyncError(
+          "Backend workspace context could not be synchronized."
+        );
+      }
+
+      setBackendSyncing(false);
+    },
+    [activeEnvironment]
+  );
 
   /* =======================================================
-     PROJECT LOADING
+     DEPLOYMENT LOG REFRESH
+     Streaming is intentionally not used. Poll only while a
+     deployment is active, keeping the frontend aligned with
+     the backend log system without inventing events.
   ======================================================= */
 
-  const loadProjects =
-    useCallback(
-      async (
-        preferredProjectId = ""
-      ) => {
-        try {
-          const response =
-            await getProjects();
+  useEffect(() => {
+    if (!selectedProjectId) {
+      return undefined;
+    }
 
-          const list =
-            listFrom(
-              response,
-              [
-                "projects",
-                "items",
-              ]
-            );
+    let cancelled = false;
 
-          setProjects(list);
+    const refresh = async () => {
+      try {
+        const response =
+          await deploymentLogService.getLatestLog({
+            projectId: selectedProjectId,
+          });
 
-          const chosen =
-            list.find(
-              (item) =>
-                String(
-                  projectId(item)
-                ) ===
-                String(
-                  preferredProjectId
-                )
-            ) ||
-            list[0] ||
-            null;
+        if (cancelled) return;
 
-          if (!chosen) {
-            return;
-          }
+        const log = getServiceObject(response, [
+          "log",
+          "deploymentLog",
+          "latest",
+        ]);
 
-          const nextFiles =
-            projectFiles(
-              chosen
-            );
+        if (!log) return;
 
-          setProject(
-            chosen
-          );
+        setDeploymentLog(log);
 
-          setFiles(
-            nextFiles
-          );
-
-          setSelectedFile(
-            nextFiles[0] ||
-              null
-          );
-
-          if (
-            chosen.framework &&
-            FRAMEWORKS.includes(
-              chosen.framework
-            )
-          ) {
-            setFramework(
-              chosen.framework
-            );
-          }
-        } catch (err) {
-          setError(
-            errorText(
-              err,
-              "Projects could not be loaded."
-            )
+        const status = getBackendLogStatus(log);
+        if (status) {
+          setDeploymentStatus(
+            normalizeDeploymentStatus(status)
           );
         }
-      },
-      []
+
+        const logId = getBackendLogId(log);
+        if (!logId) return;
+
+        const eventsResponse =
+          await deploymentLogService.getEvents(logId, {
+            limit: 40,
+          });
+
+        if (cancelled) return;
+
+        const events = getServiceList(
+          eventsResponse,
+          ["events", "items"]
+        );
+
+        setDeploymentEvents(
+          events.map((event, index) =>
+            normalizeBackendActivityEvent(
+              event,
+              index
+            )
+          )
+        );
+      } catch (pollError) {
+        /* Background refresh must never replace the main UI error. */
+      }
+    };
+
+    refresh();
+
+    const activeStatuses = [
+      "pending",
+      "building",
+      "deploying",
+      "in_progress",
+      "in-progress",
+      "running",
+    ];
+
+    const currentStatus =
+      getBackendLogStatus(deploymentLog);
+
+    if (!activeStatuses.includes(currentStatus)) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const interval = window.setInterval(
+      refresh,
+      5000
     );
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [selectedProjectId, getBackendLogStatus(deploymentLog)]);
 
   /* =======================================================
-     BACKEND CONTEXT
+     LOAD PROJECTS
   ======================================================= */
 
-  const syncBackend =
-    useCallback(
-      async (
-        id,
-        selectedEnvironment
-      ) => {
-        if (!id) {
-          return;
-        }
+  const loadProjects = useCallback(
+    async (preferredProjectId = "") => {
+      try {
+        setProjectLoading(true);
 
-        setSyncing(true);
+        const response = await getProjects();
+        const normalized = normalizeProjects(response);
 
-        try {
-          const results =
-            await Promise.allSettled([
-              environmentService.listEnvironments(
-                id,
-                false
-              ),
+        setProjects(normalized);
 
-              deploymentLogService.getLatestLog(
-                {
-                  projectId:
-                    id,
-                }
-              ),
+        const currentId =
+          preferredProjectId ||
+          getProjectId(selectedProjectRef.current);
 
-              githubService.getConnections(
-                {
-                  projectId:
-                    id,
-                }
-              ),
-            ]);
-
-          /* ENVIRONMENT */
-
-          if (
-            results[0].status ===
-            "fulfilled"
-          ) {
-            const list =
-              listFrom(
-                results[0].value,
-                [
-                  "environments",
-                  "items",
-                ]
-              );
-
-            setEnvironments(
-              list
-            );
-
-            const selected =
-              list.find(
-                (item) =>
-                  String(
-                    item?.name ||
-                      item?.environment ||
-                      ""
-                  ).toLowerCase() ===
-                  String(
-                    selectedEnvironment
-                  ).toLowerCase()
-              ) ||
-              list[0] ||
-              null;
-
-            const environmentName =
-              selected?.name ||
-              selected?.environment ||
-              selectedEnvironment;
-
-            if (selected) {
-              setEnvironment(
-                environmentName
-              );
-            }
-
-            try {
-              const readinessResponse =
-                await environmentService.getDeploymentReadiness(
-                  id,
-                  environmentName
-                );
-
-              setReadiness(
-                objectFrom(
-                  readinessResponse,
-                  [
-                    "readiness",
-                    "deploymentReadiness",
-                  ]
-                )
-              );
-            } catch {
-              setReadiness(
-                null
-              );
-            }
-          }
-
-          /* DEPLOYMENT LOG */
-
-          if (
-            results[1].status ===
-            "fulfilled"
-          ) {
-            const latest =
-              objectFrom(
-                results[1].value,
-                [
-                  "log",
-                  "deploymentLog",
-                  "latest",
-                ]
-              );
-
-            setDeploymentLog(
-              latest
-            );
-          }
-
-          /* GITHUB */
-
-          if (
-            results[2].status ===
-            "fulfilled"
-          ) {
-            const connections =
-              listFrom(
-                results[2].value,
-                [
-                  "connections",
-                  "items",
-                ]
-              );
-
-            const active =
-              connections.find(
-                (connection) =>
-                  [
-                    "active",
-                    "connected",
-                  ].includes(
-                    String(
-                      connection?.status ||
-                        ""
-                    ).toLowerCase()
-                  )
-              ) ||
-              connections[0] ||
-              null;
-
-            setGithub(
-              active
-            );
-          }
-        } finally {
-          setSyncing(
-            false
+        if (currentId) {
+          const preferred = normalized.find(
+            (project) =>
+              String(getProjectId(project)) ===
+              String(currentId)
           );
+
+          if (preferred) {
+            applySelectedProject(preferred);
+            syncBackendContext(getProjectId(preferred));
+            return normalized;
+          }
         }
-      },
-      []
-    );
+
+        if (normalized.length > 0) {
+          applySelectedProject(normalized[0]);
+          syncBackendContext(getProjectId(normalized[0]));
+        } else {
+          selectedProjectRef.current = null;
+          setSelectedProject(null);
+          setGeneratedFiles([]);
+          setSelectedFile(null);
+          setDeploymentStatus("Not deployed");
+          setLiveUrl("");
+        }
+
+        return normalized;
+      } catch (err) {
+        console.error(
+          "Workspace project loading error:",
+          err
+        );
+
+        setError(
+          getErrorMessage(
+            err,
+            "Projects could not be loaded."
+          )
+        );
+
+        return [];
+      } finally {
+        setProjectLoading(false);
+      }
+    },
+    [applySelectedProject, syncBackendContext]
+  );
 
   /* =======================================================
      INITIAL LOAD
   ======================================================= */
 
   useEffect(() => {
+    if (initialLoadStarted.current) {
+      return;
+    }
+
+    initialLoadStarted.current = true;
     loadProjects();
   }, [loadProjects]);
 
   /* =======================================================
-     BACKEND SYNC
+     PROJECT SELECTION
   ======================================================= */
 
-  useEffect(() => {
-    if (!currentId) {
-      return;
-    }
-
-    syncBackend(
-      currentId,
-      environment
-    );
-  }, [
-    currentId,
-    environment,
-    syncBackend,
-  ]);
-
-  /* =======================================================
-     DEPLOYMENT POLLING
-  ======================================================= */
-
-  useEffect(() => {
-    if (!currentId) {
-      return undefined;
-    }
-
-    let cancelled =
-      false;
-
-    const refresh =
-      async () => {
-        try {
-          const response =
-            await deploymentLogService.getLatestLog(
-              {
-                projectId:
-                  currentId,
-              }
-            );
-
-          if (cancelled) {
-            return;
-          }
-
-          const latest =
-            objectFrom(
-              response,
-              [
-                "log",
-                "deploymentLog",
-                "latest",
-              ]
-            );
-
-          if (latest) {
-            setDeploymentLog(
-              latest
-            );
-          }
-        } catch {
-          /*
-           * Background polling intentionally
-           * does not interrupt the workspace.
-           */
-        }
-      };
-
-    refresh();
-
-    const timer =
-      window.setInterval(
-        refresh,
-        5000
-      );
-
-    return () =>
-      window.clearInterval(
-        timer
-      );
-  }, [currentId]);
-
-  /* =======================================================
-     CHAT SCROLL
-  ======================================================= */
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView(
-      {
-        behavior:
-          "smooth",
-        block:
-          "nearest",
-      }
-    );
-  }, [messages]);
-
-  /* =======================================================
-     SELECT PROJECT
-  ======================================================= */
-
-  const selectProject =
-    useCallback(
-      (selected) => {
-        const nextFiles =
-          projectFiles(
-            selected
-          );
-
-        setProject(
-          selected
-        );
-
-        setFiles(
-          nextFiles
-        );
-
-        setSelectedFile(
-          nextFiles[0] ||
-            null
-        );
-
-        if (
-          selected?.framework &&
-          FRAMEWORKS.includes(
-            selected.framework
-          )
-        ) {
-          setFramework(
-            selected.framework
-          );
-        }
-
-        setMessages([]);
-        setError("");
-        setNotice("");
-        setView("preview");
-        setMobile(
-          "workspace"
-        );
-      },
-      []
-    );
-
-  /* =======================================================
-     SELECT FILE
-  ======================================================= */
-
-  const selectFile =
-    useCallback(
-      (file) => {
-        setSelectedFile(
-          file
-        );
-
-        setView(
-          "code"
-        );
-      },
-      []
-    );
-
-  /* =======================================================
-     BUILD
-  ======================================================= */
-
-  const build =
-    useCallback(
-      async (
-        suppliedPrompt = ""
-      ) => {
-        const text =
-          String(
-            suppliedPrompt ||
-              prompt
-          ).trim();
-
-        if (
-          !text ||
-          busy
-        ) {
-          return;
-        }
-
-        setBusy(
-          true
-        );
-
-        setError("");
-        setNotice("");
-
-        setMessages(
-          (previous) => [
-            ...previous,
-            makeMessage(
-              "user",
-              text
-            ),
-          ]
-        );
-
-        log(
-          "Sending build request to AI Builder.",
-          "active"
-        );
-
-        try {
-          const instruction =
-            currentId
-              ? [
-                  `Update project ${currentId}.`,
-                  `Environment: ${environment}.`,
-                  `Framework: ${framework}.`,
-                  "",
-                  "User request:",
-                  text,
-                  "",
-                  "Return complete project files required for the change.",
-                  "Preserve existing working functionality.",
-                  "Do not replace working files unnecessarily.",
-                ].join("\n")
-              : [
-                  `Build a production-ready ${framework} project.`,
-                  `Environment: ${environment}.`,
-                  "",
-                  "User request:",
-                  text,
-                  "",
-                  "Return complete project files.",
-                ].join("\n");
-
-          const response =
-            await generateCode(
-              instruction,
-              framework
-            );
-
-          const generated =
-            getGeneratedFiles(
-              response
-            ) || [];
-
-          if (
-            !generated.length
-          ) {
-            throw new Error(
-              "AI Builder returned no project files."
-            );
-          }
-
-          setFiles(
-            generated
-          );
-
-          setSelectedFile(
-            generated[0]
-          );
-
-          setMessages(
-            (previous) => [
-              ...previous,
-              makeMessage(
-                "assistant",
-                normalizeAIResponse(
-                  response
-                ) ||
-                  `Generated ${generated.length} files.`,
-                {
-                  count:
-                    generated.length,
-                }
-              ),
-            ]
-          );
-
-          log(
-            `AI Builder returned ${generated.length} files.`,
-            "success"
-          );
-
-          if (currentId) {
-            await updateProject(
-              currentId,
-              {
-                files:
-                  generated,
-              }
-            );
-
-            setNotice(
-              `Changes saved to ${projectName(
-                project
-              )}.`
-            );
-
-            log(
-              "Project changes saved to backend.",
-              "success"
-            );
-
-            await loadProjects(
-              currentId
-            );
-
-            await syncBackend(
-              currentId,
-              environment
-            );
-          } else {
-            const generatedName =
-              text
-                .replace(
-                  /\s+/g,
-                  " "
-                )
-                .trim()
-                .split(" ")
-                .slice(
-                  0,
-                  7
-                )
-                .join(" ");
-
-            const created =
-              await createProject(
-                {
-                  projectName:
-                    generatedName ||
-                    "New Project",
-
-                  description:
-                    text,
-
-                  framework,
-
-                  files:
-                    generated,
-                }
-              );
-
-            const saved =
-              objectFrom(
-                created,
-                [
-                  "project",
-                ]
-              );
-
-            const newId =
-              projectId(
-                saved
-              );
-
-            setNotice(
-              "Project created successfully."
-            );
-
-            log(
-              "Project created and saved to backend.",
-              "success"
-            );
-
-            await loadProjects(
-              newId
-            );
-
-            if (newId) {
-              await syncBackend(
-                newId,
-                environment
-              );
-            }
-          }
-
-          setPrompt("");
-          setView(
-            "preview"
-          );
-          setMobile(
-            "workspace"
-          );
-        } catch (err) {
-          const message =
-            errorText(
-              err,
-              "Build failed."
-            );
-
-          setError(
-            message
-          );
-
-          setMessages(
-            (previous) => [
-              ...previous,
-              makeMessage(
-                "assistant",
-                message,
-                {
-                  error:
-                    true,
-                }
-              ),
-            ]
-          );
-
-          log(
-            message,
-            "error"
-          );
-        } finally {
-          setBusy(
-            false
-          );
-        }
-      },
-      [
-        prompt,
-        busy,
-        currentId,
-        environment,
-        framework,
-        project,
-        loadProjects,
-        syncBackend,
-        log,
-      ]
-    );
-
-  /* =======================================================
-     DEPLOY
-  ======================================================= */
-
-  const deploy =
-    useCallback(() => {
-      if (!currentId) {
-        setError(
-          "Select a project before deploying."
-        );
-
-        return;
-      }
-
-      if (!files.length) {
-        setError(
-          "There are no generated files to deploy."
-        );
-
-        return;
-      }
-
-      if (
-        readiness &&
-        !readinessValue(
-          readiness
-        )
-      ) {
-        setError(
-          `${environment} environment is not ready.`
-        );
-
-        return;
-      }
-
-      setNotice(
-        "Opening deployment and billing flow..."
-      );
-
-      log(
-        "Deployment flow opened.",
-        "active"
-      );
-
-      window.location.assign(
-        `/billing?projectId=${encodeURIComponent(
-          currentId
-        )}&environment=${encodeURIComponent(
-          environment
-        )}&intent=deploy`
-      );
-    }, [
-      currentId,
-      files.length,
-      readiness,
-      environment,
-      log,
-    ]);
-
-  /* =======================================================
-     REVIEW / FIX
-  ======================================================= */
-
-  const review =
-    useCallback(() => {
-      if (!currentId) {
-        setError(
-          "Select a project before Review / Fix."
-        );
-
-        return;
-      }
-
-      const request =
-        prompt.trim()
-          ? [
-              "Review and fix the current project.",
-              "",
-              `Project ID: ${currentId}`,
-              `Environment: ${environment}`,
-              "",
-              "Requested change:",
-              prompt,
-              "",
-              "Return complete files required for the fixes.",
-            ].join("\n")
-          : [
-              "Review the current project.",
-              "",
-              `Project ID: ${currentId}`,
-              `Environment: ${environment}`,
-              "",
-              "Check runtime errors, broken functionality, responsive issues and incomplete implementation.",
-              "Return complete files required for fixes.",
-            ].join("\n");
-
-      build(
-        request
-      );
-    }, [
-      currentId,
-      environment,
-      prompt,
-      build,
-    ]);
+  const handleSelectProject = useCallback(
+    (project) => {
+      setError("");
+      setNotice("");
+      setActivityLog([]);
+      setChatMessages([]);
+
+      setActiveView("preview");
+      setMobilePanel("workspace");
+      setFilesDrawerOpen(false);
+      setActivityDrawerOpen(false);
+      setPreviewFullscreen(false);
+
+      applySelectedProject(project);
+      syncBackendContext(getProjectId(project));
+    },
+    [applySelectedProject, syncBackendContext]
+  );
 
   /* =======================================================
      NEW PROJECT
   ======================================================= */
 
-  const newProject =
-    useCallback(() => {
-      setProject(
-        null
-      );
+  const handleNewProject = useCallback(() => {
+    selectedProjectRef.current = null;
 
-      setFiles(
-        []
-      );
+    setSelectedProject(null);
+    setGeneratedFiles([]);
+    setSelectedFile(null);
 
-      setSelectedFile(
-        null
-      );
+    setPrompt("");
+    setChatMessages([]);
 
-      setPrompt(
-        ""
-      );
+    setLiveUrl("");
+    setDeploymentStatus("Not deployed");
 
-      setMessages(
-        []
-      );
+    setActiveView("preview");
+    setMobilePanel("workspace");
 
-      setError(
-        ""
-      );
+    setFilesDrawerOpen(false);
+    setActivityDrawerOpen(false);
+    setPreviewFullscreen(false);
 
-      setNotice(
-        ""
-      );
+    setError("");
+    setNotice("");
+    setActivityLog([]);
 
-      setView(
-        "preview"
-      );
+    setOperation("idle");
+    setOperationStartedAt(null);
 
-      setMobile(
-        "chat"
-      );
-
-      setReadiness(
-        null
-      );
-
-      setDeploymentLog(
-        null
-      );
-
-      setGithub(
-        null
-      );
-    }, []);
+    setEnvironments([]);
+    setActiveEnvironment("development");
+    setEnvironmentReadiness(null);
+    setDeploymentLog(null);
+    setDeploymentEvents([]);
+    setGithubConnection(null);
+    setGithubRepository(null);
+    setBackendSyncError("");
+  }, []);
 
   /* =======================================================
      QUICK PROMPT
   ======================================================= */
 
-  const useQuickPrompt =
-    useCallback(
-      (value) => {
-        setPrompt(
-          value
-        );
+  const handleQuickPrompt = useCallback((value) => {
+    setPrompt(value);
+    setError("");
+    setNotice("");
+    setMobilePanel("workspace");
 
-        setMobile(
-          "chat"
-        );
-      },
-      []
-    );
+    window.setTimeout(() => {
+      document
+        .querySelector(
+          '[data-zyrionos-chat-input="true"]'
+        )
+        ?.focus();
+    }, 50);
+  }, []);
 
   /* =======================================================
-     DERIVED STATE
+     BUILD / CHANGE
   ======================================================= */
 
-  const deploymentStatus =
-    deploymentState(
-      deploymentLog?.status ||
-        deploymentLog?.deploymentStatus ||
-        project?.deploymentStatus
+  const handleBuild = useCallback(
+    async (suppliedPrompt = "") => {
+      const userPrompt = String(
+        suppliedPrompt || prompt
+      ).trim();
+
+      if (!userPrompt) {
+        setError(
+          "Describe what you want to build or change first."
+        );
+        return;
+      }
+
+      if (loading) {
+        return;
+      }
+
+      const isExistingProject =
+        Boolean(selectedProjectId);
+
+      try {
+        setError("");
+        setNotice("");
+        setLoading(true);
+
+        setActiveView("preview");
+        setMobilePanel("workspace");
+
+        setChatMessages((previous) => [
+          ...previous,
+          createMessage("user", userPrompt),
+        ]);
+
+        startOperation(
+          isExistingProject
+            ? "change"
+            : "build",
+          isExistingProject
+            ? "Your change request is being processed..."
+            : "Your application is being built..."
+        );
+
+        addActivity(
+          "Understanding the request...",
+          "active"
+        );
+
+        const instruction = isExistingProject
+          ? [
+              "Update the current project.",
+              "",
+              `Project ID: ${selectedProjectId}`,
+              `Project name: ${projectName}`,
+              `Framework: ${framework}`,
+              "",
+              "User request:",
+              userPrompt,
+              "",
+              "Return the complete project files required for the implementation.",
+              "Preserve working functionality unless the requested change requires modifying it.",
+            ].join("\n")
+          : userPrompt;
+
+        addActivity(
+          "Generating the application files...",
+          "active"
+        );
+
+        const aiResult = await generateCode(
+          instruction,
+          framework
+        );
+
+        addActivity(
+          "Application files generated.",
+          "success"
+        );
+
+        const assistantText =
+          normalizeAIResponse(aiResult);
+
+        const filesFromAI =
+          getGeneratedFiles(aiResult);
+
+        if (filesFromAI.length === 0) {
+          throw new Error(
+            "AI generation completed, but no project files were returned by the backend."
+          );
+        }
+
+        addActivity(
+          `${filesFromAI.length} project files received.`,
+          "success"
+        );
+
+        setChatMessages((previous) => [
+          ...previous,
+          createMessage(
+            "assistant",
+            assistantText ||
+              `The application is ready. ${filesFromAI.length} files were generated.`,
+            {
+              fileCount: filesFromAI.length,
+            }
+          ),
+        ]);
+
+        /* =================================================
+           CREATE NEW PROJECT
+        ================================================= */
+
+        if (!isExistingProject) {
+          const generatedProjectName =
+            buildProjectName(userPrompt);
+
+          addActivity(
+            "Saving the project to your workspace...",
+            "active"
+          );
+
+          const projectResponse =
+            await createProject({
+              projectName: generatedProjectName,
+              description: userPrompt,
+              framework,
+              files: filesFromAI,
+            });
+
+          let createdProject =
+            extractProjectFromResponse(
+              projectResponse
+            );
+
+          if (!createdProject) {
+            const unwrapped =
+              unwrapApiResponse(projectResponse);
+
+            if (
+              unwrapped &&
+              typeof unwrapped === "object" &&
+              !Array.isArray(unwrapped) &&
+              (
+                unwrapped._id ||
+                unwrapped.id ||
+                unwrapped.projectName ||
+                Array.isArray(unwrapped.files)
+              )
+            ) {
+              createdProject = unwrapped;
+            }
+          }
+
+          if (createdProject) {
+            const savedFiles =
+              normalizeProjectFiles(
+                createdProject,
+                null
+              );
+
+            const finalFiles =
+              savedFiles.length > 0
+                ? savedFiles
+                : filesFromAI;
+
+            const projectWithFiles = {
+              ...createdProject,
+              projectName:
+                getProjectName(
+                  createdProject
+                ) || generatedProjectName,
+              files: finalFiles,
+            };
+
+            applySelectedProject(
+              projectWithFiles
+            );
+
+            setGeneratedFiles(finalFiles);
+            setSelectedFile(
+              finalFiles[0] || null
+            );
+
+            const createdId =
+              getProjectId(createdProject);
+
+            if (createdId) {
+              await loadProjects(createdId);
+            } else {
+              await loadProjects();
+            }
+          } else {
+            await loadProjects();
+          }
+
+          setNotice(
+            `${generatedProjectName} was created and saved to your projects.`
+          );
+        } else {
+          /* ===============================================
+             UPDATE EXISTING PROJECT
+          =============================================== */
+
+          addActivity(
+            "Saving the updated project...",
+            "active"
+          );
+
+          const updateResponse =
+            await updateProject(
+              selectedProjectId,
+              {
+                files: filesFromAI,
+              }
+            );
+
+          const updatedProject =
+            extractProjectFromResponse(
+              updateResponse
+            );
+
+          if (updatedProject) {
+            const returnedFiles =
+              normalizeProjectFiles(
+                updatedProject,
+                null
+              );
+
+            const appliedUpdatedProject = {
+              ...updatedProject,
+              files:
+                returnedFiles.length > 0
+                  ? returnedFiles
+                  : filesFromAI,
+            };
+
+            applySelectedProject(
+              appliedUpdatedProject
+            );
+            syncBackendContext(
+              getProjectId(appliedUpdatedProject) ||
+                selectedProjectId
+            );
+          } else {
+            await loadProjects(
+              selectedProjectId
+            );
+          }
+
+          setGeneratedFiles(filesFromAI);
+          setSelectedFile(
+            filesFromAI[0] || null
+          );
+
+          setNotice(
+            `Changes saved to ${projectName}.`
+          );
+
+          addActivity(
+            "Project changes saved.",
+            "success"
+          );
+        }
+
+        setPrompt("");
+        setActiveView("preview");
+
+        finishOperation(
+          true,
+          isExistingProject
+            ? "Changes completed successfully."
+            : "Project build completed successfully."
+        );
+      } catch (err) {
+        console.error(
+          "Workspace build error:",
+          err
+        );
+
+        const message = getErrorMessage(
+          err,
+          "The build could not be completed."
+        );
+
+        setChatMessages((previous) => [
+          ...previous,
+          createMessage(
+            "assistant",
+            message,
+            { error: true }
+          ),
+        ]);
+
+        setError(message);
+
+        finishOperation(
+          false,
+          "The build could not be completed."
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      prompt,
+      loading,
+      selectedProjectId,
+      projectName,
+      framework,
+      startOperation,
+      addActivity,
+      applySelectedProject,
+      loadProjects,
+      syncBackendContext,
+      finishOperation,
+    ]
+  );
+
+  /* =======================================================
+     CHAT SUBMIT
+  ======================================================= */
+
+  const handleChatSubmit = useCallback(
+    (event) => {
+      event?.preventDefault();
+
+      if (loading || !prompt.trim()) {
+        return;
+      }
+
+      handleBuild(prompt);
+    },
+    [loading, prompt, handleBuild]
+  );
+
+  /* =======================================================
+     REVIEW / FIX
+  ======================================================= */
+
+  const handleReviewFix = useCallback(async () => {
+    if (!selectedProjectId) {
+      setError(
+        "Select a project before running Review / Fix."
+      );
+      return;
+    }
+
+    if (loading) {
+      return;
+    }
+
+    const reviewInstruction = prompt.trim()
+      ? [
+          "Review and improve the current project.",
+          "",
+          `Project ID: ${selectedProjectId}`,
+          `Project name: ${projectName}`,
+          "",
+          "Requested review/change:",
+          prompt.trim(),
+          "",
+          "Return the complete project files required for the implementation.",
+        ].join("\n")
+      : [
+          "Review the current project.",
+          "",
+          "Check for implementation errors, broken user experience, responsive issues, accessibility problems, and incomplete functionality.",
+          "",
+          "Return the complete project files required for any fixes.",
+        ].join("\n");
+
+    setPrompt(reviewInstruction);
+    await handleBuild(reviewInstruction);
+  }, [
+    selectedProjectId,
+    loading,
+    prompt,
+    projectName,
+    handleBuild,
+  ]);
+
+  /* =======================================================
+     DEPLOY
+     Existing billing/deployment architecture is preserved.
+     Only the single top-level Deploy action is exposed.
+  ======================================================= */
+
+  const handleDeploy = useCallback(() => {
+    const projectId = getProjectId(
+      selectedProject
     );
 
-  const environmentReady =
-    readinessValue(
-      readiness
+    if (!projectId) {
+      setError(
+        "Select a project before deploying."
+      );
+      return;
+    }
+
+    if (generatedFiles.length === 0) {
+      setError(
+        "This project has no generated files to deploy."
+      );
+      return;
+    }
+
+    setError("");
+    setNotice(
+      "Opening the deployment flow for this project..."
     );
 
-  const livePreviewUrl =
-    project?.previewUrl ||
-    project?.preview?.url ||
-    project?.preview?.liveUrl ||
-    project?.liveUrl ||
-    project?.deploymentUrl ||
-    project?.deployment?.url ||
-    "";
-
-  const progress =
-    deploymentProgress(
-      deploymentLog
+    window.location.assign(
+      `/billing?projectId=${encodeURIComponent(
+        projectId
+      )}&intent=deploy`
     );
+  }, [selectedProject, generatedFiles.length]);
 
-  const activeProjectLabel =
-    project
-      ? projectName(
-          project
+  /* =======================================================
+     PREVIEW
+  ======================================================= */
+
+  const openPreview = useCallback(() => {
+    setActiveView("preview");
+    setMobilePanel("workspace");
+    setPreviewFullscreen(true);
+  }, []);
+
+  const closePreview = useCallback(() => {
+    setPreviewFullscreen(false);
+  }, []);
+
+  /* =======================================================
+     FILES / ACTIVITY
+  ======================================================= */
+
+  const openFilesDrawer = useCallback(() => {
+    setFilesDrawerOpen(true);
+    setActivityDrawerOpen(false);
+  }, []);
+
+  const closeFilesDrawer = useCallback(() => {
+    setFilesDrawerOpen(false);
+  }, []);
+
+  const openActivityDrawer = useCallback(() => {
+    setActivityDrawerOpen(true);
+    setFilesDrawerOpen(false);
+  }, []);
+
+  const closeActivityDrawer = useCallback(() => {
+    setActivityDrawerOpen(false);
+  }, []);
+
+  const handleFileSelect = useCallback((file) => {
+    setSelectedFile(file);
+    setFilesDrawerOpen(false);
+    setActiveView("code");
+  }, []);
+
+  /* =======================================================
+     KEYBOARD
+  ======================================================= */
+
+  const handlePromptKeyDown = useCallback(
+    (event) => {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        handleChatSubmit(event);
+      }
+    },
+    [handleChatSubmit]
+  );
+
+  const combinedActivityLog = useMemo(() => {
+    const local = Array.isArray(activityLog)
+      ? activityLog
+      : [];
+
+    const backend = Array.isArray(deploymentEvents)
+      ? deploymentEvents
+      : [];
+
+    return [...local, ...backend]
+      .sort((a, b) =>
+        String(a?.timestamp || "").localeCompare(
+          String(b?.timestamp || "")
         )
-      : "New Project";
+      )
+      .slice(-60);
+  }, [activityLog, deploymentEvents]);
 
-  const githubConnected =
-    Boolean(
-      github &&
-        [
-          "active",
-          "connected",
-        ].includes(
-          String(
-            github?.status ||
-              ""
-          ).toLowerCase()
-        )
-    );
+  const backendDeploymentStatus =
+    getBackendLogStatus(deploymentLog);
+
+  const githubStatus = githubConnection
+    ? String(githubConnection.status || "connected")
+        .toLowerCase()
+    : "disconnected";
+
+  const environmentStatus =
+    environmentReadiness?.ready === true ||
+    environmentReadiness?.isReady === true
+      ? "Ready"
+      : environmentReadiness
+      ? "Check"
+      : "Unknown";
 
   /* =======================================================
      RENDER
@@ -1798,171 +1825,87 @@ export default function Workspace() {
 
   return (
     <DashboardLayout>
-      <main
-        className={
-          styles.workspace
-        }
-      >
+      <main className={styles.workspace}>
         {/* =================================================
             HEADER
         ================================================= */}
 
-        <header
-          className={
-            styles.header
-          }
-        >
-          <div
-            className={
-              styles.brand
-            }
-          >
-            <b>
-              Z
-            </b>
+        <header className={styles.workspaceHeader}>
+          <div className={styles.brandBlock}>
+            <div className={styles.projectMark}>Z</div>
 
-            <div>
-              <span>
-                ZYRIONOS WORKSPACE
-              </span>
-
-              <strong>
-                {
-                  activeProjectLabel
-                }
+            <div className={styles.brandCopy}>
+              <span>ZYRIONOS WORKSPACE</span>
+              <strong title={projectName}>
+                {projectName}
               </strong>
             </div>
           </div>
 
-          <div
-            className={
-              styles.status
-            }
-          >
-            <i
-              data-active={
-                busy
+          <div className={styles.headerStatus}>
+            <span
+              className={
+                operationRunning
+                  ? styles.statusRunning
+                  : styles.statusReady
               }
             />
 
-            {busy
-              ? "Working"
-              : "Ready"}
+            <strong>
+              {operationRunning
+                ? currentOperationLabel
+                : "Ready"}
+            </strong>
 
-            {syncing
-              ? " · Syncing"
-              : ""}
+            {operationRunning && (
+              <span className={styles.statusDots}>
+                <i />
+                <i />
+                <i />
+              </span>
+            )}
+
+            {operationRunning && (
+              <small>
+                {elapsedSeconds}s
+              </small>
+            )}
           </div>
 
-          <div
-            className={
-              styles.environment
-            }
-          >
-            <label>
-              Environment
-            </label>
-
-            <select
-              value={
-                environment
-              }
-              onChange={(
-                event
-              ) =>
-                setEnvironment(
-                  event.target
-                    .value
-                )
-              }
-              disabled={
-                busy
-              }
-            >
-              {(
-                environments.length
-                  ? environments
-                  : ENVIRONMENTS.map(
-                      (
-                        name
-                      ) => ({
-                        name,
-                      })
-                    )
-              ).map(
-                (
-                  item
-                ) => {
-                  const name =
-                    item?.name ||
-                    item?.environment;
-
-                  return (
-                    <option
-                      key={
-                        name
-                      }
-                      value={
-                        name
-                      }
-                    >
-                      {name}
-                    </option>
-                  );
-                }
-              )}
-            </select>
-
-            <em
-              data-ready={
-                environmentReady
-              }
-            >
-              {readiness
-                ? environmentReady
-                  ? "Ready"
-                  : "Check"
-                : "—"}
-            </em>
-          </div>
-
-          <div
-            className={
-              styles.headerActions
-            }
-          >
+          <div className={styles.headerActions}>
             <button
               type="button"
-              onClick={
-                newProject
-              }
+              className={styles.headerButton}
+              onClick={openFilesDrawer}
             >
-              New Project
+              Files
+              <b>{generatedFiles.length}</b>
             </button>
 
             <button
               type="button"
-              onClick={() =>
-                setMobile(
-                  "activity"
-                )
-              }
+              className={styles.headerButton}
+              onClick={openActivityDrawer}
             >
               Activity
             </button>
 
             <button
               type="button"
-              className={
-                styles.deploy
-              }
-              onClick={
-                deploy
-              }
+              className={styles.previewTopButton}
+              onClick={openPreview}
+              disabled={generatedFiles.length === 0}
+            >
+              Preview
+            </button>
+
+            <button
+              type="button"
+              className={styles.deployButton}
+              onClick={handleDeploy}
               disabled={
-                !currentId ||
-                !files.length ||
-                busy
+                !selectedProjectId ||
+                generatedFiles.length === 0
               }
             >
               Deploy
@@ -1971,37 +1914,62 @@ export default function Workspace() {
         </header>
 
         {/* =================================================
-            ALERT
+            ALERTS
         ================================================= */}
 
-        {(error ||
-          notice) && (
+        {error && (
           <div
-            className={
-              error
-                ? styles.alertError
-                : styles.alertNotice
-            }
+            className={styles.alertError}
+            role="alert"
           >
-            <span>
-              {error ||
-                notice}
-            </span>
+            <span>!</span>
+
+            <div>
+              <strong>Workspace error</strong>
+              <p>{error}</p>
+            </div>
 
             <button
               type="button"
-              onClick={() => {
-                setError(
-                  ""
-                );
-
-                setNotice(
-                  ""
-                );
-              }}
-              aria-label="Dismiss notification"
+              onClick={() => setError("")}
+              aria-label="Close error"
             >
-              ×
+              脳
+            </button>
+          </div>
+        )}
+
+        {notice && !error && (
+          <div
+            className={styles.alertSuccess}
+            role="status"
+          >
+            <span>鉁�</span>
+            <p>{notice}</p>
+
+            <button
+              type="button"
+              onClick={() => setNotice("")}
+              aria-label="Close notice"
+            >
+              脳
+            </button>
+          </div>
+        )}
+
+        {backendSyncError && !error && (
+          <div
+            className={styles.alertInfo}
+            role="status"
+          >
+            <span>i</span>
+            <p>{backendSyncError}</p>
+            <button
+              type="button"
+              onClick={() => setBackendSyncError("")}
+              aria-label="Close backend status"
+            >
+              脳
             </button>
           </div>
         )}
@@ -2010,262 +1978,402 @@ export default function Workspace() {
             MOBILE NAV
         ================================================= */}
 
-        <nav
-          className={
-            styles.mobileNav
-          }
-        >
-          {[
-            [
-              "projects",
-              "Projects",
-            ],
-            [
-              "workspace",
-              "Workspace",
-            ],
-            [
-              "chat",
-              "AI Builder",
-            ],
-            [
-              "activity",
-              "Activity",
-            ],
-          ].map(
-            ([
-              value,
-              label,
-            ]) => (
-              <button
-                key={
-                  value
-                }
-                type="button"
-                className={
-                  mobile ===
-                  value
-                    ? styles.mobileActive
-                    : ""
-                }
-                onClick={() =>
-                  setMobile(
-                    value
-                  )
-                }
-              >
-                {label}
-              </button>
-            )
-          )}
+        <nav className={styles.mobileNav}>
+          <button
+            type="button"
+            className={
+              mobilePanel === "projects"
+                ? styles.mobileNavActive
+                : ""
+            }
+            onClick={() =>
+              setMobilePanel("projects")
+            }
+          >
+            Projects
+          </button>
+
+          <button
+            type="button"
+            className={
+              mobilePanel === "workspace"
+                ? styles.mobileNavActive
+                : ""
+            }
+            onClick={() =>
+              setMobilePanel("workspace")
+            }
+          >
+            Workspace
+          </button>
+
+          <button
+            type="button"
+            className={
+              mobilePanel === "ai"
+                ? styles.mobileNavActive
+                : ""
+            }
+            onClick={() =>
+              setMobilePanel("ai")
+            }
+          >
+            AI
+          </button>
+
+          <button
+            type="button"
+            className={
+              mobilePanel === "activity"
+                ? styles.mobileNavActive
+                : ""
+            }
+            onClick={() =>
+              setMobilePanel("activity")
+            }
+          >
+            Activity
+          </button>
         </nav>
 
         {/* =================================================
             BODY
         ================================================= */}
 
-        <section
-          className={
-            styles.body
-          }
-        >
+        <section className={styles.workspaceBody}>
           {/* =================================================
               PROJECTS
           ================================================= */}
 
           <aside
-            className={`${styles.projects} ${
-              mobile ===
-              "projects"
-                ? styles.mobilePanel
-                : ""
-            }`}
+            className={`
+              ${styles.projectRail}
+              ${
+                mobilePanel === "projects"
+                  ? styles.mobileVisible
+                  : ""
+              }
+            `}
           >
-            <MobilePanelHeader
-              title="Projects"
-              subtitle={`${projects.length} project${
-                projects.length ===
-                1
-                  ? ""
-                  : "s"
-              }`}
-              onClose={() =>
-                setMobile(
-                  "workspace"
-                )
-              }
-            />
-
-            <div
-              className={
-                styles.sectionTitle
-              }
-            >
-              <span>
-                WORKSPACE
-              </span>
-
-              <strong>
-                Projects
-              </strong>
+            <div className={styles.railHeader}>
+              <div>
+                <span>PROJECTS</span>
+                <b>{projectCount}</b>
+              </div>
 
               <button
                 type="button"
-                onClick={
-                  newProject
-                }
-                aria-label="Create project"
+                onClick={handleNewProject}
               >
-                +
+                + New
               </button>
             </div>
 
-            <small
-              className={
-                styles.count
-              }
+            <button
+              type="button"
+              className={styles.newProjectCard}
+              onClick={handleNewProject}
             >
-              {projects.length}{" "}
-              project
-              {projects.length ===
-              1
-                ? ""
-                : "s"}
-            </small>
+              <span>+</span>
 
-            <div
-              className={
-                styles.projectList
-              }
-            >
-              {projects.map(
-                (
-                  item
-                ) => {
-                  const id =
-                    projectId(
-                      item
-                    );
+              <div>
+                <strong>Create a Project</strong>
+                <small>Start from an idea</small>
+              </div>
+
+              <b>鈫�</b>
+            </button>
+
+            <div className={styles.quickPromptList}>
+              <span>START WITH</span>
+
+              {QUICK_PROMPTS.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() =>
+                    handleQuickPrompt(
+                      item.prompt
+                    )
+                  }
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.projectList}>
+              {projectLoading ? (
+                <div className={styles.projectLoading}>
+                  Loading projects...
+                </div>
+              ) : projects.length === 0 ? (
+                <div className={styles.noProjects}>
+                  <strong>No projects yet</strong>
+                  <p>
+                    Start with an idea and your
+                    project will be saved here.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleNewProject}
+                  >
+                    Start building
+                  </button>
+                </div>
+              ) : (
+                projects.map((project) => {
+                  const id = getProjectId(project);
+                  const name = getProjectName(project);
 
                   const active =
-                    String(
-                      id
-                    ) ===
-                    String(
-                      currentId
+                    String(id) ===
+                    String(selectedProjectId);
+
+                  const files =
+                    normalizeProjectFiles(
+                      project,
+                      null
                     );
 
                   return (
                     <button
-                      key={
-                        id
-                      }
+                      key={id || name}
                       type="button"
-                      className={
-                        active
-                          ? styles.projectActive
-                          : ""
-                      }
+                      className={`
+                        ${styles.projectItem}
+                        ${
+                          active
+                            ? styles.projectItemActive
+                            : ""
+                        }
+                      `}
                       onClick={() =>
-                        selectProject(
-                          item
+                        handleSelectProject(
+                          project
                         )
                       }
                     >
-                      <b>
-                        Z
-                      </b>
+                      <span
+                        className={
+                          styles.projectAvatar
+                        }
+                      >
+                        {name
+                          .charAt(0)
+                          .toUpperCase()}
+                      </span>
 
-                      <span>
-                        <strong>
-                          {projectName(
-                            item
-                          )}
+                      <span
+                        className={
+                          styles.projectItemCopy
+                        }
+                      >
+                        <strong title={name}>
+                          {name}
                         </strong>
 
                         <small>
-                          {item?.framework ||
-                            "React"}
+                          {getProjectFramework(
+                            project
+                          )}
+                          {files.length > 0
+                            ? ` 路 ${files.length} files`
+                            : ""}
                         </small>
                       </span>
 
-                      <em>
-                        ›
-                      </em>
+                      {active && (
+                        <i
+                          className={
+                            styles.projectActiveIndicator
+                          }
+                        />
+                      )}
                     </button>
                   );
-                }
-              )}
-
-              {!projects.length && (
-                <div
-                  className={
-                    styles.emptySmall
-                  }
-                >
-                  <strong>
-                    No projects yet
-                  </strong>
-
-                  <span>
-                    Start with the AI Builder.
-                  </span>
-                </div>
+                })
               )}
             </div>
-
-            <footer>
-              <span
-                data-connected={
-                  githubConnected
-                }
-              >
-                {githubConnected
-                  ? "● GitHub connected"
-                  : "○ GitHub not connected"}
-              </span>
-
-              <br />
-
-              {environments.length}{" "}
-              environment
-              {environments.length ===
-              1
-                ? ""
-                : "s"}
-            </footer>
           </aside>
 
           {/* =================================================
-              CENTER WORKSPACE
+              MAIN WORKSPACE
           ================================================= */}
 
           <section
-            className={`${styles.center} ${
-              mobile ===
-              "workspace"
-                ? styles.mobileCenter
-                : ""
-            }`}
-          >
-            <div
-              className={
-                styles.toolbar
+            className={`
+              ${styles.mainWorkspace}
+              ${
+                mobilePanel === "workspace"
+                  ? styles.mobileVisible
+                  : ""
               }
-            >
-              <div>
+            `}
+          >
+            {/* TOOLBAR */}
+
+            <div className={styles.workspaceToolbar}>
+              <div className={styles.workspaceTitle}>
+                <span>APPLICATION</span>
+                <strong title={projectName}>
+                  {projectName}
+                </strong>
+              </div>
+
+              <div className={styles.workspaceContext}>
+                <div className={styles.contextItem}>
+                  <span>ENV</span>
+                  <select
+                    value={activeEnvironment}
+                    onChange={async (event) => {
+                      const name = event.target.value;
+                      setActiveEnvironment(name);
+
+                      if (!selectedProjectId) return;
+
+                      try {
+                        const readiness =
+                          await environmentService.getDeploymentReadiness(
+                            selectedProjectId,
+                            name
+                          );
+
+                        setEnvironmentReadiness(
+                          getServiceObject(readiness, [
+                            "readiness",
+                            "deploymentReadiness",
+                          ])
+                        );
+                      } catch (err) {
+                        setEnvironmentReadiness(null);
+                        setBackendSyncError(
+                          getErrorMessage(
+                            err,
+                            "Environment readiness could not be loaded."
+                          )
+                        );
+                      }
+                    }}
+                    disabled={
+                      loading ||
+                      backendSyncing ||
+                      environments.length === 0
+                    }
+                    className={styles.environmentSelect}
+                    aria-label="Environment"
+                  >
+                    {(environments.length > 0
+                      ? environments
+                      : [
+                          {
+                            name: "development",
+                          },
+                        ]
+                    ).map((environment) => {
+                      const name =
+                        environment?.name ||
+                        environment?.environment ||
+                        "development";
+
+                      return (
+                        <option
+                          key={name}
+                          value={name}
+                        >
+                          {name}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <span
+                  className={
+                    environmentStatus === "Ready"
+                      ? styles.contextReady
+                      : styles.contextPending
+                  }
+                  title="Environment readiness"
+                >
+                  {environmentStatus}
+                </span>
+
+                <span
+                  className={
+                    githubConnection
+                      ? styles.contextReady
+                      : styles.contextPending
+                  }
+                  title={
+                    githubRepository
+                      ? `GitHub: ${
+                          githubRepository?.fullName ||
+                          githubRepository?.name ||
+                          "connected"
+                        }`
+                      : "GitHub connection"
+                  }
+                >
+                  {githubConnection
+                    ? "GitHub"
+                    : "No GitHub"}
+                </span>
+
+                {backendSyncing && (
+                  <span className={styles.contextSyncing}>
+                    Syncing
+                  </span>
+                )}
+
+                <span
+                  className={
+                    backendDeploymentStatus
+                      ? styles.contextDeployment
+                      : styles.contextMuted
+                  }
+                  title="Deployment log status"
+                >
+                  {backendDeploymentStatus
+                    ? normalizeDeploymentStatus(
+                        backendDeploymentStatus
+                      )
+                    : "No deployment"}
+                </span>
+              </div>
+
+              <div className={styles.toolbarActions}>
+                <select
+                  value={framework}
+                  onChange={(event) =>
+                    setFramework(
+                      event.target.value
+                    )
+                  }
+                  disabled={loading}
+                  className={styles.frameworkSelect}
+                  aria-label="Framework"
+                >
+                  {FRAMEWORKS.map((item) => (
+                    <option
+                      key={item}
+                      value={item}
+                    >
+                      {item}
+                    </option>
+                  ))}
+                </select>
+
                 <button
                   type="button"
                   className={
-                    view ===
-                    "preview"
-                      ? styles.activeTab
-                      : ""
+                    activeView === "preview"
+                      ? styles.toolbarActive
+                      : styles.toolbarButton
                   }
                   onClick={() =>
-                    setView(
-                      "preview"
-                    )
+                    setActiveView("preview")
                   }
                 >
                   Preview
@@ -2274,842 +2382,884 @@ export default function Workspace() {
                 <button
                   type="button"
                   className={
-                    view ===
-                    "code"
-                      ? styles.activeTab
-                      : ""
+                    activeView === "code"
+                      ? styles.toolbarActive
+                      : styles.toolbarButton
                   }
                   onClick={() =>
-                    setView(
-                      "code"
-                    )
-                  }
-                  disabled={
-                    !files.length
+                    setActiveView("code")
                   }
                 >
                   Code
                 </button>
-
-                <select
-                  value={
-                    framework
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setFramework(
-                      event.target
-                        .value
-                    )
-                  }
-                  disabled={
-                    busy
-                  }
-                >
-                  {FRAMEWORKS.map(
-                    (
-                      item
-                    ) => (
-                      <option
-                        key={
-                          item
-                        }
-                        value={
-                          item
-                        }
-                      >
-                        {item}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
-
-              <div
-                className={
-                  styles.toolbarStatus
-                }
-              >
-                <span
-                  data-state={
-                    deploymentStatus
-                      .toLowerCase()
-                      .replace(
-                        /\s+/g,
-                        "-"
-                      )
-                  }
-                >
-                  {deploymentStatus}
-                </span>
-
-                {files.length ? (
-                  <small>
-                    {files.length}{" "}
-                    files
-                  </small>
-                ) : null}
               </div>
             </div>
 
-            <div
-              className={
-                styles.visual
-              }
-            >
-              {view ===
-              "preview" ? (
-                <div
-                  className={
-                    styles.preview
-                  }
-                >
-                  <div
-                    className={
-                      styles.previewBar
-                    }
-                  >
-                    <div
-                      className={
-                        styles.previewDots
-                      }
-                    >
+            {/* WORK SURFACE */}
+
+            <div className={styles.visualArea}>
+              {activeView === "preview" ? (
+                <div className={styles.previewShell}>
+                  <div className={styles.previewHeader}>
+                    <div className={styles.browserDots}>
                       <i />
                       <i />
                       <i />
                     </div>
 
-                    <strong>
-                      {
-                        activeProjectLabel
+                    <span
+                      className={
+                        styles.previewProjectName
                       }
-                    </strong>
-
-                    <span>
-                      {livePreviewUrl
-                        ? "LIVE"
-                        : "LOCAL PREVIEW"}
+                      title={projectName}
+                    >
+                      {projectName}
                     </span>
+
+                    <div className={styles.previewAddress}>
+                      {previewUrl ||
+                        (previewEntryFile
+                          ? "Local HTML preview"
+                          : "Preview runtime")}
+                    </div>
+
+                    <span
+                      className={
+                        previewUrl ||
+                        previewEntryFile
+                          ? styles.previewReady
+                          : styles.previewPending
+                      }
+                    >
+                      {previewUrl
+                        ? "LIVE"
+                        : previewEntryFile
+                        ? "READY"
+                        : previewStatus ||
+                          "WAITING"}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={openPreview}
+                      disabled={
+                        generatedFiles.length === 0
+                      }
+                    >
+                      Open
+                    </button>
                   </div>
 
-                  {files.length ? (
-                    <Preview
-                      files={
-                        files
-                      }
-                      liveUrl={
-                        livePreviewUrl
-                      }
-                      framework={
-                        framework
-                      }
-                    />
-                  ) : (
-                    <div
-                      className={
-                        styles.previewEmpty
-                      }
-                    >
+                  <div className={styles.previewContent}>
+                    {previewUrl ? (
+                      <iframe
+                        title={`${projectName} application preview`}
+                        src={previewUrl}
+                        className={
+                          styles.previewFrame
+                        }
+                        allow="fullscreen"
+                      />
+                    ) : previewEntryFile ? (
+                      <LocalProjectPreview
+                        files={generatedFiles}
+                        framework={
+                          getProjectFramework(
+                            selectedProject
+                          ) || framework
+                        }
+                      />
+                    ) : (
                       <div
                         className={
-                          styles.previewIcon
+                          styles.previewEmpty
                         }
                       >
-                        Z
-                      </div>
+                        <div
+                          className={
+                            styles.previewIcon
+                          }
+                        >
+                          Z
+                        </div>
 
-                      <strong>
-                        Workspace ready
-                      </strong>
+                        <span>
+                          PREVIEW
+                        </span>
 
-                      <p>
-                        Build something
-                        with the AI
-                        Builder. Your
-                        generated project
-                        will appear here
-                        as a real preview.
-                      </p>
+                        <h2>
+                          Project generated
+                        </h2>
 
-                      <div
-                        className={
-                          styles.quick
-                        }
-                      >
-                        {QUICK_PROMPTS.map(
-                          ([
-                            label,
-                            value,
-                          ]) => (
-                            <button
-                              key={
-                                label
-                              }
-                              type="button"
-                              onClick={() =>
-                                useQuickPrompt(
-                                  value
-                                )
-                              }
-                            >
-                              {label}
-                            </button>
-                          )
+                        <p>
+                          {generatedFiles.length > 0
+                            ? `${generatedFiles.length} files are ready. The backend has not returned a live preview runtime URL yet.`
+                            : "Build an application to create the project files."}
+                        </p>
+
+                        {generatedFiles.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={openFilesDrawer}
+                          >
+                            View project files
+                          </button>
                         )}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ) : (
-                <div
-                  className={
-                    styles.code
-                  }
-                >
+                <div className={styles.codeSurface}>
                   <div
                     className={
-                      styles.codeHead
+                      styles.codeSurfaceHeader
                     }
                   >
                     <div>
-                      <span>
-                        GENERATED FILE
-                      </span>
-
-                      <strong>
-                        {selectedFile
-                          ? filePath(
-                              selectedFile
-                            )
-                          : "No file selected"}
-                      </strong>
+                      <span>PROJECT FILES</span>
+                      <b>{generatedFiles.length}</b>
                     </div>
 
-                    <small>
-                      {selectedFile
-                        ? fileExtension(
-                            filePath(
-                              selectedFile
-                            )
-                          ).toUpperCase()
-                        : ""}
-                    </small>
+                    <button
+                      type="button"
+                      onClick={openFilesDrawer}
+                    >
+                      Open Files
+                    </button>
                   </div>
 
-                  <div
-                    className={
-                      styles.codeBody
-                    }
-                  >
-                    <div
-                      className={
-                        styles.fileRail
-                      }
-                    >
-                      {files.map(
-                        (
-                          file,
-                          index
-                        ) => {
-                          const active =
-                            filePath(
-                              selectedFile
-                            ) ===
-                            filePath(
-                              file
-                            );
+                  <div className={styles.codeSurfaceBody}>
+                    <div className={styles.codeFileList}>
+                      {generatedFiles.map((file) => {
+                        const path = getFilePath(file);
+                        const active =
+                          selectedFile === file;
 
-                          return (
-                            <button
-                              key={
-                                `${filePath(
-                                  file
-                                )}-${index}`
-                              }
-                              type="button"
-                              className={
-                                active
-                                  ? styles.fileActive
-                                  : ""
-                              }
-                              onClick={() =>
-                                selectFile(
-                                  file
-                                )
-                              }
-                            >
-                              {filePath(
-                                file
-                              )}
-                            </button>
-                          );
-                        }
-                      )}
+                        return (
+                          <button
+                            key={
+                              file?._id ||
+                              file?.id ||
+                              path
+                            }
+                            type="button"
+                            className={
+                              active
+                                ? styles.codeFileActive
+                                : styles.codeFile
+                            }
+                            onClick={() =>
+                              setSelectedFile(file)
+                            }
+                            title={path}
+                          >
+                            <span>鈼�</span>
+                            {path}
+                          </button>
+                        );
+                      })}
                     </div>
 
-                    <pre>
-                      {selectedFile
-                        ? fileContent(
-                            selectedFile
-                          )
-                        : "Select a generated file."}
+                    <pre className={styles.codeEditor}>
+                      {getFileContent(selectedFile)}
                     </pre>
                   </div>
                 </div>
               )}
             </div>
+
           </section>
 
           {/* =================================================
-              AI BUILDER
+              AI CHAT
+              Desktop: dedicated right-side panel.
+              Mobile: compact AI panel selected from mobile nav.
           ================================================= */}
 
           <aside
-            className={`${styles.chat} ${
-              mobile ===
-              "chat"
-                ? styles.mobileChat
-                : ""
-            }`}
+            className={`
+              ${styles.chatArea}
+              ${
+                mobilePanel === "ai"
+                  ? styles.mobileVisible
+                  : ""
+              }
+            `}
           >
-            <MobilePanelHeader
-              title="AI Builder"
-              subtitle={
-                currentId
-                  ? `Project: ${activeProjectLabel}`
-                  : "Create a new project"
-              }
-              onClose={() =>
-                setMobile(
-                  "workspace"
-                )
-              }
-            />
+              <div className={styles.chatHeader}>
+                <div>
+                  <span>ZYRIONOS AI</span>
+                  <strong>
+                    Build with conversation
+                  </strong>
+                </div>
 
-            <div
-              className={
-                styles.chatHead
+                <div
+                  className={
+                    styles.chatHeaderStatus
+                  }
+                >
+                  <i
+                    className={
+                      operationRunning
+                        ? styles.chatStatusRunning
+                        : styles.chatStatusReady
+                    }
+                  />
+
+                  {operationRunning ? (
+                    <>
+                      <span>Working</span>
+                      <span
+                        className={
+                          styles.chatDots
+                        }
+                      >
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                    </>
+                  ) : (
+                    "Ready"
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.chatMessages}>
+                {chatMessages.length === 0 ? (
+                  <div className={styles.chatWelcome}>
+                    <strong>
+                      What should we build?
+                    </strong>
+
+                    <span>
+                      Describe the application or
+                      change in normal language.
+                    </span>
+
+                    <div
+                      className={
+                        styles.chatQuickPrompts
+                      }
+                    >
+                      {QUICK_PROMPTS.slice(0, 3).map(
+                        (item) => (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() =>
+                              handleQuickPrompt(
+                                item.prompt
+                              )
+                            }
+                          >
+                            {item.label}
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  chatMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={
+                        message.role === "user"
+                          ? styles.chatMessageUser
+                          : message.error
+                          ? styles.chatMessageError
+                          : styles.chatMessageAI
+                      }
+                    >
+                      <div
+                        className={
+                          styles.chatMessageAvatar
+                        }
+                      >
+                        {message.role === "user"
+                          ? "U"
+                          : "Z"}
+                      </div>
+
+                      <div
+                        className={
+                          styles.chatMessageBody
+                        }
+                      >
+                        <div
+                          className={
+                            styles.chatMessageMeta
+                          }
+                        >
+                          <strong>
+                            {message.role ===
+                            "user"
+                              ? "You"
+                              : "ZyrionOS AI"}
+                          </strong>
+
+                          <small>
+                            {message.timestamp}
+                          </small>
+                        </div>
+
+                        <p>{message.content}</p>
+
+                        {message.fileCount && (
+                          <button
+                            type="button"
+                            className={
+                              styles.chatFilesButton
+                            }
+                            onClick={
+                              openFilesDrawer
+                            }
+                          >
+                            View{" "}
+                            {message.fileCount}{" "}
+                            generated files
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+
+              <form
+                className={styles.chatComposer}
+                onSubmit={handleChatSubmit}
+              >
+                <div className={styles.chatComposerTop}>
+                  <div>
+                    <span>鉁�</span>
+                    <strong>
+                      {selectedProject
+                        ? `Editing ${projectName}`
+                        : "New application"}
+                    </strong>
+                  </div>
+
+                  <small>{framework}</small>
+                </div>
+
+                <textarea
+                  data-zyrionos-chat-input="true"
+                  value={prompt}
+                  onChange={(event) =>
+                    setPrompt(event.target.value)
+                  }
+                  onKeyDown={handlePromptKeyDown}
+                  disabled={loading}
+                  rows={3}
+                  placeholder={
+                    selectedProject
+                      ? "Tell ZyrionOS what to change..."
+                      : "Describe the application you want to build..."
+                  }
+                />
+
+                <div
+                  className={
+                    styles.chatComposerBottom
+                  }
+                >
+                  <div className={styles.chatHints}>
+                    <span>
+                      Enter to build
+                    </span>
+                    <span>
+                      Shift + Enter for a new line
+                    </span>
+                  </div>
+
+                  <div className={styles.chatActions}>
+                    {selectedProject && (
+                      <button
+                        type="button"
+                        className={
+                          styles.reviewButton
+                        }
+                        disabled={loading}
+                        onClick={handleReviewFix}
+                      >
+                        Review / Fix
+                      </button>
+                    )}
+
+                    <button
+                      type="submit"
+                      className={styles.buildButton}
+                      disabled={
+                        loading ||
+                        !prompt.trim()
+                      }
+                    >
+                      {loading
+                        ? "Working..."
+                        : selectedProject
+                        ? "Apply Change"
+                        : "Build App"}
+
+                      <span>鈫�</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+          </aside>
+
+          {/* =================================================
+              MOBILE ACTIVITY PANEL
+              No permanent agent pipeline.
+          ================================================= */}
+
+          <aside
+            className={`
+              ${styles.activityPanel}
+              ${
+                mobilePanel === "activity"
+                  ? styles.mobileVisible
+                  : ""
               }
-            >
+            `}
+          >
+            <div className={styles.activityPanelHeader}>
               <div>
-                <span>
-                  AI BUILDER
-                </span>
+                <span>WORKSPACE</span>
+                <strong>Activity</strong>
+              </div>
+
+              <span
+                className={
+                  operationRunning
+                    ? styles.activityRunning
+                    : styles.activityReady
+                }
+              >
+                {operationRunning
+                  ? "Working"
+                  : "Ready"}
+              </span>
+            </div>
+
+            <div className={styles.activityPanelBody}>
+              <div className={styles.currentOperation}>
+                <span>CURRENT STATUS</span>
 
                 <strong>
-                  Build with ZyrionOS
+                  {operationRunning
+                    ? currentOperationLabel
+                    : "Workspace ready"}
+                </strong>
+
+                <p>
+                  {operationRunning
+                    ? "ZyrionOS is processing your request"
+                    : "Ready for the next request."}
+                </p>
+
+                <div className={styles.backendStatusGrid}>
+                  <span>ENV {activeEnvironment}</span>
+                  <span>ENV {environmentStatus}</span>
+                  <span>GITHUB {githubConnection ? "CONNECTED" : "NOT CONNECTED"}</span>
+                  <span>DEPLOY {backendDeploymentStatus ? normalizeDeploymentStatus(backendDeploymentStatus) : deploymentStatus}</span>
+                </div>
+
+                {operationRunning && (
+                  <div
+                    className={
+                      styles.workingDotsLarge
+                    }
+                  >
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.activityListCard}>
+                <div
+                  className={
+                    styles.activityListHeader
+                  }
+                >
+                  <span>ACTIVITY</span>
+                  <b>{combinedActivityLog.length}</b>
+                </div>
+
+                {combinedActivityLog.length === 0 ? (
+                  <p className={styles.activityEmpty}>
+                    Activity will appear here while
+                    your project is being built.
+                  </p>
+                ) : (
+                  <div className={styles.activityItems}>
+                    {combinedActivityLog
+                      .slice()
+                      .reverse()
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          className={
+                            styles.activityItem
+                          }
+                        >
+                          <i
+                            className={
+                              item.type === "success"
+                                ? styles.dotSuccess
+                                : item.type ===
+                                  "error"
+                                ? styles.dotError
+                                : item.type ===
+                                  "active"
+                                ? styles.dotActive
+                                : styles.dotInfo
+                            }
+                          />
+
+                          <div>
+                            <p>{item.message}</p>
+                            <small>
+                              {item.timestamp}
+                            </small>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.projectStats}>
+                <div>
+                  <span>PROJECT FILES</span>
+                  <strong>
+                    {generatedFiles.length}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>FRAMEWORK</span>
+                  <strong>{framework}</strong>
+                </div>
+
+                <div>
+                  <span>DEPLOYMENT</span>
+                  <strong>
+                    {backendDeploymentStatus
+                      ? normalizeDeploymentStatus(
+                          backendDeploymentStatus
+                        )
+                      : deploymentStatus}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>ENVIRONMENT</span>
+                  <strong>
+                    {activeEnvironment} 路 {environmentStatus}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>GITHUB</span>
+                  <strong>
+                    {githubConnection
+                      ? "Connected"
+                      : "Not connected"}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        {/* =================================================
+            FILE DRAWER
+        ================================================= */}
+
+        {filesDrawerOpen && (
+          <div
+            className={styles.drawerOverlay}
+            onClick={closeFilesDrawer}
+          >
+            <aside
+              className={styles.filesDrawer}
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+            >
+              <div className={styles.drawerHeader}>
+                <div>
+                  <span>PROJECT</span>
+                  <strong>Files</strong>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeFilesDrawer}
+                  aria-label="Close files"
+                >
+                  脳
+                </button>
+              </div>
+
+              <div className={styles.drawerProject}>
+                <strong>{projectName}</strong>
+                <small>
+                  {generatedFiles.length} generated
+                  files 路 {framework}
+                </small>
+              </div>
+
+              <div className={styles.drawerFiles}>
+                {generatedFiles.length === 0 ? (
+                  <div className={styles.drawerEmpty}>
+                    No project files available.
+                  </div>
+                ) : (
+                  generatedFiles.map((file) => {
+                    const path =
+                      getFilePath(file);
+
+                    const active =
+                      selectedFile === file;
+
+                    return (
+                      <button
+                        key={
+                          file?._id ||
+                          file?.id ||
+                          path
+                        }
+                        type="button"
+                        className={
+                          active
+                            ? styles.drawerFileActive
+                            : styles.drawerFile
+                        }
+                        onClick={() =>
+                          handleFileSelect(
+                            file
+                          )
+                        }
+                      >
+                        <span>鈼�</span>
+                        <strong title={path}>
+                          {path}
+                        </strong>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className={styles.drawerFooter}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeFilesDrawer();
+                    setActiveView("code");
+                  }}
+                >
+                  Open Code View
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {/* =================================================
+            ACTIVITY DRAWER
+        ================================================= */}
+
+        {activityDrawerOpen && (
+          <div
+            className={styles.drawerOverlay}
+            onClick={closeActivityDrawer}
+          >
+            <aside
+              className={styles.activityDrawer}
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+            >
+              <div className={styles.drawerHeader}>
+                <div>
+                  <span>WORKSPACE</span>
+                  <strong>Activity</strong>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeActivityDrawer}
+                  aria-label="Close activity"
+                >
+                  脳
+                </button>
+              </div>
+
+              <div className={styles.activityDrawerBody}>
+                {combinedActivityLog.length === 0 ? (
+                  <p>No activity yet.</p>
+                ) : (
+                  activityLog
+                    .slice()
+                    .reverse()
+                    .map((item) => (
+                      <div
+                        key={item.id}
+                        className={
+                          styles.activityItem
+                        }
+                      >
+                        <i
+                          className={
+                            item.type === "success"
+                              ? styles.dotSuccess
+                              : item.type ===
+                                "error"
+                              ? styles.dotError
+                              : item.type ===
+                                "active"
+                              ? styles.dotActive
+                              : styles.dotInfo
+                          }
+                        />
+
+                        <div>
+                          <p>{item.message}</p>
+                          <small>
+                            {item.timestamp}
+                          </small>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {/* =================================================
+            FULL PAGE PREVIEW
+        ================================================= */}
+
+        {previewFullscreen && (
+          <div
+            className={styles.previewOverlay}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Application preview"
+          >
+            <div className={styles.previewOverlayHeader}>
+              <div>
+                <span>PREVIEW</span>
+                <strong title={projectName}>
+                  {projectName}
                 </strong>
               </div>
 
-              <i
-                data-active={
-                  busy
+              <div
+                className={
+                  styles.previewOverlayActions
                 }
               >
-                {busy
-                  ? "Working"
-                  : "Online"}
-              </i>
-            </div>
+                {previewUrl && (
+                  <a
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={
+                      styles.previewExternalButton
+                    }
+                  >
+                    Open in new tab
+                  </a>
+                )}
 
-            <div
-              className={
-                styles.contextStrip
-              }
-            >
-              <span>
-                ENV
-                <b>
-                  {
-                    environment
+                <button
+                  type="button"
+                  onClick={closePreview}
+                  className={
+                    styles.previewCloseButton
                   }
-                </b>
-              </span>
-
-              <span>
-                MODEL
-                <b>
-                  AI Builder
-                </b>
-              </span>
+                >
+                  Close Preview
+                </button>
+              </div>
             </div>
 
-            <div
-              className={
-                styles.messages
-              }
-            >
-              {messages.length ? (
-                messages.map(
-                  (
-                    message
-                  ) => (
-                    <article
-                      key={
-                        message.id
-                      }
-                      className={
-                        message.role ===
-                        "user"
-                          ? styles.userMessage
-                          : message.error
-                          ? styles.errorMessage
-                          : styles.aiMessage
-                      }
-                    >
-                      <small>
-                        {message.role ===
-                        "user"
-                          ? "YOU"
-                          : "ZYRIONOS AI"}{" "}
-                        ·{" "}
-                        {
-                          message.time
-                        }
-                      </small>
-
-                      <p>
-                        {
-                          message.content
-                        }
-                      </p>
-
-                      {message.count ? (
-                        <em>
-                          {
-                            message.count
-                          }{" "}
-                          files
-                        </em>
-                      ) : null}
-                    </article>
-                  )
-                )
+            <div className={styles.previewOverlayBody}>
+              {previewUrl ? (
+                <iframe
+                  title={`${projectName} full preview`}
+                  src={previewUrl}
+                  className={
+                    styles.previewFullFrame
+                  }
+                  allow="fullscreen"
+                />
+              ) : previewEntryFile ? (
+                <LocalProjectPreview
+                  files={generatedFiles}
+                  framework={
+                    getProjectFramework(
+                      selectedProject
+                    ) || framework
+                  }
+                  fullscreen
+                />
               ) : (
                 <div
                   className={
-                    styles.chatEmpty
+                    styles.previewUnavailable
                   }
                 >
                   <div
                     className={
-                      styles.previewIcon
+                      styles.previewIconLarge
                     }
                   >
                     Z
                   </div>
 
-                  <strong>
-                    What should we build?
-                  </strong>
+                  <span>PREVIEW RUNTIME</span>
+
+                  <h2>
+                    Project files are ready
+                  </h2>
 
                   <p>
-                    Describe a real
-                    project or change.
-                    ZyrionOS sends the
-                    request to the
-                    backend AI Builder.
+                    This project does not yet have
+                    a live preview URL or a static
+                    HTML entry file. The preview
+                    screen is intentionally not
+                    faking an application.
                   </p>
 
-                  {QUICK_PROMPTS.map(
-                    ([
-                      label,
-                      value,
-                    ]) => (
-                      <button
-                        key={
-                          label
-                        }
-                        type="button"
-                        onClick={() =>
-                          setPrompt(
-                            value
-                          )
-                        }
-                      >
-                        {label}
-                      </button>
-                    )
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closePreview();
+                      setActiveView("code");
+                    }}
+                  >
+                    Open Generated Code
+                  </button>
                 </div>
               )}
-
-              <div
-                ref={
-                  endRef
-                }
-              />
             </div>
-
-            <div
-              className={
-                styles.quickActions
-              }
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  setPrompt(
-                    "Create a production-ready responsive landing page"
-                  )
-                }
-                disabled={
-                  busy
-                }
-              >
-                Landing
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setPrompt(
-                    "Build a production-ready admin dashboard"
-                  )
-                }
-                disabled={
-                  busy
-                }
-              >
-                Dashboard
-              </button>
-
-              <button
-                type="button"
-                onClick={
-                  review
-                }
-                disabled={
-                  busy ||
-                  !currentId
-                }
-              >
-                Review / Fix
-              </button>
-            </div>
-
-            <form
-              className={
-                styles.composer
-              }
-              onSubmit={(
-                event
-              ) => {
-                event.preventDefault();
-
-                build();
-              }}
-            >
-              <textarea
-                value={
-                  prompt
-                }
-                onChange={(
-                  event
-                ) =>
-                  setPrompt(
-                    event.target
-                      .value
-                  )
-                }
-                placeholder={
-                  currentId
-                    ? "Describe the change you want..."
-                    : "Describe what you want to build..."
-                }
-                disabled={
-                  busy
-                }
-              />
-
-              <div>
-                <span>
-                  ENV ·{" "}
-                  {
-                    environment
-                  }
-                </span>
-
-                <button
-                  type="submit"
-                  disabled={
-                    busy ||
-                    !prompt.trim()
-                  }
-                >
-                  {busy
-                    ? "Working..."
-                    : "Build"}
-                </button>
-              </div>
-            </form>
-          </aside>
-
-          {/* =================================================
-              ACTIVITY
-          ================================================= */}
-
-          <aside
-            className={`${styles.activity} ${
-              mobile ===
-              "activity"
-                ? styles.mobileActivity
-                : ""
-            }`}
-          >
-            <MobilePanelHeader
-              title="Activity"
-              subtitle="Deployment & workspace"
-              onClose={() =>
-                setMobile(
-                  "workspace"
-                )
-              }
-            />
-
-            <div
-              className={
-                styles.activityHead
-              }
-            >
-              <span>
-                BACKEND ACTIVITY
-              </span>
-
-              <strong>
-                Deployment & workspace
-              </strong>
-            </div>
-
-            {/* DEPLOYMENT STATUS */}
-
-            <div
-              className={
-                styles.deploymentCard
-              }
-            >
-              <div
-                className={
-                  styles.deploymentTop
-                }
-              >
-                <div>
-                  <span>
-                    DEPLOYMENT
-                  </span>
-
-                  <strong>
-                    {
-                      deploymentStatus
-                    }
-                  </strong>
-                </div>
-
-                <b
-                  data-state={
-                    deploymentStatus
-                      .toLowerCase()
-                      .replace(
-                        /\s+/g,
-                        "-"
-                      )
-                  }
-                >
-                  {deploymentStatus}
-                </b>
-              </div>
-
-              <div
-                className={
-                  styles.progressTrack
-                }
-              >
-                <span
-                  style={{
-                    width: `${progress}%`,
-                  }}
-                />
-              </div>
-
-              <div
-                className={
-                  styles.deploymentMeta
-                }
-              >
-                <span>
-                  {deploymentLog?.stage ||
-                    "Waiting"}
-                </span>
-
-                <span>
-                  {progress}%
-                </span>
-              </div>
-            </div>
-
-            {/* ENVIRONMENT STATUS */}
-
-            <div
-              className={
-                styles.statusCard
-              }
-            >
-              <div>
-                <span>
-                  ENVIRONMENT
-                </span>
-
-                <strong>
-                  {
-                    environment
-                  }
-                </strong>
-              </div>
-
-              <b
-                data-ready={
-                  environmentReady
-                }
-              >
-                {environmentReady
-                  ? "Ready"
-                  : readiness
-                  ? "Check"
-                  : "Unknown"}
-              </b>
-            </div>
-
-            {/* GITHUB STATUS */}
-
-            <div
-              className={
-                styles.statusCard
-              }
-            >
-              <div>
-                <span>
-                  SOURCE CONTROL
-                </span>
-
-                <strong>
-                  GitHub
-                </strong>
-              </div>
-
-              <b
-                data-ready={
-                  githubConnected
-                }
-              >
-                {githubConnected
-                  ? "Connected"
-                  : "Not connected"}
-              </b>
-            </div>
-
-            {/* LATEST LOG */}
-
-            {deploymentLog && (
-              <div
-                className={
-                  styles.logCard
-                }
-              >
-                <strong>
-                  Latest deployment
-                </strong>
-
-                <b>
-                  {
-                    deploymentStatus
-                  }
-                </b>
-
-                {deploymentLog.stage && (
-                  <small>
-                    Stage:{" "}
-                    {
-                      deploymentLog.stage
-                    }
-                  </small>
-                )}
-
-                {deploymentLog.message && (
-                  <p>
-                    {
-                      deploymentLog.message
-                    }
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* LOCAL ACTIVITY */}
-
-            <div
-              className={
-                styles.activityList
-              }
-            >
-              {activity
-                .slice()
-                .reverse()
-                .map(
-                  (
-                    item
-                  ) => (
-                    <div
-                      className={
-                        styles.activityItem
-                      }
-                      key={
-                        item.id
-                      }
-                    >
-                      <i
-                        data-type={
-                          item.type
-                        }
-                      />
-
-                      <span>
-                        {
-                          item.message
-                        }
-
-                        <small>
-                          {
-                            item.time
-                          }
-                        </small>
-                      </span>
-                    </div>
-                  )
-                )}
-
-              {!activity.length &&
-                !deploymentLog && (
-                  <div
-                    className={
-                      styles.emptyActivity
-                    }
-                  >
-                    <strong>
-                      No activity yet
-                    </strong>
-
-                    <span>
-                      Build or deploy a
-                      project to see
-                      backend activity here.
-                    </span>
-                  </div>
-                )}
-            </div>
-          </aside>
-        </section>
+          </div>
+        )}
       </main>
     </DashboardLayout>
   );
 }
+
+export default Workspace;

@@ -84,7 +84,6 @@ function buildSandpackFiles(files) {
       continue;
     }
 
-    /* Vite expects index.html at the project root. */
     if (path.toLowerCase() === "public/index.html") {
       path = "index.html";
     }
@@ -107,15 +106,11 @@ function getSandpackDependencies(files) {
 
   try {
     const parsed = JSON.parse(getFileContent(packageFile) || "{}");
+
     const dependencies = {
       ...(parsed?.dependencies || {}),
     };
 
-    /*
-     * Sandpack already supplies the runtime, but generated Vite/React
-     * projects can legitimately import packages listed as devDependencies.
-     * Including them makes the local preview follow the generated manifest.
-     */
     for (const [name, version] of Object.entries(
       parsed?.devDependencies || {}
     )) {
@@ -179,7 +174,9 @@ function LocalProjectPreview({
     return (
       <div className={styles.previewUnavailable}>
         <div className={styles.previewIconLarge}>Z</div>
+
         <span>PREVIEW RUNTIME</span>
+
         <p>
           No React/Vue entry file was found in the generated project.
         </p>
@@ -332,8 +329,6 @@ function normalizeProjects(response) {
 
 /* =========================================================
    PROJECT NAMING
-   Keeps dashboard names readable instead of saving the
-   entire natural-language prompt as the project title.
 ========================================================= */
 
 function buildProjectName(promptValue) {
@@ -570,7 +565,13 @@ function getServiceObject(response, keys = []) {
 }
 
 function getBackendLogId(log) {
-  return log?._id || log?.id || log?.logId || log?.deploymentLogId || "";
+  return (
+    log?._id ||
+    log?.id ||
+    log?.logId ||
+    log?.deploymentLogId ||
+    ""
+  );
 }
 
 function getBackendLogStatus(log) {
@@ -599,15 +600,18 @@ function normalizeBackendActivityEvent(event, index = 0) {
       "info"
   ).toLowerCase();
 
-  const type = rawType.includes("error") || rawType.includes("fail")
-    ? "error"
-    : rawType.includes("success") || rawType.includes("complete")
-    ? "success"
-    : rawType.includes("warn")
-    ? "info"
-    : rawType.includes("progress") || rawType.includes("active")
-    ? "active"
-    : "info";
+  const type =
+    rawType.includes("error") || rawType.includes("fail")
+      ? "error"
+      : rawType.includes("success") ||
+        rawType.includes("complete")
+      ? "success"
+      : rawType.includes("warn")
+      ? "info"
+      : rawType.includes("progress") ||
+        rawType.includes("active")
+      ? "active"
+      : "info";
 
   const timestampValue =
     event?.timestamp ||
@@ -616,14 +620,19 @@ function normalizeBackendActivityEvent(event, index = 0) {
     new Date().toISOString();
 
   return {
-    id: `backend-${event?._id || event?.id || index}-${timestampValue}`,
+    id: `backend-${
+      event?._id || event?.id || index
+    }-${timestampValue}`,
     message: String(message),
     type,
-    timestamp: new Date(timestampValue).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }),
+    timestamp: new Date(timestampValue).toLocaleTimeString(
+      [],
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }
+    ),
     source: "backend",
   };
 }
@@ -651,7 +660,9 @@ function createMessage(role, content, extra = {}) {
 
 function Workspace() {
   const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProject, setSelectedProject] =
+    useState(null);
+
   const selectedProjectRef = useRef(null);
 
   const [prompt, setPrompt] = useState("");
@@ -659,7 +670,8 @@ function Workspace() {
 
   const [loading, setLoading] = useState(false);
   const [generatedFiles, setGeneratedFiles] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] =
+    useState(null);
 
   const [chatMessages, setChatMessages] = useState([]);
 
@@ -668,61 +680,100 @@ function Workspace() {
 
   const [liveUrl, setLiveUrl] = useState("");
 
-  const [activeView, setActiveView] = useState("preview");
-  const [mobilePanel, setMobilePanel] = useState("workspace");
+  const [activeView, setActiveView] =
+    useState("preview");
 
-  const [filesDrawerOpen, setFilesDrawerOpen] = useState(false);
-  const [activityDrawerOpen, setActivityDrawerOpen] = useState(false);
+  const [mobilePanel, setMobilePanel] =
+    useState("workspace");
+
+  const [filesDrawerOpen, setFilesDrawerOpen] =
+    useState(false);
+
+  const [activityDrawerOpen, setActivityDrawerOpen] =
+    useState(false);
 
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [projectLoading, setProjectLoading] = useState(true);
+  const [projectLoading, setProjectLoading] =
+    useState(true);
 
-  const [operation, setOperation] = useState("idle");
-  const [operationStartedAt, setOperationStartedAt] = useState(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [activityLog, setActivityLog] = useState([]);
+  const [operation, setOperation] =
+    useState("idle");
 
-  const [previewFullscreen, setPreviewFullscreen] = useState(false);
+  const [operationStartedAt, setOperationStartedAt] =
+    useState(null);
+
+  const [elapsedSeconds, setElapsedSeconds] =
+    useState(0);
+
+  const [activityLog, setActivityLog] =
+    useState([]);
+
+  const [previewFullscreen, setPreviewFullscreen] =
+    useState(false);
 
   /* =======================================================
      BACKEND WORKSPACE CONTEXT
-     These states are metadata/status only. Secrets are never
-     requested from the browser.
   ======================================================= */
 
-  const [environments, setEnvironments] = useState([]);
+  const [environments, setEnvironments] =
+    useState([]);
+
   const [activeEnvironment, setActiveEnvironment] =
     useState("development");
+
   const [environmentReadiness, setEnvironmentReadiness] =
     useState(null);
 
-  const [deploymentLog, setDeploymentLog] = useState(null);
-  const [deploymentEvents, setDeploymentEvents] = useState([]);
+  const [deploymentLog, setDeploymentLog] =
+    useState(null);
 
-  const [githubConnection, setGithubConnection] = useState(null);
-  const [githubRepository, setGithubRepository] = useState(null);
+  const [deploymentEvents, setDeploymentEvents] =
+    useState([]);
 
-  const [backendSyncing, setBackendSyncing] = useState(false);
-  const [backendSyncError, setBackendSyncError] = useState("");
+  const [githubConnection, setGithubConnection] =
+    useState(null);
+
+  const [githubRepository, setGithubRepository] =
+    useState(null);
+
+  const [backendSyncing, setBackendSyncing] =
+    useState(false);
+
+  const [backendSyncError, setBackendSyncError] =
+    useState("");
 
   const chatEndRef = useRef(null);
   const initialLoadStarted = useRef(false);
 
   const projectName = getProjectName(selectedProject);
-  const selectedProjectId = getProjectId(selectedProject);
+  const selectedProjectId =
+    getProjectId(selectedProject);
+
   const projectCount = projects.length;
 
   const previewUrl =
     liveUrl || getPreviewUrl(selectedProject);
 
-  const previewStatus = getPreviewStatus(selectedProject);
-  const operationRunning = operation !== "idle";
+  const previewStatus =
+    getPreviewStatus(selectedProject);
+
+  const operationRunning =
+    operation !== "idle";
 
   const currentOperationLabel = useMemo(() => {
-    if (operation === "build") return "Building";
-    if (operation === "change") return "Applying changes";
-    if (operation === "deploy") return "Deploying";
+    if (operation === "build") {
+      return "Building";
+    }
+
+    if (operation === "change") {
+      return "Applying changes";
+    }
+
+    if (operation === "deploy") {
+      return "Deploying";
+    }
+
     return "Ready";
   }, [operation]);
 
@@ -750,7 +801,8 @@ function Workspace() {
         Math.max(
           0,
           Math.floor(
-            (Date.now() - operationStartedAt) / 1000
+            (Date.now() - operationStartedAt) /
+              1000
           )
         )
       );
@@ -763,7 +815,8 @@ function Workspace() {
       1000
     );
 
-    return () => window.clearInterval(timer);
+    return () =>
+      window.clearInterval(timer);
   }, [operationStartedAt]);
 
   /* =======================================================
@@ -782,13 +835,12 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
-    selectedProjectRef.current = selectedProject;
+    selectedProjectRef.current =
+      selectedProject;
   }, [selectedProject]);
 
   /* =======================================================
      ACTIVITY
-     User-facing activity is intentionally abstracted.
-     Internal agent names are not exposed in the UI.
   ======================================================= */
 
   const addActivity = useCallback(
@@ -800,14 +852,12 @@ function Workspace() {
             id: `${Date.now()}-${Math.random()}`,
             message,
             type,
-            timestamp: new Date().toLocaleTimeString(
-              [],
-              {
+            timestamp:
+              new Date().toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
                 second: "2-digit",
-              }
-            ),
+              }),
           },
         ].slice(-40)
       );
@@ -819,7 +869,11 @@ function Workspace() {
     (type, message) => {
       setOperation(type);
       setOperationStartedAt(Date.now());
-      addActivity(message, "active");
+
+      addActivity(
+        message,
+        "active"
+      );
     },
     [addActivity]
   );
@@ -841,19 +895,22 @@ function Workspace() {
      APPLY PROJECT
   ======================================================= */
 
-  const applySelectedProject = useCallback(
-    (project) => {
+  const applySelectedProject =
+    useCallback((project) => {
       if (!project) {
         return;
       }
 
-      selectedProjectRef.current = project;
+      selectedProjectRef.current =
+        project;
+
       setSelectedProject(project);
 
-      const files = normalizeProjectFiles(
-        project,
-        null
-      );
+      const files =
+        normalizeProjectFiles(
+          project,
+          null
+        );
 
       setGeneratedFiles(files);
       setSelectedFile(files[0] || null);
@@ -865,190 +922,278 @@ function Workspace() {
         )
       );
 
-      setLiveUrl(getPreviewUrl(project));
+      setLiveUrl(
+        getPreviewUrl(project)
+      );
 
       const projectFramework =
         getProjectFramework(project);
 
-      if (FRAMEWORKS.includes(projectFramework)) {
-        setFramework(projectFramework);
+      if (
+        FRAMEWORKS.includes(
+          projectFramework
+        )
+      ) {
+        setFramework(
+          projectFramework
+        );
       }
-    },
-    []
-  );
+    }, []);
 
   /* =======================================================
      BACKEND CONTEXT SYNC
   ======================================================= */
 
-  const syncBackendContext = useCallback(
-    async (projectId) => {
-      if (!projectId) {
-        setEnvironments([]);
-        setEnvironmentReadiness(null);
-        setDeploymentLog(null);
-        setDeploymentEvents([]);
-        setGithubConnection(null);
-        setGithubRepository(null);
-        return;
-      }
+  const syncBackendContext =
+    useCallback(
+      async (projectId) => {
+        if (!projectId) {
+          setEnvironments([]);
+          setEnvironmentReadiness(null);
+          setDeploymentLog(null);
+          setDeploymentEvents([]);
+          setGithubConnection(null);
+          setGithubRepository(null);
+          return;
+        }
 
-      setBackendSyncing(true);
-      setBackendSyncError("");
+        setBackendSyncing(true);
+        setBackendSyncError("");
 
-      const results = await Promise.allSettled([
-        environmentService.listEnvironments(projectId),
-        deploymentLogService.getLatestLog({ projectId }),
-        githubService.getConnections({ projectId }),
-      ]);
+        const results =
+          await Promise.allSettled([
+            environmentService.listEnvironments(
+              projectId
+            ),
 
-      const environmentResult = results[0];
-      const deploymentResult = results[1];
-      const githubResult = results[2];
+            deploymentLogService.getLatestLog({
+              projectId,
+            }),
 
-      let firstEnvironment = null;
+            githubService.getConnections({
+              projectId,
+            }),
+          ]);
 
-      if (environmentResult.status === "fulfilled") {
-        const list = getServiceList(environmentResult.value, [
-          "environments",
-          "items",
-        ]);
+        const environmentResult =
+          results[0];
 
-        setEnvironments(list);
+        const deploymentResult =
+          results[1];
 
-        firstEnvironment =
-          list.find(
-            (item) =>
-              String(item?.name || item?.environment || "").toLowerCase() ===
-              String(activeEnvironment).toLowerCase()
-          ) || list[0] || null;
+        const githubResult =
+          results[2];
 
-        if (firstEnvironment) {
-          const name =
-            firstEnvironment?.name ||
-            firstEnvironment?.environment ||
-            "development";
+        let firstEnvironment =
+          null;
 
-          setActiveEnvironment(String(name));
-
-          try {
-            const readiness =
-              await environmentService.getDeploymentReadiness(
-                projectId,
-                name
-              );
-
-            setEnvironmentReadiness(
-              getServiceObject(readiness, [
-                "readiness",
-                "deploymentReadiness",
-              ])
+        if (
+          environmentResult.status ===
+          "fulfilled"
+        ) {
+          const list =
+            getServiceList(
+              environmentResult.value,
+              [
+                "environments",
+                "items",
+              ]
             );
-          } catch (readinessError) {
-            setEnvironmentReadiness(null);
+
+          setEnvironments(list);
+
+          firstEnvironment =
+            list.find(
+              (item) =>
+                String(
+                  item?.name ||
+                    item?.environment ||
+                    ""
+                ).toLowerCase() ===
+                String(
+                  activeEnvironment
+                ).toLowerCase()
+            ) ||
+            list[0] ||
+            null;
+
+          if (firstEnvironment) {
+            const name =
+              firstEnvironment?.name ||
+              firstEnvironment?.environment ||
+              "development";
+
+            setActiveEnvironment(
+              String(name)
+            );
+
+            try {
+              const readiness =
+                await environmentService.getDeploymentReadiness(
+                  projectId,
+                  name
+                );
+
+              setEnvironmentReadiness(
+                getServiceObject(
+                  readiness,
+                  [
+                    "readiness",
+                    "deploymentReadiness",
+                  ]
+                )
+              );
+            } catch {
+              setEnvironmentReadiness(
+                null
+              );
+            }
+          } else {
+            setEnvironmentReadiness(
+              null
+            );
           }
         } else {
+          setEnvironments([]);
           setEnvironmentReadiness(null);
         }
-      } else {
-        setEnvironments([]);
-        setEnvironmentReadiness(null);
-      }
 
-      if (deploymentResult.status === "fulfilled") {
-        const log = getServiceObject(
-          deploymentResult.value,
-          ["log", "deploymentLog", "latest"]
-        );
-
-        setDeploymentLog(log);
-
-        const logId = getBackendLogId(log);
-
-        if (logId) {
-          try {
-            const eventsResponse =
-              await deploymentLogService.getEvents(logId, {
-                limit: 40,
-              });
-
-            const events = getServiceList(
-              eventsResponse,
-              ["events", "items"]
+        if (
+          deploymentResult.status ===
+          "fulfilled"
+        ) {
+          const log =
+            getServiceObject(
+              deploymentResult.value,
+              [
+                "log",
+                "deploymentLog",
+                "latest",
+              ]
             );
 
-            setDeploymentEvents(
-              events.map((event, index) =>
-                normalizeBackendActivityEvent(
-                  event,
-                  index
+          setDeploymentLog(log);
+
+          const logId =
+            getBackendLogId(log);
+
+          if (logId) {
+            try {
+              const eventsResponse =
+                await deploymentLogService.getEvents(
+                  logId,
+                  {
+                    limit: 40,
+                  }
+                );
+
+              const events =
+                getServiceList(
+                  eventsResponse,
+                  [
+                    "events",
+                    "items",
+                  ]
+                );
+
+              setDeploymentEvents(
+                events.map(
+                  (
+                    event,
+                    index
+                  ) =>
+                    normalizeBackendActivityEvent(
+                      event,
+                      index
+                    )
                 )
-              )
-            );
-          } catch (eventsError) {
+              );
+            } catch {
+              setDeploymentEvents([]);
+            }
+          } else {
             setDeploymentEvents([]);
           }
+
+          const logStatus =
+            getBackendLogStatus(log);
+
+          if (logStatus) {
+            setDeploymentStatus(
+              normalizeDeploymentStatus(
+                logStatus
+              )
+            );
+          }
         } else {
+          setDeploymentLog(null);
           setDeploymentEvents([]);
         }
 
-        const logStatus = getBackendLogStatus(log);
-        if (logStatus) {
-          setDeploymentStatus(
-            normalizeDeploymentStatus(logStatus)
+        if (
+          githubResult.status ===
+          "fulfilled"
+        ) {
+          const connections =
+            getServiceList(
+              githubResult.value,
+              [
+                "connections",
+                "items",
+              ]
+            );
+
+          const activeConnection =
+            connections.find(
+              (item) =>
+                [
+                  "active",
+                  "connected",
+                ].includes(
+                  String(
+                    item?.status ||
+                      ""
+                  ).toLowerCase()
+                )
+            ) ||
+            connections[0] ||
+            null;
+
+          setGithubConnection(
+            activeConnection
+          );
+
+          setGithubRepository(
+            activeConnection?.defaultRepository ||
+              activeConnection?.repository ||
+              activeConnection?.defaultRepo ||
+              null
+          );
+        } else {
+          setGithubConnection(null);
+          setGithubRepository(null);
+        }
+
+        if (
+          environmentResult.status ===
+            "rejected" &&
+          deploymentResult.status ===
+            "rejected" &&
+          githubResult.status ===
+            "rejected"
+        ) {
+          setBackendSyncError(
+            "Backend workspace context could not be synchronized."
           );
         }
-      } else {
-        setDeploymentLog(null);
-        setDeploymentEvents([]);
-      }
 
-      if (githubResult.status === "fulfilled") {
-        const connections = getServiceList(
-          githubResult.value,
-          ["connections", "items"]
-        );
-
-        const activeConnection =
-          connections.find((item) =>
-            ["active", "connected"].includes(
-              String(item?.status || "").toLowerCase()
-            )
-          ) || connections[0] || null;
-
-        setGithubConnection(activeConnection);
-
-        setGithubRepository(
-          activeConnection?.defaultRepository ||
-            activeConnection?.repository ||
-            activeConnection?.defaultRepo ||
-            null
-        );
-      } else {
-        setGithubConnection(null);
-        setGithubRepository(null);
-      }
-
-      if (
-        environmentResult.status === "rejected" &&
-        deploymentResult.status === "rejected" &&
-        githubResult.status === "rejected"
-      ) {
-        setBackendSyncError(
-          "Backend workspace context could not be synchronized."
-        );
-      }
-
-      setBackendSyncing(false);
-    },
-    [activeEnvironment]
-  );
+        setBackendSyncing(false);
+      },
+      [activeEnvironment]
+    );
 
   /* =======================================================
      DEPLOYMENT LOG REFRESH
-     Streaming is intentionally not used. Poll only while a
-     deployment is active, keeping the frontend aligned with
-     the backend log system without inventing events.
   ======================================================= */
 
   useEffect(() => {
@@ -1061,54 +1206,86 @@ function Workspace() {
     const refresh = async () => {
       try {
         const response =
-          await deploymentLogService.getLatestLog({
-            projectId: selectedProjectId,
-          });
+          await deploymentLogService.getLatestLog(
+            {
+              projectId:
+                selectedProjectId,
+            }
+          );
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
-        const log = getServiceObject(response, [
-          "log",
-          "deploymentLog",
-          "latest",
-        ]);
+        const log =
+          getServiceObject(
+            response,
+            [
+              "log",
+              "deploymentLog",
+              "latest",
+            ]
+          );
 
-        if (!log) return;
+        if (!log) {
+          return;
+        }
 
         setDeploymentLog(log);
 
-        const status = getBackendLogStatus(log);
+        const status =
+          getBackendLogStatus(log);
+
         if (status) {
           setDeploymentStatus(
-            normalizeDeploymentStatus(status)
+            normalizeDeploymentStatus(
+              status
+            )
           );
         }
 
-        const logId = getBackendLogId(log);
-        if (!logId) return;
+        const logId =
+          getBackendLogId(log);
+
+        if (!logId) {
+          return;
+        }
 
         const eventsResponse =
-          await deploymentLogService.getEvents(logId, {
-            limit: 40,
-          });
+          await deploymentLogService.getEvents(
+            logId,
+            {
+              limit: 40,
+            }
+          );
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
-        const events = getServiceList(
-          eventsResponse,
-          ["events", "items"]
-        );
+        const events =
+          getServiceList(
+            eventsResponse,
+            [
+              "events",
+              "items",
+            ]
+          );
 
         setDeploymentEvents(
-          events.map((event, index) =>
-            normalizeBackendActivityEvent(
+          events.map(
+            (
               event,
               index
-            )
+            ) =>
+              normalizeBackendActivityEvent(
+                event,
+                index
+              )
           )
         );
-      } catch (pollError) {
-        /* Background refresh must never replace the main UI error. */
+      } catch {
+        /* Background refresh must not replace main UI error. */
       }
     };
 
@@ -1124,101 +1301,162 @@ function Workspace() {
     ];
 
     const currentStatus =
-      getBackendLogStatus(deploymentLog);
+      getBackendLogStatus(
+        deploymentLog
+      );
 
-    if (!activeStatuses.includes(currentStatus)) {
+    if (
+      !activeStatuses.includes(
+        currentStatus
+      )
+    ) {
       return () => {
         cancelled = true;
       };
     }
 
-    const interval = window.setInterval(
-      refresh,
-      5000
-    );
+    const interval =
+      window.setInterval(
+        refresh,
+        5000
+      );
 
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
+      window.clearInterval(
+        interval
+      );
     };
-  }, [selectedProjectId, getBackendLogStatus(deploymentLog)]);
+  }, [
+    selectedProjectId,
+    deploymentLog,
+  ]);
 
   /* =======================================================
      LOAD PROJECTS
   ======================================================= */
 
-  const loadProjects = useCallback(
-    async (preferredProjectId = "") => {
-      try {
-        setProjectLoading(true);
+  const loadProjects =
+    useCallback(
+      async (
+        preferredProjectId = ""
+      ) => {
+        try {
+          setProjectLoading(true);
 
-        const response = await getProjects();
-        const normalized = normalizeProjects(response);
+          const response =
+            await getProjects();
 
-        setProjects(normalized);
+          const normalized =
+            normalizeProjects(
+              response
+            );
 
-        const currentId =
-          preferredProjectId ||
-          getProjectId(selectedProjectRef.current);
+          setProjects(normalized);
 
-        if (currentId) {
-          const preferred = normalized.find(
-            (project) =>
-              String(getProjectId(project)) ===
-              String(currentId)
+          const currentId =
+            preferredProjectId ||
+            getProjectId(
+              selectedProjectRef.current
+            );
+
+          if (currentId) {
+            const preferred =
+              normalized.find(
+                (project) =>
+                  String(
+                    getProjectId(
+                      project
+                    )
+                  ) ===
+                  String(
+                    currentId
+                  )
+              );
+
+            if (preferred) {
+              applySelectedProject(
+                preferred
+              );
+
+              await syncBackendContext(
+                getProjectId(
+                  preferred
+                )
+              );
+
+              return normalized;
+            }
+          }
+
+          if (
+            normalized.length >
+            0
+          ) {
+            applySelectedProject(
+              normalized[0]
+            );
+
+            await syncBackendContext(
+              getProjectId(
+                normalized[0]
+              )
+            );
+          } else {
+            selectedProjectRef.current =
+              null;
+
+            setSelectedProject(
+              null
+            );
+
+            setGeneratedFiles([]);
+            setSelectedFile(null);
+            setDeploymentStatus(
+              "Not deployed"
+            );
+            setLiveUrl("");
+          }
+
+          return normalized;
+        } catch (err) {
+          console.error(
+            "Workspace project loading error:",
+            err
           );
 
-          if (preferred) {
-            applySelectedProject(preferred);
-            syncBackendContext(getProjectId(preferred));
-            return normalized;
-          }
+          setError(
+            getErrorMessage(
+              err,
+              "Projects could not be loaded."
+            )
+          );
+
+          return [];
+        } finally {
+          setProjectLoading(false);
         }
-
-        if (normalized.length > 0) {
-          applySelectedProject(normalized[0]);
-          syncBackendContext(getProjectId(normalized[0]));
-        } else {
-          selectedProjectRef.current = null;
-          setSelectedProject(null);
-          setGeneratedFiles([]);
-          setSelectedFile(null);
-          setDeploymentStatus("Not deployed");
-          setLiveUrl("");
-        }
-
-        return normalized;
-      } catch (err) {
-        console.error(
-          "Workspace project loading error:",
-          err
-        );
-
-        setError(
-          getErrorMessage(
-            err,
-            "Projects could not be loaded."
-          )
-        );
-
-        return [];
-      } finally {
-        setProjectLoading(false);
-      }
-    },
-    [applySelectedProject, syncBackendContext]
-  );
+      },
+      [
+        applySelectedProject,
+        syncBackendContext,
+      ]
+    );
 
   /* =======================================================
      INITIAL LOAD
   ======================================================= */
 
   useEffect(() => {
-    if (initialLoadStarted.current) {
+    if (
+      initialLoadStarted.current
+    ) {
       return;
     }
 
-    initialLoadStarted.current = true;
+    initialLoadStarted.current =
+      true;
+
     loadProjects();
   }, [loadProjects]);
 
@@ -1226,594 +1464,827 @@ function Workspace() {
      PROJECT SELECTION
   ======================================================= */
 
-  const handleSelectProject = useCallback(
-    (project) => {
-      setError("");
-      setNotice("");
-      setActivityLog([]);
-      setChatMessages([]);
+  const handleSelectProject =
+    useCallback(
+      (project) => {
+        setError("");
+        setNotice("");
+        setActivityLog([]);
+        setChatMessages([]);
 
-      setActiveView("preview");
-      setMobilePanel("workspace");
-      setFilesDrawerOpen(false);
-      setActivityDrawerOpen(false);
-      setPreviewFullscreen(false);
+        setActiveView(
+          "preview"
+        );
 
-      applySelectedProject(project);
-      syncBackendContext(getProjectId(project));
-    },
-    [applySelectedProject, syncBackendContext]
-  );
+        setMobilePanel(
+          "workspace"
+        );
+
+        setFilesDrawerOpen(
+          false
+        );
+
+        setActivityDrawerOpen(
+          false
+        );
+
+        setPreviewFullscreen(
+          false
+        );
+
+        applySelectedProject(
+          project
+        );
+
+        syncBackendContext(
+          getProjectId(project)
+        );
+      },
+      [
+        applySelectedProject,
+        syncBackendContext,
+      ]
+    );
 
   /* =======================================================
      NEW PROJECT
   ======================================================= */
 
-  const handleNewProject = useCallback(() => {
-    selectedProjectRef.current = null;
+  const handleNewProject =
+    useCallback(() => {
+      selectedProjectRef.current =
+        null;
 
-    setSelectedProject(null);
-    setGeneratedFiles([]);
-    setSelectedFile(null);
+      setSelectedProject(null);
+      setGeneratedFiles([]);
+      setSelectedFile(null);
 
-    setPrompt("");
-    setChatMessages([]);
+      setPrompt("");
+      setChatMessages([]);
 
-    setLiveUrl("");
-    setDeploymentStatus("Not deployed");
+      setLiveUrl("");
+      setDeploymentStatus(
+        "Not deployed"
+      );
 
-    setActiveView("preview");
-    setMobilePanel("workspace");
+      setActiveView(
+        "preview"
+      );
 
-    setFilesDrawerOpen(false);
-    setActivityDrawerOpen(false);
-    setPreviewFullscreen(false);
+      setMobilePanel(
+        "workspace"
+      );
 
-    setError("");
-    setNotice("");
-    setActivityLog([]);
+      setFilesDrawerOpen(
+        false
+      );
 
-    setOperation("idle");
-    setOperationStartedAt(null);
+      setActivityDrawerOpen(
+        false
+      );
 
-    setEnvironments([]);
-    setActiveEnvironment("development");
-    setEnvironmentReadiness(null);
-    setDeploymentLog(null);
-    setDeploymentEvents([]);
-    setGithubConnection(null);
-    setGithubRepository(null);
-    setBackendSyncError("");
-  }, []);
+      setPreviewFullscreen(
+        false
+      );
+
+      setError("");
+      setNotice("");
+      setActivityLog([]);
+
+      setOperation("idle");
+      setOperationStartedAt(
+        null
+      );
+
+      setEnvironments([]);
+      setActiveEnvironment(
+        "development"
+      );
+
+      setEnvironmentReadiness(
+        null
+      );
+
+      setDeploymentLog(null);
+      setDeploymentEvents([]);
+
+      setGithubConnection(
+        null
+      );
+
+      setGithubRepository(
+        null
+      );
+
+      setBackendSyncError("");
+    }, []);
 
   /* =======================================================
      QUICK PROMPT
   ======================================================= */
 
-  const handleQuickPrompt = useCallback((value) => {
-    setPrompt(value);
-    setError("");
-    setNotice("");
-    setMobilePanel("workspace");
+  const handleQuickPrompt =
+    useCallback(
+      (value) => {
+        setPrompt(value);
+        setError("");
+        setNotice("");
 
-    window.setTimeout(() => {
-      document
-        .querySelector(
-          '[data-zyrionos-chat-input="true"]'
-        )
-        ?.focus();
-    }, 50);
-  }, []);
+        setMobilePanel(
+          "workspace"
+        );
+
+        window.setTimeout(() => {
+          document
+            .querySelector(
+              '[data-zyrionos-chat-input="true"]'
+            )
+            ?.focus();
+        }, 50);
+      },
+      []
+    );
 
   /* =======================================================
      BUILD / CHANGE
   ======================================================= */
 
-  const handleBuild = useCallback(
-    async (suppliedPrompt = "") => {
-      const userPrompt = String(
-        suppliedPrompt || prompt
-      ).trim();
+  const handleBuild =
+    useCallback(
+      async (
+        suppliedPrompt = ""
+      ) => {
+        const userPrompt =
+          String(
+            suppliedPrompt ||
+              prompt
+          ).trim();
 
-      if (!userPrompt) {
-        setError(
-          "Describe what you want to build or change first."
-        );
-        return;
-      }
-
-      if (loading) {
-        return;
-      }
-
-      const isExistingProject =
-        Boolean(selectedProjectId);
-
-      try {
-        setError("");
-        setNotice("");
-        setLoading(true);
-
-        setActiveView("preview");
-        setMobilePanel("workspace");
-
-        setChatMessages((previous) => [
-          ...previous,
-          createMessage("user", userPrompt),
-        ]);
-
-        startOperation(
-          isExistingProject
-            ? "change"
-            : "build",
-          isExistingProject
-            ? "Your change request is being processed..."
-            : "Your application is being built..."
-        );
-
-        addActivity(
-          "Understanding the request...",
-          "active"
-        );
-
-        const instruction = isExistingProject
-          ? [
-              "Update the current project.",
-              "",
-              `Project ID: ${selectedProjectId}`,
-              `Project name: ${projectName}`,
-              `Framework: ${framework}`,
-              "",
-              "User request:",
-              userPrompt,
-              "",
-              "Return the complete project files required for the implementation.",
-              "Preserve working functionality unless the requested change requires modifying it.",
-            ].join("\n")
-          : userPrompt;
-
-        addActivity(
-          "Generating the application files...",
-          "active"
-        );
-
-        const aiResult = await generateCode(
-          instruction,
-          framework
-        );
-
-        addActivity(
-          "Application files generated.",
-          "success"
-        );
-
-        const assistantText =
-          normalizeAIResponse(aiResult);
-
-        const filesFromAI =
-          getGeneratedFiles(aiResult);
-
-        if (filesFromAI.length === 0) {
-          throw new Error(
-            "AI generation completed, but no project files were returned by the backend."
+        if (!userPrompt) {
+          setError(
+            "Describe what you want to build or change first."
           );
+
+          return;
         }
 
-        addActivity(
-          `${filesFromAI.length} project files received.`,
-          "success"
-        );
+        if (loading) {
+          return;
+        }
 
-        setChatMessages((previous) => [
-          ...previous,
-          createMessage(
-            "assistant",
-            assistantText ||
-              `The application is ready. ${filesFromAI.length} files were generated.`,
-            {
-              fileCount: filesFromAI.length,
-            }
-          ),
-        ]);
+        const isExistingProject =
+          Boolean(
+            selectedProjectId
+          );
 
-        /* =================================================
-           CREATE NEW PROJECT
-        ================================================= */
+        try {
+          setError("");
+          setNotice("");
+          setLoading(true);
 
-        if (!isExistingProject) {
-          const generatedProjectName =
-            buildProjectName(userPrompt);
+          setActiveView(
+            "preview"
+          );
+
+          setMobilePanel(
+            "workspace"
+          );
+
+          setChatMessages(
+            (previous) => [
+              ...previous,
+              createMessage(
+                "user",
+                userPrompt
+              ),
+            ]
+          );
+
+          startOperation(
+            isExistingProject
+              ? "change"
+              : "build",
+            isExistingProject
+              ? "Your change request is being processed..."
+              : "Your application is being built..."
+          );
 
           addActivity(
-            "Saving the project to your workspace...",
+            "Understanding the request...",
             "active"
           );
 
-          const projectResponse =
-            await createProject({
-              projectName: generatedProjectName,
-              description: userPrompt,
-              framework,
-              files: filesFromAI,
-            });
+          const instruction =
+            isExistingProject
+              ? [
+                  "Update the current project.",
+                  "",
+                  `Project ID: ${selectedProjectId}`,
+                  `Project name: ${projectName}`,
+                  `Framework: ${framework}`,
+                  "",
+                  "User request:",
+                  userPrompt,
+                  "",
+                  "Return the complete project files required for the implementation.",
+                  "Preserve working functionality unless the requested change requires modifying it.",
+                ].join("\n")
+              : userPrompt;
 
-          let createdProject =
-            extractProjectFromResponse(
-              projectResponse
+          addActivity(
+            "Generating the application files...",
+            "active"
+          );
+
+          const aiResult =
+            await generateCode(
+              instruction,
+              framework
             );
 
-          if (!createdProject) {
-            const unwrapped =
-              unwrapApiResponse(projectResponse);
+          addActivity(
+            "Application files generated.",
+            "success"
+          );
 
-            if (
-              unwrapped &&
-              typeof unwrapped === "object" &&
-              !Array.isArray(unwrapped) &&
-              (
-                unwrapped._id ||
-                unwrapped.id ||
-                unwrapped.projectName ||
-                Array.isArray(unwrapped.files)
-              )
-            ) {
-              createdProject = unwrapped;
-            }
+          const assistantText =
+            normalizeAIResponse(
+              aiResult
+            );
+
+          const filesFromAI =
+            getGeneratedFiles(
+              aiResult
+            );
+
+          if (
+            filesFromAI.length ===
+            0
+          ) {
+            throw new Error(
+              "AI generation completed, but no project files were returned by the backend."
+            );
           }
 
-          if (createdProject) {
-            const savedFiles =
-              normalizeProjectFiles(
-                createdProject,
-                null
+          addActivity(
+            `${filesFromAI.length} project files received.`,
+            "success"
+          );
+
+          setChatMessages(
+            (previous) => [
+              ...previous,
+              createMessage(
+                "assistant",
+                assistantText ||
+                  `The application is ready. ${filesFromAI.length} files were generated.`,
+                {
+                  fileCount:
+                    filesFromAI.length,
+                }
+              ),
+            ]
+          );
+
+          /* =================================================
+             CREATE NEW PROJECT
+          ================================================= */
+
+          if (
+            !isExistingProject
+          ) {
+            const generatedProjectName =
+              buildProjectName(
+                userPrompt
               );
 
-            const finalFiles =
-              savedFiles.length > 0
-                ? savedFiles
-                : filesFromAI;
+            addActivity(
+              "Saving the project to your workspace...",
+              "active"
+            );
 
-            const projectWithFiles = {
-              ...createdProject,
-              projectName:
-                getProjectName(
+            const projectResponse =
+              await createProject({
+                projectName:
+                  generatedProjectName,
+                description:
+                  userPrompt,
+                framework,
+                files:
+                  filesFromAI,
+              });
+
+            let createdProject =
+              extractProjectFromResponse(
+                projectResponse
+              );
+
+            if (
+              !createdProject
+            ) {
+              const unwrapped =
+                unwrapApiResponse(
+                  projectResponse
+                );
+
+              if (
+                unwrapped &&
+                typeof unwrapped ===
+                  "object" &&
+                !Array.isArray(
+                  unwrapped
+                ) &&
+                (
+                  unwrapped._id ||
+                  unwrapped.id ||
+                  unwrapped.projectName ||
+                  Array.isArray(
+                    unwrapped.files
+                  )
+                )
+              ) {
+                createdProject =
+                  unwrapped;
+              }
+            }
+
+            if (
+              createdProject
+            ) {
+              const savedFiles =
+                normalizeProjectFiles(
+                  createdProject,
+                  null
+                );
+
+              const finalFiles =
+                savedFiles.length >
+                0
+                  ? savedFiles
+                  : filesFromAI;
+
+              const projectWithFiles =
+                {
+                  ...createdProject,
+                  projectName:
+                    getProjectName(
+                      createdProject
+                    ) ||
+                    generatedProjectName,
+                  files:
+                    finalFiles,
+                };
+
+              applySelectedProject(
+                projectWithFiles
+              );
+
+              setGeneratedFiles(
+                finalFiles
+              );
+
+              setSelectedFile(
+                finalFiles[0] ||
+                  null
+              );
+
+              const createdId =
+                getProjectId(
                   createdProject
-                ) || generatedProjectName,
-              files: finalFiles,
-            };
+                );
 
-            applySelectedProject(
-              projectWithFiles
-            );
-
-            setGeneratedFiles(finalFiles);
-            setSelectedFile(
-              finalFiles[0] || null
-            );
-
-            const createdId =
-              getProjectId(createdProject);
-
-            if (createdId) {
-              await loadProjects(createdId);
+              if (createdId) {
+                await loadProjects(
+                  createdId
+                );
+              } else {
+                await loadProjects();
+              }
             } else {
               await loadProjects();
             }
+
+            setNotice(
+              `${generatedProjectName} was created and saved to your projects.`
+            );
           } else {
-            await loadProjects();
-          }
+            /* ===============================================
+               UPDATE EXISTING PROJECT
+            =============================================== */
 
-          setNotice(
-            `${generatedProjectName} was created and saved to your projects.`
-          );
-        } else {
-          /* ===============================================
-             UPDATE EXISTING PROJECT
-          =============================================== */
-
-          addActivity(
-            "Saving the updated project...",
-            "active"
-          );
-
-          const updateResponse =
-            await updateProject(
-              selectedProjectId,
-              {
-                files: filesFromAI,
-              }
+            addActivity(
+              "Saving the updated project...",
+              "active"
             );
 
-          const updatedProject =
-            extractProjectFromResponse(
-              updateResponse
-            );
-
-          if (updatedProject) {
-            const returnedFiles =
-              normalizeProjectFiles(
-                updatedProject,
-                null
+            const updateResponse =
+              await updateProject(
+                selectedProjectId,
+                {
+                  files:
+                    filesFromAI,
+                }
               );
 
-            const appliedUpdatedProject = {
-              ...updatedProject,
-              files:
-                returnedFiles.length > 0
-                  ? returnedFiles
-                  : filesFromAI,
-            };
+            const updatedProject =
+              extractProjectFromResponse(
+                updateResponse
+              );
 
-            applySelectedProject(
-              appliedUpdatedProject
-            );
-            syncBackendContext(
-              getProjectId(appliedUpdatedProject) ||
+            if (
+              updatedProject
+            ) {
+              const returnedFiles =
+                normalizeProjectFiles(
+                  updatedProject,
+                  null
+                );
+
+              const appliedUpdatedProject =
+                {
+                  ...updatedProject,
+                  files:
+                    returnedFiles.length >
+                    0
+                      ? returnedFiles
+                      : filesFromAI,
+                };
+
+              applySelectedProject(
+                appliedUpdatedProject
+              );
+
+              await syncBackendContext(
+                getProjectId(
+                  appliedUpdatedProject
+                ) ||
+                  selectedProjectId
+              );
+            } else {
+              await loadProjects(
                 selectedProjectId
+              );
+            }
+
+            setGeneratedFiles(
+              filesFromAI
             );
-          } else {
-            await loadProjects(
-              selectedProjectId
+
+            setSelectedFile(
+              filesFromAI[0] ||
+                null
+            );
+
+            setNotice(
+              `Changes saved to ${projectName}.`
+            );
+
+            addActivity(
+              "Project changes saved.",
+              "success"
             );
           }
 
-          setGeneratedFiles(filesFromAI);
-          setSelectedFile(
-            filesFromAI[0] || null
+          setPrompt("");
+          setActiveView(
+            "preview"
           );
 
-          setNotice(
-            `Changes saved to ${projectName}.`
+          finishOperation(
+            true,
+            isExistingProject
+              ? "Changes completed successfully."
+              : "Project build completed successfully."
+          );
+        } catch (err) {
+          console.error(
+            "Workspace build error:",
+            err
           );
 
-          addActivity(
-            "Project changes saved.",
-            "success"
+          const message =
+            getErrorMessage(
+              err,
+              "The build could not be completed."
+            );
+
+          setChatMessages(
+            (previous) => [
+              ...previous,
+              createMessage(
+                "assistant",
+                message,
+                {
+                  error: true,
+                }
+              ),
+            ]
           );
+
+          setError(message);
+
+          finishOperation(
+            false,
+            "The build could not be completed."
+          );
+        } finally {
+          setLoading(false);
         }
-
-        setPrompt("");
-        setActiveView("preview");
-
-        finishOperation(
-          true,
-          isExistingProject
-            ? "Changes completed successfully."
-            : "Project build completed successfully."
-        );
-      } catch (err) {
-        console.error(
-          "Workspace build error:",
-          err
-        );
-
-        const message = getErrorMessage(
-          err,
-          "The build could not be completed."
-        );
-
-        setChatMessages((previous) => [
-          ...previous,
-          createMessage(
-            "assistant",
-            message,
-            { error: true }
-          ),
-        ]);
-
-        setError(message);
-
-        finishOperation(
-          false,
-          "The build could not be completed."
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    [
-      prompt,
-      loading,
-      selectedProjectId,
-      projectName,
-      framework,
-      startOperation,
-      addActivity,
-      applySelectedProject,
-      loadProjects,
-      syncBackendContext,
-      finishOperation,
-    ]
-  );
+      },
+      [
+        prompt,
+        loading,
+        selectedProjectId,
+        projectName,
+        framework,
+        startOperation,
+        addActivity,
+        applySelectedProject,
+        loadProjects,
+        syncBackendContext,
+        finishOperation,
+      ]
+    );
 
   /* =======================================================
      CHAT SUBMIT
   ======================================================= */
 
-  const handleChatSubmit = useCallback(
-    (event) => {
-      event?.preventDefault();
+  const handleChatSubmit =
+    useCallback(
+      (event) => {
+        event?.preventDefault();
 
-      if (loading || !prompt.trim()) {
-        return;
-      }
+        if (
+          loading ||
+          !prompt.trim()
+        ) {
+          return;
+        }
 
-      handleBuild(prompt);
-    },
-    [loading, prompt, handleBuild]
-  );
+        handleBuild(prompt);
+      },
+      [
+        loading,
+        prompt,
+        handleBuild,
+      ]
+    );
 
   /* =======================================================
      REVIEW / FIX
   ======================================================= */
 
-  const handleReviewFix = useCallback(async () => {
-    if (!selectedProjectId) {
-      setError(
-        "Select a project before running Review / Fix."
-      );
-      return;
-    }
+  const handleReviewFix =
+    useCallback(
+      async () => {
+        if (!selectedProjectId) {
+          setError(
+            "Select a project before running Review / Fix."
+          );
 
-    if (loading) {
-      return;
-    }
+          return;
+        }
 
-    const reviewInstruction = prompt.trim()
-      ? [
-          "Review and improve the current project.",
-          "",
-          `Project ID: ${selectedProjectId}`,
-          `Project name: ${projectName}`,
-          "",
-          "Requested review/change:",
-          prompt.trim(),
-          "",
-          "Return the complete project files required for the implementation.",
-        ].join("\n")
-      : [
-          "Review the current project.",
-          "",
-          "Check for implementation errors, broken user experience, responsive issues, accessibility problems, and incomplete functionality.",
-          "",
-          "Return the complete project files required for any fixes.",
-        ].join("\n");
+        if (loading) {
+          return;
+        }
 
-    setPrompt(reviewInstruction);
-    await handleBuild(reviewInstruction);
-  }, [
-    selectedProjectId,
-    loading,
-    prompt,
-    projectName,
-    handleBuild,
-  ]);
+        const reviewInstruction =
+          prompt.trim()
+            ? [
+                "Review and improve the current project.",
+                "",
+                `Project ID: ${selectedProjectId}`,
+                `Project name: ${projectName}`,
+                "",
+                "Requested review/change:",
+                prompt.trim(),
+                "",
+                "Return the complete project files required for the implementation.",
+              ].join("\n")
+            : [
+                "Review the current project.",
+                "",
+                "Check for implementation errors, broken user experience, responsive issues, accessibility problems, and incomplete functionality.",
+                "",
+                "Return the complete project files required for any fixes.",
+              ].join("\n");
+
+        setPrompt(
+          reviewInstruction
+        );
+
+        await handleBuild(
+          reviewInstruction
+        );
+      },
+      [
+        selectedProjectId,
+        loading,
+        prompt,
+        projectName,
+        handleBuild,
+      ]
+    );
 
   /* =======================================================
      DEPLOY
-     Existing billing/deployment architecture is preserved.
-     Only the single top-level Deploy action is exposed.
   ======================================================= */
 
-  const handleDeploy = useCallback(() => {
-    const projectId = getProjectId(
-      selectedProject
-    );
+  const handleDeploy =
+    useCallback(() => {
+      const projectId =
+        getProjectId(
+          selectedProject
+        );
 
-    if (!projectId) {
-      setError(
-        "Select a project before deploying."
+      if (!projectId) {
+        setError(
+          "Select a project before deploying."
+        );
+
+        return;
+      }
+
+      if (
+        generatedFiles.length ===
+        0
+      ) {
+        setError(
+          "This project has no generated files to deploy."
+        );
+
+        return;
+      }
+
+      setError("");
+
+      setNotice(
+        "Opening the deployment flow for this project..."
       );
-      return;
-    }
 
-    if (generatedFiles.length === 0) {
-      setError(
-        "This project has no generated files to deploy."
+      window.location.assign(
+        `/billing?projectId=${encodeURIComponent(
+          projectId
+        )}&intent=deploy`
       );
-      return;
-    }
-
-    setError("");
-    setNotice(
-      "Opening the deployment flow for this project..."
-    );
-
-    window.location.assign(
-      `/billing?projectId=${encodeURIComponent(
-        projectId
-      )}&intent=deploy`
-    );
-  }, [selectedProject, generatedFiles.length]);
+    }, [
+      selectedProject,
+      generatedFiles.length,
+    ]);
 
   /* =======================================================
      PREVIEW
   ======================================================= */
 
-  const openPreview = useCallback(() => {
-    setActiveView("preview");
-    setMobilePanel("workspace");
-    setPreviewFullscreen(true);
-  }, []);
+  const openPreview =
+    useCallback(() => {
+      setActiveView(
+        "preview"
+      );
 
-  const closePreview = useCallback(() => {
-    setPreviewFullscreen(false);
-  }, []);
+      setMobilePanel(
+        "workspace"
+      );
+
+      setPreviewFullscreen(
+        true
+      );
+    }, []);
+
+  const closePreview =
+    useCallback(() => {
+      setPreviewFullscreen(
+        false
+      );
+    }, []);
 
   /* =======================================================
      FILES / ACTIVITY
   ======================================================= */
 
-  const openFilesDrawer = useCallback(() => {
-    setFilesDrawerOpen(true);
-    setActivityDrawerOpen(false);
-  }, []);
+  const openFilesDrawer =
+    useCallback(() => {
+      setFilesDrawerOpen(
+        true
+      );
 
-  const closeFilesDrawer = useCallback(() => {
-    setFilesDrawerOpen(false);
-  }, []);
+      setActivityDrawerOpen(
+        false
+      );
+    }, []);
 
-  const openActivityDrawer = useCallback(() => {
-    setActivityDrawerOpen(true);
-    setFilesDrawerOpen(false);
-  }, []);
+  const closeFilesDrawer =
+    useCallback(() => {
+      setFilesDrawerOpen(
+        false
+      );
+    }, []);
 
-  const closeActivityDrawer = useCallback(() => {
-    setActivityDrawerOpen(false);
-  }, []);
+  const openActivityDrawer =
+    useCallback(() => {
+      setActivityDrawerOpen(
+        true
+      );
 
-  const handleFileSelect = useCallback((file) => {
-    setSelectedFile(file);
-    setFilesDrawerOpen(false);
-    setActiveView("code");
-  }, []);
+      setFilesDrawerOpen(
+        false
+      );
+    }, []);
+
+  const closeActivityDrawer =
+    useCallback(() => {
+      setActivityDrawerOpen(
+        false
+      );
+    }, []);
+
+  const handleFileSelect =
+    useCallback(
+      (file) => {
+        setSelectedFile(file);
+        setFilesDrawerOpen(
+          false
+        );
+        setActiveView(
+          "code"
+        );
+      },
+      []
+    );
 
   /* =======================================================
      KEYBOARD
   ======================================================= */
 
-  const handlePromptKeyDown = useCallback(
-    (event) => {
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-        event.preventDefault();
-        handleChatSubmit(event);
-      }
-    },
-    [handleChatSubmit]
-  );
+  const handlePromptKeyDown =
+    useCallback(
+      (event) => {
+        if (
+          event.key === "Enter" &&
+          !event.shiftKey
+        ) {
+          event.preventDefault();
+          handleChatSubmit(event);
+        }
+      },
+      [handleChatSubmit]
+    );
 
-  const combinedActivityLog = useMemo(() => {
-    const local = Array.isArray(activityLog)
-      ? activityLog
-      : [];
-
-    const backend = Array.isArray(deploymentEvents)
-      ? deploymentEvents
-      : [];
-
-    return [...local, ...backend]
-      .sort((a, b) =>
-        String(a?.timestamp || "").localeCompare(
-          String(b?.timestamp || "")
+  const combinedActivityLog =
+    useMemo(() => {
+      const local =
+        Array.isArray(
+          activityLog
         )
-      )
-      .slice(-60);
-  }, [activityLog, deploymentEvents]);
+          ? activityLog
+          : [];
+
+      const backend =
+        Array.isArray(
+          deploymentEvents
+        )
+          ? deploymentEvents
+          : [];
+
+      return [
+        ...local,
+        ...backend,
+      ]
+        .sort((a, b) =>
+          String(
+            a?.timestamp || ""
+          ).localeCompare(
+            String(
+              b?.timestamp || ""
+            )
+          )
+        )
+        .slice(-60);
+    }, [
+      activityLog,
+      deploymentEvents,
+    ]);
 
   const backendDeploymentStatus =
-    getBackendLogStatus(deploymentLog);
+    getBackendLogStatus(
+      deploymentLog
+    );
 
-  const githubStatus = githubConnection
-    ? String(githubConnection.status || "connected")
-        .toLowerCase()
-    : "disconnected";
+  const githubStatus =
+    githubConnection
+      ? String(
+          githubConnection.status ||
+            "connected"
+        ).toLowerCase()
+      : "disconnected";
 
   const environmentStatus =
-    environmentReadiness?.ready === true ||
-    environmentReadiness?.isReady === true
+    environmentReadiness?.ready ===
+      true ||
+    environmentReadiness?.isReady ===
+      true
       ? "Ready"
       : environmentReadiness
       ? "Check"
@@ -1825,24 +2296,55 @@ function Workspace() {
 
   return (
     <DashboardLayout>
-      <main className={styles.workspace}>
+      <main
+        className={
+          styles.workspace
+        }
+      >
         {/* =================================================
             HEADER
         ================================================= */}
 
-        <header className={styles.workspaceHeader}>
-          <div className={styles.brandBlock}>
-            <div className={styles.projectMark}>Z</div>
+        <header
+          className={
+            styles.workspaceHeader
+          }
+        >
+          <div
+            className={
+              styles.brandBlock
+            }
+          >
+            <div
+              className={
+                styles.projectMark
+              }
+            >
+              Z
+            </div>
 
-            <div className={styles.brandCopy}>
-              <span>ZYRIONOS WORKSPACE</span>
-              <strong title={projectName}>
+            <div
+              className={
+                styles.brandCopy
+              }
+            >
+              <span>
+                ZYRIONOS WORKSPACE
+              </span>
+
+              <strong
+                title={projectName}
+              >
                 {projectName}
               </strong>
             </div>
           </div>
 
-          <div className={styles.headerStatus}>
+          <div
+            className={
+              styles.headerStatus
+            }
+          >
             <span
               className={
                 operationRunning
@@ -1858,7 +2360,11 @@ function Workspace() {
             </strong>
 
             {operationRunning && (
-              <span className={styles.statusDots}>
+              <span
+                className={
+                  styles.statusDots
+                }
+              >
                 <i />
                 <i />
                 <i />
@@ -1872,40 +2378,66 @@ function Workspace() {
             )}
           </div>
 
-          <div className={styles.headerActions}>
+          <div
+            className={
+              styles.headerActions
+            }
+          >
             <button
               type="button"
-              className={styles.headerButton}
-              onClick={openFilesDrawer}
+              className={
+                styles.headerButton
+              }
+              onClick={
+                openFilesDrawer
+              }
             >
               Files
-              <b>{generatedFiles.length}</b>
+              <b>
+                {generatedFiles.length}
+              </b>
             </button>
 
             <button
               type="button"
-              className={styles.headerButton}
-              onClick={openActivityDrawer}
+              className={
+                styles.headerButton
+              }
+              onClick={
+                openActivityDrawer
+              }
             >
               Activity
             </button>
 
             <button
               type="button"
-              className={styles.previewTopButton}
-              onClick={openPreview}
-              disabled={generatedFiles.length === 0}
+              className={
+                styles.previewTopButton
+              }
+              onClick={
+                openPreview
+              }
+              disabled={
+                generatedFiles.length ===
+                0
+              }
             >
               Preview
             </button>
 
             <button
               type="button"
-              className={styles.deployButton}
-              onClick={handleDeploy}
+              className={
+                styles.deployButton
+              }
+              onClick={
+                handleDeploy
+              }
               disabled={
                 !selectedProjectId ||
-                generatedFiles.length === 0
+                generatedFiles.length ===
+                  0
               }
             >
               Deploy
@@ -1919,75 +2451,105 @@ function Workspace() {
 
         {error && (
           <div
-            className={styles.alertError}
+            className={
+              styles.alertError
+            }
             role="alert"
           >
             <span>!</span>
 
             <div>
-              <strong>Workspace error</strong>
+              <strong>
+                Workspace error
+              </strong>
+
               <p>{error}</p>
             </div>
 
             <button
               type="button"
-              onClick={() => setError("")}
+              onClick={() =>
+                setError("")
+              }
               aria-label="Close error"
             >
-              脳
+              ×
             </button>
           </div>
         )}
 
         {notice && !error && (
           <div
-            className={styles.alertSuccess}
+            className={
+              styles.alertSuccess
+            }
             role="status"
           >
-            <span>鉁�</span>
+            <span>✓</span>
+
             <p>{notice}</p>
 
             <button
               type="button"
-              onClick={() => setNotice("")}
+              onClick={() =>
+                setNotice("")
+              }
               aria-label="Close notice"
             >
-              脳
+              ×
             </button>
           </div>
         )}
 
-        {backendSyncError && !error && (
-          <div
-            className={styles.alertInfo}
-            role="status"
-          >
-            <span>i</span>
-            <p>{backendSyncError}</p>
-            <button
-              type="button"
-              onClick={() => setBackendSyncError("")}
-              aria-label="Close backend status"
+        {backendSyncError &&
+          !error && (
+            <div
+              className={
+                styles.alertInfo
+              }
+              role="status"
             >
-              脳
-            </button>
-          </div>
-        )}
+              <span>i</span>
+
+              <p>
+                {backendSyncError}
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setBackendSyncError(
+                    ""
+                  )
+                }
+                aria-label="Close backend status"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
         {/* =================================================
             MOBILE NAV
         ================================================= */}
 
-        <nav className={styles.mobileNav}>
+        <nav
+          className={
+            styles.mobileNav
+          }
+        >
           <button
             type="button"
             className={
-              mobilePanel === "projects"
+              mobilePanel ===
+              "projects"
                 ? styles.mobileNavActive
                 : ""
             }
             onClick={() =>
-              setMobilePanel("projects")
+              setMobilePanel(
+                "projects"
+              )
             }
           >
             Projects
@@ -1996,12 +2558,15 @@ function Workspace() {
           <button
             type="button"
             className={
-              mobilePanel === "workspace"
+              mobilePanel ===
+              "workspace"
                 ? styles.mobileNavActive
                 : ""
             }
             onClick={() =>
-              setMobilePanel("workspace")
+              setMobilePanel(
+                "workspace"
+              )
             }
           >
             Workspace
@@ -2010,12 +2575,15 @@ function Workspace() {
           <button
             type="button"
             className={
-              mobilePanel === "ai"
+              mobilePanel ===
+              "ai"
                 ? styles.mobileNavActive
                 : ""
             }
             onClick={() =>
-              setMobilePanel("ai")
+              setMobilePanel(
+                "ai"
+              )
             }
           >
             AI
@@ -2024,12 +2592,15 @@ function Workspace() {
           <button
             type="button"
             className={
-              mobilePanel === "activity"
+              mobilePanel ===
+              "activity"
                 ? styles.mobileNavActive
                 : ""
             }
             onClick={() =>
-              setMobilePanel("activity")
+              setMobilePanel(
+                "activity"
+              )
             }
           >
             Activity
@@ -2040,7 +2611,11 @@ function Workspace() {
             BODY
         ================================================= */}
 
-        <section className={styles.workspaceBody}>
+        <section
+          className={
+            styles.workspaceBody
+          }
+        >
           {/* =================================================
               PROJECTS
           ================================================= */}
@@ -2049,21 +2624,33 @@ function Workspace() {
             className={`
               ${styles.projectRail}
               ${
-                mobilePanel === "projects"
+                mobilePanel ===
+                "projects"
                   ? styles.mobileVisible
                   : ""
               }
             `}
           >
-            <div className={styles.railHeader}>
+            <div
+              className={
+                styles.railHeader
+              }
+            >
               <div>
-                <span>PROJECTS</span>
-                <b>{projectCount}</b>
+                <span>
+                  PROJECTS
+                </span>
+
+                <b>
+                  {projectCount}
+                </b>
               </div>
 
               <button
                 type="button"
-                onClick={handleNewProject}
+                onClick={
+                  handleNewProject
+                }
               >
                 + New
               </button>
@@ -2071,129 +2658,189 @@ function Workspace() {
 
             <button
               type="button"
-              className={styles.newProjectCard}
-              onClick={handleNewProject}
+              className={
+                styles.newProjectCard
+              }
+              onClick={
+                handleNewProject
+              }
             >
               <span>+</span>
 
               <div>
-                <strong>Create a Project</strong>
-                <small>Start from an idea</small>
+                <strong>
+                  Create a Project
+                </strong>
+
+                <small>
+                  Start from an idea
+                </small>
               </div>
 
-              <b>鈫�</b>
+              <b>→</b>
             </button>
 
-            <div className={styles.quickPromptList}>
-              <span>START WITH</span>
+            <div
+              className={
+                styles.quickPromptList
+              }
+            >
+              <span>
+                START WITH
+              </span>
 
-              {QUICK_PROMPTS.map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() =>
-                    handleQuickPrompt(
-                      item.prompt
-                    )
-                  }
-                >
-                  {item.label}
-                </button>
-              ))}
+              {QUICK_PROMPTS.map(
+                (item) => (
+                  <button
+                    key={
+                      item.label
+                    }
+                    type="button"
+                    onClick={() =>
+                      handleQuickPrompt(
+                        item.prompt
+                      )
+                    }
+                  >
+                    {item.label}
+                  </button>
+                )
+              )}
             </div>
 
-            <div className={styles.projectList}>
+            <div
+              className={
+                styles.projectList
+              }
+            >
               {projectLoading ? (
-                <div className={styles.projectLoading}>
+                <div
+                  className={
+                    styles.projectLoading
+                  }
+                >
                   Loading projects...
                 </div>
-              ) : projects.length === 0 ? (
-                <div className={styles.noProjects}>
-                  <strong>No projects yet</strong>
+              ) : projects.length ===
+                0 ? (
+                <div
+                  className={
+                    styles.noProjects
+                  }
+                >
+                  <strong>
+                    No projects yet
+                  </strong>
+
                   <p>
-                    Start with an idea and your
-                    project will be saved here.
+                    Start with an idea
+                    and your project
+                    will be saved here.
                   </p>
 
                   <button
                     type="button"
-                    onClick={handleNewProject}
+                    onClick={
+                      handleNewProject
+                    }
                   >
                     Start building
                   </button>
                 </div>
               ) : (
-                projects.map((project) => {
-                  const id = getProjectId(project);
-                  const name = getProjectName(project);
+                projects.map(
+                  (project) => {
+                    const id =
+                      getProjectId(
+                        project
+                      );
 
-                  const active =
-                    String(id) ===
-                    String(selectedProjectId);
+                    const name =
+                      getProjectName(
+                        project
+                      );
 
-                  const files =
-                    normalizeProjectFiles(
-                      project,
-                      null
-                    );
+                    const active =
+                      String(id) ===
+                      String(
+                        selectedProjectId
+                      );
 
-                  return (
-                    <button
-                      key={id || name}
-                      type="button"
-                      className={`
-                        ${styles.projectItem}
-                        ${
-                          active
-                            ? styles.projectItemActive
-                            : ""
+                    const files =
+                      normalizeProjectFiles(
+                        project,
+                        null
+                      );
+
+                    return (
+                      <button
+                        key={
+                          id ||
+                          name
                         }
-                      `}
-                      onClick={() =>
-                        handleSelectProject(
-                          project
-                        )
-                      }
-                    >
-                      <span
-                        className={
-                          styles.projectAvatar
-                        }
-                      >
-                        {name
-                          .charAt(0)
-                          .toUpperCase()}
-                      </span>
-
-                      <span
-                        className={
-                          styles.projectItemCopy
-                        }
-                      >
-                        <strong title={name}>
-                          {name}
-                        </strong>
-
-                        <small>
-                          {getProjectFramework(
-                            project
-                          )}
-                          {files.length > 0
-                            ? ` 路 ${files.length} files`
-                            : ""}
-                        </small>
-                      </span>
-
-                      {active && (
-                        <i
-                          className={
-                            styles.projectActiveIndicator
+                        type="button"
+                        className={`
+                          ${styles.projectItem}
+                          ${
+                            active
+                              ? styles.projectItemActive
+                              : ""
                           }
-                        />
-                      )}
-                    </button>
-                  );
-                })
+                        `}
+                        onClick={() =>
+                          handleSelectProject(
+                            project
+                          )
+                        }
+                      >
+                        <span
+                          className={
+                            styles.projectAvatar
+                          }
+                        >
+                          {name
+                            .charAt(
+                              0
+                            )
+                            .toUpperCase()}
+                        </span>
+
+                        <span
+                          className={
+                            styles.projectItemCopy
+                          }
+                        >
+                          <strong
+                            title={
+                              name
+                            }
+                          >
+                            {name}
+                          </strong>
+
+                          <small>
+                            {getProjectFramework(
+                              project
+                            )}
+
+                            {files.length >
+                            0
+                              ? ` · ${files.length} files`
+                              : ""}
+                          </small>
+                        </span>
+
+                        {active && (
+                          <i
+                            className={
+                              styles.projectActiveIndicator
+                            }
+                          />
+                        )}
+                      </button>
+                    );
+                  }
+                )
               )}
             </div>
           </aside>
@@ -2206,7 +2853,8 @@ function Workspace() {
             className={`
               ${styles.mainWorkspace}
               ${
-                mobilePanel === "workspace"
+                mobilePanel ===
+                "workspace"
                   ? styles.mobileVisible
                   : ""
               }
@@ -2214,24 +2862,61 @@ function Workspace() {
           >
             {/* TOOLBAR */}
 
-            <div className={styles.workspaceToolbar}>
-              <div className={styles.workspaceTitle}>
-                <span>APPLICATION</span>
-                <strong title={projectName}>
+            <div
+              className={
+                styles.workspaceToolbar
+              }
+            >
+              <div
+                className={
+                  styles.workspaceTitle
+                }
+              >
+                <span>
+                  APPLICATION
+                </span>
+
+                <strong
+                  title={projectName}
+                >
                   {projectName}
                 </strong>
               </div>
 
-              <div className={styles.workspaceContext}>
-                <div className={styles.contextItem}>
-                  <span>ENV</span>
-                  <select
-                    value={activeEnvironment}
-                    onChange={async (event) => {
-                      const name = event.target.value;
-                      setActiveEnvironment(name);
+              <div
+                className={
+                  styles.workspaceContext
+                }
+              >
+                <div
+                  className={
+                    styles.contextItem
+                  }
+                >
+                  <span>
+                    ENV
+                  </span>
 
-                      if (!selectedProjectId) return;
+                  <select
+                    value={
+                      activeEnvironment
+                    }
+                    onChange={async (
+                      event
+                    ) => {
+                      const name =
+                        event.target
+                          .value;
+
+                      setActiveEnvironment(
+                        name
+                      );
+
+                      if (
+                        !selectedProjectId
+                      ) {
+                        return;
+                      }
 
                       try {
                         const readiness =
@@ -2241,13 +2926,21 @@ function Workspace() {
                           );
 
                         setEnvironmentReadiness(
-                          getServiceObject(readiness, [
-                            "readiness",
-                            "deploymentReadiness",
-                          ])
+                          getServiceObject(
+                            readiness,
+                            [
+                              "readiness",
+                              "deploymentReadiness",
+                            ]
+                          )
                         );
-                      } catch (err) {
-                        setEnvironmentReadiness(null);
+                      } catch (
+                        err
+                      ) {
+                        setEnvironmentReadiness(
+                          null
+                        );
+
                         setBackendSyncError(
                           getErrorMessage(
                             err,
@@ -2259,45 +2952,59 @@ function Workspace() {
                     disabled={
                       loading ||
                       backendSyncing ||
-                      environments.length === 0
+                      environments.length ===
+                        0
                     }
-                    className={styles.environmentSelect}
+                    className={
+                      styles.environmentSelect
+                    }
                     aria-label="Environment"
                   >
-                    {(environments.length > 0
-                      ? environments
-                      : [
-                          {
-                            name: "development",
-                          },
-                        ]
-                    ).map((environment) => {
-                      const name =
-                        environment?.name ||
-                        environment?.environment ||
-                        "development";
+                    {(
+                      environments.length >
+                      0
+                        ? environments
+                        : [
+                            {
+                              name: "development",
+                            },
+                          ]
+                    ).map(
+                      (
+                        environment
+                      ) => {
+                        const name =
+                          environment?.name ||
+                          environment?.environment ||
+                          "development";
 
-                      return (
-                        <option
-                          key={name}
-                          value={name}
-                        >
-                          {name}
-                        </option>
-                      );
-                    })}
+                        return (
+                          <option
+                            key={name}
+                            value={
+                              name
+                            }
+                          >
+                            {name}
+                          </option>
+                        );
+                      }
+                    )}
                   </select>
                 </div>
 
                 <span
                   className={
-                    environmentStatus === "Ready"
+                    environmentStatus ===
+                    "Ready"
                       ? styles.contextReady
                       : styles.contextPending
                   }
                   title="Environment readiness"
                 >
-                  {environmentStatus}
+                  {
+                    environmentStatus
+                  }
                 </span>
 
                 <span
@@ -2322,7 +3029,11 @@ function Workspace() {
                 </span>
 
                 {backendSyncing && (
-                  <span className={styles.contextSyncing}>
+                  <span
+                    className={
+                      styles.contextSyncing
+                    }
+                  >
                     Syncing
                   </span>
                 )}
@@ -2343,37 +3054,57 @@ function Workspace() {
                 </span>
               </div>
 
-              <div className={styles.toolbarActions}>
+              <div
+                className={
+                  styles.toolbarActions
+                }
+              >
                 <select
                   value={framework}
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setFramework(
-                      event.target.value
+                      event.target
+                        .value
                     )
                   }
-                  disabled={loading}
-                  className={styles.frameworkSelect}
+                  disabled={
+                    loading
+                  }
+                  className={
+                    styles.frameworkSelect
+                  }
                   aria-label="Framework"
                 >
-                  {FRAMEWORKS.map((item) => (
-                    <option
-                      key={item}
-                      value={item}
-                    >
-                      {item}
-                    </option>
-                  ))}
+                  {FRAMEWORKS.map(
+                    (item) => (
+                      <option
+                        key={
+                          item
+                        }
+                        value={
+                          item
+                        }
+                      >
+                        {item}
+                      </option>
+                    )
+                  )}
                 </select>
 
                 <button
                   type="button"
                   className={
-                    activeView === "preview"
+                    activeView ===
+                    "preview"
                       ? styles.toolbarActive
                       : styles.toolbarButton
                   }
                   onClick={() =>
-                    setActiveView("preview")
+                    setActiveView(
+                      "preview"
+                    )
                   }
                 >
                   Preview
@@ -2382,12 +3113,15 @@ function Workspace() {
                 <button
                   type="button"
                   className={
-                    activeView === "code"
+                    activeView ===
+                    "code"
                       ? styles.toolbarActive
                       : styles.toolbarButton
                   }
                   onClick={() =>
-                    setActiveView("code")
+                    setActiveView(
+                      "code"
+                    )
                   }
                 >
                   Code
@@ -2397,11 +3131,28 @@ function Workspace() {
 
             {/* WORK SURFACE */}
 
-            <div className={styles.visualArea}>
-              {activeView === "preview" ? (
-                <div className={styles.previewShell}>
-                  <div className={styles.previewHeader}>
-                    <div className={styles.browserDots}>
+            <div
+              className={
+                styles.visualArea
+              }
+            >
+              {activeView ===
+              "preview" ? (
+                <div
+                  className={
+                    styles.previewShell
+                  }
+                >
+                  <div
+                    className={
+                      styles.previewHeader
+                    }
+                  >
+                    <div
+                      className={
+                        styles.browserDots
+                      }
+                    >
                       <i />
                       <i />
                       <i />
@@ -2411,12 +3162,18 @@ function Workspace() {
                       className={
                         styles.previewProjectName
                       }
-                      title={projectName}
+                      title={
+                        projectName
+                      }
                     >
                       {projectName}
                     </span>
 
-                    <div className={styles.previewAddress}>
+                    <div
+                      className={
+                        styles.previewAddress
+                      }
+                    >
                       {previewUrl ||
                         (previewEntryFile
                           ? "Local HTML preview"
@@ -2441,20 +3198,29 @@ function Workspace() {
 
                     <button
                       type="button"
-                      onClick={openPreview}
+                      onClick={
+                        openPreview
+                      }
                       disabled={
-                        generatedFiles.length === 0
+                        generatedFiles.length ===
+                        0
                       }
                     >
                       Open
                     </button>
                   </div>
 
-                  <div className={styles.previewContent}>
+                  <div
+                    className={
+                      styles.previewContent
+                    }
+                  >
                     {previewUrl ? (
                       <iframe
                         title={`${projectName} application preview`}
-                        src={previewUrl}
+                        src={
+                          previewUrl
+                        }
                         className={
                           styles.previewFrame
                         }
@@ -2462,11 +3228,14 @@ function Workspace() {
                       />
                     ) : previewEntryFile ? (
                       <LocalProjectPreview
-                        files={generatedFiles}
+                        files={
+                          generatedFiles
+                        }
                         framework={
                           getProjectFramework(
                             selectedProject
-                          ) || framework
+                          ) ||
+                          framework
                         }
                       />
                     ) : (
@@ -2492,15 +3261,19 @@ function Workspace() {
                         </h2>
 
                         <p>
-                          {generatedFiles.length > 0
+                          {generatedFiles.length >
+                          0
                             ? `${generatedFiles.length} files are ready. The backend has not returned a live preview runtime URL yet.`
                             : "Build an application to create the project files."}
                         </p>
 
-                        {generatedFiles.length > 0 && (
+                        {generatedFiles.length >
+                          0 && (
                           <button
                             type="button"
-                            onClick={openFilesDrawer}
+                            onClick={
+                              openFilesDrawer
+                            }
                           >
                             View project files
                           </button>
@@ -2510,163 +3283,237 @@ function Workspace() {
                   </div>
                 </div>
               ) : (
-                <div className={styles.codeSurface}>
+                <div
+                  className={
+                    styles.codeSurface
+                  }
+                >
                   <div
                     className={
                       styles.codeSurfaceHeader
                     }
                   >
                     <div>
-                      <span>PROJECT FILES</span>
-                      <b>{generatedFiles.length}</b>
+                      <span>
+                        PROJECT FILES
+                      </span>
+
+                      <b>
+                        {
+                          generatedFiles.length
+                        }
+                      </b>
                     </div>
 
                     <button
                       type="button"
-                      onClick={openFilesDrawer}
+                      onClick={
+                        openFilesDrawer
+                      }
                     >
                       Open Files
                     </button>
                   </div>
 
-                  <div className={styles.codeSurfaceBody}>
-                    <div className={styles.codeFileList}>
-                      {generatedFiles.map((file) => {
-                        const path = getFilePath(file);
-                        const active =
-                          selectedFile === file;
+                  <div
+                    className={
+                      styles.codeSurfaceBody
+                    }
+                  >
+                    <div
+                      className={
+                        styles.codeFileList
+                      }
+                    >
+                      {generatedFiles.map(
+                        (
+                          file
+                        ) => {
+                          const path =
+                            getFilePath(
+                              file
+                            );
 
-                        return (
-                          <button
-                            key={
-                              file?._id ||
-                              file?.id ||
-                              path
-                            }
-                            type="button"
-                            className={
-                              active
-                                ? styles.codeFileActive
-                                : styles.codeFile
-                            }
-                            onClick={() =>
-                              setSelectedFile(file)
-                            }
-                            title={path}
-                          >
-                            <span>鈼�</span>
-                            {path}
-                          </button>
-                        );
-                      })}
+                          const active =
+                            selectedFile ===
+                            file;
+
+                          return (
+                            <button
+                              key={
+                                file?._id ||
+                                file?.id ||
+                                path
+                              }
+                              type="button"
+                              className={
+                                active
+                                  ? styles.codeFileActive
+                                  : styles.codeFile
+                              }
+                              onClick={() =>
+                                setSelectedFile(
+                                  file
+                                )
+                              }
+                              title={
+                                path
+                              }
+                            >
+                              <span>
+                                •
+                              </span>
+
+                              {path}
+                            </button>
+                          );
+                        }
+                      )}
                     </div>
 
-                    <pre className={styles.codeEditor}>
-                      {getFileContent(selectedFile)}
+                    <pre
+                      className={
+                        styles.codeEditor
+                      }
+                    >
+                      {getFileContent(
+                        selectedFile
+                      )}
                     </pre>
                   </div>
                 </div>
               )}
             </div>
-
           </section>
 
           {/* =================================================
               AI CHAT
-              Desktop: dedicated right-side panel.
-              Mobile: compact AI panel selected from mobile nav.
           ================================================= */}
 
           <aside
             className={`
               ${styles.chatArea}
               ${
-                mobilePanel === "ai"
+                mobilePanel ===
+                "ai"
                   ? styles.mobileVisible
                   : ""
               }
             `}
           >
-              <div className={styles.chatHeader}>
-                <div>
-                  <span>ZYRIONOS AI</span>
-                  <strong>
-                    Build with conversation
-                  </strong>
-                </div>
+            <div
+              className={
+                styles.chatHeader
+              }
+            >
+              <div>
+                <span>
+                  ZYRIONOS AI
+                </span>
 
-                <div
-                  className={
-                    styles.chatHeaderStatus
-                  }
-                >
-                  <i
-                    className={
-                      operationRunning
-                        ? styles.chatStatusRunning
-                        : styles.chatStatusReady
-                    }
-                  />
-
-                  {operationRunning ? (
-                    <>
-                      <span>Working</span>
-                      <span
-                        className={
-                          styles.chatDots
-                        }
-                      >
-                        <i />
-                        <i />
-                        <i />
-                      </span>
-                    </>
-                  ) : (
-                    "Ready"
-                  )}
-                </div>
+                <strong>
+                  Build with conversation
+                </strong>
               </div>
 
-              <div className={styles.chatMessages}>
-                {chatMessages.length === 0 ? (
-                  <div className={styles.chatWelcome}>
-                    <strong>
-                      What should we build?
-                    </strong>
+              <div
+                className={
+                  styles.chatHeaderStatus
+                }
+              >
+                <i
+                  className={
+                    operationRunning
+                      ? styles.chatStatusRunning
+                      : styles.chatStatusReady
+                  }
+                />
 
+                {operationRunning ? (
+                  <>
                     <span>
-                      Describe the application or
-                      change in normal language.
+                      Working
                     </span>
 
-                    <div
+                    <span
                       className={
-                        styles.chatQuickPrompts
+                        styles.chatDots
                       }
                     >
-                      {QUICK_PROMPTS.slice(0, 3).map(
-                        (item) => (
-                          <button
-                            key={item.label}
-                            type="button"
-                            onClick={() =>
-                              handleQuickPrompt(
-                                item.prompt
-                              )
-                            }
-                          >
-                            {item.label}
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  </>
                 ) : (
-                  chatMessages.map((message) => (
+                  "Ready"
+                )}
+              </div>
+            </div>
+
+            <div
+              className={
+                styles.chatMessages
+              }
+            >
+              {chatMessages.length ===
+              0 ? (
+                <div
+                  className={
+                    styles.chatWelcome
+                  }
+                >
+                  <strong>
+                    What should we build?
+                  </strong>
+
+                  <span>
+                    Describe the application
+                    or change in normal
+                    language.
+                  </span>
+
+                  <div
+                    className={
+                      styles.chatQuickPrompts
+                    }
+                  >
+                    {QUICK_PROMPTS.slice(
+                      0,
+                      3
+                    ).map(
+                      (
+                        item
+                      ) => (
+                        <button
+                          key={
+                            item.label
+                          }
+                          type="button"
+                          onClick={() =>
+                            handleQuickPrompt(
+                              item.prompt
+                            )
+                          }
+                        >
+                          {
+                            item.label
+                          }
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              ) : (
+                chatMessages.map(
+                  (message) => (
                     <div
-                      key={message.id}
+                      key={
+                        message.id
+                      }
                       className={
-                        message.role === "user"
+                        message.role ===
+                        "user"
                           ? styles.chatMessageUser
                           : message.error
                           ? styles.chatMessageError
@@ -2678,7 +3525,8 @@ function Workspace() {
                           styles.chatMessageAvatar
                         }
                       >
-                        {message.role === "user"
+                        {message.role ===
+                        "user"
                           ? "U"
                           : "Z"}
                       </div>
@@ -2701,11 +3549,17 @@ function Workspace() {
                           </strong>
 
                           <small>
-                            {message.timestamp}
+                            {
+                              message.timestamp
+                            }
                           </small>
                         </div>
 
-                        <p>{message.content}</p>
+                        <p>
+                          {
+                            message.content
+                          }
+                        </p>
 
                         {message.fileCount && (
                           <button
@@ -2718,119 +3572,170 @@ function Workspace() {
                             }
                           >
                             View{" "}
-                            {message.fileCount}{" "}
+                            {
+                              message.fileCount
+                            }{" "}
                             generated files
                           </button>
                         )}
                       </div>
                     </div>
-                  ))
-                )}
+                  )
+                )
+              )}
 
-                <div ref={chatEndRef} />
-              </div>
+              <div
+                ref={
+                  chatEndRef
+                }
+              />
+            </div>
 
-              <form
-                className={styles.chatComposer}
-                onSubmit={handleChatSubmit}
+            <form
+              className={
+                styles.chatComposer
+              }
+              onSubmit={
+                handleChatSubmit
+              }
+            >
+              <div
+                className={
+                  styles.chatComposerTop
+                }
               >
-                <div className={styles.chatComposerTop}>
-                  <div>
-                    <span>鉁�</span>
-                    <strong>
-                      {selectedProject
-                        ? `Editing ${projectName}`
-                        : "New application"}
-                    </strong>
-                  </div>
+                <div>
+                  <span>✓</span>
 
-                  <small>{framework}</small>
+                  <strong>
+                    {selectedProject
+                      ? `Editing ${projectName}`
+                      : "New application"}
+                  </strong>
                 </div>
 
-                <textarea
-                  data-zyrionos-chat-input="true"
-                  value={prompt}
-                  onChange={(event) =>
-                    setPrompt(event.target.value)
+                <small>
+                  {framework}
+                </small>
+              </div>
+
+              <textarea
+                data-zyrionos-chat-input="true"
+                value={prompt}
+                onChange={(event) =>
+                  setPrompt(
+                    event.target
+                      .value
+                  )
+                }
+                onKeyDown={
+                  handlePromptKeyDown
+                }
+                disabled={
+                  loading
+                }
+                rows={3}
+                placeholder={
+                  selectedProject
+                    ? "Tell ZyrionOS what to change..."
+                    : "Describe the application you want to build..."
+                }
+              />
+
+              <div
+                className={
+                  styles.chatComposerBottom
+                }
+              >
+                <div
+                  className={
+                    styles.chatHints
                   }
-                  onKeyDown={handlePromptKeyDown}
-                  disabled={loading}
-                  rows={3}
-                  placeholder={
-                    selectedProject
-                      ? "Tell ZyrionOS what to change..."
-                      : "Describe the application you want to build..."
-                  }
-                />
+                >
+                  <span>
+                    Enter to build
+                  </span>
+
+                  <span>
+                    Shift + Enter for a new line
+                  </span>
+                </div>
 
                 <div
                   className={
-                    styles.chatComposerBottom
+                    styles.chatActions
                   }
                 >
-                  <div className={styles.chatHints}>
-                    <span>
-                      Enter to build
-                    </span>
-                    <span>
-                      Shift + Enter for a new line
-                    </span>
-                  </div>
-
-                  <div className={styles.chatActions}>
-                    {selectedProject && (
-                      <button
-                        type="button"
-                        className={
-                          styles.reviewButton
-                        }
-                        disabled={loading}
-                        onClick={handleReviewFix}
-                      >
-                        Review / Fix
-                      </button>
-                    )}
-
+                  {selectedProject && (
                     <button
-                      type="submit"
-                      className={styles.buildButton}
+                      type="button"
+                      className={
+                        styles.reviewButton
+                      }
                       disabled={
-                        loading ||
-                        !prompt.trim()
+                        loading
+                      }
+                      onClick={
+                        handleReviewFix
                       }
                     >
-                      {loading
-                        ? "Working..."
-                        : selectedProject
-                        ? "Apply Change"
-                        : "Build App"}
-
-                      <span>鈫�</span>
+                      Review / Fix
                     </button>
-                  </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className={
+                      styles.buildButton
+                    }
+                    disabled={
+                      loading ||
+                      !prompt.trim()
+                    }
+                  >
+                    {loading
+                      ? "Working..."
+                      : selectedProject
+                      ? "Apply Change"
+                      : "Build App"}
+
+                    <span>
+                      →
+                    </span>
+                  </button>
                 </div>
-              </form>
+              </div>
+            </form>
           </aside>
 
           {/* =================================================
               MOBILE ACTIVITY PANEL
-              No permanent agent pipeline.
           ================================================= */}
 
           <aside
             className={`
               ${styles.activityPanel}
               ${
-                mobilePanel === "activity"
+                mobilePanel ===
+                "activity"
                   ? styles.mobileVisible
                   : ""
               }
             `}
           >
-            <div className={styles.activityPanelHeader}>
+            <div
+              className={
+                styles.activityPanelHeader
+              }
+            >
               <div>
-                <span>WORKSPACE</span>
-                <strong>Activity</strong>
+                <span>
+                  WORKSPACE
+                </span>
+
+                <strong>
+                  Activity
+                </strong>
               </div>
 
               <span
@@ -2846,9 +3751,19 @@ function Workspace() {
               </span>
             </div>
 
-            <div className={styles.activityPanelBody}>
-              <div className={styles.currentOperation}>
-                <span>CURRENT STATUS</span>
+            <div
+              className={
+                styles.activityPanelBody
+              }
+            >
+              <div
+                className={
+                  styles.currentOperation
+                }
+              >
+                <span>
+                  CURRENT STATUS
+                </span>
 
                 <strong>
                   {operationRunning
@@ -2862,11 +3777,40 @@ function Workspace() {
                     : "Ready for the next request."}
                 </p>
 
-                <div className={styles.backendStatusGrid}>
-                  <span>ENV {activeEnvironment}</span>
-                  <span>ENV {environmentStatus}</span>
-                  <span>GITHUB {githubConnection ? "CONNECTED" : "NOT CONNECTED"}</span>
-                  <span>DEPLOY {backendDeploymentStatus ? normalizeDeploymentStatus(backendDeploymentStatus) : deploymentStatus}</span>
+                <div
+                  className={
+                    styles.backendStatusGrid
+                  }
+                >
+                  <span>
+                    ENV{" "}
+                    {
+                      activeEnvironment
+                    }
+                  </span>
+
+                  <span>
+                    ENV{" "}
+                    {
+                      environmentStatus
+                    }
+                  </span>
+
+                  <span>
+                    GITHUB{" "}
+                    {githubConnection
+                      ? "CONNECTED"
+                      : "NOT CONNECTED"}
+                  </span>
+
+                  <span>
+                    DEPLOY{" "}
+                    {backendDeploymentStatus
+                      ? normalizeDeploymentStatus(
+                          backendDeploymentStatus
+                        )
+                      : deploymentStatus}
+                  </span>
                 </div>
 
                 {operationRunning && (
@@ -2882,74 +3826,126 @@ function Workspace() {
                 )}
               </div>
 
-              <div className={styles.activityListCard}>
+              <div
+                className={
+                  styles.activityListCard
+                }
+              >
                 <div
                   className={
                     styles.activityListHeader
                   }
                 >
-                  <span>ACTIVITY</span>
-                  <b>{combinedActivityLog.length}</b>
+                  <span>
+                    ACTIVITY
+                  </span>
+
+                  <b>
+                    {
+                      combinedActivityLog.length
+                    }
+                  </b>
                 </div>
 
-                {combinedActivityLog.length === 0 ? (
-                  <p className={styles.activityEmpty}>
-                    Activity will appear here while
-                    your project is being built.
+                {combinedActivityLog.length ===
+                0 ? (
+                  <p
+                    className={
+                      styles.activityEmpty
+                    }
+                  >
+                    Activity will appear here
+                    while your project is being
+                    built.
                   </p>
                 ) : (
-                  <div className={styles.activityItems}>
+                  <div
+                    className={
+                      styles.activityItems
+                    }
+                  >
                     {combinedActivityLog
                       .slice()
                       .reverse()
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          className={
-                            styles.activityItem
-                          }
-                        >
-                          <i
-                            className={
-                              item.type === "success"
-                                ? styles.dotSuccess
-                                : item.type ===
-                                  "error"
-                                ? styles.dotError
-                                : item.type ===
-                                  "active"
-                                ? styles.dotActive
-                                : styles.dotInfo
+                      .map(
+                        (
+                          item
+                        ) => (
+                          <div
+                            key={
+                              item.id
                             }
-                          />
+                            className={
+                              styles.activityItem
+                            }
+                          >
+                            <i
+                              className={
+                                item.type ===
+                                "success"
+                                  ? styles.dotSuccess
+                                  : item.type ===
+                                    "error"
+                                  ? styles.dotError
+                                  : item.type ===
+                                    "active"
+                                  ? styles.dotActive
+                                  : styles.dotInfo
+                              }
+                            />
 
-                          <div>
-                            <p>{item.message}</p>
-                            <small>
-                              {item.timestamp}
-                            </small>
+                            <div>
+                              <p>
+                                {
+                                  item.message
+                                }
+                              </p>
+
+                              <small>
+                                {
+                                  item.timestamp
+                                }
+                              </small>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      )}
                   </div>
                 )}
               </div>
 
-              <div className={styles.projectStats}>
+              <div
+                className={
+                  styles.projectStats
+                }
+              >
                 <div>
-                  <span>PROJECT FILES</span>
+                  <span>
+                    PROJECT FILES
+                  </span>
+
                   <strong>
-                    {generatedFiles.length}
+                    {
+                      generatedFiles.length
+                    }
                   </strong>
                 </div>
 
                 <div>
-                  <span>FRAMEWORK</span>
-                  <strong>{framework}</strong>
+                  <span>
+                    FRAMEWORK
+                  </span>
+
+                  <strong>
+                    {framework}
+                  </strong>
                 </div>
 
                 <div>
-                  <span>DEPLOYMENT</span>
+                  <span>
+                    DEPLOYMENT
+                  </span>
+
                   <strong>
                     {backendDeploymentStatus
                       ? normalizeDeploymentStatus(
@@ -2960,16 +3956,29 @@ function Workspace() {
                 </div>
 
                 <div>
-                  <span>ENVIRONMENT</span>
+                  <span>
+                    ENVIRONMENT
+                  </span>
+
                   <strong>
-                    {activeEnvironment} 路 {environmentStatus}
+                    {
+                      activeEnvironment
+                    }{" "}
+                    ·{" "}
+                    {
+                      environmentStatus
+                    }
                   </strong>
                 </div>
 
                 <div>
-                  <span>GITHUB</span>
+                  <span>
+                    GITHUB
+                  </span>
+
                   <strong>
-                    {githubConnection
+                    {githubStatus ===
+                    "active"
                       ? "Connected"
                       : "Not connected"}
                   </strong>
@@ -2985,86 +3994,141 @@ function Workspace() {
 
         {filesDrawerOpen && (
           <div
-            className={styles.drawerOverlay}
-            onClick={closeFilesDrawer}
+            className={
+              styles.drawerOverlay
+            }
+            onClick={
+              closeFilesDrawer
+            }
           >
             <aside
-              className={styles.filesDrawer}
+              className={
+                styles.filesDrawer
+              }
               onClick={(event) =>
                 event.stopPropagation()
               }
             >
-              <div className={styles.drawerHeader}>
+              <div
+                className={
+                  styles.drawerHeader
+                }
+              >
                 <div>
-                  <span>PROJECT</span>
-                  <strong>Files</strong>
+                  <span>
+                    PROJECT
+                  </span>
+
+                  <strong>
+                    Files
+                  </strong>
                 </div>
 
                 <button
                   type="button"
-                  onClick={closeFilesDrawer}
+                  onClick={
+                    closeFilesDrawer
+                  }
                   aria-label="Close files"
                 >
-                  脳
+                  ×
                 </button>
               </div>
 
-              <div className={styles.drawerProject}>
-                <strong>{projectName}</strong>
+              <div
+                className={
+                  styles.drawerProject
+                }
+              >
+                <strong>
+                  {projectName}
+                </strong>
+
                 <small>
-                  {generatedFiles.length} generated
-                  files 路 {framework}
+                  {
+                    generatedFiles.length
+                  }{" "}
+                  generated files ·{" "}
+                  {framework}
                 </small>
               </div>
 
-              <div className={styles.drawerFiles}>
-                {generatedFiles.length === 0 ? (
-                  <div className={styles.drawerEmpty}>
-                    No project files available.
+              <div
+                className={
+                  styles.drawerFiles
+                }
+              >
+                {generatedFiles.length ===
+                0 ? (
+                  <div
+                    className={
+                      styles.drawerEmpty
+                    }
+                  >
+                    No project files
+                    available.
                   </div>
                 ) : (
-                  generatedFiles.map((file) => {
-                    const path =
-                      getFilePath(file);
+                  generatedFiles.map(
+                    (file) => {
+                      const path =
+                        getFilePath(
+                          file
+                        );
 
-                    const active =
-                      selectedFile === file;
+                      const active =
+                        selectedFile ===
+                        file;
 
-                    return (
-                      <button
-                        key={
-                          file?._id ||
-                          file?.id ||
-                          path
-                        }
-                        type="button"
-                        className={
-                          active
-                            ? styles.drawerFileActive
-                            : styles.drawerFile
-                        }
-                        onClick={() =>
-                          handleFileSelect(
-                            file
-                          )
-                        }
-                      >
-                        <span>鈼�</span>
-                        <strong title={path}>
-                          {path}
-                        </strong>
-                      </button>
-                    );
-                  })
+                      return (
+                        <button
+                          key={
+                            file?._id ||
+                            file?.id ||
+                            path
+                          }
+                          type="button"
+                          className={
+                            active
+                              ? styles.drawerFileActive
+                              : styles.drawerFile
+                          }
+                          onClick={() =>
+                            handleFileSelect(
+                              file
+                            )
+                          }
+                        >
+                          <span>
+                            •
+                          </span>
+
+                          <strong
+                            title={
+                              path
+                            }
+                          >
+                            {path}
+                          </strong>
+                        </button>
+                      );
+                    }
+                  )
                 )}
               </div>
 
-              <div className={styles.drawerFooter}>
+              <div
+                className={
+                  styles.drawerFooter
+                }
+              >
                 <button
                   type="button"
                   onClick={() => {
                     closeFilesDrawer();
-                    setActiveView("code");
+                    setActiveView(
+                      "code"
+                    );
                   }}
                 >
                   Open Code View
@@ -3080,66 +4144,104 @@ function Workspace() {
 
         {activityDrawerOpen && (
           <div
-            className={styles.drawerOverlay}
-            onClick={closeActivityDrawer}
+            className={
+              styles.drawerOverlay
+            }
+            onClick={
+              closeActivityDrawer
+            }
           >
             <aside
-              className={styles.activityDrawer}
+              className={
+                styles.activityDrawer
+              }
               onClick={(event) =>
                 event.stopPropagation()
               }
             >
-              <div className={styles.drawerHeader}>
+              <div
+                className={
+                  styles.drawerHeader
+                }
+              >
                 <div>
-                  <span>WORKSPACE</span>
-                  <strong>Activity</strong>
+                  <span>
+                    WORKSPACE
+                  </span>
+
+                  <strong>
+                    Activity
+                  </strong>
                 </div>
 
                 <button
                   type="button"
-                  onClick={closeActivityDrawer}
+                  onClick={
+                    closeActivityDrawer
+                  }
                   aria-label="Close activity"
                 >
-                  脳
+                  ×
                 </button>
               </div>
 
-              <div className={styles.activityDrawerBody}>
-                {combinedActivityLog.length === 0 ? (
-                  <p>No activity yet.</p>
+              <div
+                className={
+                  styles.activityDrawerBody
+                }
+              >
+                {combinedActivityLog.length ===
+                0 ? (
+                  <p>
+                    No activity yet.
+                  </p>
                 ) : (
-                  activityLog
+                  combinedActivityLog
                     .slice()
                     .reverse()
-                    .map((item) => (
-                      <div
-                        key={item.id}
-                        className={
-                          styles.activityItem
-                        }
-                      >
-                        <i
-                          className={
-                            item.type === "success"
-                              ? styles.dotSuccess
-                              : item.type ===
-                                "error"
-                              ? styles.dotError
-                              : item.type ===
-                                "active"
-                              ? styles.dotActive
-                              : styles.dotInfo
+                    .map(
+                      (
+                        item
+                      ) => (
+                        <div
+                          key={
+                            item.id
                           }
-                        />
+                          className={
+                            styles.activityItem
+                          }
+                        >
+                          <i
+                            className={
+                              item.type ===
+                              "success"
+                                ? styles.dotSuccess
+                                : item.type ===
+                                  "error"
+                                ? styles.dotError
+                                : item.type ===
+                                  "active"
+                                ? styles.dotActive
+                                : styles.dotInfo
+                            }
+                          />
 
-                        <div>
-                          <p>{item.message}</p>
-                          <small>
-                            {item.timestamp}
-                          </small>
+                          <div>
+                            <p>
+                              {
+                                item.message
+                              }
+                            </p>
+
+                            <small>
+                              {
+                                item.timestamp
+                              }
+                            </small>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    )
                 )}
               </div>
             </aside>
@@ -3152,15 +4254,28 @@ function Workspace() {
 
         {previewFullscreen && (
           <div
-            className={styles.previewOverlay}
+            className={
+              styles.previewOverlay
+            }
             role="dialog"
             aria-modal="true"
             aria-label="Application preview"
           >
-            <div className={styles.previewOverlayHeader}>
+            <div
+              className={
+                styles.previewOverlayHeader
+              }
+            >
               <div>
-                <span>PREVIEW</span>
-                <strong title={projectName}>
+                <span>
+                  PREVIEW
+                </span>
+
+                <strong
+                  title={
+                    projectName
+                  }
+                >
                   {projectName}
                 </strong>
               </div>
@@ -3172,7 +4287,9 @@ function Workspace() {
               >
                 {previewUrl && (
                   <a
-                    href={previewUrl}
+                    href={
+                      previewUrl
+                    }
                     target="_blank"
                     rel="noreferrer"
                     className={
@@ -3185,7 +4302,9 @@ function Workspace() {
 
                 <button
                   type="button"
-                  onClick={closePreview}
+                  onClick={
+                    closePreview
+                  }
                   className={
                     styles.previewCloseButton
                   }
@@ -3195,11 +4314,17 @@ function Workspace() {
               </div>
             </div>
 
-            <div className={styles.previewOverlayBody}>
+            <div
+              className={
+                styles.previewOverlayBody
+              }
+            >
               {previewUrl ? (
                 <iframe
                   title={`${projectName} full preview`}
-                  src={previewUrl}
+                  src={
+                    previewUrl
+                  }
                   className={
                     styles.previewFullFrame
                   }
@@ -3207,11 +4332,14 @@ function Workspace() {
                 />
               ) : previewEntryFile ? (
                 <LocalProjectPreview
-                  files={generatedFiles}
+                  files={
+                    generatedFiles
+                  }
                   framework={
                     getProjectFramework(
                       selectedProject
-                    ) || framework
+                    ) ||
+                    framework
                   }
                   fullscreen
                 />
@@ -3229,25 +4357,30 @@ function Workspace() {
                     Z
                   </div>
 
-                  <span>PREVIEW RUNTIME</span>
+                  <span>
+                    PREVIEW RUNTIME
+                  </span>
 
                   <h2>
                     Project files are ready
                   </h2>
 
                   <p>
-                    This project does not yet have
-                    a live preview URL or a static
-                    HTML entry file. The preview
-                    screen is intentionally not
-                    faking an application.
+                    This project does not
+                    yet have a live preview
+                    URL or a static HTML
+                    entry file. The preview
+                    screen is intentionally
+                    not faking an application.
                   </p>
 
                   <button
                     type="button"
                     onClick={() => {
                       closePreview();
-                      setActiveView("code");
+                      setActiveView(
+                        "code"
+                      );
                     }}
                   >
                     Open Generated Code

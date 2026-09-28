@@ -3,14 +3,12 @@
    SETTINGS CENTER
    LIGHT / WHITE ENTERPRISE CONTROL CENTER
 
-   Principles:
    - Real backend controls
    - No fake metrics
-   - No fake integration state
-   - White professional UI
+   - Separate Environment section
+   - Separate GitHub Integration section
+   - Multi-variable environment queue
    - Responsive desktop / tablet / mobile
-   - Strong focus states
-   - Dense but readable enterprise layout
 ========================================================= */
 
 
@@ -56,12 +54,10 @@
   margin: 0 auto 24px;
 }
 
-
 .headerCopy {
   min-width: 0;
   flex: 1;
 }
-
 
 .breadcrumb {
   display: flex;
@@ -79,11 +75,9 @@
   line-height: 1.3;
 }
 
-
 .breadcrumb svg {
   color: #b8c0cc;
 }
-
 
 .titleRow {
   display: flex;
@@ -91,7 +85,6 @@
 
   gap: 18px;
 }
-
 
 .title {
   margin: 0;
@@ -106,7 +99,6 @@
   letter-spacing: -0.035em;
 }
 
-
 .subtitle {
   max-width: 720px;
 
@@ -118,7 +110,6 @@
 
   line-height: 1.65;
 }
-
 
 .liveBadge {
   display: inline-flex;
@@ -145,8 +136,8 @@
   white-space: nowrap;
 }
 
-
-.liveBadge span {
+.liveBadge span,
+.integrationStatus span {
   width: 6px;
   height: 6px;
 
@@ -157,7 +148,6 @@
   box-shadow:
     0 0 0 3px rgba(34, 197, 94, 0.11);
 }
-
 
 .headerActions {
   display: flex;
@@ -212,7 +202,6 @@
     box-shadow 150ms ease;
 }
 
-
 .secondaryButton:hover,
 .retryButton:hover {
   border-color: #b9c2d0;
@@ -226,7 +215,6 @@
   box-shadow:
     0 3px 8px rgba(16, 24, 40, 0.07);
 }
-
 
 .primaryButton {
   border-color: #5147d9;
@@ -244,7 +232,6 @@
     0 7px 18px rgba(98, 88, 238, 0.2);
 }
 
-
 .primaryButton:hover {
   border-color: #4b42ca;
 
@@ -261,7 +248,6 @@
     0 9px 24px rgba(98, 88, 238, 0.25);
 }
 
-
 .secondaryButton:disabled,
 .primaryButton:disabled,
 .retryButton:disabled {
@@ -274,7 +260,6 @@
   box-shadow: none;
 }
 
-
 .secondaryButton:focus-visible,
 .primaryButton:focus-visible,
 .retryButton:focus-visible {
@@ -283,7 +268,6 @@
   box-shadow:
     0 0 0 3px rgba(98, 88, 238, 0.16);
 }
-
 
 .retryButton {
   min-height: 34px;
@@ -307,7 +291,6 @@
 
   margin-bottom: 15px;
 }
-
 
 .mobileSectionButton {
   display: flex;
@@ -335,14 +318,12 @@
     0 1px 3px rgba(16, 24, 40, 0.05);
 }
 
-
 .mobileSectionButton:focus-visible {
   outline: none;
 
   box-shadow:
     0 0 0 3px rgba(98, 88, 238, 0.14);
 }
-
 
 .mobileSectionIcon {
   display: flex;
@@ -362,7 +343,6 @@
   background: #f4f2ff;
 }
 
-
 .mobileSectionContent {
   display: flex;
   flex-direction: column;
@@ -374,14 +354,12 @@
   text-align: left;
 }
 
-
 .mobileSectionContent strong {
   color: #1d2939;
 
   font-size: 12px;
   font-weight: 700;
 }
-
 
 .mobileSectionContent small {
   margin-top: 2px;
@@ -391,7 +369,6 @@
   font-size: 10px;
 }
 
-
 .mobileSectionMenu {
   position: absolute;
 
@@ -400,6 +377,10 @@
   right: 0;
 
   z-index: 30;
+
+  max-height: 70vh;
+
+  overflow-y: auto;
 
   padding: 6px;
 
@@ -411,7 +392,6 @@
   box-shadow:
     0 16px 40px rgba(16, 24, 40, 0.14);
 }
-
 
 .mobileSectionItem,
 .mobileSectionItemActive {
@@ -437,20 +417,17 @@
   cursor: pointer;
 }
 
-
 .mobileSectionItem {
   color: #667085;
 
   background: transparent;
 }
 
-
 .mobileSectionItem:hover {
   color: #1d2939;
 
   background: #f8fafc;
 }
-
 
 .mobileSectionItemActive {
   color: #5147d9;
@@ -459,7 +436,6 @@
 
   border-color: #e3e0ff;
 }
-
 
 .mobileSectionItemActive svg:last-child {
   margin-left: auto;
@@ -512,7 +488,6 @@
     0 3px 12px rgba(16, 24, 40, 0.045);
 }
 
-
 .navigationHeader {
   padding: 9px 10px 10px;
 
@@ -524,14 +499,12 @@
   letter-spacing: 0.1em;
 }
 
-
 .settingsNavigation nav {
   display: flex;
   flex-direction: column;
 
   gap: 3px;
 }
-
 
 .settingsNavItem,
 .settingsNavActive {
@@ -563,13 +536,11 @@
     transform 150ms ease;
 }
 
-
 .settingsNavItem {
   color: #667085;
 
   background: transparent;
 }
-
 
 .settingsNavItem:hover {
   color: #1d2939;
@@ -580,7 +551,6 @@
 
   transform: translateX(1px);
 }
-
 
 .settingsNavActive {
   color: #312e81;
@@ -595,7 +565,6 @@
   border-color: #e0ddff;
 }
 
-
 .settingsNavItem:focus-visible,
 .settingsNavActive:focus-visible {
   outline: none;
@@ -603,7 +572,6 @@
   box-shadow:
     0 0 0 3px rgba(98, 88, 238, 0.13);
 }
-
 
 .settingsNavIcon {
   display: flex;
@@ -620,14 +588,12 @@
   color: #98a2b3;
 }
 
-
 .settingsNavItem:hover .settingsNavIcon,
 .settingsNavActive .settingsNavIcon {
   color: #6258ee;
 
   background: #ebe9ff;
 }
-
 
 .settingsNavText {
   display: flex;
@@ -637,7 +603,6 @@
 
   flex: 1;
 }
-
 
 .settingsNavText strong {
   overflow: hidden;
@@ -653,7 +618,6 @@
   text-overflow: ellipsis;
 }
 
-
 .settingsNavText small {
   margin-top: 2px;
 
@@ -668,7 +632,6 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-
 
 .settingsNavIndicator {
   position: absolute;
@@ -693,7 +656,6 @@
   min-width: 0;
 }
 
-
 .section {
   width: 100%;
   min-width: 0;
@@ -711,7 +673,6 @@
   box-sizing: border-box;
 }
 
-
 .sectionHeader {
   display: flex;
   align-items: flex-start;
@@ -723,7 +684,6 @@
 
   border-bottom: 1px solid #edf0f4;
 }
-
 
 .sectionEyebrow,
 .sectionEyebrowDanger {
@@ -739,11 +699,9 @@
   letter-spacing: 0.1em;
 }
 
-
 .sectionEyebrowDanger {
   color: #dc3545;
 }
-
 
 .sectionHeader h2 {
   margin: 0;
@@ -757,7 +715,6 @@
 
   letter-spacing: -0.025em;
 }
-
 
 .sectionHeader p {
   max-width: 720px;
@@ -797,7 +754,6 @@
     );
 }
 
-
 .profileAvatar {
   display: flex;
   align-items: center;
@@ -826,7 +782,6 @@
   font-weight: 800;
 }
 
-
 .profileAvatar img {
   width: 100%;
   height: 100%;
@@ -834,11 +789,9 @@
   object-fit: cover;
 }
 
-
 .profileIdentity {
   min-width: 0;
 }
-
 
 .profileIdentity h3 {
   margin: 0;
@@ -848,7 +801,6 @@
   font-size: 15px;
   font-weight: 750;
 }
-
 
 .profileIdentity p {
   margin: 4px 0 8px;
@@ -862,7 +814,6 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-
 
 .providerBadge,
 .neutralBadge,
@@ -886,7 +837,6 @@
   font-size: 9px;
   font-weight: 700;
 }
-
 
 .providerBadge {
   color: #2563eb;
@@ -912,7 +862,6 @@
   margin-top: 14px;
 }
 
-
 .settingCard {
   min-width: 0;
 
@@ -923,7 +872,6 @@
 
   background: #ffffff;
 }
-
 
 .cardLabel {
   display: block;
@@ -937,7 +885,6 @@
 
   letter-spacing: 0.09em;
 }
-
 
 .settingCard strong {
   display: block;
@@ -954,7 +901,6 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-
 
 .settingCard p {
   margin: 6px 0 0;
@@ -984,7 +930,6 @@
   font-size: 9px;
   font-weight: 700;
 }
-
 
 .statusSuccess span {
   width: 6px;
@@ -1017,13 +962,11 @@
   background: #f8fafc;
 }
 
-
 .infoNotice > svg {
   flex: 0 0 auto;
 
   color: #2563eb;
 }
-
 
 .infoNotice strong {
   display: block;
@@ -1032,7 +975,6 @@
 
   font-size: 10px;
 }
-
 
 .infoNotice p {
   margin: 4px 0 0;
@@ -1044,7 +986,6 @@
   line-height: 1.5;
 }
 
-
 .errorNotice {
   display: block;
 
@@ -1053,13 +994,11 @@
   background: #fff5f6;
 }
 
-
 .errorNotice strong {
   color: #b42318;
 
   font-size: 11px;
 }
-
 
 .errorNotice p {
   margin: 5px 0 0;
@@ -1095,7 +1034,6 @@
   background: #ffffff;
 }
 
-
 .securityIcon,
 .aiIcon,
 .subscriptionIcon,
@@ -1119,7 +1057,6 @@
   background: #f4f2ff;
 }
 
-
 .securityCopy,
 .subscriptionCopy,
 .navigationActionCopy,
@@ -1128,7 +1065,6 @@
 
   flex: 1;
 }
-
 
 .securityCopy h3,
 .navigationActionCopy h3,
@@ -1141,7 +1077,6 @@
   font-size: 13px;
   font-weight: 700;
 }
-
 
 .securityCopy p,
 .navigationActionCopy p,
@@ -1181,7 +1116,6 @@
   background: #fbfcfe;
 }
 
-
 .emptyStateIcon {
   display: flex;
   align-items: center;
@@ -1200,7 +1134,6 @@
   background: #f4f2ff;
 }
 
-
 .emptyState h3 {
   margin: 0;
 
@@ -1209,7 +1142,6 @@
   font-size: 13px;
   font-weight: 700;
 }
-
 
 .emptyState p {
   max-width: 520px;
@@ -1249,7 +1181,6 @@
     );
 }
 
-
 .aiIcon {
   color: #0891b2;
 
@@ -1258,7 +1189,6 @@
   background: #effcff;
 }
 
-
 .aiHero h3 {
   margin: 0;
 
@@ -1266,7 +1196,6 @@
 
   font-size: 13px;
 }
-
 
 .aiHero p {
   margin: 5px 0 0;
@@ -1301,7 +1230,6 @@
     box-shadow 150ms ease;
 }
 
-
 .navigationActionCard:hover {
   border-color: #d8d3ff;
 
@@ -1313,14 +1241,12 @@
     0 7px 18px rgba(16, 24, 40, 0.06);
 }
 
-
 .navigationActionCard:focus-visible {
   outline: none;
 
   box-shadow:
     0 0 0 3px rgba(98, 88, 238, 0.13);
 }
-
 
 .navigationActionCard > svg:last-child {
   flex: 0 0 auto;
@@ -1344,7 +1270,6 @@
     );
 }
 
-
 .subscriptionCopy h3 {
   margin: 0;
 
@@ -1354,7 +1279,6 @@
   font-weight: 750;
 }
 
-
 .subscriptionCopy p {
   margin: 4px 0 8px;
 
@@ -1362,7 +1286,6 @@
 
   font-size: 10px;
 }
-
 
 .subscriptionStatus {
   color: #15803d;
@@ -1399,106 +1322,13 @@
 }
 
 
-.integrationStatus span {
-  width: 6px;
-  height: 6px;
-
-  border-radius: 50%;
-
-  background: #22c55e;
-}
-
-
-/* =========================================================
-   INTEGRATION TABS
-========================================================= */
-
-.integrationTabs {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 8px;
-
-  margin-top: 20px;
-
-  padding: 5px;
-
-  border: 1px solid #e4e8ee;
-  border-radius: 10px;
-
-  background: #f7f8fa;
-}
-
-
-.integrationTab,
-.integrationTabActive {
-  display: flex;
-  align-items: center;
-
-  min-height: 50px;
-
-  gap: 9px;
-
-  padding: 8px 12px;
-
-  border: 1px solid transparent;
-  border-radius: 8px;
-
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
-
-  cursor: pointer;
-
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease;
-}
-
-
-.integrationTab {
-  color: #667085;
-
-  background: transparent;
-}
-
-
-.integrationTab:hover {
-  color: #344054;
-
-  background: #ffffff;
-}
-
-
-.integrationTabActive {
-  color: #5147d9;
-
-  background: #ffffff;
-
-  border-color: #dfdcff;
-
-  box-shadow:
-    0 2px 5px rgba(16, 24, 40, 0.05);
-}
-
-
-.integrationTab span {
-  margin-left: auto;
-
-  color: #98a2b3;
-
-  font-size: 9px;
-  font-weight: 600;
-}
-
-
 /* =========================================================
    INTEGRATION PANEL
 ========================================================= */
+
+.integrationSection {
+  min-width: 0;
+}
 
 .integrationPanel {
   margin-top: 13px;
@@ -1510,7 +1340,6 @@
 
   background: #ffffff;
 }
-
 
 .integrationPanelHeader {
   display: flex;
@@ -1524,14 +1353,12 @@
   border-bottom: 1px solid #edf0f4;
 }
 
-
 .panelTitleRow {
   display: flex;
   align-items: center;
 
   gap: 11px;
 }
-
 
 .panelIcon,
 .githubPanelIcon {
@@ -1547,7 +1374,6 @@
   border-radius: 11px;
 }
 
-
 .panelIcon {
   color: #6258ee;
 
@@ -1556,7 +1382,6 @@
   background: #f4f2ff;
 }
 
-
 .githubPanelIcon {
   color: #111827;
 
@@ -1564,7 +1389,6 @@
 
   background: #f5f6f8;
 }
-
 
 .panelTitleRow h3 {
   margin: 0;
@@ -1575,7 +1399,6 @@
   font-weight: 750;
 }
 
-
 .panelTitleRow p {
   margin: 4px 0 0;
 
@@ -1585,7 +1408,6 @@
 
   line-height: 1.5;
 }
-
 
 .iconButton {
   display: inline-flex;
@@ -1605,7 +1427,6 @@
   cursor: pointer;
 }
 
-
 .iconButton:hover {
   color: #5147d9;
 
@@ -1613,7 +1434,6 @@
 
   background: #faf9ff;
 }
-
 
 .iconButton:disabled {
   opacity: 0.5;
@@ -1637,7 +1457,6 @@
   margin-top: 17px;
 }
 
-
 .formGridThree {
   display: grid;
 
@@ -1649,7 +1468,6 @@
   margin-top: 12px;
 }
 
-
 .field {
   display: flex;
   flex-direction: column;
@@ -1659,7 +1477,6 @@
   gap: 6px;
 }
 
-
 .field > span {
   color: #667085;
 
@@ -1668,7 +1485,6 @@
 
   letter-spacing: 0.07em;
 }
-
 
 .field input,
 .field select {
@@ -1698,11 +1514,9 @@
     background-color 150ms ease;
 }
 
-
 .field input::placeholder {
   color: #b0b8c5;
 }
-
 
 .field input:focus,
 .field select:focus {
@@ -1712,9 +1526,16 @@
     0 0 0 3px rgba(98, 88, 238, 0.09);
 }
 
-
 .field select {
   cursor: pointer;
+}
+
+.field input:disabled {
+  color: #98a2b3;
+
+  background: #f5f6f8;
+
+  cursor: not-allowed;
 }
 
 
@@ -1741,7 +1562,6 @@
     box-shadow 150ms ease;
 }
 
-
 .inputWithIcon:focus-within,
 .inputWithAction:focus-within {
   border-color: #9d96f7;
@@ -1750,7 +1570,6 @@
     0 0 0 3px rgba(98, 88, 238, 0.09);
 }
 
-
 .inputWithIcon > svg {
   flex: 0 0 auto;
 
@@ -1758,7 +1577,6 @@
 
   color: #98a2b3;
 }
-
 
 .inputWithIcon input,
 .inputWithIcon select {
@@ -1769,11 +1587,9 @@
   background: transparent;
 }
 
-
 .inputWithIcon select:focus {
   box-shadow: none;
 }
-
 
 .inputWithAction input {
   flex: 1;
@@ -1785,11 +1601,9 @@
   box-shadow: none;
 }
 
-
 .inputWithAction input:focus {
   box-shadow: none;
 }
-
 
 .inputAction {
   display: flex;
@@ -1810,17 +1624,18 @@
   cursor: pointer;
 }
 
-
 .inputAction:hover {
   color: #6258ee;
 }
 
 
+/* =========================================================
+   CHECKBOX
+========================================================= */
+
 .checkboxField {
   display: flex;
   align-items: center;
-
-  align-self: end;
 
   min-height: 40px;
 
@@ -1839,21 +1654,131 @@
   font-weight: 600;
 }
 
-
 .checkboxField input {
   width: 15px;
   height: 15px;
 
+  margin: 0;
+
   accent-color: #6258ee;
+}
+
+.environmentCheckboxStack {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  align-items: stretch;
+
+  gap: 8px;
+
+  min-width: 0;
 }
 
 
 /* =========================================================
-   ENVIRONMENT FORM
+   ENVIRONMENT TOOLBAR
 ========================================================= */
 
-.environmentForm {
+.environmentToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
   margin-top: 17px;
+
+  padding: 12px 14px;
+
+  border: 1px solid #e4e8ee;
+  border-radius: 9px;
+
+  background: #f8fafc;
+}
+
+.environmentToolbar > div {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+.environmentToolbar strong {
+  overflow: hidden;
+
+  color: #1d2939;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.environmentToolbar span {
+  margin-top: 3px;
+
+  color: #98a2b3;
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   ENVIRONMENT QUEUE
+========================================================= */
+
+.environmentDraftHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  margin-top: 20px;
+
+  padding: 13px 0 12px;
+
+  border-bottom: 1px solid #edf0f4;
+}
+
+.environmentDraftHeader > div {
+  min-width: 0;
+}
+
+.formSectionTitleLabel {
+  display: block;
+
+  color: #344054;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+}
+
+.environmentDraftHeader small {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #98a2b3;
+
+  font-size: 9px;
+}
+
+.environmentDraftList {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  margin-top: 12px;
+}
+
+.environmentForm {
+  margin-top: 0;
 
   padding: 16px;
 
@@ -1863,6 +1788,10 @@
   background: #fafbfc;
 }
 
+.environmentDraftList
+.environmentForm:first-child {
+  border-color: #ddd9ff;
+}
 
 .formSectionTitle {
   display: flex;
@@ -1874,11 +1803,9 @@
   margin-bottom: 13px;
 }
 
-
 .formSectionTitle > div {
   min-width: 0;
 }
-
 
 .formSectionTitle > div > span {
   display: block;
@@ -1891,7 +1818,6 @@
   letter-spacing: 0.08em;
 }
 
-
 .formSectionTitle small {
   display: block;
 
@@ -1902,26 +1828,38 @@
   font-size: 9px;
 }
 
+.dangerTextButton {
+  display: inline-flex;
+  align-items: center;
 
-.textButton {
+  gap: 5px;
+
+  flex-shrink: 0;
+
   border: 0;
 
-  color: #6258ee;
+  color: #dc3545;
 
   background: transparent;
 
   font-family: inherit;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
 
   cursor: pointer;
 }
 
+.dangerTextButton:hover {
+  color: #b42318;
 
-.textButton:hover {
   text-decoration: underline;
 }
 
+.dangerTextButton:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
 
 .environmentFormFooter {
   display: flex;
@@ -1932,7 +1870,6 @@
 
   margin-top: 14px;
 }
-
 
 .secretNotice {
   display: flex;
@@ -1947,11 +1884,54 @@
   font-size: 9px;
 }
 
-
 .secretNotice svg {
   flex: 0 0 auto;
 
   color: #16a34a;
+}
+
+.environmentSaveBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-top: 12px;
+
+  padding: 15px;
+
+  border: 1px solid #dedbff;
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #faf9ff,
+      #ffffff
+    );
+}
+
+.environmentSaveBar > div {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+.environmentSaveBar strong {
+  color: #312e81;
+
+  font-size: 11px;
+}
+
+.environmentSaveBar span {
+  margin-top: 3px;
+
+  color: #98a2b3;
+
+  font-size: 9px;
+  line-height: 1.5;
 }
 
 
@@ -1967,7 +1947,6 @@
   border-top: 1px solid #edf0f4;
 }
 
-
 .countBadge {
   min-width: 24px;
 
@@ -1980,14 +1959,12 @@
   background: #f4f2ff;
 }
 
-
 .variableList {
   display: flex;
   flex-direction: column;
 
   gap: 7px;
 }
-
 
 .variableRow {
   display: grid;
@@ -2013,7 +1990,6 @@
     box-shadow 150ms ease;
 }
 
-
 .variableRow:hover {
   border-color: #d8dee8;
 
@@ -2021,11 +1997,9 @@
     0 3px 9px rgba(16, 24, 40, 0.04);
 }
 
-
 .variableMain {
   min-width: 0;
 }
-
 
 .variableKey {
   display: flex;
@@ -2038,13 +2012,11 @@
   color: #1d2939;
 }
 
-
 .variableKey svg {
   flex: 0 0 auto;
 
   color: #6258ee;
 }
-
 
 .variableKey strong {
   overflow: hidden;
@@ -2056,7 +2028,6 @@
   text-overflow: ellipsis;
 }
 
-
 .variableMeta {
   display: flex;
   align-items: center;
@@ -2066,7 +2037,6 @@
 
   margin-top: 5px;
 }
-
 
 .variableMeta span {
   min-height: 19px;
@@ -2086,7 +2056,6 @@
   text-transform: uppercase;
 }
 
-
 .variableMeta .secretBadge {
   color: #7c3aed;
 
@@ -2095,13 +2064,11 @@
   background: #faf5ff;
 }
 
-
 .variableValue {
   min-width: 0;
 
   overflow: hidden;
 }
-
 
 .variableValue code {
   display: block;
@@ -2131,14 +2098,12 @@
   text-overflow: ellipsis;
 }
 
-
 .variableActions {
   display: flex;
   align-items: center;
 
   gap: 6px;
 }
-
 
 .smallActionButton,
 .dangerActionButton {
@@ -2161,13 +2126,11 @@
   cursor: pointer;
 }
 
-
 .smallActionButton {
   color: #475467;
 
   background: #ffffff;
 }
-
 
 .smallActionButton:hover {
   color: #5147d9;
@@ -2177,13 +2140,11 @@
   background: #faf9ff;
 }
 
-
 .dangerActionButton {
   color: #dc3545;
 
   background: #fffafa;
 }
-
 
 .dangerActionButton:hover {
   border-color: #fecdd3;
@@ -2191,13 +2152,11 @@
   background: #fff1f2;
 }
 
-
 .dangerActionButton:disabled {
   opacity: 0.5;
 
   cursor: not-allowed;
 }
-
 
 .emptyIntegration {
   display: flex;
@@ -2219,13 +2178,11 @@
   background: #fbfcfe;
 }
 
-
 .emptyIntegration svg {
   margin-bottom: 8px;
 
   color: #6258ee;
 }
-
 
 .emptyIntegration strong {
   color: #475467;
@@ -2233,11 +2190,44 @@
   font-size: 11px;
 }
 
-
 .emptyIntegration span {
   margin-top: 4px;
 
   font-size: 9px;
+}
+
+
+/* =========================================================
+   GITHUB PROJECT HINT
+========================================================= */
+
+.githubProjectHint {
+  display: flex;
+  align-items: center;
+
+  min-height: 40px;
+
+  gap: 8px;
+
+  align-self: end;
+
+  padding: 0 12px;
+
+  border: 1px solid #e4e8ee;
+  border-radius: 8px;
+
+  color: #667085;
+
+  background: #f8fafc;
+
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.githubProjectHint svg {
+  flex: 0 0 auto;
+
+  color: #6258ee;
 }
 
 
@@ -2261,7 +2251,6 @@
   background: #fafbfc;
 }
 
-
 .githubConnectionIcon {
   display: flex;
   align-items: center;
@@ -2280,13 +2269,11 @@
   background: #ffffff;
 }
 
-
 .githubConnectionCopy {
   min-width: 0;
 
   flex: 1;
 }
-
 
 .githubConnectionCopy strong {
   display: block;
@@ -2296,7 +2283,6 @@
   font-size: 12px;
 }
 
-
 .githubConnectionCopy p {
   margin: 4px 0 0;
 
@@ -2305,14 +2291,12 @@
   font-size: 9px;
 }
 
-
 .githubConnectionActions {
   display: flex;
   align-items: flex-end;
 
   gap: 9px;
 }
-
 
 .connectionSelect {
   display: flex;
@@ -2323,7 +2307,6 @@
   min-width: 180px;
 }
 
-
 .connectionSelect span {
   color: #98a2b3;
 
@@ -2332,7 +2315,6 @@
 
   letter-spacing: 0.07em;
 }
-
 
 .connectionSelect select {
   min-height: 35px;
@@ -2366,19 +2348,19 @@
   padding: 3px 0;
 }
 
-
 .workflowStep {
   position: relative;
 
   display: grid;
 
-  grid-template-columns: 35px minmax(0, 1fr);
+  grid-template-columns:
+    35px
+    minmax(0, 1fr);
 
   gap: 12px;
 
   padding: 10px 0;
 }
-
 
 .workflowStep:not(:last-child)::after {
   content: "";
@@ -2394,7 +2376,6 @@
 
   background: #e4e8ee;
 }
-
 
 .workflowNumber {
   position: relative;
@@ -2419,13 +2400,11 @@
   font-weight: 800;
 }
 
-
 .workflowContent {
   min-width: 0;
 
   padding-bottom: 3px;
 }
-
 
 .workflowTitle {
   margin-bottom: 8px;
@@ -2463,7 +2442,6 @@
     );
 }
 
-
 .githubActionBar strong {
   display: block;
 
@@ -2472,7 +2450,6 @@
   font-size: 12px;
 }
 
-
 .githubActionBar p {
   margin: 4px 0 0;
 
@@ -2480,7 +2457,6 @@
 
   font-size: 9px;
 }
-
 
 .githubActionButtons {
   display: flex;
@@ -2512,7 +2488,6 @@
   background: #f5fbf7;
 }
 
-
 .readinessIcon {
   display: flex;
   align-items: center;
@@ -2530,13 +2505,11 @@
   background: #e8f7ed;
 }
 
-
 .readinessCard > div:nth-child(2) {
   min-width: 0;
 
   flex: 1;
 }
-
 
 .readinessCard strong {
   display: block;
@@ -2546,7 +2519,6 @@
   font-size: 10px;
 }
 
-
 .readinessCard p {
   margin: 3px 0 0;
 
@@ -2554,7 +2526,6 @@
 
   font-size: 9px;
 }
-
 
 .readinessGood,
 .readinessBad {
@@ -2571,13 +2542,11 @@
   font-weight: 800;
 }
 
-
 .readinessGood {
   color: #15803d;
 
   background: #e9f8ee;
 }
-
 
 .readinessBad {
   color: #b42318;
@@ -2607,7 +2576,6 @@
   font-weight: 600;
 }
 
-
 .inlineError {
   color: #b42318;
 
@@ -2615,7 +2583,6 @@
 
   background: #fff5f6;
 }
-
 
 .inlineSuccess {
   color: #15803d;
@@ -2625,13 +2592,11 @@
   background: #f2fbf5;
 }
 
-
 .inlineError svg {
   flex: 0 0 auto;
 
   color: #dc3545;
 }
-
 
 .inlineSuccess svg {
   flex: 0 0 auto;
@@ -2658,21 +2623,17 @@
   font-size: 11px;
 }
 
-
 .loadingState {
   min-height: 420px;
 }
-
 
 .loadingInline {
   min-height: 150px;
 }
 
-
 .smallLoading {
   min-height: 120px;
 }
-
 
 .loadingSpinner {
   width: 17px;
@@ -2690,13 +2651,11 @@
     settingsSpin 0.75s linear infinite;
 }
 
-
 @keyframes settingsSpin {
   to {
     transform: rotate(360deg);
   }
 }
-
 
 .buttonSpinner {
   display: inline-block;
@@ -2723,7 +2682,6 @@
   border-color: #f2d8dc;
 }
 
-
 .dangerCard {
   display: flex;
   align-items: center;
@@ -2740,7 +2698,6 @@
   background: #fff8f9;
 }
 
-
 .dangerIcon {
   color: #dc3545;
 
@@ -2748,7 +2705,6 @@
 
   background: #fff0f2;
 }
-
 
 .dangerBadge {
   flex-shrink: 0;
@@ -2766,12 +2722,10 @@
 ========================================================= */
 
 @media (max-width: 1120px) {
-
   .page {
     padding:
       24px 22px 42px;
   }
-
 
   .settingsLayout {
     grid-template-columns:
@@ -2781,16 +2735,13 @@
     gap: 16px;
   }
 
-
   .settingsNavText small {
     display: none;
   }
 
-
   .section {
     padding: 22px;
   }
-
 
   .githubActionBar {
     align-items: flex-start;
@@ -2798,16 +2749,13 @@
     flex-direction: column;
   }
 
-
   .githubActionButtons {
     width: 100%;
   }
 
-
   .githubActionButtons button {
     flex: 1;
   }
-
 }
 
 
@@ -2816,12 +2764,10 @@
 ========================================================= */
 
 @media (max-width: 800px) {
-
   .page {
     padding:
       20px 16px 36px;
   }
-
 
   .header {
     align-items: flex-start;
@@ -2829,11 +2775,9 @@
     margin-bottom: 17px;
   }
 
-
   .headerActions {
     display: none;
   }
-
 
   .titleRow {
     align-items: flex-start;
@@ -2843,11 +2787,9 @@
     gap: 9px;
   }
 
-
   .title {
     font-size: 27px;
   }
-
 
   .subtitle {
     max-width: 100%;
@@ -2855,21 +2797,17 @@
     font-size: 12px;
   }
 
-
   .mobileSectionSelector {
     display: block;
   }
-
 
   .settingsLayout {
     display: block;
   }
 
-
   .settingsNavigation {
     display: none;
   }
-
 
   .section {
     padding: 19px;
@@ -2877,21 +2815,17 @@
     border-radius: 11px;
   }
 
-
   .sectionHeader {
     padding-bottom: 17px;
   }
-
 
   .sectionHeader h2 {
     font-size: 19px;
   }
 
-
   .liveBadge {
     min-height: 25px;
   }
-
 
   .cardGrid,
   .formGridTwo,
@@ -2899,6 +2833,9 @@
     grid-template-columns: 1fr;
   }
 
+  .environmentCheckboxStack {
+    grid-template-columns: 1fr;
+  }
 
   .securityCard,
   .privacyCard,
@@ -2908,38 +2845,33 @@
     align-items: flex-start;
   }
 
-
   .subscriptionCard {
     flex-wrap: wrap;
   }
-
 
   .subscriptionCard .primaryButton {
     width: 100%;
   }
 
-
-  .integrationTabs {
-    grid-template-columns: 1fr;
+  .integrationStatus {
+    display: none;
   }
-
 
   .integrationPanel {
     padding: 14px;
   }
 
+  .githubProjectHint {
+    align-self: stretch;
 
-  .integrationStatus {
-    display: none;
+    min-height: 42px;
   }
-
 
   .githubConnectionCard {
     align-items: flex-start;
 
     flex-wrap: wrap;
   }
-
 
   .githubConnectionActions {
     width: 100%;
@@ -2949,21 +2881,27 @@
     flex-direction: column;
   }
 
-
   .connectionSelect {
     width: 100%;
   }
-
 
   .connectionSelect select {
     width: 100%;
   }
 
-
   .githubConnectionActions button {
     width: 100%;
   }
 
+  .environmentDraftHeader {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .environmentDraftHeader .secondaryButton {
+    width: 100%;
+  }
 
   .environmentFormFooter {
     align-items: stretch;
@@ -2971,11 +2909,15 @@
     flex-direction: column;
   }
 
+  .environmentSaveBar {
+    align-items: stretch;
 
-  .environmentFormFooter .primaryButton {
-    width: 100%;
+    flex-direction: column;
   }
 
+  .environmentSaveBar .primaryButton {
+    width: 100%;
+  }
 
   .variableRow {
     grid-template-columns: 1fr;
@@ -2983,26 +2925,27 @@
     gap: 8px;
   }
 
-
   .variableValue {
     width: 100%;
   }
-
 
   .variableActions {
     justify-content: flex-end;
   }
 
-
   .githubActionButtons {
     flex-direction: column;
   }
-
 
   .githubActionButtons button {
     width: 100%;
   }
 
+  .readinessCard {
+    align-items: flex-start;
+
+    flex-wrap: wrap;
+  }
 }
 
 
@@ -3011,22 +2954,18 @@
 ========================================================= */
 
 @media (max-width: 520px) {
-
   .page {
     padding:
       16px 12px 30px;
   }
 
-
   .breadcrumb {
     font-size: 10px;
   }
 
-
   .title {
     font-size: 24px;
   }
-
 
   .subtitle {
     font-size: 11px;
@@ -3034,26 +2973,21 @@
     line-height: 1.55;
   }
 
-
   .section {
     padding: 15px;
   }
-
 
   .sectionHeader h2 {
     font-size: 17px;
   }
 
-
   .sectionHeader p {
     font-size: 10px;
   }
 
-
   .profileHero {
     align-items: flex-start;
   }
-
 
   .profileAvatar {
     width: 50px;
@@ -3066,7 +3000,6 @@
     font-size: 15px;
   }
 
-
   .securityCard,
   .privacyCard,
   .aiHero,
@@ -3076,7 +3009,6 @@
 
     padding: 14px;
   }
-
 
   .securityIcon,
   .aiIcon,
@@ -3090,7 +3022,6 @@
     flex-basis: 38px;
   }
 
-
   .statusSuccess,
   .neutralBadge,
   .dangerBadge {
@@ -3099,31 +3030,29 @@
     margin-left: 50px;
   }
 
-
   .integrationPanelHeader {
     align-items: flex-start;
   }
-
 
   .panelTitleRow {
     align-items: flex-start;
   }
 
-
   .environmentForm {
     padding: 12px;
   }
 
+  .environmentSaveBar {
+    padding: 12px;
+  }
 
   .variableRow {
     padding: 10px;
   }
 
-
   .githubConnectionCard {
     padding: 12px;
   }
-
 
   .workflowStep {
     grid-template-columns:
@@ -3133,7 +3062,6 @@
     gap: 9px;
   }
 
-
   .workflowNumber {
     width: 30px;
     height: 30px;
@@ -3141,13 +3069,11 @@
     font-size: 8px;
   }
 
-
   .workflowStep:not(:last-child)::after {
     left: 15px;
 
     top: 39px;
   }
-
 
   .emptyState {
     min-height: 220px;
@@ -3155,11 +3081,13 @@
     padding: 22px 15px;
   }
 
-
   .emptyState p {
     font-size: 9px;
   }
 
+  .readinessCard {
+    flex-direction: column;
+  }
 }
 
 
@@ -3168,36 +3096,33 @@
 ========================================================= */
 
 @media (max-width: 360px) {
-
   .page {
     padding-inline: 9px;
   }
-
 
   .title {
     font-size: 22px;
   }
 
-
   .section {
     padding: 13px;
   }
-
 
   .mobileSectionButton {
     min-height: 54px;
   }
 
-
   .settingCard {
     padding: 14px;
   }
-
 
   .integrationPanel {
     padding: 11px;
   }
 
+  .environmentForm {
+    padding: 10px;
+  }
 }
 
 
@@ -3206,7 +3131,6 @@
 ========================================================= */
 
 @media (hover: none) {
-
   .settingsNavItem:hover,
   .secondaryButton:hover,
   .primaryButton:hover,
@@ -3215,7 +3139,6 @@
   .variableRow:hover {
     transform: none;
   }
-
 }
 
 
@@ -3224,7 +3147,6 @@
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
   .secondaryButton,
   .primaryButton,
   .retryButton,
@@ -3234,12 +3156,10 @@
     transition: none;
   }
 
-
   .loadingSpinner,
   .buttonSpinner {
     animation: none;
   }
-
 }
 
 
@@ -3248,7 +3168,6 @@
 ========================================================= */
 
 @media (forced-colors: active) {
-
   .section,
   .settingsNavigation,
   .settingCard,
@@ -3264,21 +3183,17 @@
     border-color: CanvasText;
   }
 
-
-  .settingsNavActive,
-  .integrationTabActive {
+  .settingsNavActive {
     background: Highlight;
 
     color: HighlightText;
   }
-
 
   .primaryButton {
     background: Highlight;
 
     color: HighlightText;
   }
-
 }
 
 
@@ -3287,7 +3202,6 @@
 ========================================================= */
 
 @supports (padding: max(0px)) {
-
   .page {
     padding-bottom:
       max(
@@ -3295,5 +3209,4 @@
         env(safe-area-inset-bottom)
       );
   }
-
 }

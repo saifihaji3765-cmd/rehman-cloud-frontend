@@ -747,11 +747,19 @@ function Settings() {
   ] = useState("");
 
   const [
-    environmentDrafts,
-    setEnvironmentDrafts,
-  ] = useState(() => [
-    createEnvironmentDraft(),
-  ]);
+  environmentDrafts,
+  setEnvironmentDrafts,
+] = useState([]);
+
+const [
+  environmentEntry,
+  setEnvironmentEntry,
+] = useState(() => createEnvironmentDraft());
+
+const [
+  environmentEditorOpen,
+  setEnvironmentEditorOpen,
+] = useState(false);
 
 
   /* -------------------------------------------------------

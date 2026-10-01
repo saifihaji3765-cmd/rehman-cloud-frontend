@@ -1,2667 +1,995 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
 
-import { useNavigate } from "react-router-dom";
-
+import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
-
-import {
-  createPaymentOrder,
-  createSubscription,
-  upgradeSubscription,
-  cancelSubscription,
-  getSubscription,
-  getBillingHistory,
-  getCredits,
-} from "../../../services/billingService";
-
+import billingService from "../../../services/billingService.js";
 import styles from "./Billing.module.css";
 
+const PLANS = [
+  { id: "starter", name: "Starter", description: "For getting started" },
+  { id: "pro", name: "Pro", description: "For growing workloads" },
+  { id: "business", name: "Business", description: "For demanding projects" },
+  { id: "scale", name: "Scale", description: "For larger workloads" },
+  { id: "enterprise", name: "Enterprise", description: "For enterprise workloads" },
+];
 
-/* =========================================================
-   ZYRIONOS — BILLING & SUBSCRIPTION
-   =========================================================
+const getObject = (value) =>
+  value && typeof value === "object" && !Array.isArray(value) ? value : {};
 
-   REAL BACKEND CONTRACT
+const unwrap = (response) => {
+  let value = response?.data ?? response;
+  if (value?.data && typeof value.data === "object") value = value.data;
+  return getObject(value);
+};
 
-   Subscription:
-   GET  /api/subscription/me
-   POST /api/subscription/create
-   POST /api/subscription/upgrade
-   POST /api/subscription/cancel
+const firstValue = (...values) =>
+  values.find((value) => value !== undefined && value !== null && value !== "");
 
-   Payment:
-   POST /api/payment/create-order
-   POST /api/payment/verify-payment
+const toArray = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.records)) return value.records;
+  if (Array.isArray(value?.history)) return value.history;
+  if (Array.isArray(value?.transactions)) return value.transactions;
+  return [];
+};
 
-   Billing:
-   GET  /api/payment/billing-history
-   GET  /api/payment/credits
+const normalizePlan = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
 
-   Current catalog:
-   Starter    $19 / $190
-   Pro        $99 / $990
-   Business   $199 / $1990
-   Scale      $299 / $2990
-   Enterprise $499 / $4990
+const formatMoney = (amount, currency = "USD") => {
+  if (amount === undefined || amount === null || amount === "") return null;
 
-   Currency:
-   USD
+  const number = Number(amount);
+  if (!Number.isFinite(number)) return null;
 
-   Provider:
-   Stripe = enabled
-   Razorpay = disabled until verified INR catalog exists
-
-   IMPORTANT:
-   - Frontend never decides final payment amount.
-   - Backend remains source of truth.
-   - Frontend never marks subscription as active.
-   - Stripe activation is webhook controlled.
-   - Credits are read from the real backend.
-========================================================= */
-
-
-/* =========================================================
-   DISPLAY CATALOG
-========================================================= */
-
-const PLANS = Object.freeze([
-  {
-    name: "Starter",
-    monthly: 19,
-    yearly: 190,
-    description:
-      "A practical starting plan for individual projects.",
-  },
-
-  {
-    name: "Pro",
-    monthly: 99,
-    yearly: 990,
-    description:
-      "More capacity for serious AI-powered work.",
-  },
-
-  {
-    name: "Business",
-    monthly: 199,
-    yearly: 1990,
-    description:
-      "Designed for growing production workloads.",
-  },
-
-  {
-    name: "Scale",
-    monthly: 299,
-    yearly: 2990,
-    description:
-      "Higher capacity for larger workloads.",
-  },
-
-  {
-    name: "Enterprise",
-    monthly: 499,
-    yearly: 4990,
-    description:
-      "Maximum configured plan in the current catalog.",
-  },
-]);
-
-
-/* =========================================================
-   GENERIC HELPERS
-========================================================= */
-
-function firstValue(...values) {
-  return values.find(
-    (value) =>
-      value !== undefined &&
-      value !== null &&
-      value !== ""
-  );
-}
-
-
-function displayValue(value) {
-  if (
-    value === undefined ||
-    value === null ||
-    value === ""
-  ) {
-    return "—";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: String(currency || "USD").toUpperCase(),
+      maximumFractionDigits: 2,
+    }).format(number);
+  } catch {
+    return `${String(currency || "USD").toUpperCase()} ${number.toFixed(2)}`;
   }
+};
 
-  return String(value);
-}
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
 
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+};
 
-function isObject(value) {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    !Array.isArray(value)
-  );
-}
+const humanize = (value) =>
+  String(value || "unknown")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-
-/* =========================================================
-   RESPONSE UNWRAPPING
-========================================================= */
-
-function unwrapResponse(response) {
-  const root = response?.data;
-
-  if (
-    root === undefined ||
-    root === null
-  ) {
-    return null;
-  }
-
-  if (
-    root?.data !== undefined &&
-    root?.data !== null
-  ) {
-    return root.data;
-  }
-
-  return root;
-}
-
-
-/* =========================================================
-   SUBSCRIPTION NORMALIZATION
-========================================================= */
-
-function normalizeSubscription(response) {
-  const root = response?.data;
-
-  if (!root) {
-    return null;
-  }
-
-  const candidates = [
-    root?.subscription,
-    root?.data?.subscription,
-    root?.data?.data?.subscription,
-    root?.data,
-    root,
-  ];
-
-  for (const candidate of candidates) {
-    if (
-      candidate &&
-      typeof candidate === "object" &&
-      !Array.isArray(candidate)
-    ) {
-      if (
-        candidate?.subscription &&
-        typeof candidate.subscription === "object"
-      ) {
-        return candidate.subscription;
-      }
-
-      return candidate;
-    }
-  }
-
-  if (Array.isArray(root)) {
-    return root[0] || null;
-  }
-
-  return null;
-}
-
-
-/* =========================================================
-   SUBSCRIPTION FIELD NORMALIZATION
-========================================================= */
-
-function normalizePlanName(subscription) {
-  return firstValue(
+const findPlan = (subscription) =>
+  firstValue(
+    subscription?.plan,
     subscription?.planName,
-    subscription?.plan?.name,
-    typeof subscription?.plan === "string"
-      ? subscription.plan
-      : undefined,
-    subscription?.productName,
-    subscription?.product?.name
+    subscription?.activePlan,
+    subscription?.subscription?.plan,
+    subscription?.subscription?.planName,
+    subscription?.subscription?.activePlan
   );
-}
 
-
-function normalizeCurrency(subscription) {
-  return firstValue(
-    subscription?.currency,
-    subscription?.plan?.currency,
-    subscription?.price?.currency,
-    subscription?.billing?.currency
-  );
-}
-
-
-function normalizePrice(subscription) {
-  return firstValue(
-    subscription?.monthlyPrice,
-    subscription?.price?.monthly,
-    subscription?.price?.amountMonthly,
-    subscription?.price?.amount,
-    subscription?.amount,
-    subscription?.billing?.amount
-  );
-}
-
-
-function normalizeBillingInterval(subscription) {
-  return firstValue(
-    subscription?.billingInterval,
-    subscription?.billingCycle,
-    subscription?.interval,
-    subscription?.price?.interval,
-    subscription?.cycle
-  );
-}
-
-
-function normalizeStatus(subscription) {
-  return firstValue(
+const findStatus = (subscription) =>
+  firstValue(
     subscription?.status,
     subscription?.subscriptionStatus,
-    subscription?.state
-  );
-}
-
-
-function normalizePaymentMethod(subscription) {
-  return (
-    subscription?.paymentMethod ||
-    subscription?.defaultPaymentMethod ||
-    subscription?.billing?.paymentMethod ||
-    null
-  );
-}
-
-
-function normalizeInfrastructure(subscription) {
-  const infrastructure =
-    subscription?.infrastructure ||
-    subscription?.plan?.infrastructure ||
-    subscription?.resources ||
-    {};
-
-  return {
-    ram: firstValue(
-      infrastructure?.ram,
-      infrastructure?.memory,
-      infrastructure?.memoryLimit,
-      subscription?.ram
-    ),
-
-    cpu: firstValue(
-      infrastructure?.cpu,
-      infrastructure?.vCpu,
-      infrastructure?.vcpu,
-      infrastructure?.cpuLimit,
-      subscription?.cpu
-    ),
-
-    storage: firstValue(
-      infrastructure?.storage,
-      infrastructure?.storageLimit,
-      subscription?.storage
-    ),
-
-    bandwidth: firstValue(
-      infrastructure?.bandwidth,
-      infrastructure?.bandwidthLimit,
-      subscription?.bandwidth
-    ),
-  };
-}
-
-
-/* =========================================================
-   PAYMENT METHOD
-========================================================= */
-
-function normalizePaymentLabel(
-  paymentMethod
-) {
-  if (!paymentMethod) {
-    return null;
-  }
-
-  const brand = firstValue(
-    paymentMethod?.brand,
-    paymentMethod?.card?.brand,
-    paymentMethod?.type
+    subscription?.subscription?.status,
+    subscription?.subscription?.subscriptionStatus
   );
 
-  const last4 = firstValue(
-    paymentMethod?.last4,
-    paymentMethod?.card?.last4
-  );
+const findCatalog = (...sources) => {
+  for (const source of sources) {
+    const object = getObject(source);
+    const candidates = [
+      object.plans,
+      object.catalog,
+      object.planCatalog,
+      object.availablePlans,
+      object.subscription?.plans,
+      object.subscription?.catalog,
+      object.subscription?.planCatalog,
+    ];
 
-  if (brand && last4) {
-    return `${String(
-      brand
-    )} •••• ${last4}`;
-  }
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) return candidate;
 
-  if (last4) {
-    return `Card •••• ${last4}`;
-  }
+      if (candidate && typeof candidate === "object") {
+        const entries = Object.entries(candidate).map(([key, value]) => ({
+          id: key,
+          ...getObject(value),
+        }));
 
-  if (brand) {
-    return String(brand);
-  }
-
-  return "Payment method on file";
-}
-
-
-/* =========================================================
-   CREDITS NORMALIZATION
-=========================================================
-
-   Backend may return:
-
-   {
-     credits: {
-       total,
-       used,
-       remaining
-     }
-   }
-
-   OR:
-
-   {
-     data: {
-       credits: {
-         total,
-         used,
-         remaining
-       }
-     }
-   }
-
-   OR directly:
-
-   {
-     total,
-     used,
-     remaining
-   }
-
-   Additional common backend field names are supported.
-
-   No fallback credit amount is fabricated.
-========================================================= */
-
-function extractCreditsObject(response) {
-  const root = response?.data;
-
-  if (
-    root === undefined ||
-    root === null
-  ) {
-    return null;
-  }
-
-  const candidates = [
-    root?.credits,
-    root?.data?.credits,
-    root?.data?.data?.credits,
-    root?.result?.credits,
-    root?.payload?.credits,
-
-    root?.data,
-    root?.result,
-    root?.payload,
-
-    root,
-  ];
-
-  for (const candidate of candidates) {
-    if (!isObject(candidate)) {
-      continue;
-    }
-
-    const hasCreditField =
-      candidate?.total !== undefined ||
-      candidate?.limit !== undefined ||
-      candidate?.included !== undefined ||
-      candidate?.totalCredits !== undefined ||
-      candidate?.creditLimit !== undefined ||
-      candidate?.used !== undefined ||
-      candidate?.usedCredits !== undefined ||
-      candidate?.consumed !== undefined ||
-      candidate?.remaining !== undefined ||
-      candidate?.remainingCredits !== undefined ||
-      candidate?.available !== undefined ||
-      candidate?.availableCredits !== undefined ||
-      candidate?.unlimited !== undefined;
-
-    if (hasCreditField) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-
-function normalizeCredits(response) {
-  const source =
-    extractCreditsObject(
-      response
-    );
-
-  if (!source) {
-    return null;
-  }
-
-  const total = firstValue(
-    source?.total,
-    source?.limit,
-    source?.included,
-    source?.totalCredits,
-    source?.creditLimit,
-    source?.creditsLimit
-  );
-
-  const used = firstValue(
-    source?.used,
-    source?.consumed,
-    source?.usedCredits,
-    source?.creditsUsed
-  );
-
-  const remaining = firstValue(
-    source?.remaining,
-    source?.available,
-    source?.remainingCredits,
-    source?.availableCredits,
-    source?.creditsRemaining
-  );
-
-  const unlimited =
-    source?.unlimited === true ||
-    Number(total) === -1;
-
-  return {
-    total,
-    used,
-    remaining,
-    unlimited,
-  };
-}
-
-
-/* =========================================================
-   BILLING HISTORY NORMALIZATION
-========================================================= */
-
-function normalizeBillingHistory(
-  response
-) {
-  const root = response?.data;
-
-  if (!root) {
-    return [];
-  }
-
-  const candidates = [
-    root?.history,
-    root?.billingHistory,
-    root?.transactions,
-    root?.data?.history,
-    root?.data?.billingHistory,
-    root?.data?.transactions,
-    root?.data,
-    root,
-  ];
-
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) {
-      return candidate;
+        if (entries.length) return entries;
+      }
     }
   }
 
   return [];
-}
+};
 
+const getCatalogPlan = (catalog, planId) =>
+  catalog.find((item) => {
+    const id = firstValue(item?.id, item?.key, item?.slug, item?.name, item?.plan);
+    return normalizePlan(id) === normalizePlan(planId);
+  });
 
-/* =========================================================
-   COMPONENT
-========================================================= */
+const getPlanPrice = (plan, cycle) => {
+  if (!plan) return null;
 
-function Billing() {
-  const navigate =
-    useNavigate();
+  const prices = getObject(plan.prices);
+  const monthly = cycle === "yearly" ? false : true;
+  const nested = getObject(prices[cycle]);
+  const cycleObject = getObject(plan[cycle]);
 
-  const [
-    subscription,
-    setSubscription,
-  ] = useState(null);
+  const candidates = monthly
+    ? [
+        prices.monthly,
+        plan.monthlyPrice,
+        plan.monthly_price,
+        plan.monthlyAmount,
+        plan.monthly_amount,
+        cycleObject.amount,
+      ]
+    : [
+        prices.yearly,
+        plan.yearlyPrice,
+        plan.yearly_price,
+        plan.annualPrice,
+        plan.annual_price,
+        plan.yearlyAmount,
+        plan.yearly_amount,
+        cycleObject.amount,
+      ];
 
-  const [
-    billingHistory,
-    setBillingHistory,
-  ] = useState([]);
+  const amount = firstValue(
+    ...candidates.filter((value) => typeof value === "number" || typeof value === "string"),
+    nested.amount
+  );
 
-  const [
-    credits,
-    setCredits,
-  ] = useState(null);
+  const currency = firstValue(
+    nested.currency,
+    cycleObject.currency,
+    plan.currency,
+    plan.prices?.currency,
+    "USD"
+  );
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  if (amount === undefined || amount === null || amount === "") return null;
 
-  const [
-    refreshing,
-    setRefreshing,
-  ] = useState(false);
+  return { amount, currency };
+};
 
-  const [
-    processing,
-    setProcessing,
-  ] = useState(false);
+const getResources = (subscription) => {
+  const root = getObject(subscription);
+  const nested = getObject(root.subscription);
+  const plan = getObject(root.activePlan);
+  const infrastructure = getObject(
+    firstValue(root.infrastructure, root.resources, nested.infrastructure, nested.resources, plan.infrastructure)
+  );
+  const usage = getObject(firstValue(root.usage, nested.usage));
+  const limits = getObject(firstValue(root.limits, nested.limits));
 
-  const [
-    selectedPlan,
-    setSelectedPlan,
-  ] = useState("Pro");
+  const definitions = [
+    { key: "ram", label: "RAM", unit: "GB", aliases: ["ram", "memory", "memoryGb", "ramGb"] },
+    { key: "cpu", label: "CPU", unit: "vCPU", aliases: ["cpu", "vCpu", "vcpu", "cpuCores"] },
+    { key: "storage", label: "Storage", unit: "GB", aliases: ["storage", "storageGb", "disk", "diskGb"] },
+    { key: "bandwidth", label: "Bandwidth", unit: "", aliases: ["bandwidth", "bandwidthGb", "transfer"] },
+  ];
 
-  const [
-    billingCycle,
-    setBillingCycle,
-  ] = useState("monthly");
+  return definitions.map((definition) => {
+    const find = (object, aliases) => {
+      for (const alias of aliases) {
+        if (object[alias] !== undefined && object[alias] !== null) return object[alias];
+      }
+      return undefined;
+    };
 
-  const [
-    provider,
-    setProvider,
-  ] = useState("stripe");
-
-  const [
-    error,
-    setError,
-  ] = useState("");
-
-  const [
-    successMessage,
-    setSuccessMessage,
-  ] = useState("");
-
-  const [
-    paymentData,
-    setPaymentData,
-  ] = useState(null);
-
-
-  /* =======================================================
-     LOAD REAL BILLING DATA
-  ======================================================= */
-
-  const loadBilling =
-    useCallback(
-      async ({
-        refresh = false,
-      } = {}) => {
-        if (refresh) {
-          setRefreshing(true);
-        } else {
-          setLoading(true);
-        }
-
-        setError("");
-
-        try {
-          const [
-            subscriptionResponse,
-            historyResponse,
-            creditsResponse,
-          ] =
-            await Promise.allSettled([
-              getSubscription(),
-              getBillingHistory(),
-              getCredits(),
-            ]);
-
-
-          /* -----------------------------------------------
-             SUBSCRIPTION
-          ------------------------------------------------ */
-
-          if (
-            subscriptionResponse.status ===
-            "fulfilled"
-          ) {
-            const normalized =
-              normalizeSubscription(
-                subscriptionResponse.value
-              );
-
-            setSubscription(
-              normalized
-            );
-
-            const currentPlan =
-              normalizePlanName(
-                normalized
-              );
-
-            if (
-              currentPlan &&
-              PLANS.some(
-                (plan) =>
-                  plan.name ===
-                  currentPlan
-              )
-            ) {
-              setSelectedPlan(
-                currentPlan
-              );
-            }
-
-            const currentInterval =
-              normalizeBillingInterval(
-                normalized
-              );
-
-            if (
-              String(
-                currentInterval ||
-                  ""
-              ).toLowerCase() ===
-              "yearly"
-            ) {
-              setBillingCycle(
-                "yearly"
-              );
-            }
-          } else {
-            setSubscription(null);
-          }
-
-
-          /* -----------------------------------------------
-             BILLING HISTORY
-          ------------------------------------------------ */
-
-          if (
-            historyResponse.status ===
-            "fulfilled"
-          ) {
-            setBillingHistory(
-              normalizeBillingHistory(
-                historyResponse.value
-              )
-            );
-          } else {
-            setBillingHistory([]);
-          }
-
-
-          /* -----------------------------------------------
-             AI CREDITS
-          ------------------------------------------------ */
-
-          if (
-            creditsResponse.status ===
-            "fulfilled"
-          ) {
-            const normalizedCredits =
-              normalizeCredits(
-                creditsResponse.value
-              );
-
-            setCredits(
-              normalizedCredits
-            );
-          } else {
-            console.error(
-              "Credits API error:",
-              creditsResponse.reason
-            );
-
-            setCredits(null);
-          }
-
-        } catch (err) {
-          console.error(
-            "Billing loading error:",
-            err
-          );
-
-          setError(
-            "Billing information could not be loaded from the backend."
-          );
-        } finally {
-          if (refresh) {
-            setRefreshing(false);
-          } else {
-            setLoading(false);
-          }
-        }
-      },
-      []
+    const used = find(usage, definition.aliases);
+    const total = firstValue(
+      find(infrastructure, definition.aliases),
+      find(limits, definition.aliases)
     );
 
+    return {
+      ...definition,
+      used,
+      total,
+      available: total !== undefined,
+    };
+  });
+};
+
+const getCreditsInfo = (creditsResponse) => {
+  const root = getObject(creditsResponse);
+  const nested = getObject(root.credits);
+  const data = Object.keys(nested).length ? nested : root;
+
+  return {
+    balance: firstValue(
+      data.balance,
+      data.available,
+      data.remaining,
+      data.remainingCredits,
+      data.creditsBalance,
+      data.total
+    ),
+    used: firstValue(data.used, data.consumed, data.usedCredits),
+    total: firstValue(data.limit, data.totalCredits, data.monthlyLimit),
+    currency: firstValue(data.currency, "credits"),
+  };
+};
+
+const getHistoryRows = (response) => {
+  const root = getObject(response);
+  return toArray(
+    firstValue(root.history, root.records, root.transactions, root.items, root.data)
+  );
+};
+
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.message ||
+  error?.response?.data?.error ||
+  error?.data?.message ||
+  error?.message ||
+  fallback;
+
+function StatusBadge({ value }) {
+  const normalized = String(value || "unknown").toLowerCase();
+  let className = styles.statusNeutral;
+
+  if (["active", "paid", "success", "succeeded", "completed"].includes(normalized)) {
+    className = styles.statusSuccess;
+  } else if (["pending", "trialing", "processing", "past_due"].includes(normalized)) {
+    className = styles.statusWarning;
+  } else if (["cancelled", "canceled", "failed", "unpaid", "expired"].includes(normalized)) {
+    className = styles.statusDanger;
+  }
+
+  return (
+    <span className={`${styles.statusBadge} ${className}`}>
+      <span className={styles.statusDot} />
+      {humanize(value)}
+    </span>
+  );
+}
+
+function MetricCard({ label, value, detail }) {
+  return (
+    <article className={styles.metricCard}>
+      <span className={styles.metricLabel}>{label}</span>
+      <strong className={styles.metricValue}>{value}</strong>
+      {detail ? <span className={styles.metricDetail}>{detail}</span> : null}
+    </article>
+  );
+}
+
+export default function Billing() {
+  const [subscription, setSubscription] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [credits, setCredits] = useState(null);
+  const [catalog, setCatalog] = useState([]);
+
+  const [selectedPlan, setSelectedPlan] = useState("pro");
+  const [billingCycle, setBillingCycle] = useState("monthly");
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  const [pageError, setPageError] = useState("");
+  const [historyError, setHistoryError] = useState("");
+  const [creditsError, setCreditsError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
+  const [actionError, setActionError] = useState("");
+
+  const loadBilling = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    setPageError("");
+    setHistoryError("");
+    setCreditsError("");
+
+    const results = await Promise.allSettled([
+      billingService.getSubscription(),
+      billingService.getBillingHistory(),
+      billingService.getCredits(),
+    ]);
+
+    if (results[0].status === "fulfilled") {
+      const data = unwrap(results[0].value);
+      setSubscription(data);
+      setCatalog(findCatalog(data));
+
+      const currentPlan = findPlan(data);
+      if (currentPlan) {
+        const matchingPlan = PLANS.find(
+          (plan) => normalizePlan(plan.id) === normalizePlan(currentPlan)
+        );
+        if (matchingPlan) setSelectedPlan(matchingPlan.id);
+      }
+
+      const currentCycle = firstValue(
+        data.billingCycle,
+        data.billing_cycle,
+        data.interval,
+        data.subscription?.billingCycle,
+        data.subscription?.billing_cycle
+      );
+
+      if (currentCycle) {
+        const normalized = String(currentCycle).toLowerCase();
+        setBillingCycle(
+          ["year", "yearly", "annual", "annually"].includes(normalized)
+            ? "yearly"
+            : "monthly"
+        );
+      }
+    } else {
+      setSubscription(null);
+      setPageError(getErrorMessage(results[0].reason, "Unable to load subscription details."));
+    }
+
+    if (results[1].status === "fulfilled") {
+      setHistory(getHistoryRows(unwrap(results[1].value)));
+    } else {
+      setHistory([]);
+      setHistoryError(getErrorMessage(results[1].reason, "Billing history is unavailable."));
+    }
+
+    if (results[2].status === "fulfilled") {
+      setCredits(unwrap(results[2].value));
+    } else {
+      setCredits(null);
+      setCreditsError(getErrorMessage(results[2].reason, "Credit information is unavailable."));
+    }
+
+    setLoading(false);
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
     loadBilling();
   }, [loadBilling]);
 
+  const currentPlan = findPlan(subscription);
+  const currentStatus = findStatus(subscription);
+  const currentPlanId = normalizePlan(currentPlan);
+  const isActive = ["active", "trialing"].includes(String(currentStatus || "").toLowerCase());
 
-  /* =======================================================
-     CURRENT BILLING
-  ======================================================= */
+  const selectedPlanDetails = useMemo(
+    () => getCatalogPlan(catalog, selectedPlan),
+    [catalog, selectedPlan]
+  );
 
-  const billing =
-    useMemo(() => {
-      const infrastructure =
-        normalizeInfrastructure(
-          subscription
-        );
+  const currentPlanDetails = useMemo(
+    () => getCatalogPlan(catalog, currentPlanId),
+    [catalog, currentPlanId]
+  );
 
-      const paymentMethod =
-        normalizePaymentMethod(
-          subscription
-        );
+  const selectedPrice = getPlanPrice(selectedPlanDetails, billingCycle);
+  const currentPrice = getPlanPrice(currentPlanDetails, billingCycle);
 
-      return {
-        planName:
-          normalizePlanName(
-            subscription
-          ),
+  const currency = firstValue(
+    selectedPrice?.currency,
+    subscription?.currency,
+    subscription?.subscription?.currency,
+    "USD"
+  );
 
-        currency:
-          normalizeCurrency(
-            subscription
-          ) || "USD",
+  const creditsInfo = getCreditsInfo(credits);
 
-        price:
-          normalizePrice(
-            subscription
-          ),
+  const nextBillingDate = firstValue(
+    subscription?.currentPeriodEnd,
+    subscription?.current_period_end,
+    subscription?.nextBillingDate,
+    subscription?.next_billing_date,
+    subscription?.subscription?.currentPeriodEnd,
+    subscription?.subscription?.nextBillingDate
+  );
 
-        interval:
-          normalizeBillingInterval(
-            subscription
-          ),
+  const paymentMethod = firstValue(
+    subscription?.paymentMethod,
+    subscription?.payment_method,
+    subscription?.subscription?.paymentMethod,
+    subscription?.subscription?.payment_method
+  );
 
-        status:
-          normalizeStatus(
-            subscription
-          ),
+  const handleCheckout = async () => {
+    setActionMessage("");
+    setActionError("");
 
-        infrastructure,
+    if (!PLANS.some((plan) => plan.id === selectedPlan)) {
+      setActionError("Select a valid subscription plan.");
+      return;
+    }
 
-        paymentMethod,
+    setCheckoutLoading(true);
 
-        paymentLabel:
-          normalizePaymentLabel(
-            paymentMethod
-          ),
-
-        nextBillingDate:
-          firstValue(
-            subscription?.nextBillingDate,
-            subscription?.currentPeriodEnd,
-            subscription?.billing
-              ?.nextBillingDate
-          ),
+    try {
+      const payload = {
+        plan: selectedPlan,
+        billingCycle,
+        provider: "stripe",
+        currency: "USD",
       };
-    }, [
-      subscription,
-    ]);
 
+      const response = await billingService.createPaymentOrder(payload);
+      const result = unwrap(response);
+      const paymentIntent = getObject(result.paymentIntent);
 
-  /* =======================================================
-     SELECTED PLAN
-  ======================================================= */
+      const checkoutUrl = firstValue(
+        result.checkoutUrl,
+        result.checkout_url,
+        result.redirectUrl,
+        result.redirect_url,
+        result.url,
+        result.sessionUrl,
+        result.session_url,
+        result.session?.url,
+        result.checkoutSession?.url
+      );
 
-  const selectedPlanData =
-    useMemo(
-      () =>
-        PLANS.find(
-          (plan) =>
-            plan.name ===
-            selectedPlan
-        ) || PLANS[0],
-      [selectedPlan]
-    );
-
-
-  const selectedPrice =
-    billingCycle ===
-    "yearly"
-      ? selectedPlanData.yearly
-      : selectedPlanData.monthly;
-
-
-  /* =======================================================
-     MONEY
-  ======================================================= */
-
-  const formatMoney =
-    useCallback(
-      (
-        amount,
-        currency = "USD"
-      ) => {
-        const numeric =
-          Number(amount);
-
-        if (
-          !Number.isFinite(
-            numeric
-          )
-        ) {
-          return "—";
-        }
+      if (checkoutUrl) {
+        let parsedUrl;
 
         try {
-          return new Intl.NumberFormat(
-            undefined,
-            {
-              style: "currency",
-              currency:
-                currency || "USD",
-              maximumFractionDigits: 2,
-            }
-          ).format(numeric);
+          parsedUrl = new URL(checkoutUrl, window.location.origin);
         } catch {
-          return `${currency || "USD"} ${numeric}`;
-        }
-      },
-      []
-    );
-
-
-  const formattedCurrentPrice =
-    useMemo(() => {
-      if (
-        billing.price ===
-          undefined ||
-        billing.price ===
-          null ||
-        billing.price ===
-          ""
-      ) {
-        return "—";
-      }
-
-      return formatMoney(
-        billing.price,
-        billing.currency
-      );
-    }, [
-      billing.price,
-      billing.currency,
-      formatMoney,
-    ]);
-
-
-  /* =======================================================
-     CREDIT PROGRESS
-  ======================================================= */
-
-  const creditProgress =
-    useMemo(() => {
-      if (!credits) {
-        return null;
-      }
-
-      if (credits.unlimited) {
-        return null;
-      }
-
-      const used =
-        Number(
-          credits.used
-        );
-
-      const total =
-        Number(
-          credits.total
-        );
-
-      if (
-        !Number.isFinite(
-          used
-        ) ||
-        !Number.isFinite(
-          total
-        ) ||
-        total <= 0
-      ) {
-        return null;
-      }
-
-      return Math.min(
-        100,
-        Math.max(
-          0,
-          (used / total) *
-            100
-        )
-      );
-    }, [credits]);
-
-
-  /* =======================================================
-     API ERROR
-  ======================================================= */
-
-  const getApiErrorMessage =
-    useCallback(
-      (
-        err,
-        fallback
-      ) =>
-        err?.response?.data
-          ?.message ||
-        err?.response?.data
-          ?.error ||
-        err?.response?.data
-          ?.code ||
-        err?.message ||
-        fallback,
-      []
-    );
-
-
-  /* =======================================================
-     START STRIPE PAYMENT
-  ======================================================= */
-
-  const handleStartPayment =
-    async () => {
-      setProcessing(true);
-      setError("");
-      setSuccessMessage("");
-      setPaymentData(null);
-
-      try {
-        if (
-          provider !==
-          "stripe"
-        ) {
-          throw new Error(
-            "Razorpay is not currently enabled for the USD ZyrionOS catalog."
-          );
+          throw new Error("The payment service returned an invalid checkout URL.");
         }
 
-        const response =
-          await createPaymentOrder({
-            plan:
-              selectedPlan,
-
-            billingCycle,
-
-            provider:
-              "stripe",
-
-            currency:
-              "USD",
-          });
-
-        const root =
-          response?.data;
-
-        const data =
-          root?.data ||
-          root;
-
-        const clientSecret =
-          data?.clientSecret ||
-          data?.paymentIntent
-            ?.client_secret ||
-          null;
-
-        const paymentIntentId =
-          data?.paymentIntentId ||
-          data?.paymentIntent
-            ?.id ||
-          null;
-
-        setPaymentData({
-          provider: "stripe",
-
-          plan:
-            selectedPlan,
-
-          billingCycle,
-
-          amount:
-            data?.amount ??
-            selectedPrice,
-
-          currency:
-            data?.currency ||
-            "USD",
-
-          clientSecret,
-
-          paymentIntentId,
-        });
-
-        if (
-          clientSecret
-        ) {
-          setSuccessMessage(
-            "Stripe PaymentIntent created successfully. Complete the Stripe payment flow; subscription activation remains webhook-controlled."
-          );
-        } else {
-          setSuccessMessage(
-            "Stripe payment initialization returned successfully, but no client secret was provided."
-          );
+        if (!["https:", "http:"].includes(parsedUrl.protocol)) {
+          throw new Error("The payment service returned an unsupported checkout URL.");
         }
 
-      } catch (err) {
-        console.error(
-          "Payment initialization error:",
-          err
-        );
-
-        setError(
-          getApiErrorMessage(
-            err,
-            "Payment could not be initialized."
-          )
-        );
-      } finally {
-        setProcessing(false);
-      }
-    };
-
-
-  /* =======================================================
-     CREATE SUBSCRIPTION COMPATIBILITY
-  ======================================================= */
-
-  const handleCreateSubscription =
-    async () => {
-      setProcessing(true);
-      setError("");
-      setSuccessMessage("");
-
-      try {
-        await createSubscription({
-          plan:
-            selectedPlan,
-
-          billingCycle,
-
-          provider,
-
-          currency:
-            "USD",
-        });
-
-        await loadBilling({
-          refresh: true,
-        });
-
-      } catch (err) {
-        const status =
-          err?.response
-            ?.status;
-
-        const code =
-          err?.response?.data
-            ?.code;
-
-        if (
-          status === 409 ||
-          code ===
-            "PAYMENT_REQUIRED"
-        ) {
-          setError(
-            "Payment is required before the subscription can become active."
-          );
-        } else {
-          setError(
-            getApiErrorMessage(
-              err,
-              "Subscription request failed."
-            )
-          );
-        }
-      } finally {
-        setProcessing(false);
-      }
-    };
-
-
-  /* =======================================================
-     UPGRADE
-  ======================================================= */
-
-  const handleUpgrade =
-    async () => {
-      setProcessing(true);
-      setError("");
-      setSuccessMessage("");
-
-      try {
-        await upgradeSubscription({
-          plan:
-            selectedPlan,
-
-          billingCycle,
-
-          provider,
-
-          currency:
-            "USD",
-        });
-
-        await loadBilling({
-          refresh: true,
-        });
-
-        setSuccessMessage(
-          "Upgrade request was sent to the backend. The displayed subscription state remains backend-controlled."
-        );
-
-      } catch (err) {
-        const status =
-          err?.response
-            ?.status;
-
-        const code =
-          err?.response?.data
-            ?.code;
-
-        if (
-          status === 409 ||
-          code ===
-            "PAYMENT_REQUIRED"
-        ) {
-          setError(
-            "Payment is required before the upgraded subscription can become active."
-          );
-        } else {
-          setError(
-            getApiErrorMessage(
-              err,
-              "Subscription upgrade failed."
-            )
-          );
-        }
-      } finally {
-        setProcessing(false);
-      }
-    };
-
-
-  /* =======================================================
-     CANCEL
-  ======================================================= */
-
-  const handleCancel =
-    async () => {
-      const confirmed =
-        window.confirm(
-          "Are you sure you want to cancel your subscription?"
-        );
-
-      if (!confirmed) {
+        window.location.assign(parsedUrl.href);
         return;
       }
 
-      setProcessing(true);
-      setError("");
-      setSuccessMessage("");
+      const clientSecret = firstValue(
+        result.clientSecret,
+        result.client_secret,
+        paymentIntent.client_secret
+      );
 
-      try {
-        await cancelSubscription();
-
-        await loadBilling({
-          refresh: true,
-        });
-
-        setSuccessMessage(
-          "Cancellation request was submitted. The subscription status shown above comes from the backend."
+      if (clientSecret) {
+        setActionError(
+          "The backend returned a payment client secret but no hosted checkout URL. " +
+          "Stripe Elements/SDK integration is required to complete this payment. " +
+          "No payment or subscription has been marked successful."
         );
-
-      } catch (err) {
-        setError(
-          getApiErrorMessage(
-            err,
-            "Subscription cancellation failed."
+      } else {
+        setActionError(
+          firstValue(
+            result.message,
+            result.error,
+            "The payment service did not return a checkout URL. Please check the backend payment configuration."
           )
         );
-      } finally {
-        setProcessing(false);
       }
-    };
+    } catch (error) {
+      setActionError(getErrorMessage(error, "Unable to start secure checkout."));
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
+  const handleCancel = async () => {
+    setActionMessage("");
+    setActionError("");
 
-  /* =======================================================
-     REFRESH
-  ======================================================= */
+    if (!isActive) {
+      setActionError("There is no active subscription to cancel.");
+      return;
+    }
 
-  const handleRefresh =
-    () =>
-      loadBilling({
-        refresh: true,
-      });
-
-
-  /* =======================================================
-     STATUS
-  ======================================================= */
-
-  const statusText =
-    displayValue(
-      billing.status
+    const confirmed = window.confirm(
+      "Are you sure you want to request subscription cancellation? Check the confirmation returned by your billing service."
     );
 
+    if (!confirmed) return;
 
-  /* =======================================================
-     RENDER
-  ======================================================= */
+    setCancelLoading(true);
+
+    try {
+      const response = await billingService.cancelSubscription();
+      const result = unwrap(response);
+
+      setActionMessage(
+        firstValue(result.message, "Cancellation request submitted. Refreshing subscription status.")
+      );
+
+      await loadBilling(true);
+    } catch (error) {
+      setActionError(getErrorMessage(error, "Unable to cancel the subscription."));
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const handleRefresh = () => loadBilling(true);
+
+  const getHistoryValue = (row, keys) => {
+    for (const key of keys) {
+      if (row?.[key] !== undefined && row?.[key] !== null && row?.[key] !== "") {
+        return row[key];
+      }
+    }
+    return null;
+  };
 
   return (
     <DashboardLayout>
-      <main
-        className={
-          styles.page
-        }
-      >
-        <div
-          className={
-            styles.container
-          }
-        >
+      <main className={styles.page}>
+        <header className={styles.pageHeader}>
+          <div>
+            <div className={styles.eyebrow}>ACCOUNT MANAGEMENT</div>
+            <h1 className={styles.pageTitle}>Billing &amp; Usage</h1>
+            <p className={styles.pageSubtitle}>
+              Manage your subscription, review resource usage, and access billing records.
+            </p>
+          </div>
 
-          {/* HEADER */}
-
-          <header
-            className={
-              styles.header
-            }
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={handleRefresh}
+            disabled={loading || refreshing}
           >
-            <div
-              className={
-                styles.headerContent
-              }
-            >
-              <div
-                className={
-                  styles.eyebrow
-                }
-              >
-                <span
-                  className={
-                    styles.eyebrowDot
-                  }
-                />
+            <span aria-hidden="true" className={refreshing ? styles.spinning : ""}>↻</span>
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </button>
+        </header>
 
-                ZYRIONOS BILLING
-              </div>
+        {pageError ? (
+          <div className={styles.errorBanner} role="alert">
+            <strong>Subscription data unavailable</strong>
+            <span>{pageError}</span>
+            <button type="button" onClick={handleRefresh} disabled={refreshing}>
+              Retry
+            </button>
+          </div>
+        ) : null}
 
-              <h1
-                className={
-                  styles.title
-                }
-              >
-                Billing & Subscription
-              </h1>
+        {actionMessage ? (
+          <div className={styles.successBanner} role="status">{actionMessage}</div>
+        ) : null}
 
-              <p
-                className={
-                  styles.subtitle
-                }
-              >
-                Manage your subscription,
-                payment provider, usage,
-                AI credits and billing
-                history through the
-                connected ZyrionOS
-                backend.
-              </p>
+        {actionError ? (
+          <div className={styles.errorBanner} role="alert">
+            <strong>Action could not be completed</strong>
+            <span>{actionError}</span>
+            <button type="button" onClick={() => setActionError("")}>Dismiss</button>
+          </div>
+        ) : null}
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <h2>Current subscription</h2>
+              <p>Your subscription status as reported by the billing service.</p>
             </div>
+            {!loading && currentStatus ? <StatusBadge value={currentStatus} /> : null}
+          </div>
 
-            <div
-              className={
-                styles.headerActions
-              }
-            >
-              <button
-                type="button"
-                className={
-                  styles.refreshButton
-                }
-                onClick={
-                  handleRefresh
-                }
-                disabled={
-                  refreshing
-                }
-              >
-                <span
-                  className={
-                    refreshing
-                      ? styles.spin
-                      : styles.refreshIcon
-                  }
-                >
-                  ↻
-                </span>
-
-                {refreshing
-                  ? "Refreshing..."
-                  : "Refresh"}
-              </button>
-
-              <button
-                type="button"
-                className={
-                  styles.manageButton
-                }
-                onClick={() =>
-                  navigate(
-                    "/billing"
-                  )
-                }
-              >
-                Billing Overview
-                <span>→</span>
-              </button>
+          {loading ? (
+            <div className={styles.loadingCard} aria-live="polite">
+              <span className={styles.spinner} />
+              <span>Loading subscription details…</span>
             </div>
-          </header>
-
-
-          {/* ALERTS */}
-
-          {error && (
-            <section
-              className={
-                styles.alert
-              }
-              role="alert"
-            >
-              <div
-                className={
-                  styles.alertIcon
-                }
-              >
-                !
-              </div>
-
-              <div
-                className={
-                  styles.alertContent
-                }
-              >
-                <strong>
-                  Billing action unavailable
-                </strong>
-
-                <p>
-                  {error}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className={
-                  styles.retryButton
-                }
-                onClick={
-                  handleRefresh
-                }
-              >
-                Retry
-              </button>
-            </section>
-          )}
-
-
-          {successMessage && (
-            <section
-              className={
-                styles.successAlert
-              }
-              role="status"
-            >
-              <div
-                className={
-                  styles.alertIcon
-                }
-              >
-                ✓
-              </div>
-
-              <div
-                className={
-                  styles.alertContent
-                }
-              >
-                <strong>
-                  Billing update
-                </strong>
-
-                <p>
-                  {successMessage}
-                </p>
-              </div>
-            </section>
-          )}
-
-
-          {/* CURRENT SUBSCRIPTION */}
-
-          <section
-            className={
-              styles.subscriptionCard
-            }
-          >
-            <div
-              className={
-                styles.subscriptionGlow
-              }
-            />
-
-            <div
-              className={
-                styles.subscriptionMain
-              }
-            >
-              <div
-                className={
-                  styles.subscriptionEyebrow
-                }
-              >
-                CURRENT SUBSCRIPTION
-              </div>
-
-              <div
-                className={
-                  styles.subscriptionTop
-                }
-              >
-                <h2
-                  className={
-                    styles.planName
-                  }
-                >
-                  {loading
-                    ? "Loading..."
-                    : displayValue(
-                        billing.planName
-                      )}
-                </h2>
-
-                {!loading &&
-                  billing.status && (
-                    <span
-                      className={
-                        styles.statusBadge
-                      }
-                    >
-                      <span />
-                      {statusText}
-                    </span>
-                  )}
-              </div>
-
-              <div
-                className={
-                  styles.priceRow
-                }
-              >
-                <strong
-                  className={
-                    styles.planPrice
-                  }
-                >
-                  {loading
-                    ? "—"
-                    : formattedCurrentPrice}
-                </strong>
-
-                {!loading &&
-                  billing.interval && (
-                    <span
-                      className={
-                        styles.billingInterval
-                      }
-                    >
-                      /{" "}
-                      {displayValue(
-                        billing.interval
-                      )}
-                    </span>
-                  )}
-              </div>
-
-              <p
-                className={
-                  styles.planDescription
-                }
-              >
-                Subscription state is
-                read directly from the
-                authenticated backend.
-                The frontend does not
-                fabricate active billing
-                state.
-              </p>
-            </div>
-
-            <div
-              className={
-                styles.subscriptionSide
-              }
-            >
-              <div
-                className={
-                  styles.sideLabel
-                }
-              >
-                BILLING STATUS
-              </div>
-
-              <strong>
-                {loading
-                  ? "—"
-                  : statusText}
-              </strong>
-
-              {billing.nextBillingDate && (
-                <span>
-                  Next billing:{" "}
-                  {displayValue(
-                    billing.nextBillingDate
-                  )}
-                </span>
-              )}
-            </div>
-          </section>
-
-
-          {/* PLANS */}
-
-          <section
-            className={
-              styles.planSection
-            }
-          >
-            <div
-              className={
-                styles.sectionHeader
-              }
-            >
-              <div>
-                <div
-                  className={
-                    styles.panelEyebrow
-                  }
-                >
-                  PLANS
-                </div>
-
-                <h2
-                  className={
-                    styles.sectionTitle
-                  }
-                >
-                  Choose Your Plan
-                </h2>
-
-                <p
-                  className={
-                    styles.panelSubtitle
-                  }
-                >
-                  Display prices match the
-                  configured ZyrionOS
-                  catalog. Final payment
-                  validation is performed
-                  by the backend.
-                </p>
-              </div>
-
-              <div
-                className={
-                  styles.billingToggle
-                }
-              >
-                <button
-                  type="button"
-                  className={
-                    billingCycle ===
-                    "monthly"
-                      ? styles.toggleActive
-                      : styles.toggleButton
-                  }
-                  onClick={() =>
-                    setBillingCycle(
-                      "monthly"
-                    )
-                  }
-                >
-                  Monthly
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    billingCycle ===
-                    "yearly"
-                      ? styles.toggleActive
-                      : styles.toggleButton
-                  }
-                  onClick={() =>
-                    setBillingCycle(
-                      "yearly"
-                    )
-                  }
-                >
-                  Yearly
-                </button>
-              </div>
-            </div>
-
-
-            <div
-              className={
-                styles.planGrid
-              }
-            >
-              {PLANS.map(
-                (plan) => {
-                  const active =
-                    selectedPlan ===
-                    plan.name;
-
-                  const current =
-                    billing.planName ===
-                    plan.name;
-
-                  const price =
-                    billingCycle ===
-                    "yearly"
-                      ? plan.yearly
-                      : plan.monthly;
-
-                  return (
-                    <button
-                      key={
-                        plan.name
-                      }
-                      type="button"
-                      className={
-                        active
-                          ? styles.planCardActive
-                          : styles.planCard
-                      }
-                      onClick={() =>
-                        setSelectedPlan(
-                          plan.name
-                        )
-                      }
-                    >
-                      <div
-                        className={
-                          styles.planCardTop
-                        }
-                      >
-                        <span>
-                          {plan.name}
-                        </span>
-
-                        {current && (
-                          <span
-                            className={
-                              styles.currentBadge
-                            }
-                          >
-                            Current
-                          </span>
-                        )}
-                      </div>
-
-                      <strong
-                        className={
-                          styles.planCardPrice
-                        }
-                      >
-                        {formatMoney(
-                          price,
-                          "USD"
-                        )}
-                      </strong>
-
-                      <span
-                        className={
-                          styles.planCardInterval
-                        }
-                      >
-                        /{" "}
-                        {billingCycle}
-                      </span>
-
-                      <p
-                        className={
-                          styles.planCardDescription
-                        }
-                      >
-                        {
-                          plan.description
-                        }
-                      </p>
-                    </button>
-                  );
-                }
-              )}
-            </div>
-
-
-            {/* PAYMENT PROVIDER */}
-
-            <div
-              className={
-                styles.providerSection
-              }
-            >
-              <div>
-                <div
-                  className={
-                    styles.panelEyebrow
-                  }
-                >
-                  PAYMENT PROVIDER
-                </div>
-
-                <h3
-                  className={
-                    styles.providerTitle
-                  }
-                >
-                  Select Payment Provider
-                </h3>
-              </div>
-
-              <div
-                className={
-                  styles.providerGrid
-                }
-              >
-                <button
-                  type="button"
-                  className={
-                    provider ===
-                    "stripe"
-                      ? styles.providerActive
-                      : styles.providerButton
-                  }
-                  onClick={() =>
-                    setProvider(
-                      "stripe"
-                    )
-                  }
-                >
-                  <strong>
-                    Stripe
-                  </strong>
-
-                  <span>
-                    USD payments
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    styles.providerDisabled
-                  }
-                  disabled
-                  title="Razorpay is disabled for the current USD catalog"
-                >
-                  <strong>
-                    Razorpay
-                  </strong>
-
-                  <span>
-                    INR pricing required
-                  </span>
-                </button>
-              </div>
-            </div>
-
-
-            {/* PAYMENT ACTION */}
-
-            <div
-              className={
-                styles.planAction
-              }
-            >
-              <div
-                className={
-                  styles.selectedSummary
-                }
-              >
-                <span
-                  className={
-                    styles.actionLabel
-                  }
-                >
-                  SELECTED
-                </span>
-
-                <strong>
-                  {selectedPlan}
-                </strong>
-
-                <span>
-                  {formatMoney(
-                    selectedPrice,
-                    "USD"
-                  )}
-                  {" "}
-                  /{" "}
-                  {billingCycle}
-                </span>
-              </div>
-
-              <div
-                className={
-                  styles.actionButtons
-                }
-              >
-                <button
-                  type="button"
-                  className={
-                    styles.primaryAction
-                  }
-                  onClick={
-                    handleStartPayment
-                  }
-                  disabled={
-                    processing ||
-                    provider !==
-                      "stripe"
-                  }
-                >
-                  {processing
-                    ? "Initializing..."
-                    : "Start Stripe Payment"}
-
-                  <span>
-                    →
-                  </span>
-                </button>
-
-                {billing.planName &&
-                  selectedPlan !==
-                    billing.planName && (
-                    <button
-                      type="button"
-                      className={
-                        styles.secondaryAction
-                      }
-                      onClick={
-                        handleUpgrade
-                      }
-                      disabled={
-                        processing
-                      }
-                    >
-                      Request Upgrade
-                    </button>
-                  )}
-              </div>
-            </div>
-          </section>
-
-
-          {/* PAYMENT SESSION */}
-
-          {paymentData && (
-            <section
-              className={
-                styles.panel
-              }
-            >
-              <div
-                className={
-                  styles.panelHeader
-                }
-              >
-                <div>
-                  <div
-                    className={
-                      styles.panelEyebrow
-                    }
-                  >
-                    PAYMENT SESSION
-                  </div>
-
-                  <h2
-                    className={
-                      styles.panelTitle
-                    }
-                  >
-                    Stripe Payment Initialized
-                  </h2>
-
-                  <p
-                    className={
-                      styles.panelSubtitle
-                    }
-                  >
-                    The backend created a
-                    real Stripe PaymentIntent.
-                    Subscription activation
-                    remains provider-webhook
-                    controlled.
-                  </p>
-                </div>
-
-                <div
-                  className={
-                    styles.creditIcon
-                  }
-                >
-                  $
-                </div>
-              </div>
-
-              <div
-                className={
-                  styles.paymentSession
-                }
-              >
-                <div>
-                  <span>
-                    Plan
-                  </span>
-
-                  <strong>
-                    {
-                      paymentData.plan
-                    }
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    Amount
-                  </span>
-
-                  <strong>
-                    {formatMoney(
-                      paymentData.amount,
-                      paymentData.currency
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    Provider
-                  </span>
-
-                  <strong>
-                    Stripe
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    Payment Intent
-                  </span>
-
-                  <strong>
-                    {displayValue(
-                      paymentData.paymentIntentId
-                    )}
-                  </strong>
-                </div>
-              </div>
-
-              <div
-                className={
-                  styles.paymentNotice
-                }
-              >
-                Payment activation is
-                <strong>
-                  {" "}
-                  pending webhook
-                  confirmation
-                </strong>
-                .
-              </div>
-            </section>
-          )}
-
-
-          {/* RESOURCES */}
-
-          <section
-            className={
-              styles.resourceGrid
-            }
-            aria-label="Subscription resources"
-          >
-            {[
-              [
-                "RAM",
-                "RAM",
-                billing.infrastructure
-                  .ram,
-                "Backend-reported workspace memory.",
-              ],
-
-              [
-                "CPU",
-                "CPU",
-                billing.infrastructure
-                  .cpu,
-                "Backend-reported compute capacity.",
-              ],
-
-              [
-                "STORAGE",
-                "DB",
-                billing.infrastructure
-                  .storage,
-                "Backend-reported storage allocation.",
-              ],
-
-              [
-                "BANDWIDTH",
-                "↕",
-                billing.infrastructure
-                  .bandwidth,
-                "Backend-reported network allocation.",
-              ],
-            ].map(
-              ([
-                label,
-                icon,
-                value,
-                description,
-              ]) => (
-                <article
-                  key={label}
-                  className={
-                    styles.resourceCard
-                  }
-                >
-                  <div
-                    className={
-                      styles.resourceHeader
-                    }
-                  >
-                    <span>
-                      {label}
-                    </span>
-
-                    <div
-                      className={
-                        styles.resourceIcon
-                      }
-                    >
-                      {icon}
-                    </div>
-                  </div>
-
-                  <strong>
-                    {loading
-                      ? "—"
-                      : displayValue(
-                          value
-                        )}
-                  </strong>
-
-                  <span>
-                    {description}
-                  </span>
-                </article>
-              )
-            )}
-          </section>
-
-
-          {/* PAYMENT + CREDITS */}
-
-          <section
-            className={
-              styles.detailsGrid
-            }
-          >
-
-            {/* PAYMENT METHOD */}
-
-            <article
-              className={
-                styles.panel
-              }
-            >
-              <div
-                className={
-                  styles.panelHeader
-                }
-              >
-                <div>
-                  <div
-                    className={
-                      styles.panelEyebrow
-                    }
-                  >
-                    PAYMENTS
-                  </div>
-
-                  <h2
-                    className={
-                      styles.panelTitle
-                    }
-                  >
-                    Payment Method
-                  </h2>
-
-                  <p
-                    className={
-                      styles.panelSubtitle
-                    }
-                  >
-                    Payment information
-                    returned by the
-                    authenticated backend.
-                  </p>
-                </div>
-
-                <div
-                  className={
-                    styles.cardIcon
-                  }
-                >
-                  💳
-                </div>
-              </div>
-
-              {billing.paymentLabel ? (
-                <div
-                  className={
-                    styles.paymentMethod
-                  }
-                >
-                  <div
-                    className={
-                      styles.paymentMethodIcon
-                    }
-                  >
-                    💳
-                  </div>
-
-                  <div
-                    className={
-                      styles.paymentMethodInfo
-                    }
-                  >
-                    <strong>
-                      {
-                        billing.paymentLabel
-                      }
-                    </strong>
-
-                    <span>
-                      Payment method on file
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className={
-                    styles.detailEmpty
-                  }
-                >
-                  <strong>
-                    No payment method available
-                  </strong>
-
+          ) : (
+            <div className={styles.subscriptionCard}>
+              <div className={styles.subscriptionMain}>
+                <div className={styles.planIcon} aria-hidden="true">Z</div>
+                <div className={styles.subscriptionDetails}>
+                  <span className={styles.mutedLabel}>CURRENT PLAN</span>
+                  <h3>{currentPlan ? humanize(currentPlan) : "No active plan found"}</h3>
                   <p>
-                    The backend has not
-                    returned a stored
-                    payment method.
+                    {nextBillingDate
+                      ? `Next billing date: ${formatDate(nextBillingDate)}`
+                      : "Billing date not provided by the backend."}
                   </p>
                 </div>
-              )}
-            </article>
+              </div>
 
+              <div className={styles.subscriptionPrice}>
+                <span className={styles.mutedLabel}>CONFIGURED PRICE</span>
+                <strong>
+                  {currentPrice
+                    ? formatMoney(currentPrice.amount, currentPrice.currency)
+                    : "Not available"}
+                </strong>
+                <span>
+                  {currentPrice
+                    ? `per ${billingCycle === "yearly" ? "year" : "month"}`
+                    : "Price not returned by the billing catalog"}
+                </span>
+              </div>
 
-            {/* AI CREDITS */}
-
-            <article
-              className={
-                styles.panel
-              }
-            >
-              <div
-                className={
-                  styles.panelHeader
-                }
-              >
-                <div>
-                  <div
-                    className={
-                      styles.panelEyebrow
-                    }
-                  >
-                    AI USAGE
-                  </div>
-
-                  <h2
-                    className={
-                      styles.panelTitle
-                    }
-                  >
-                    AI Credits
-                  </h2>
-
-                  <p
-                    className={
-                      styles.panelSubtitle
-                    }
-                  >
-                    Live credit values
-                    returned by the
-                    authenticated payment
-                    backend.
-                  </p>
-                </div>
-
-                <div
-                  className={
-                    styles.creditIcon
-                  }
+              <div className={styles.subscriptionActions}>
+                {currentStatus ? <StatusBadge value={currentStatus} /> : null}
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={handleCancel}
+                  disabled={!isActive || cancelLoading || loading}
                 >
-                  AI
-                </div>
+                  {cancelLoading ? "Submitting…" : "Cancel subscription"}
+                </button>
               </div>
+            </div>
+          )}
+        </section>
 
-              <div
-                className={
-                  styles.creditBody
-                }
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <h2>Choose your plan</h2>
+              <p>Select a plan and billing period, then review the checkout details.</p>
+            </div>
+
+            <div className={styles.billingToggle} role="group" aria-label="Billing period">
+              <button
+                type="button"
+                className={billingCycle === "monthly" ? styles.toggleActive : ""}
+                onClick={() => setBillingCycle("monthly")}
+                aria-pressed={billingCycle === "monthly"}
               >
-                {!credits ? (
-                  <div
-                    className={
-                      styles.creditUnavailable
-                    }
-                  >
-                    <strong>
-                      Credits unavailable
-                    </strong>
+                Monthly
+              </button>
+              <button
+                type="button"
+                className={billingCycle === "yearly" ? styles.toggleActive : ""}
+                onClick={() => setBillingCycle("yearly")}
+                aria-pressed={billingCycle === "yearly"}
+              >
+                Yearly
+              </button>
+            </div>
+          </div>
 
-                    <p>
-                      The credits API did
-                      not return credit
-                      values for this
-                      account.
-                    </p>
+          <div className={styles.planGrid}>
+            {PLANS.map((plan) => {
+              const backendPlan = getCatalogPlan(catalog, plan.id);
+              const price = getPlanPrice(backendPlan, billingCycle);
+              const isSelected = selectedPlan === plan.id;
+              const isCurrent = normalizePlan(currentPlan) === normalizePlan(plan.id);
 
-                    <button
-                      type="button"
-                      className={
-                        styles.creditRetryButton
-                      }
-                      onClick={
-                        handleRefresh
-                      }
-                      disabled={
-                        refreshing
-                      }
-                    >
-                      Refresh Credits
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div
-                      className={
-                        styles.creditValues
-                      }
-                    >
-                      <div>
-                        <span>
-                          Used
-                        </span>
+              return (
+                <button
+                  type="button"
+                  key={plan.id}
+                  className={`${styles.planCard} ${isSelected ? styles.planSelected : ""}`}
+                  onClick={() => setSelectedPlan(plan.id)}
+                  aria-pressed={isSelected}
+                >
+                  <span className={styles.planCardTop}>
+                    <span className={styles.planRadio} aria-hidden="true">
+                      {isSelected ? <span /> : null}
+                    </span>
+                    {isCurrent ? <span className={styles.currentPlanTag}>Current</span> : null}
+                  </span>
 
-                        <strong>
-                          {displayValue(
-                            credits.used
-                          )}
-                        </strong>
-                      </div>
+                  <span className={styles.planName}>{plan.name}</span>
+                  <span className={styles.planDescription}>
+                    {firstValue(backendPlan?.description, plan.description)}
+                  </span>
 
-                      <div>
-                        <span>
-                          Remaining
-                        </span>
+                  <span className={styles.planPrice}>
+                    {price ? formatMoney(price.amount, price.currency) : "Price at checkout"}
+                  </span>
+                  <span className={styles.planInterval}>
+                    {price
+                      ? `per ${billingCycle === "yearly" ? "year" : "month"}`
+                      : "Confirmed by payment service"}
+                  </span>
 
-                        <strong>
-                          {displayValue(
-                            credits.remaining
-                          )}
-                        </strong>
-                      </div>
+                  <span className={styles.planSelectText}>
+                    {isSelected ? "Selected plan" : "Select plan"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-                      <div>
-                        <span>
-                          Limit
-                        </span>
+          {!catalog.length ? (
+            <p className={styles.helperText}>
+              Plan prices are not available from the current subscription response.
+              The UI will not invent prices; the payment backend must validate the selected plan and amount.
+            </p>
+          ) : null}
 
-                        <strong>
-                          {credits.unlimited
-                            ? "Unlimited"
-                            : displayValue(
-                                credits.total
-                              )}
-                        </strong>
-                      </div>
-                    </div>
-
-                    {creditProgress !==
-                      null && (
-                      <div
-                        className={
-                          styles.progressTrack
-                        }
-                        aria-label={`AI credits used ${Math.round(
-                          creditProgress
-                        )}%`}
-                      >
-                        <span
-                          className={
-                            styles.progressBar
-                          }
-                          style={{
-                            width: `${creditProgress}%`,
-                          }}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </article>
-          </section>
-
-
-          {/* BILLING HISTORY */}
-
-          <section
-            className={
-              styles.panel
-            }
-          >
-            <div
-              className={
-                styles.panelHeader
-              }
-            >
+          <div className={styles.checkoutCard}>
+            <div className={styles.checkoutHeading}>
+              <div className={styles.checkoutIcon} aria-hidden="true">✓</div>
               <div>
-                <div
-                  className={
-                    styles.panelEyebrow
-                  }
-                >
-                  TRANSACTIONS
-                </div>
-
-                <h2
-                  className={
-                    styles.panelTitle
-                  }
-                >
-                  Billing History
-                </h2>
-
-                <p
-                  className={
-                    styles.panelSubtitle
-                  }
-                >
-                  Subscription records
-                  returned by the
-                  authenticated billing
-                  backend.
-                </p>
+                <h3>Review subscription</h3>
+                <p>Confirm your selection before continuing to the secure payment service.</p>
               </div>
             </div>
 
-            {billingHistory.length ===
-            0 ? (
-              <div
-                className={
-                  styles.detailEmpty
-                }
-              >
-                <strong>
-                  No billing records available
-                </strong>
-
-                <p>
-                  No transaction history
-                  has been returned for
-                  this account.
-                </p>
+            <div className={styles.reviewRows}>
+              <div>
+                <span>Selected plan</span>
+                <strong>{humanize(selectedPlan)}</strong>
               </div>
-            ) : (
-              <div
-                className={
-                  styles.historyList
-                }
-              >
-                {billingHistory.map(
-                  (
-                    item,
-                    index
-                  ) => {
-                    const itemPlan =
-                      firstValue(
-                        item?.planName,
-                        item?.plan?.name,
-                        typeof item?.plan ===
-                          "string"
-                          ? item.plan
-                          : undefined
-                      );
+              <div>
+                <span>Billing period</span>
+                <strong>{billingCycle === "yearly" ? "Yearly" : "Monthly"}</strong>
+              </div>
+              <div>
+                <span>Configured price</span>
+                <strong>
+                  {selectedPrice
+                    ? `${formatMoney(selectedPrice.amount, selectedPrice.currency)} / ${
+                        billingCycle === "yearly" ? "year" : "month"
+                      }`
+                    : "Confirmed by secure checkout"}
+                </strong>
+              </div>
+              <div>
+                <span>Payment</span>
+                <strong>Secure checkout</strong>
+              </div>
+            </div>
 
-                    const itemAmount =
-                      firstValue(
-                        item?.amount,
-                        item?.price?.amount
-                      );
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={handleCheckout}
+              disabled={checkoutLoading || loading}
+            >
+              {checkoutLoading ? (
+                <>
+                  <span className={styles.buttonSpinner} />
+                  Preparing secure checkout…
+                </>
+              ) : (
+                <>
+                  <span aria-hidden="true">↗</span>
+                  Continue to Secure Checkout
+                </>
+              )}
+            </button>
 
-                    const itemCurrency =
-                      firstValue(
-                        item?.currency,
-                        item?.price?.currency
-                      ) ||
-                      "USD";
+            <p className={styles.checkoutNote}>
+              Payment is processed by the backend-configured provider. Your subscription
+              status must be confirmed by the server after verified payment.
+            </p>
+          </div>
+        </section>
 
-                    const itemStatus =
-                      firstValue(
-                        item?.status,
-                        item?.subscriptionStatus
-                      );
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <h2>Resource usage</h2>
+              <p>Only resource values returned by the backend are displayed.</p>
+            </div>
+          </div>
 
-                    const itemDate =
-                      firstValue(
-                        item?.createdAt,
-                        item?.startDate,
-                        item?.date
-                      );
+          {loading ? (
+            <div className={styles.loadingCard}>
+              <span className={styles.spinner} />
+              <span>Loading resource usage…</span>
+            </div>
+          ) : (
+            <div className={styles.metricGrid}>
+              {getResources(subscription || {}).map((resource) => {
+                const displayValue = resource.available
+                  ? `${resource.total}${resource.unit ? ` ${resource.unit}` : ""}`
+                  : "Unavailable";
+
+                const detail =
+                  resource.used !== undefined
+                    ? `Reported usage: ${resource.used}${resource.unit ? ` ${resource.unit}` : ""}`
+                    : "Usage not reported";
+
+                return (
+                  <MetricCard
+                    key={resource.key}
+                    label={resource.label}
+                    value={displayValue}
+                    detail={detail}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <h2>AI credits</h2>
+              <p>Credit balance and usage reported by the credits API.</p>
+            </div>
+          </div>
+
+          {creditsError ? (
+            <div className={styles.inlineNotice} role="status">
+              <strong>Credits unavailable</strong>
+              <span>{creditsError}</span>
+            </div>
+          ) : credits === null && !loading ? (
+            <div className={styles.emptyState}>No credit information was returned.</div>
+          ) : loading ? (
+            <div className={styles.loadingCard}>
+              <span className={styles.spinner} />
+              <span>Loading AI credits…</span>
+            </div>
+          ) : (
+            <div className={styles.creditCard}>
+              <div>
+                <span className={styles.mutedLabel}>AVAILABLE CREDITS</span>
+                <strong className={styles.creditValue}>
+                  {creditsInfo.balance !== undefined
+                    ? Number.isFinite(Number(creditsInfo.balance))
+                      ? Number(creditsInfo.balance).toLocaleString("en-US")
+                      : String(creditsInfo.balance)
+                    : "Not reported"}
+                </strong>
+              </div>
+
+              <div className={styles.creditMeta}>
+                <div>
+                  <span>Used</span>
+                  <strong>
+                    {creditsInfo.used !== undefined ? String(creditsInfo.used) : "Not reported"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Limit</span>
+                  <strong>
+                    {creditsInfo.total !== undefined ? String(creditsInfo.total) : "Not reported"}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <h2>Payment method</h2>
+              <p>Payment method details available from your subscription record.</p>
+            </div>
+          </div>
+
+          <div className={styles.paymentMethodCard}>
+            <div className={styles.paymentMethodIcon} aria-hidden="true">▤</div>
+            <div className={styles.paymentMethodDetails}>
+              <strong>
+                {paymentMethod
+                  ? humanize(
+                      typeof paymentMethod === "object"
+                        ? firstValue(paymentMethod.brand, paymentMethod.type, paymentMethod.provider, "Payment method")
+                        : paymentMethod
+                    )
+                  : "No payment method reported"}
+              </strong>
+              <span>
+                {paymentMethod && typeof paymentMethod === "object"
+                  ? firstValue(paymentMethod.last4 ? `Ending in ${paymentMethod.last4}` : null,
+                      paymentMethod.email,
+                      paymentMethod.status,
+                      "Details provided by billing service")
+                  : "Payment method details are not available from the backend."}
+              </span>
+            </div>
+            <span className={styles.secureLabel}>Secure billing</span>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <h2>Billing history</h2>
+              <p>Invoices and payment records returned by the billing API.</p>
+            </div>
+          </div>
+
+          {historyError ? (
+            <div className={styles.inlineNotice} role="status">
+              <strong>Billing history unavailable</strong>
+              <span>{historyError}</span>
+            </div>
+          ) : loading ? (
+            <div className={styles.loadingCard}>
+              <span className={styles.spinner} />
+              <span>Loading billing history…</span>
+            </div>
+          ) : history.length === 0 ? (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon} aria-hidden="true">▤</div>
+              <strong>No billing records available</strong>
+              <span>Records will appear here when the billing API returns them.</span>
+            </div>
+          ) : (
+            <div className={styles.tableWrap}>
+              <table className={styles.historyTable}>
+                <thead>
+                  <tr>
+                    <th>Invoice / Reference</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((row, index) => {
+                    const id = getHistoryValue(row, [
+                      "invoiceNumber", "invoice_number", "invoiceId", "invoice_id",
+                      "transactionId", "transaction_id", "id", "reference",
+                    ]);
+                    const date = getHistoryValue(row, [
+                      "createdAt", "created_at", "date", "paidAt", "paid_at", "issuedAt",
+                    ]);
+                    const description = getHistoryValue(row, [
+                      "description", "planName", "plan", "product", "type",
+                    ]);
+                    const amount = getHistoryValue(row, [
+                      "amountPaid", "amount_paid", "amount", "total", "totalAmount",
+                    ]);
+                    const rowCurrency = getHistoryValue(row, ["currency"]) || "USD";
+                    const status = getHistoryValue(row, [
+                      "status", "paymentStatus", "payment_status",
+                    ]);
+                    const invoiceUrl = getHistoryValue(row, [
+                      "invoiceUrl", "invoice_url", "hostedInvoiceUrl", "hosted_invoice_url",
+                    ]);
 
                     return (
-                      <div
-                        key={
-                          item?._id ||
-                          item?.id ||
-                          index
-                        }
-                        className={
-                          styles.historyRow
-                        }
-                      >
-                        <div>
-                          <span>
-                            Plan
-                          </span>
-
-                          <strong>
-                            {displayValue(
-                              itemPlan
-                            )}
-                          </strong>
-                        </div>
-
-                        <div>
-                          <span>
-                            Amount
-                          </span>
-
-                          <strong>
-                            {itemAmount !==
-                            undefined
-                              ? formatMoney(
-                                  itemAmount,
-                                  itemCurrency
-                                )
-                              : "—"}
-                          </strong>
-                        </div>
-
-                        <div>
-                          <span>
-                            Status
-                          </span>
-
-                          <strong>
-                            {displayValue(
-                              itemStatus
-                            )}
-                          </strong>
-                        </div>
-
-                        <div>
-                          <span>
-                            Date
-                          </span>
-
-                          <strong>
-                            {displayValue(
-                              itemDate
-                            )}
-                          </strong>
-                        </div>
-                      </div>
+                      <tr key={String(id || `${date || "record"}-${index}`)}>
+                        <td>
+                          {invoiceUrl ? (
+                            <a
+                              className={styles.invoiceLink}
+                              href={invoiceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {String(id || "View invoice")}
+                            </a>
+                          ) : (
+                            <span className={styles.referenceText}>{String(id || "—")}</span>
+                          )}
+                        </td>
+                        <td>{formatDate(date)}</td>
+                        <td>{description ? humanize(description) : "—"}</td>
+                        <td>{formatMoney(amount, rowCurrency) || "—"}</td>
+                        <td>{status ? <StatusBadge value={status} /> : "—"}</td>
+                      </tr>
                     );
-                  }
-                )}
-              </div>
-            )}
-          </section>
-
-
-          {/* SUBSCRIPTION CONTROL */}
-
-          <section
-            className={
-              styles.controlPanel
-            }
-          >
-            <div
-              className={
-                styles.controlContent
-              }
-            >
-              <div
-                className={
-                  styles.controlEyebrow
-                }
-              >
-                SUBSCRIPTION CONTROL
-              </div>
-
-              <h2>
-                Manage Your Subscription
-              </h2>
-
-              <p>
-                Subscription actions are
-                sent to the authenticated
-                backend. Payment confirmation
-                and activation remain
-                provider-webhook controlled.
-              </p>
+                  })}
+                </tbody>
+              </table>
             </div>
+          )}
+        </section>
 
-            <div
-              className={
-                styles.controlActions
-              }
-            >
-              <button
-                type="button"
-                className={
-                  styles.controlButton
-                }
-                onClick={
-                  handleUpgrade
-                }
-                disabled={
-                  processing
-                }
-              >
-                Upgrade
-                <span>→</span>
-              </button>
-
-              {billing.status ===
-                "active" && (
-                <button
-                  type="button"
-                  className={
-                    styles.cancelButton
-                  }
-                  onClick={
-                    handleCancel
-                  }
-                  disabled={
-                    processing
-                  }
-                >
-                  Cancel Subscription
-                </button>
-              )}
-            </div>
-          </section>
-
-        </div>
+        <footer className={styles.pageFooter}>
+          Billing details and subscription status are supplied by the ZyrionOS backend.
+          Checkout and subscription changes are subject to server-side validation.
+        </footer>
       </main>
     </DashboardLayout>
   );
 }
-
-export default Billing;

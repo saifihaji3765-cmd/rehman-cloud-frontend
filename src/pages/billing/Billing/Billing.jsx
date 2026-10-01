@@ -13,16 +13,36 @@ const PLANS = [
 ];
 
 const getObject = (value) =>
-  value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  value && typeof value === "object" && !Array.isArray(value)
+    ? value
+    : {};
 
 const unwrap = (response) => {
   let value = response?.data ?? response;
-  if (value?.data && typeof value.data === "object") value = value.data;
-  return getObject(value);
+
+  // Preserve a direct array response.
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  // Support APIs returning { data: {...} } or { data: [...] }.
+  if (
+    value &&
+    typeof value === "object" &&
+    value.data !== undefined &&
+    value.data !== null &&
+    typeof value.data === "object"
+  ) {
+    value = value.data;
+  }
+
+  return value && typeof value === "object" ? value : {};
 };
 
 const firstValue = (...values) =>
-  values.find((value) => value !== undefined && value !== null && value !== "");
+  values.find(
+    (value) => value !== undefined && value !== null && value !== ""
+  );
 
 const toArray = (value) => {
   if (Array.isArray(value)) return value;
@@ -40,7 +60,9 @@ const normalizePlan = (value) =>
     .replace(/[\s_-]+/g, "");
 
 const formatMoney = (amount, currency = "USD") => {
-  if (amount === undefined || amount === null || amount === "") return null;
+  if (amount === undefined || amount === null || amount === "") {
+    return null;
+  }
 
   const number = Number(amount);
   if (!Number.isFinite(number)) return null;
@@ -58,6 +80,7 @@ const formatMoney = (amount, currency = "USD") => {
 
 const formatDate = (value) => {
   if (!value) return "—";
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
@@ -94,6 +117,7 @@ const findStatus = (subscription) =>
 const findCatalog = (...sources) => {
   for (const source of sources) {
     const object = getObject(source);
+
     const candidates = [
       object.plans,
       object.catalog,
@@ -102,15 +126,20 @@ const findCatalog = (...sources) => {
       object.subscription?.plans,
       object.subscription?.catalog,
       object.subscription?.planCatalog,
+      object.data?.plans,
+      object.data?.catalog,
+      object.data?.planCatalog,
     ];
 
     for (const candidate of candidates) {
-      if (Array.isArray(candidate)) return candidate;
+      if (Array.isArray(candidate)) {
+        return candidate;
+      }
 
       if (candidate && typeof candidate === "object") {
         const entries = Object.entries(candidate).map(([key, value]) => ({
-          id: key,
           ...getObject(value),
+          id: firstValue(getObject(value).id, key),
         }));
 
         if (entries.length) return entries;
@@ -123,7 +152,14 @@ const findCatalog = (...sources) => {
 
 const getCatalogPlan = (catalog, planId) =>
   catalog.find((item) => {
-    const id = firstValue(item?.id, item?.key, item?.slug, item?.name, item?.plan);
+    const id = firstValue(
+      item?.id,
+      item?.key,
+      item?.slug,
+      item?.name,
+      item?.plan
+    );
+
     return normalizePlan(id) === normalizePlan(planId);
   });
 
@@ -131,11 +167,11 @@ const getPlanPrice = (plan, cycle) => {
   if (!plan) return null;
 
   const prices = getObject(plan.prices);
-  const monthly = cycle === "yearly" ? false : true;
   const nested = getObject(prices[cycle]);
   const cycleObject = getObject(plan[cycle]);
+  const isMonthly = cycle !== "yearly";
 
-  const candidates = monthly
+  const candidates = isMonthly
     ? [
         prices.monthly,
         plan.monthlyPrice,
@@ -156,7 +192,9 @@ const getPlanPrice = (plan, cycle) => {
       ];
 
   const amount = firstValue(
-    ...candidates.filter((value) => typeof value === "number" || typeof value === "string"),
+    ...candidates.filter(
+      (value) => typeof value === "number" || typeof value === "string"
+    ),
     nested.amount
   );
 
@@ -164,36 +202,70 @@ const getPlanPrice = (plan, cycle) => {
     nested.currency,
     cycleObject.currency,
     plan.currency,
-    plan.prices?.currency,
+    prices.currency,
     "USD"
   );
 
-  if (amount === undefined || amount === null || amount === "") return null;
+  if (amount === undefined || amount === null || amount === "") {
+    return null;
+  }
 
-  return { amount, currency };
+  if (!Number.isFinite(Number(amount))) return null;
+
+  return { amount: Number(amount), currency };
 };
 
 const getResources = (subscription) => {
   const root = getObject(subscription);
   const nested = getObject(root.subscription);
   const plan = getObject(root.activePlan);
+
   const infrastructure = getObject(
-    firstValue(root.infrastructure, root.resources, nested.infrastructure, nested.resources, plan.infrastructure)
+    firstValue(
+      root.infrastructure,
+      root.resources,
+      nested.infrastructure,
+      nested.resources,
+      plan.infrastructure
+    )
   );
+
   const usage = getObject(firstValue(root.usage, nested.usage));
   const limits = getObject(firstValue(root.limits, nested.limits));
 
   const definitions = [
-    { key: "ram", label: "RAM", unit: "GB", aliases: ["ram", "memory", "memoryGb", "ramGb"] },
-    { key: "cpu", label: "CPU", unit: "vCPU", aliases: ["cpu", "vCpu", "vcpu", "cpuCores"] },
-    { key: "storage", label: "Storage", unit: "GB", aliases: ["storage", "storageGb", "disk", "diskGb"] },
-    { key: "bandwidth", label: "Bandwidth", unit: "", aliases: ["bandwidth", "bandwidthGb", "transfer"] },
+    {
+      key: "ram",
+      label: "RAM",
+      unit: "GB",
+      aliases: ["ram", "memory", "memoryGb", "ramGb"],
+    },
+    {
+      key: "cpu",
+      label: "CPU",
+      unit: "vCPU",
+      aliases: ["cpu", "vCpu", "vcpu", "cpuCores"],
+    },
+    {
+      key: "storage",
+      label: "Storage",
+      unit: "GB",
+      aliases: ["storage", "storageGb", "disk", "diskGb"],
+    },
+    {
+      key: "bandwidth",
+      label: "Bandwidth",
+      unit: "",
+      aliases: ["bandwidth", "bandwidthGb", "transfer"],
+    },
   ];
 
   return definitions.map((definition) => {
     const find = (object, aliases) => {
       for (const alias of aliases) {
-        if (object[alias] !== undefined && object[alias] !== null) return object[alias];
+        if (object[alias] !== undefined && object[alias] !== null) {
+          return object[alias];
+        }
       }
       return undefined;
     };
@@ -234,10 +306,35 @@ const getCreditsInfo = (creditsResponse) => {
 };
 
 const getHistoryRows = (response) => {
+  if (Array.isArray(response)) return response;
+
   const root = getObject(response);
-  return toArray(
-    firstValue(root.history, root.records, root.transactions, root.items, root.data)
-  );
+
+  const candidates = [
+    root.history,
+    root.records,
+    root.transactions,
+    root.items,
+    root.data,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+
+    if (candidate && typeof candidate === "object") {
+      const nested = [
+        candidate.history,
+        candidate.records,
+        candidate.transactions,
+        candidate.items,
+      ];
+
+      const rows = nested.find(Array.isArray);
+      if (rows) return rows;
+    }
+  }
+
+  return [];
 };
 
 const getErrorMessage = (error, fallback) =>
@@ -251,11 +348,21 @@ function StatusBadge({ value }) {
   const normalized = String(value || "unknown").toLowerCase();
   let className = styles.statusNeutral;
 
-  if (["active", "paid", "success", "succeeded", "completed"].includes(normalized)) {
+  if (
+    ["active", "paid", "success", "succeeded", "completed"].includes(
+      normalized
+    )
+  ) {
     className = styles.statusSuccess;
-  } else if (["pending", "trialing", "processing", "past_due"].includes(normalized)) {
+  } else if (
+    ["pending", "trialing", "processing", "past_due"].includes(normalized)
+  ) {
     className = styles.statusWarning;
-  } else if (["cancelled", "canceled", "failed", "unpaid", "expired"].includes(normalized)) {
+  } else if (
+    ["cancelled", "canceled", "failed", "unpaid", "expired"].includes(
+      normalized
+    )
+  ) {
     className = styles.statusDanger;
   }
 
@@ -305,62 +412,90 @@ export default function Billing() {
     setHistoryError("");
     setCreditsError("");
 
-    const results = await Promise.allSettled([
-      billingService.getSubscription(),
-      billingService.getBillingHistory(),
-      billingService.getCredits(),
-    ]);
+    try {
+      const results = await Promise.allSettled([
+        billingService.getSubscription(),
+        billingService.getBillingHistory(),
+        billingService.getCredits(),
+      ]);
 
-    if (results[0].status === "fulfilled") {
-      const data = unwrap(results[0].value);
-      setSubscription(data);
-      setCatalog(findCatalog(data));
+      if (results[0].status === "fulfilled") {
+        const data = unwrap(results[0].value);
+        const subscriptionData = getObject(data);
 
-      const currentPlan = findPlan(data);
-      if (currentPlan) {
-        const matchingPlan = PLANS.find(
-          (plan) => normalizePlan(plan.id) === normalizePlan(currentPlan)
+        setSubscription(subscriptionData);
+        setCatalog(findCatalog(subscriptionData));
+
+        const currentPlan = findPlan(subscriptionData);
+
+        if (currentPlan) {
+          const matchingPlan = PLANS.find(
+            (plan) =>
+              normalizePlan(plan.id) === normalizePlan(currentPlan)
+          );
+
+          if (matchingPlan) setSelectedPlan(matchingPlan.id);
+        }
+
+        const currentCycle = firstValue(
+          subscriptionData.billingCycle,
+          subscriptionData.billing_cycle,
+          subscriptionData.interval,
+          subscriptionData.subscription?.billingCycle,
+          subscriptionData.subscription?.billing_cycle
         );
-        if (matchingPlan) setSelectedPlan(matchingPlan.id);
+
+        if (currentCycle) {
+          const normalized = String(currentCycle).toLowerCase();
+
+          setBillingCycle(
+            ["year", "yearly", "annual", "annually"].includes(normalized)
+              ? "yearly"
+              : "monthly"
+          );
+        }
+      } else {
+        setSubscription(null);
+        setCatalog([]);
+        setPageError(
+          getErrorMessage(
+            results[0].reason,
+            "Unable to load subscription details."
+          )
+        );
       }
 
-      const currentCycle = firstValue(
-        data.billingCycle,
-        data.billing_cycle,
-        data.interval,
-        data.subscription?.billingCycle,
-        data.subscription?.billing_cycle
+      if (results[1].status === "fulfilled") {
+        setHistory(getHistoryRows(unwrap(results[1].value)));
+      } else {
+        setHistory([]);
+        setHistoryError(
+          getErrorMessage(
+            results[1].reason,
+            "Billing history is unavailable."
+          )
+        );
+      }
+
+      if (results[2].status === "fulfilled") {
+        setCredits(unwrap(results[2].value));
+      } else {
+        setCredits(null);
+        setCreditsError(
+          getErrorMessage(
+            results[2].reason,
+            "Credit information is unavailable."
+          )
+        );
+      }
+    } catch (error) {
+      setPageError(
+        getErrorMessage(error, "Unable to load billing information.")
       );
-
-      if (currentCycle) {
-        const normalized = String(currentCycle).toLowerCase();
-        setBillingCycle(
-          ["year", "yearly", "annual", "annually"].includes(normalized)
-            ? "yearly"
-            : "monthly"
-        );
-      }
-    } else {
-      setSubscription(null);
-      setPageError(getErrorMessage(results[0].reason, "Unable to load subscription details."));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-
-    if (results[1].status === "fulfilled") {
-      setHistory(getHistoryRows(unwrap(results[1].value)));
-    } else {
-      setHistory([]);
-      setHistoryError(getErrorMessage(results[1].reason, "Billing history is unavailable."));
-    }
-
-    if (results[2].status === "fulfilled") {
-      setCredits(unwrap(results[2].value));
-    } else {
-      setCredits(null);
-      setCreditsError(getErrorMessage(results[2].reason, "Credit information is unavailable."));
-    }
-
-    setLoading(false);
-    setRefreshing(false);
   }, []);
 
   useEffect(() => {
@@ -369,8 +504,9 @@ export default function Billing() {
 
   const currentPlan = findPlan(subscription);
   const currentStatus = findStatus(subscription);
-  const currentPlanId = normalizePlan(currentPlan);
-  const isActive = ["active", "trialing"].includes(String(currentStatus || "").toLowerCase());
+  const isActive = ["active", "trialing"].includes(
+    String(currentStatus || "").toLowerCase()
+  );
 
   const selectedPlanDetails = useMemo(
     () => getCatalogPlan(catalog, selectedPlan),
@@ -378,8 +514,8 @@ export default function Billing() {
   );
 
   const currentPlanDetails = useMemo(
-    () => getCatalogPlan(catalog, currentPlanId),
-    [catalog, currentPlanId]
+    () => getCatalogPlan(catalog, currentPlan),
+    [catalog, currentPlan]
   );
 
   const selectedPrice = getPlanPrice(selectedPlanDetails, billingCycle);
@@ -430,7 +566,7 @@ export default function Billing() {
       };
 
       const response = await billingService.createPaymentOrder(payload);
-      const result = unwrap(response);
+      const result = getObject(unwrap(response));
       const paymentIntent = getObject(result.paymentIntent);
 
       const checkoutUrl = firstValue(
@@ -451,11 +587,15 @@ export default function Billing() {
         try {
           parsedUrl = new URL(checkoutUrl, window.location.origin);
         } catch {
-          throw new Error("The payment service returned an invalid checkout URL.");
+          throw new Error(
+            "The payment service returned an invalid checkout URL."
+          );
         }
 
         if (!["https:", "http:"].includes(parsedUrl.protocol)) {
-          throw new Error("The payment service returned an unsupported checkout URL.");
+          throw new Error(
+            "The payment service returned an unsupported checkout URL."
+          );
         }
 
         window.location.assign(parsedUrl.href);
@@ -471,20 +611,21 @@ export default function Billing() {
       if (clientSecret) {
         setActionError(
           "The backend returned a payment client secret but no hosted checkout URL. " +
-          "Stripe Elements/SDK integration is required to complete this payment. " +
-          "No payment or subscription has been marked successful."
+            "A payment SDK integration is required. No payment or subscription has been marked successful."
         );
       } else {
         setActionError(
           firstValue(
             result.message,
             result.error,
-            "The payment service did not return a checkout URL. Please check the backend payment configuration."
+            "The payment service did not return a checkout URL. Check the backend payment configuration."
           )
         );
       }
     } catch (error) {
-      setActionError(getErrorMessage(error, "Unable to start secure checkout."));
+      setActionError(
+        getErrorMessage(error, "Unable to start secure checkout.")
+      );
     } finally {
       setCheckoutLoading(false);
     }
@@ -499,25 +640,32 @@ export default function Billing() {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to request subscription cancellation? Check the confirmation returned by your billing service."
-    );
-
-    if (!confirmed) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to request subscription cancellation?"
+      )
+    ) {
+      return;
+    }
 
     setCancelLoading(true);
 
     try {
       const response = await billingService.cancelSubscription();
-      const result = unwrap(response);
+      const result = getObject(unwrap(response));
 
       setActionMessage(
-        firstValue(result.message, "Cancellation request submitted. Refreshing subscription status.")
+        firstValue(
+          result.message,
+          "Cancellation request submitted. Refreshing subscription status."
+        )
       );
 
       await loadBilling(true);
     } catch (error) {
-      setActionError(getErrorMessage(error, "Unable to cancel the subscription."));
+      setActionError(
+        getErrorMessage(error, "Unable to cancel the subscription.")
+      );
     } finally {
       setCancelLoading(false);
     }
@@ -527,10 +675,15 @@ export default function Billing() {
 
   const getHistoryValue = (row, keys) => {
     for (const key of keys) {
-      if (row?.[key] !== undefined && row?.[key] !== null && row?.[key] !== "") {
+      if (
+        row?.[key] !== undefined &&
+        row?.[key] !== null &&
+        row?.[key] !== ""
+      ) {
         return row[key];
       }
     }
+
     return null;
   };
 
@@ -552,32 +705,45 @@ export default function Billing() {
             onClick={handleRefresh}
             disabled={loading || refreshing}
           >
-            <span aria-hidden="true" className={refreshing ? styles.spinning : ""}>↻</span>
+            <span
+              aria-hidden="true"
+              className={refreshing ? styles.spinning : ""}
+            >
+              ↻
+            </span>
             {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         </header>
 
-        {pageError ? (
+        {pageError && (
           <div className={styles.errorBanner} role="alert">
             <strong>Subscription data unavailable</strong>
             <span>{pageError}</span>
-            <button type="button" onClick={handleRefresh} disabled={refreshing}>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
               Retry
             </button>
           </div>
-        ) : null}
+        )}
 
-        {actionMessage ? (
-          <div className={styles.successBanner} role="status">{actionMessage}</div>
-        ) : null}
+        {actionMessage && (
+          <div className={styles.successBanner} role="status">
+            {actionMessage}
+          </div>
+        )}
 
-        {actionError ? (
+        {actionError && (
           <div className={styles.errorBanner} role="alert">
             <strong>Action could not be completed</strong>
             <span>{actionError}</span>
-            <button type="button" onClick={() => setActionError("")}>Dismiss</button>
+            <button type="button" onClick={() => setActionError("")}>
+              Dismiss
+            </button>
           </div>
-        ) : null}
+        )}
 
         <section className={styles.section}>
           <div className={styles.sectionHeading}>
@@ -585,7 +751,9 @@ export default function Billing() {
               <h2>Current subscription</h2>
               <p>Your subscription status as reported by the billing service.</p>
             </div>
-            {!loading && currentStatus ? <StatusBadge value={currentStatus} /> : null}
+            {!loading && currentStatus && (
+              <StatusBadge value={currentStatus} />
+            )}
           </div>
 
           {loading ? (
@@ -596,10 +764,16 @@ export default function Billing() {
           ) : (
             <div className={styles.subscriptionCard}>
               <div className={styles.subscriptionMain}>
-                <div className={styles.planIcon} aria-hidden="true">Z</div>
+                <div className={styles.planIcon} aria-hidden="true">
+                  Z
+                </div>
                 <div className={styles.subscriptionDetails}>
                   <span className={styles.mutedLabel}>CURRENT PLAN</span>
-                  <h3>{currentPlan ? humanize(currentPlan) : "No active plan found"}</h3>
+                  <h3>
+                    {currentPlan
+                      ? humanize(currentPlan)
+                      : "No active plan found"}
+                  </h3>
                   <p>
                     {nextBillingDate
                       ? `Next billing date: ${formatDate(nextBillingDate)}`
@@ -623,7 +797,7 @@ export default function Billing() {
               </div>
 
               <div className={styles.subscriptionActions}>
-                {currentStatus ? <StatusBadge value={currentStatus} /> : null}
+                {currentStatus && <StatusBadge value={currentStatus} />}
                 <button
                   type="button"
                   className={styles.secondaryButton}
@@ -644,10 +818,16 @@ export default function Billing() {
               <p>Select a plan and billing period, then review the checkout details.</p>
             </div>
 
-            <div className={styles.billingToggle} role="group" aria-label="Billing period">
+            <div
+              className={styles.billingToggle}
+              role="group"
+              aria-label="Billing period"
+            >
               <button
                 type="button"
-                className={billingCycle === "monthly" ? styles.toggleActive : ""}
+                className={
+                  billingCycle === "monthly" ? styles.toggleActive : ""
+                }
                 onClick={() => setBillingCycle("monthly")}
                 aria-pressed={billingCycle === "monthly"}
               >
@@ -655,7 +835,9 @@ export default function Billing() {
               </button>
               <button
                 type="button"
-                className={billingCycle === "yearly" ? styles.toggleActive : ""}
+                className={
+                  billingCycle === "yearly" ? styles.toggleActive : ""
+                }
                 onClick={() => setBillingCycle("yearly")}
                 aria-pressed={billingCycle === "yearly"}
               >
@@ -669,21 +851,26 @@ export default function Billing() {
               const backendPlan = getCatalogPlan(catalog, plan.id);
               const price = getPlanPrice(backendPlan, billingCycle);
               const isSelected = selectedPlan === plan.id;
-              const isCurrent = normalizePlan(currentPlan) === normalizePlan(plan.id);
+              const isCurrent =
+                normalizePlan(currentPlan) === normalizePlan(plan.id);
 
               return (
                 <button
                   type="button"
                   key={plan.id}
-                  className={`${styles.planCard} ${isSelected ? styles.planSelected : ""}`}
+                  className={`${styles.planCard} ${
+                    isSelected ? styles.planSelected : ""
+                  }`}
                   onClick={() => setSelectedPlan(plan.id)}
                   aria-pressed={isSelected}
                 >
                   <span className={styles.planCardTop}>
                     <span className={styles.planRadio} aria-hidden="true">
-                      {isSelected ? <span /> : null}
+                      {isSelected && <span />}
                     </span>
-                    {isCurrent ? <span className={styles.currentPlanTag}>Current</span> : null}
+                    {isCurrent && (
+                      <span className={styles.currentPlanTag}>Current</span>
+                    )}
                   </span>
 
                   <span className={styles.planName}>{plan.name}</span>
@@ -692,12 +879,14 @@ export default function Billing() {
                   </span>
 
                   <span className={styles.planPrice}>
-                    {price ? formatMoney(price.amount, price.currency) : "Price at checkout"}
+                    {price
+                      ? formatMoney(price.amount, price.currency)
+                      : "Price unavailable"}
                   </span>
                   <span className={styles.planInterval}>
                     {price
                       ? `per ${billingCycle === "yearly" ? "year" : "month"}`
-                      : "Confirmed by payment service"}
+                      : "Pricing not configured"}
                   </span>
 
                   <span className={styles.planSelectText}>
@@ -708,19 +897,22 @@ export default function Billing() {
             })}
           </div>
 
-          {!catalog.length ? (
+          {!catalog.length && (
             <p className={styles.helperText}>
-              Plan prices are not available from the current subscription response.
-              The UI will not invent prices; the payment backend must validate the selected plan and amount.
+              Plan names are available, but the backend has not returned a
+              pricing catalog. Actual prices must come from the configured
+              billing catalog; this page will not invent prices.
             </p>
-          ) : null}
+          )}
 
           <div className={styles.checkoutCard}>
             <div className={styles.checkoutHeading}>
-              <div className={styles.checkoutIcon} aria-hidden="true">✓</div>
+              <div className={styles.checkoutIcon} aria-hidden="true">
+                ✓
+              </div>
               <div>
                 <h3>Review subscription</h3>
-                <p>Confirm your selection before continuing to the secure payment service.</p>
+                <p>Confirm your selection before continuing to the payment service.</p>
               </div>
             </div>
 
@@ -731,7 +923,9 @@ export default function Billing() {
               </div>
               <div>
                 <span>Billing period</span>
-                <strong>{billingCycle === "yearly" ? "Yearly" : "Monthly"}</strong>
+                <strong>
+                  {billingCycle === "yearly" ? "Yearly" : "Monthly"}
+                </strong>
               </div>
               <div>
                 <span>Configured price</span>
@@ -740,7 +934,7 @@ export default function Billing() {
                     ? `${formatMoney(selectedPrice.amount, selectedPrice.currency)} / ${
                         billingCycle === "yearly" ? "year" : "month"
                       }`
-                    : "Confirmed by secure checkout"}
+                    : "Not available"}
                 </strong>
               </div>
               <div>
@@ -769,8 +963,9 @@ export default function Billing() {
             </button>
 
             <p className={styles.checkoutNote}>
-              Payment is processed by the backend-configured provider. Your subscription
-              status must be confirmed by the server after verified payment.
+              Payment is processed by the backend-configured provider.
+              Subscription status must be confirmed by the server after
+              verified payment.
             </p>
           </div>
         </section>
@@ -797,7 +992,9 @@ export default function Billing() {
 
                 const detail =
                   resource.used !== undefined
-                    ? `Reported usage: ${resource.used}${resource.unit ? ` ${resource.unit}` : ""}`
+                    ? `Reported usage: ${resource.used}${
+                        resource.unit ? ` ${resource.unit}` : ""
+                      }`
                     : "Usage not reported";
 
                 return (
@@ -827,7 +1024,9 @@ export default function Billing() {
               <span>{creditsError}</span>
             </div>
           ) : credits === null && !loading ? (
-            <div className={styles.emptyState}>No credit information was returned.</div>
+            <div className={styles.emptyState}>
+              No credit information was returned.
+            </div>
           ) : loading ? (
             <div className={styles.loadingCard}>
               <span className={styles.spinner} />
@@ -850,13 +1049,17 @@ export default function Billing() {
                 <div>
                   <span>Used</span>
                   <strong>
-                    {creditsInfo.used !== undefined ? String(creditsInfo.used) : "Not reported"}
+                    {creditsInfo.used !== undefined
+                      ? String(creditsInfo.used)
+                      : "Not reported"}
                   </strong>
                 </div>
                 <div>
                   <span>Limit</span>
                   <strong>
-                    {creditsInfo.total !== undefined ? String(creditsInfo.total) : "Not reported"}
+                    {creditsInfo.total !== undefined
+                      ? String(creditsInfo.total)
+                      : "Not reported"}
                   </strong>
                 </div>
               </div>
@@ -873,23 +1076,34 @@ export default function Billing() {
           </div>
 
           <div className={styles.paymentMethodCard}>
-            <div className={styles.paymentMethodIcon} aria-hidden="true">▤</div>
+            <div className={styles.paymentMethodIcon} aria-hidden="true">
+              ▤
+            </div>
             <div className={styles.paymentMethodDetails}>
               <strong>
                 {paymentMethod
                   ? humanize(
                       typeof paymentMethod === "object"
-                        ? firstValue(paymentMethod.brand, paymentMethod.type, paymentMethod.provider, "Payment method")
+                        ? firstValue(
+                            paymentMethod.brand,
+                            paymentMethod.type,
+                            paymentMethod.provider,
+                            "Payment method"
+                          )
                         : paymentMethod
                     )
                   : "No payment method reported"}
               </strong>
               <span>
                 {paymentMethod && typeof paymentMethod === "object"
-                  ? firstValue(paymentMethod.last4 ? `Ending in ${paymentMethod.last4}` : null,
+                  ? firstValue(
+                      paymentMethod.last4
+                        ? `Ending in ${paymentMethod.last4}`
+                        : null,
                       paymentMethod.email,
                       paymentMethod.status,
-                      "Details provided by billing service")
+                      "Details provided by billing service"
+                    )
                   : "Payment method details are not available from the backend."}
               </span>
             </div>
@@ -917,7 +1131,9 @@ export default function Billing() {
             </div>
           ) : history.length === 0 ? (
             <div className={styles.emptyState}>
-              <div className={styles.emptyIcon} aria-hidden="true">▤</div>
+              <div className={styles.emptyIcon} aria-hidden="true">
+                ▤
+              </div>
               <strong>No billing records available</strong>
               <span>Records will appear here when the billing API returns them.</span>
             </div>
@@ -936,24 +1152,55 @@ export default function Billing() {
                 <tbody>
                   {history.map((row, index) => {
                     const id = getHistoryValue(row, [
-                      "invoiceNumber", "invoice_number", "invoiceId", "invoice_id",
-                      "transactionId", "transaction_id", "id", "reference",
+                      "invoiceNumber",
+                      "invoice_number",
+                      "invoiceId",
+                      "invoice_id",
+                      "transactionId",
+                      "transaction_id",
+                      "id",
+                      "reference",
                     ]);
+
                     const date = getHistoryValue(row, [
-                      "createdAt", "created_at", "date", "paidAt", "paid_at", "issuedAt",
+                      "createdAt",
+                      "created_at",
+                      "date",
+                      "paidAt",
+                      "paid_at",
+                      "issuedAt",
                     ]);
+
                     const description = getHistoryValue(row, [
-                      "description", "planName", "plan", "product", "type",
+                      "description",
+                      "planName",
+                      "plan",
+                      "product",
+                      "type",
                     ]);
+
                     const amount = getHistoryValue(row, [
-                      "amountPaid", "amount_paid", "amount", "total", "totalAmount",
+                      "amountPaid",
+                      "amount_paid",
+                      "amount",
+                      "total",
+                      "totalAmount",
                     ]);
-                    const rowCurrency = getHistoryValue(row, ["currency"]) || "USD";
+
+                    const rowCurrency =
+                      getHistoryValue(row, ["currency"]) || "USD";
+
                     const status = getHistoryValue(row, [
-                      "status", "paymentStatus", "payment_status",
+                      "status",
+                      "paymentStatus",
+                      "payment_status",
                     ]);
+
                     const invoiceUrl = getHistoryValue(row, [
-                      "invoiceUrl", "invoice_url", "hostedInvoiceUrl", "hosted_invoice_url",
+                      "invoiceUrl",
+                      "invoice_url",
+                      "hostedInvoiceUrl",
+                      "hosted_invoice_url",
                     ]);
 
                     return (
@@ -969,13 +1216,19 @@ export default function Billing() {
                               {String(id || "View invoice")}
                             </a>
                           ) : (
-                            <span className={styles.referenceText}>{String(id || "—")}</span>
+                            <span className={styles.referenceText}>
+                              {String(id || "—")}
+                            </span>
                           )}
                         </td>
                         <td>{formatDate(date)}</td>
-                        <td>{description ? humanize(description) : "—"}</td>
+                        <td>
+                          {description ? humanize(description) : "—"}
+                        </td>
                         <td>{formatMoney(amount, rowCurrency) || "—"}</td>
-                        <td>{status ? <StatusBadge value={status} /> : "—"}</td>
+                        <td>
+                          {status ? <StatusBadge value={status} /> : "—"}
+                        </td>
                       </tr>
                     );
                   })}
@@ -986,8 +1239,9 @@ export default function Billing() {
         </section>
 
         <footer className={styles.pageFooter}>
-          Billing details and subscription status are supplied by the ZyrionOS backend.
-          Checkout and subscription changes are subject to server-side validation.
+          Billing details and subscription status are supplied by the ZyrionOS
+          backend. Checkout and subscription changes are subject to server-side
+          validation.
         </footer>
       </main>
     </DashboardLayout>

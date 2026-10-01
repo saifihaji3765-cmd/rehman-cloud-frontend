@@ -1,7 +1,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
-import billingService from "../../../services/billingService.js";
+import * as billingService from "../../../services/billingService.js";
 import styles from "./Billing.module.css";
 
 const PLANS = [

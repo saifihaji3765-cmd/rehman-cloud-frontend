@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
@@ -11,10 +16,38 @@ import styles from "./Dashboard.module.css";
 
 /* =========================================================
    RESPONSE NORMALIZATION
-   ========================================================= */
+   Backend contract:
+   response.data.data.projects
+   response.data.data.subscription / subscriptions
+========================================================= */
+
+function getPayload(response) {
+  const root = response?.data;
+
+  if (!root) {
+    return null;
+  }
+
+  /*
+   * Standard API response:
+   * {
+   *   success: true,
+   *   data: {...}
+   * }
+   */
+  if (
+    root.data &&
+    typeof root.data === "object"
+  ) {
+    return root.data;
+  }
+
+  return root;
+}
+
 
 function normalizeProjects(response) {
-  const payload = response?.data;
+  const payload = getPayload(response);
 
   if (Array.isArray(payload)) {
     return payload;
@@ -24,15 +57,16 @@ function normalizeProjects(response) {
     return payload.projects;
   }
 
-  if (Array.isArray(payload?.data)) {
-    return payload.data;
+  if (Array.isArray(payload?.items)) {
+    return payload.items;
   }
 
   return [];
 }
 
+
 function normalizeSubscriptions(response) {
-  const payload = response?.data;
+  const payload = getPayload(response);
 
   if (Array.isArray(payload)) {
     return payload;
@@ -42,22 +76,24 @@ function normalizeSubscriptions(response) {
     return payload.subscriptions;
   }
 
-  if (Array.isArray(payload?.data)) {
-    return payload.data;
+  if (Array.isArray(payload?.items)) {
+    return payload.items;
   }
 
-  /*
-   * Some billing APIs return one subscription object
-   * instead of an array.
-   */
+  if (payload?.subscription) {
+    return [payload.subscription];
+  }
+
   if (
     payload &&
     typeof payload === "object" &&
     !Array.isArray(payload) &&
-    (payload.planName ||
+    (
+      payload.planName ||
       payload.plan ||
       payload.subscriptionPlan ||
-      payload.status)
+      payload.status
+    )
   ) {
     return [payload];
   }
@@ -65,9 +101,10 @@ function normalizeSubscriptions(response) {
   return [];
 }
 
+
 /* =========================================================
    SAFE DISPLAY HELPERS
-   ========================================================= */
+========================================================= */
 
 function getProjectName(project) {
   return (
@@ -77,9 +114,15 @@ function getProjectName(project) {
   );
 }
 
+
 function getProjectId(project) {
-  return project?._id || project?.id || null;
+  return (
+    project?._id ||
+    project?.id ||
+    null
+  );
 }
+
 
 function getProjectStatus(project) {
   const status =
@@ -93,121 +136,351 @@ function getProjectStatus(project) {
 
   return String(status)
     .replace(/[_-]/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    );
 }
+
+
+function getRawProjectStatus(project) {
+  return String(
+    project?.deploymentStatus ||
+    project?.status ||
+    project?.state ||
+    ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]/g, " ");
+}
+
+
+function getBuildStatus(project) {
+  return String(
+    project?.build?.status ||
+    ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]/g, " ");
+}
+
 
 function getInitial(name) {
-  const value = String(name || "").trim();
+  const value =
+    String(name || "").trim();
 
-  return value ? value.charAt(0).toUpperCase() : "U";
+  return value
+    ? value.charAt(0).toUpperCase()
+    : "U";
 }
+
+
+function formatPlanName(plan) {
+  if (!plan) {
+    return "No Plan";
+  }
+
+  return String(plan)
+    .replace(/[_-]/g, " ")
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    );
+}
+
+
+function formatDate(value) {
+  if (!value) {
+    return "No recent activity";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "No recent activity";
+  }
+
+  return new Intl.DateTimeFormat(
+    undefined,
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  ).format(date);
+}
+
+
+function getRelativeTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+  const diff =
+    Date.now() - date.getTime();
+
+  const seconds =
+    Math.max(
+      0,
+      Math.floor(diff / 1000)
+    );
+
+  if (seconds < 60) {
+    return "Just now";
+  }
+
+  const minutes =
+    Math.floor(
+      seconds / 60
+    );
+
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+
+  const hours =
+    Math.floor(
+      minutes / 60
+    );
+
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+
+  const days =
+    Math.floor(
+      hours / 24
+    );
+
+  if (days < 30) {
+    return `${days}d ago`;
+  }
+
+  return formatDate(value);
+}
+
+
+function isActiveBuild(project) {
+  const projectStatus =
+    getRawProjectStatus(project);
+
+  const buildStatus =
+    getBuildStatus(project);
+
+  return [
+    "building",
+    "deploying",
+    "pending",
+    "running",
+    "in progress",
+  ].includes(projectStatus) ||
+    [
+      "building",
+      "running",
+      "pending",
+      "in progress",
+    ].includes(buildStatus);
+}
+
+
+function isDeployed(project) {
+  const status =
+    getRawProjectStatus(project);
+
+  return [
+    "deployed",
+    "live",
+    "production",
+  ].includes(status);
+}
+
+
+function isFailed(project) {
+  const projectStatus =
+    getRawProjectStatus(project);
+
+  const buildStatus =
+    getBuildStatus(project);
+
+  return (
+    [
+      "failed",
+      "error",
+    ].includes(projectStatus) ||
+    [
+      "failed",
+      "error",
+    ].includes(buildStatus)
+  );
+}
+
 
 /* =========================================================
    COMPONENT
-   ========================================================= */
+========================================================= */
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const navigate =
+    useNavigate();
 
-  const [projects, setProjects] = useState([]);
-  const [subscriptions, setSubscriptions] = useState([]);
+  const { user } =
+    useAuth();
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const [projectsError, setProjectsError] = useState("");
-  const [subscriptionError, setSubscriptionError] = useState("");
+  /* =======================================================
+     STATE
+  ======================================================= */
+
+  const [
+    projects,
+    setProjects,
+  ] = useState([]);
+
+  const [
+    subscriptions,
+    setSubscriptions,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    refreshing,
+    setRefreshing,
+  ] = useState(false);
+
+  const [
+    projectsError,
+    setProjectsError,
+  ] = useState("");
+
+  const [
+    subscriptionError,
+    setSubscriptionError,
+  ] = useState("");
+
 
   /* =======================================================
      LOAD DASHBOARD DATA
-     ======================================================= */
+  ======================================================= */
 
-  const loadDashboard = useCallback(
-    async ({ refresh = false } = {}) => {
-      if (refresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+  const loadDashboard =
+    useCallback(
+      async ({
+        refresh = false,
+      } = {}) => {
+        if (refresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
 
-      setProjectsError("");
-      setSubscriptionError("");
+        setProjectsError("");
+        setSubscriptionError("");
 
-      const [projectsResult, subscriptionResult] =
-        await Promise.allSettled([
+        const [
+          projectsResult,
+          subscriptionResult,
+        ] = await Promise.allSettled([
           getProjects(),
           getSubscription(),
         ]);
 
-      /* ---------------------------------------------------
-         PROJECTS
-         --------------------------------------------------- */
 
-      if (projectsResult.status === "fulfilled") {
-        setProjects(
-          normalizeProjects(projectsResult.value)
-        );
-      } else {
-        console.error(
-          "Dashboard projects loading error:",
-          projectsResult.reason
-        );
+        /* -------------------------------------------------
+           PROJECTS
+        ------------------------------------------------- */
 
-        setProjectsError(
-          "Project data could not be loaded."
-        );
-      }
+        if (
+          projectsResult.status ===
+          "fulfilled"
+        ) {
+          setProjects(
+            normalizeProjects(
+              projectsResult.value
+            )
+          );
+        } else {
+          console.error(
+            "Dashboard projects loading error:",
+            projectsResult.reason
+          );
 
-      /* ---------------------------------------------------
-         SUBSCRIPTION
-         --------------------------------------------------- */
+          setProjectsError(
+            "Project data could not be loaded."
+          );
+        }
 
-      if (subscriptionResult.status === "fulfilled") {
-        setSubscriptions(
-          normalizeSubscriptions(
-            subscriptionResult.value
-          )
-        );
-      } else {
-        console.error(
-          "Dashboard subscription loading error:",
-          subscriptionResult.reason
-        );
 
-        setSubscriptionError(
-          "Subscription data could not be loaded."
-        );
-      }
+        /* -------------------------------------------------
+           SUBSCRIPTION
+        ------------------------------------------------- */
 
-      if (refresh) {
-        setRefreshing(false);
-      } else {
-        setLoading(false);
-      }
-    },
-    []
-  );
+        if (
+          subscriptionResult.status ===
+          "fulfilled"
+        ) {
+          setSubscriptions(
+            normalizeSubscriptions(
+              subscriptionResult.value
+            )
+          );
+        } else {
+          console.error(
+            "Dashboard subscription loading error:",
+            subscriptionResult.reason
+          );
 
-  useEffect(() => {
-    let mounted = true;
+          setSubscriptionError(
+            "Subscription data could not be loaded."
+          );
+        }
 
-    async function initialLoad() {
-      if (!mounted) return;
 
-      await loadDashboard();
-    }
+        if (refresh) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
+      },
+      []
+    );
 
-    initialLoad();
-
-    return () => {
-      mounted = false;
-    };
-  }, [loadDashboard]);
 
   /* =======================================================
-     SAFE USER DATA
-     ======================================================= */
+     INITIAL LOAD
+  ======================================================= */
+
+  useEffect(() => {
+    loadDashboard();
+
+    return () => {};
+  }, [loadDashboard]);
+
+
+  /* =======================================================
+     USER DATA
+  ======================================================= */
 
   const userName =
     user?.name ||
@@ -223,6 +496,11 @@ function Dashboard() {
     user?.role ||
     "User";
 
+
+  /* =======================================================
+     DEPLOYMENT USAGE
+  ======================================================= */
+
   const deploymentsValue =
     user?.deploymentsUsed ??
     user?.deploymentCount ??
@@ -233,15 +511,23 @@ function Dashboard() {
     deploymentsValue === null ||
     deploymentsValue === undefined
       ? null
-      : Number.isFinite(Number(deploymentsValue))
-        ? Number(deploymentsValue)
+      : Number.isFinite(
+          Number(
+            deploymentsValue
+          )
+        )
+        ? Number(
+            deploymentsValue
+          )
         : null;
+
 
   /* =======================================================
      SUBSCRIPTION
-     ======================================================= */
+  ======================================================= */
 
-  const currentSubscription = subscriptions[0] || null;
+  const currentSubscription =
+    subscriptions[0] || null;
 
   const currentPlan =
     currentSubscription?.planName ||
@@ -251,69 +537,135 @@ function Dashboard() {
     user?.plan ||
     null;
 
-  const planLabel = currentPlan
-    ? String(currentPlan)
-        .replace(/[_-]/g, " ")
-        .replace(/\b\w/g, (letter) =>
-          letter.toUpperCase()
-        )
-    : "—";
+  const planLabel =
+    formatPlanName(
+      currentPlan
+    );
+
 
   /* =======================================================
-     PROJECT DATA
-     ======================================================= */
+     PROJECT METRICS
+  ======================================================= */
 
-  const projectCount = projects.length;
+  const projectCount =
+    projects.length;
 
-  const recentProjects = useMemo(() => {
-    return projects.slice(0, 5);
-  }, [projects]);
+  const activeBuildCount =
+    useMemo(
+      () =>
+        projects.filter(
+          isActiveBuild
+        ).length,
+      [projects]
+    );
+
+  const deployedCount =
+    useMemo(
+      () =>
+        projects.filter(
+          isDeployed
+        ).length,
+      [projects]
+    );
+
+  const failedCount =
+    useMemo(
+      () =>
+        projects.filter(
+          isFailed
+        ).length,
+      [projects]
+    );
+
+
+  /* =======================================================
+     RECENT PROJECTS
+     Backend already sorts by lastActivityAt.
+  ======================================================= */
+
+  const recentProjects =
+    useMemo(
+      () =>
+        projects.slice(0, 6),
+      [projects]
+    );
+
 
   /* =======================================================
      DATA STATE
-     ======================================================= */
+  ======================================================= */
 
-  const hasProjectError = Boolean(projectsError);
-  const hasSubscriptionError = Boolean(subscriptionError);
+  const hasProjectError =
+    Boolean(
+      projectsError
+    );
+
+  const hasSubscriptionError =
+    Boolean(
+      subscriptionError
+    );
 
   const hasAnyError =
-    hasProjectError || hasSubscriptionError;
+    hasProjectError ||
+    hasSubscriptionError;
 
-  const dataConnectionState = hasAnyError
-    ? "Partial data"
-    : "Connected";
+  const dataConnectionState =
+    hasAnyError
+      ? "Partial connection"
+      : "All systems connected";
 
-  const dataConnectionDescription = hasAnyError
-    ? "Some workspace services need attention."
-    : "Workspace data is synchronized with ZyrionOS.";
+  const dataConnectionDescription =
+    hasAnyError
+      ? "One or more workspace services require attention."
+      : "Workspace data is synchronized with the ZyrionOS backend.";
+
+
+  /* =======================================================
+     OPERATIONAL STATE
+  ======================================================= */
+
+  const operationalState =
+    failedCount > 0
+      ? "Attention required"
+      : activeBuildCount > 0
+        ? "Build activity detected"
+        : "Operational";
+
 
   /* =======================================================
      HANDLERS
-     ======================================================= */
+  ======================================================= */
 
-  const handleRefresh = useCallback(() => {
-    return loadDashboard({ refresh: true });
-  }, [loadDashboard]);
+  const handleRefresh =
+    useCallback(() => {
+      return loadDashboard({
+        refresh: true,
+      });
+    }, [loadDashboard]);
 
-  const handleProjectOpen = (project) => {
-    const projectId = getProjectId(project);
 
-    if (projectId) {
-      navigate(
-        `/workspace?project=${encodeURIComponent(
-          projectId
-        )}`
-      );
+  const handleProjectOpen =
+    (project) => {
+      const projectId =
+        getProjectId(project);
 
-      return;
-    }
+      if (projectId) {
+        navigate(
+          `/workspace?project=${encodeURIComponent(
+            projectId
+          )}`
+        );
 
-    navigate("/workspace");
-  };
+        return;
+      }
+
+      navigate("/workspace");
+    };
+
 
   /* =======================================================
      RENDER
-     ======================================================= */
+  ======================================================= */
 
   return (
     <DashboardLayout>
@@ -321,33 +673,35 @@ function Dashboard() {
         <div className={styles.container}>
 
           {/* =================================================
-              HERO
+              HEADER
           ================================================= */}
 
-          <section className={styles.hero}>
-            <div className={styles.heroContent}>
+          <section className={styles.header}>
+            <div className={styles.headerContent}>
+
               <div className={styles.eyebrow}>
                 <span
-                  className={styles.eyebrowDot}
+                  className={styles.eyebrowMark}
                   aria-hidden="true"
                 />
 
-                ZYRIONOS WORKSPACE
+                ZYRIONOS CONTROL CENTER
               </div>
 
               <h1 className={styles.title}>
-                Welcome back,{" "}
-                <span>{userName}</span>
+                Workspace Overview
               </h1>
 
               <p className={styles.subtitle}>
-                Manage your projects, deployments,
-                subscription and workspace operations
-                from one centralized environment.
+                Monitor projects, builds,
+                deployments and account
+                operations from one workspace.
               </p>
+
             </div>
 
-            <div className={styles.heroActions}>
+            <div className={styles.headerActions}>
+
               <button
                 type="button"
                 className={styles.secondaryButton}
@@ -357,8 +711,8 @@ function Dashboard() {
                 <span
                   className={
                     refreshing
-                      ? styles.refreshIconSpinning
-                      : styles.buttonIcon
+                      ? styles.spin
+                      : styles.refreshIcon
                   }
                   aria-hidden="true"
                 >
@@ -366,77 +720,50 @@ function Dashboard() {
                 </span>
 
                 {refreshing
-                  ? "Refreshing..."
+                  ? "Refreshing"
                   : "Refresh"}
               </button>
 
               <button
                 type="button"
                 className={styles.primaryButton}
-                onClick={() => navigate("/workspace")}
+                onClick={() =>
+                  navigate(
+                    "/workspace"
+                  )
+                }
               >
-                <span aria-hidden="true">＋</span>
+                <span aria-hidden="true">
+                  +
+                </span>
+
                 New Project
               </button>
+
             </div>
           </section>
 
-          {/* =================================================
-              DATA NOTICE
-          ================================================= */}
-
-          {hasAnyError && (
-            <section
-              className={styles.alert}
-              role="status"
-              aria-live="polite"
-            >
-              <div
-                className={styles.alertIcon}
-                aria-hidden="true"
-              >
-                !
-              </div>
-
-              <div className={styles.alertContent}>
-                <strong>
-                  Workspace data notice
-                </strong>
-
-                {projectsError && (
-                  <p>{projectsError}</p>
-                )}
-
-                {subscriptionError && (
-                  <p>{subscriptionError}</p>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className={styles.alertAction}
-                onClick={handleRefresh}
-                disabled={refreshing}
-              >
-                Retry
-              </button>
-            </section>
-          )}
 
           {/* =================================================
-              REAL DATA CONNECTION STATUS
+              CONNECTION STATUS
           ================================================= */}
 
           <section
             className={
               hasAnyError
-                ? `${styles.connectionBar} ${styles.connectionPartial}`
-                : styles.connectionBar
+                ? `${styles.statusBar} ${styles.statusBarWarning}`
+                : styles.statusBar
             }
           >
-            <div className={styles.connectionMain}>
+
+            <div className={styles.statusMain}>
+
               <span
-                className={styles.connectionIndicator}
+                className={
+                  hasAnyError
+                    ? styles.statusDotWarning
+                    : styles.statusDot
+                }
                 aria-hidden="true"
               />
 
@@ -449,10 +776,13 @@ function Dashboard() {
                   {dataConnectionDescription}
                 </span>
               </div>
+
             </div>
 
-            <div className={styles.connectionMeta}>
+
+            <div className={styles.statusItem}>
               <span>Projects</span>
+
               <strong>
                 {hasProjectError
                   ? "Unavailable"
@@ -460,8 +790,10 @@ function Dashboard() {
               </strong>
             </div>
 
-            <div className={styles.connectionMeta}>
+
+            <div className={styles.statusItem}>
               <span>Billing</span>
+
               <strong>
                 {hasSubscriptionError
                   ? "Unavailable"
@@ -469,37 +801,98 @@ function Dashboard() {
               </strong>
             </div>
 
-            <div className={styles.connectionMeta}>
+
+            <div className={styles.statusItem}>
               <span>Account</span>
+
               <strong>
-                {user ? "Authenticated" : "—"}
+                {user
+                  ? "Authenticated"
+                  : "Unavailable"}
               </strong>
             </div>
+
           </section>
 
+
           {/* =================================================
-              KPI CARDS
+              ERROR NOTICE
+          ================================================= */}
+
+          {hasAnyError && (
+            <section
+              className={styles.errorNotice}
+              role="status"
+              aria-live="polite"
+            >
+
+              <div
+                className={styles.errorIcon}
+                aria-hidden="true"
+              >
+                !
+              </div>
+
+              <div
+                className={styles.errorContent}
+              >
+                <strong>
+                  Workspace data notice
+                </strong>
+
+                {projectsError && (
+                  <span>
+                    {projectsError}
+                  </span>
+                )}
+
+                {subscriptionError && (
+                  <span>
+                    {subscriptionError}
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className={styles.retryButton}
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                Retry
+              </button>
+
+            </section>
+          )}
+
+
+          {/* =================================================
+              KPI GRID
           ================================================= */}
 
           <section
-            className={styles.statsGrid}
-            aria-label="Workspace overview"
+            className={styles.metricGrid}
+            aria-label="Workspace metrics"
           >
+
             {/* PROJECTS */}
 
-            <article className={styles.statCard}>
-              <div className={styles.statTop}>
-                <span>WORKSPACE</span>
+            <article className={styles.metricCard}>
+
+              <div className={styles.metricHeader}>
+                <span>
+                  WORKSPACE
+                </span>
 
                 <div
-                  className={styles.statIcon}
+                  className={styles.metricIcon}
                   aria-hidden="true"
                 >
-                  ◈
+                  ◇
                 </div>
               </div>
 
-              <div className={styles.statValue}>
+              <div className={styles.metricValue}>
                 {loading
                   ? "—"
                   : hasProjectError
@@ -507,71 +900,133 @@ function Dashboard() {
                     : projectCount}
               </div>
 
-              <div className={styles.statName}>
-                Active Projects
+              <div className={styles.metricLabel}>
+                Total Projects
               </div>
 
-              <div className={styles.statFooter}>
-                <span className={styles.info}>
-                  Workspace
-                </span>
-
+              <div className={styles.metricMeta}>
                 <span>
-                  {hasProjectError
-                    ? "data unavailable"
-                    : "projects managed"}
+                  Workspace records
                 </span>
+
+                <b>
+                  {hasProjectError
+                    ? "Unavailable"
+                    : "Live"}
+                </b>
               </div>
+
             </article>
 
-            {/* DEPLOYMENTS */}
 
-            <article className={styles.statCard}>
-              <div className={styles.statTop}>
-                <span>DEPLOYMENTS</span>
+            {/* ACTIVE BUILDS */}
+
+            <article className={styles.metricCard}>
+
+              <div className={styles.metricHeader}>
+                <span>
+                  BUILD SYSTEM
+                </span>
 
                 <div
-                  className={styles.statIcon}
+                  className={styles.metricIcon}
+                  aria-hidden="true"
+                >
+                  ◌
+                </div>
+              </div>
+
+              <div className={styles.metricValue}>
+                {loading
+                  ? "—"
+                  : hasProjectError
+                    ? "—"
+                    : activeBuildCount}
+              </div>
+
+              <div className={styles.metricLabel}>
+                Active Builds
+              </div>
+
+              <div className={styles.metricMeta}>
+                <span>
+                  Current project state
+                </span>
+
+                <b
+                  className={
+                    activeBuildCount > 0
+                      ? styles.metaActive
+                      : ""
+                  }
+                >
+                  {activeBuildCount > 0
+                    ? "Running"
+                    : "Idle"}
+                </b>
+              </div>
+
+            </article>
+
+
+            {/* DEPLOYED */}
+
+            <article className={styles.metricCard}>
+
+              <div className={styles.metricHeader}>
+                <span>
+                  DEPLOYMENT
+                </span>
+
+                <div
+                  className={styles.metricIcon}
                   aria-hidden="true"
                 >
                   ↑
                 </div>
               </div>
 
-              <div className={styles.statValue}>
-                {deploymentsUsed === null
+              <div className={styles.metricValue}>
+                {loading
                   ? "—"
-                  : deploymentsUsed}
+                  : hasProjectError
+                    ? "—"
+                    : deployedCount}
               </div>
 
-              <div className={styles.statName}>
-                Deployments Used
+              <div className={styles.metricLabel}>
+                Deployed Projects
               </div>
 
-              <div className={styles.statFooter}>
-                <span className={styles.info}>
-                  Account
-                </span>
-
+              <div className={styles.metricMeta}>
                 <span>
-                  {deploymentsUsed === null
-                    ? "data unavailable"
-                    : "recorded usage"}
+                  Current project state
                 </span>
+
+                <b>
+                  {deployedCount > 0
+                    ? "Live"
+                    : "None"}
+                </b>
               </div>
+
             </article>
 
-            {/* SUBSCRIPTION */}
 
-            <article className={styles.statCard}>
-              <div className={styles.statTop}>
-                <span>SUBSCRIPTION</span>
+            {/* PLAN */}
+
+            <article className={styles.metricCard}>
+
+              <div className={styles.metricHeader}>
+                <span>
+                  BILLING
+                </span>
 
                 <div
-                  className={styles.statIcon}
+                  className={styles.metricIcon}
                   aria-hidden="true"
                 >
-                  ◆
+                  $
                 </div>
               </div>
 
@@ -581,60 +1036,32 @@ function Dashboard() {
                   : planLabel}
               </div>
 
-              <div className={styles.statName}>
+              <div className={styles.metricLabel}>
                 Current Plan
               </div>
 
-              <div className={styles.statFooter}>
-                <span className={styles.info}>
-                  Billing
+              <div className={styles.metricMeta}>
+                <span>
+                  Subscription
                 </span>
 
                 <button
                   type="button"
-                  className={styles.inlineButton}
+                  className={styles.linkButton}
                   onClick={() =>
-                    navigate("/billing")
+                    navigate(
+                      "/billing"
+                    )
                   }
                 >
                   Manage →
                 </button>
               </div>
+
             </article>
 
-            {/* ACCESS */}
-
-            <article className={styles.statCard}>
-              <div className={styles.statTop}>
-                <span>ACCESS</span>
-
-                <div
-                  className={styles.statIcon}
-                  aria-hidden="true"
-                >
-                  ◉
-                </div>
-              </div>
-
-              <div className={styles.planValue}>
-                {userRole}
-              </div>
-
-              <div className={styles.statName}>
-                Account Role
-              </div>
-
-              <div className={styles.statFooter}>
-                <span className={styles.info}>
-                  Account
-                </span>
-
-                <span>
-                  authenticated access
-                </span>
-              </div>
-            </article>
           </section>
+
 
           {/* =================================================
               MAIN GRID
@@ -647,7 +1074,9 @@ function Dashboard() {
             ================================================= */}
 
             <article className={styles.panel}>
+
               <div className={styles.panelHeader}>
+
                 <div>
                   <div className={styles.panelEyebrow}>
                     WORKSPACE
@@ -658,35 +1087,39 @@ function Dashboard() {
                   </h2>
 
                   <p className={styles.panelSubtitle}>
-                    Your latest workspace projects
+                    Projects ordered by backend activity.
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  className={styles.textButton}
+                  className={styles.panelAction}
                   onClick={() =>
-                    navigate("/workspace")
+                    navigate(
+                      "/workspace"
+                    )
                   }
                 >
                   View Workspace →
                 </button>
+
               </div>
 
+
               <div className={styles.projectList}>
+
                 {loading ? (
                   <div className={styles.loadingState}>
-                    <div
+                    <span
                       className={styles.loadingSpinner}
                       aria-hidden="true"
                     />
 
-                    <span>
-                      Loading workspace data...
-                    </span>
+                    Loading projects...
                   </div>
                 ) : hasProjectError ? (
                   <div className={styles.emptyState}>
+
                     <div
                       className={styles.emptyIcon}
                       aria-hidden="true"
@@ -700,7 +1133,7 @@ function Dashboard() {
 
                     <p>
                       ZyrionOS could not retrieve
-                      your project data.
+                      your workspace projects.
                     </p>
 
                     <button
@@ -711,14 +1144,16 @@ function Dashboard() {
                     >
                       Try Again
                     </button>
+
                   </div>
                 ) : recentProjects.length === 0 ? (
                   <div className={styles.emptyState}>
+
                     <div
                       className={styles.emptyIcon}
                       aria-hidden="true"
                     >
-                      ◇
+                      +
                     </div>
 
                     <h3>
@@ -726,165 +1161,215 @@ function Dashboard() {
                     </h3>
 
                     <p>
-                      Create your first project and
-                      start building inside ZyrionOS.
+                      Create your first project
+                      to start building inside
+                      ZyrionOS.
                     </p>
 
                     <button
                       type="button"
                       className={styles.primaryButton}
                       onClick={() =>
-                        navigate("/workspace")
+                        navigate(
+                          "/workspace"
+                        )
                       }
                     >
-                      Create First Project
+                      Create Project
                     </button>
+
                   </div>
                 ) : (
-                  recentProjects.map((project) => {
-                    const projectName =
-                      getProjectName(project);
+                  recentProjects.map(
+                    (project) => {
+                      const projectName =
+                        getProjectName(
+                          project
+                        );
 
-                    const projectId =
-                      getProjectId(project);
+                      const projectId =
+                        getProjectId(
+                          project
+                        );
 
-                    const projectStatus =
-                      getProjectStatus(project);
+                      const projectStatus =
+                        getProjectStatus(
+                          project
+                        );
 
-                    return (
-                      <button
-                        type="button"
-                        key={
-                          projectId ||
-                          projectName
-                        }
-                        className={styles.projectRow}
-                        onClick={() =>
-                          handleProjectOpen(
-                            project
-                          )
-                        }
-                      >
-                        <div
+                      const activeBuild =
+                        isActiveBuild(
+                          project
+                        );
+
+                      const failed =
+                        isFailed(
+                          project
+                        );
+
+                      const lastActivity =
+                        project?.lastActivityAt ||
+                        project?.updatedAt ||
+                        project?.createdAt;
+
+                      return (
+                        <button
+                          type="button"
+                          key={
+                            projectId ||
+                            projectName
+                          }
                           className={
-                            styles.projectIdentity
+                            styles.projectRow
+                          }
+                          onClick={() =>
+                            handleProjectOpen(
+                              project
+                            )
                           }
                         >
-                          <div
-                            className={
-                              styles.projectAvatar
-                            }
-                            aria-hidden="true"
-                          >
-                            {getInitial(
-                              projectName
-                            )}
-                          </div>
 
                           <div
                             className={
-                              styles.projectText
+                              styles.projectIdentity
                             }
                           >
+
                             <div
                               className={
-                                styles.projectName
+                                styles.projectAvatar
                               }
+                              aria-hidden="true"
                             >
-                              {projectName}
+                              {getInitial(
+                                projectName
+                              )}
                             </div>
 
                             <div
                               className={
-                                styles.projectMeta
+                                styles.projectText
                               }
                             >
-                              {project?.framework ||
-                                project?.description ||
-                                "ZyrionOS Workspace"}
+
+                              <strong
+                                className={
+                                  styles.projectName
+                                }
+                              >
+                                {projectName}
+                              </strong>
+
+                              <span
+                                className={
+                                  styles.projectMeta
+                                }
+                              >
+                                {project?.framework ||
+                                  "ZyrionOS Project"}
+                              </span>
+
                             </div>
+
                           </div>
-                        </div>
 
-                        <div
-                          className={
-                            projectStatus
-                              ? styles.projectStatus
-                              : styles.projectStatusMuted
-                          }
-                        >
-                          {projectStatus || "—"}
-                        </div>
 
-                        <div
-                          className={
-                            styles.projectArrow
-                          }
-                          aria-hidden="true"
-                        >
-                          →
-                        </div>
-                      </button>
-                    );
-                  })
+                          <div
+                            className={
+                              failed
+                                ? styles.projectStateFailed
+                                : activeBuild
+                                  ? styles.projectStateActive
+                                  : styles.projectState
+                            }
+                          >
+                            <span />
+
+                            {projectStatus ||
+                              "No status"}
+                          </div>
+
+
+                          <div
+                            className={
+                              styles.projectActivity
+                            }
+                          >
+                            <span>
+                              {getRelativeTime(
+                                lastActivity
+                              )}
+                            </span>
+
+                            <b aria-hidden="true">
+                              →
+                            </b>
+                          </div>
+
+                        </button>
+                      );
+                    }
+                  )
                 )}
+
               </div>
+
             </article>
 
+
             {/* =================================================
-                WORKSPACE SUMMARY
+                SYSTEM OVERVIEW
             ================================================= */}
 
             <article className={styles.panel}>
+
               <div className={styles.panelHeader}>
+
                 <div>
                   <div className={styles.panelEyebrow}>
-                    PLATFORM
+                    SYSTEM
                   </div>
 
                   <h2 className={styles.panelTitle}>
-                    Workspace Summary
+                    Operational Overview
                   </h2>
 
                   <p className={styles.panelSubtitle}>
-                    Live account data available to
-                    this workspace
+                    Current state derived from real
+                    workspace data.
                   </p>
                 </div>
 
                 <div
                   className={
-                    hasAnyError
-                      ? styles.stateBadgePartial
+                    failedCount > 0
+                      ? styles.stateBadgeWarning
                       : styles.stateBadge
                   }
                 >
                   <span />
-                  {hasAnyError
-                    ? "PARTIAL"
-                    : "SYNCED"}
+
+                  {operationalState}
                 </div>
+
               </div>
 
-              <div className={styles.summaryList}>
 
-                <div className={styles.summaryRow}>
-                  <div
-                    className={styles.summaryIcon}
-                    aria-hidden="true"
-                  >
+              <div className={styles.systemList}>
+
+                <div className={styles.systemRow}>
+
+                  <div className={styles.systemIcon}>
                     PR
                   </div>
 
-                  <div
-                    className={styles.summaryInfo}
-                  >
+                  <div className={styles.systemInfo}>
                     <strong>
                       Projects
                     </strong>
 
                     <span>
-                      Workspace project records
+                      Backend workspace records
                     </span>
                   </div>
 
@@ -893,99 +1378,108 @@ function Dashboard() {
                       ? "—"
                       : projectCount}
                   </b>
+
                 </div>
 
-                <div className={styles.summaryRow}>
-                  <div
-                    className={styles.summaryIcon}
-                    aria-hidden="true"
-                  >
+
+                <div className={styles.systemRow}>
+
+                  <div className={styles.systemIcon}>
                     AI
                   </div>
 
-                  <div
-                    className={styles.summaryInfo}
-                  >
+                  <div className={styles.systemInfo}>
                     <strong>
                       AI Workspace
                     </strong>
 
                     <span>
-                      AI building environment
-                    </span>
-                  </div>
-
-                  <b>
-                    {user
-                      ? "Ready"
-                      : "—"}
-                  </b>
-                </div>
-
-                <div className={styles.summaryRow}>
-                  <div
-                    className={styles.summaryIcon}
-                    aria-hidden="true"
-                  >
-                    DB
-                  </div>
-
-                  <div
-                    className={styles.summaryInfo}
-                  >
-                    <strong>
-                      Account Data
-                    </strong>
-
-                    <span>
-                      Authenticated workspace
-                      context
-                    </span>
-                  </div>
-
-                  <b>
-                    {user
-                      ? "Available"
-                      : "—"}
-                  </b>
-                </div>
-
-                <div className={styles.summaryRow}>
-                  <div
-                    className={styles.summaryIcon}
-                    aria-hidden="true"
-                  >
-                    API
-                  </div>
-
-                  <div
-                    className={styles.summaryInfo}
-                  >
-                    <strong>
-                      Workspace API
-                    </strong>
-
-                    <span>
-                      Dashboard data connection
+                      Authenticated workspace access
                     </span>
                   </div>
 
                   <b
                     className={
-                      hasAnyError
-                        ? styles.summaryWarning
-                        : styles.summarySuccess
+                      user
+                        ? styles.successText
+                        : ""
                     }
                   >
-                    {hasAnyError
+                    {user
+                      ? "Ready"
+                      : "—"}
+                  </b>
+
+                </div>
+
+
+                <div className={styles.systemRow}>
+
+                  <div className={styles.systemIcon}>
+                    BL
+                  </div>
+
+                  <div className={styles.systemInfo}>
+                    <strong>
+                      Billing
+                    </strong>
+
+                    <span>
+                      Subscription service
+                    </span>
+                  </div>
+
+                  <b
+                    className={
+                      hasSubscriptionError
+                        ? styles.warningText
+                        : styles.successText
+                    }
+                  >
+                    {hasSubscriptionError
                       ? "Check"
                       : "Connected"}
                   </b>
+
+                </div>
+
+
+                <div className={styles.systemRow}>
+
+                  <div className={styles.systemIcon}>
+                    API
+                  </div>
+
+                  <div className={styles.systemInfo}>
+                    <strong>
+                      Workspace API
+                    </strong>
+
+                    <span>
+                      Project data connection
+                    </span>
+                  </div>
+
+                  <b
+                    className={
+                      hasProjectError
+                        ? styles.warningText
+                        : styles.successText
+                    }
+                  >
+                    {hasProjectError
+                      ? "Check"
+                      : "Connected"}
+                  </b>
+
                 </div>
 
               </div>
+
             </article>
+
           </section>
+
 
           {/* =================================================
               LOWER GRID
@@ -993,149 +1487,120 @@ function Dashboard() {
 
           <section className={styles.lowerGrid}>
 
-            {/* QUICK ACTIONS */}
+            {/* =================================================
+                USAGE
+            ================================================= */}
 
             <article className={styles.panel}>
+
               <div className={styles.panelHeader}>
+
                 <div>
                   <div className={styles.panelEyebrow}>
-                    OPERATIONS
+                    USAGE
                   </div>
 
                   <h2 className={styles.panelTitle}>
-                    Quick Actions
+                    Account Usage
                   </h2>
 
                   <p className={styles.panelSubtitle}>
-                    Jump directly into workspace
-                    operations.
+                    Values available from the authenticated
+                    account context.
                   </p>
                 </div>
+
               </div>
 
-              <div className={styles.quickActions}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate("/workspace")
-                  }
-                  className={styles.quickAction}
-                >
-                  <div
-                    className={styles.quickIcon}
-                    aria-hidden="true"
+
+              <div className={styles.usageGrid}>
+
+                <div className={styles.usageCard}>
+                  <span>
+                    DEPLOYMENTS USED
+                  </span>
+
+                  <strong>
+                    {deploymentsUsed === null
+                      ? "—"
+                      : deploymentsUsed}
+                  </strong>
+
+                  <small>
+                    Account usage
+                  </small>
+                </div>
+
+
+                <div className={styles.usageCard}>
+                  <span>
+                    ACTIVE BUILDS
+                  </span>
+
+                  <strong>
+                    {hasProjectError
+                      ? "—"
+                      : activeBuildCount}
+                  </strong>
+
+                  <small>
+                    Current projects
+                  </small>
+                </div>
+
+
+                <div className={styles.usageCard}>
+                  <span>
+                    DEPLOYED
+                  </span>
+
+                  <strong>
+                    {hasProjectError
+                      ? "—"
+                      : deployedCount}
+                  </strong>
+
+                  <small>
+                    Live project state
+                  </small>
+                </div>
+
+
+                <div className={styles.usageCard}>
+                  <span>
+                    FAILED
+                  </span>
+
+                  <strong
+                    className={
+                      failedCount > 0
+                        ? styles.failedValue
+                        : ""
+                    }
                   >
-                    ＋
-                  </div>
+                    {hasProjectError
+                      ? "—"
+                      : failedCount}
+                  </strong>
 
-                  <div>
-                    <strong>
-                      Create Project
-                    </strong>
+                  <small>
+                    Current project state
+                  </small>
+                </div>
 
-                    <span>
-                      Start a new workspace
-                    </span>
-                  </div>
-
-                  <b aria-hidden="true">
-                    →
-                  </b>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate("/deployments")
-                  }
-                  className={styles.quickAction}
-                >
-                  <div
-                    className={styles.quickIcon}
-                    aria-hidden="true"
-                  >
-                    ↑
-                  </div>
-
-                  <div>
-                    <strong>
-                      Deployments
-                    </strong>
-
-                    <span>
-                      Manage production releases
-                    </span>
-                  </div>
-
-                  <b aria-hidden="true">
-                    →
-                  </b>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate("/billing")
-                  }
-                  className={styles.quickAction}
-                >
-                  <div
-                    className={styles.quickIcon}
-                    aria-hidden="true"
-                  >
-                    $
-                  </div>
-
-                  <div>
-                    <strong>
-                      Billing
-                    </strong>
-
-                    <span>
-                      Manage your subscription
-                    </span>
-                  </div>
-
-                  <b aria-hidden="true">
-                    →
-                  </b>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate("/settings")
-                  }
-                  className={styles.quickAction}
-                >
-                  <div
-                    className={styles.quickIcon}
-                    aria-hidden="true"
-                  >
-                    ⚙
-                  </div>
-
-                  <div>
-                    <strong>
-                      Settings
-                    </strong>
-
-                    <span>
-                      Configure your account
-                    </span>
-                  </div>
-
-                  <b aria-hidden="true">
-                    →
-                  </b>
-                </button>
               </div>
+
             </article>
 
-            {/* ACCOUNT */}
+
+            {/* =================================================
+                ACCOUNT
+            ================================================= */}
 
             <article className={styles.panel}>
+
               <div className={styles.panelHeader}>
+
                 <div>
                   <div className={styles.panelEyebrow}>
                     ACCOUNT
@@ -1145,40 +1610,63 @@ function Dashboard() {
                     Workspace Identity
                   </h2>
                 </div>
+
               </div>
 
+
               <div className={styles.accountCard}>
+
                 <div
                   className={styles.accountAvatar}
                   aria-hidden="true"
                 >
-                  {getInitial(userName)}
+                  {getInitial(
+                    userName
+                  )}
                 </div>
 
-                <div className={styles.accountMain}>
-                  <h3>{userName}</h3>
+                <div className={styles.accountInfo}>
 
-                  <p>{userEmail}</p>
+                  <strong>
+                    {userName}
+                  </strong>
+
+                  <span>
+                    {userEmail}
+                  </span>
+
                 </div>
+
               </div>
 
-              <div className={styles.accountDetails}>
+
+              <div className={styles.accountGrid}>
+
                 <div>
-                  <span>Role</span>
+                  <span>
+                    ROLE
+                  </span>
+
                   <strong>
                     {userRole}
                   </strong>
                 </div>
 
                 <div>
-                  <span>Plan</span>
+                  <span>
+                    PLAN
+                  </span>
+
                   <strong>
                     {planLabel}
                   </strong>
                 </div>
 
                 <div>
-                  <span>Projects</span>
+                  <span>
+                    PROJECTS
+                  </span>
+
                   <strong>
                     {hasProjectError
                       ? "—"
@@ -1187,36 +1675,188 @@ function Dashboard() {
                 </div>
 
                 <div>
-                  <span>Deployments</span>
+                  <span>
+                    DEPLOYMENTS
+                  </span>
+
                   <strong>
                     {deploymentsUsed === null
                       ? "—"
                       : deploymentsUsed}
                   </strong>
                 </div>
+
               </div>
+
 
               <button
                 type="button"
-                className={styles.manageAccount}
+                className={styles.accountButton}
                 onClick={() =>
-                  navigate("/settings")
+                  navigate(
+                    "/settings"
+                  )
                 }
               >
                 Manage Account
+
                 <span aria-hidden="true">
                   →
                 </span>
               </button>
+
             </article>
+
           </section>
+
+
+          {/* =================================================
+              QUICK ACTIONS
+          ================================================= */}
+
+          <section className={styles.quickPanel}>
+
+            <div>
+              <div className={styles.panelEyebrow}>
+                OPERATIONS
+              </div>
+
+              <h2 className={styles.quickTitle}>
+                Continue Working
+              </h2>
+
+              <p className={styles.panelSubtitle}>
+                Jump directly into your workspace operations.
+              </p>
+            </div>
+
+
+            <div className={styles.quickActions}>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    "/workspace"
+                  )
+                }
+              >
+                <span>
+                  +
+                </span>
+
+                <div>
+                  <strong>
+                    New Project
+                  </strong>
+
+                  <small>
+                    Start building
+                  </small>
+                </div>
+
+                <b>
+                  →
+                </b>
+              </button>
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    "/deployments"
+                  )
+                }
+              >
+                <span>
+                  ↑
+                </span>
+
+                <div>
+                  <strong>
+                    Deployments
+                  </strong>
+
+                  <small>
+                    Manage releases
+                  </small>
+                </div>
+
+                <b>
+                  →
+                </b>
+              </button>
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    "/billing"
+                  )
+                }
+              >
+                <span>
+                  $
+                </span>
+
+                <div>
+                  <strong>
+                    Billing
+                  </strong>
+
+                  <small>
+                    Subscription & usage
+                  </small>
+                </div>
+
+                <b>
+                  →
+                </b>
+              </button>
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    "/settings"
+                  )
+                }
+              >
+                <span>
+                  ⚙
+                </span>
+
+                <div>
+                  <strong>
+                    Settings
+                  </strong>
+
+                  <small>
+                    Account configuration
+                  </small>
+                </div>
+
+                <b>
+                  →
+                </b>
+              </button>
+
+            </div>
+
+          </section>
+
 
           {/* =================================================
               FOOTER
           ================================================= */}
 
           <footer className={styles.footer}>
+
             <div>
+
               <span
                 className={
                   hasAnyError
@@ -1229,11 +1869,13 @@ function Dashboard() {
               {hasAnyError
                 ? "Workspace requires attention"
                 : "ZyrionOS workspace connected"}
+
             </div>
 
             <span>
               {userEmail}
             </span>
+
           </footer>
 
         </div>
@@ -1241,5 +1883,6 @@ function Dashboard() {
     </DashboardLayout>
   );
 }
+
 
 export default Dashboard;

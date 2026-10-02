@@ -124,18 +124,166 @@ function getProjectId(project) {
 }
 
 
-function getProjectStatus(project) {
-  const status =
-    project?.deploymentStatus ||
-    project?.status ||
-    project?.state;
+/* =========================================================
+   DEPLOYMENT ID
+   CRITICAL RULE:
 
-  if (!status) {
+   A project is deployed ONLY when a REAL deployment ID
+   exists.
+
+   Status such as:
+   - deployed
+   - live
+   - production
+
+   is NOT enough by itself.
+========================================================= */
+
+function getDeploymentId(project) {
+  if (!project || typeof project !== "object") {
     return null;
   }
 
-  return String(status)
-    .replace(/[_-]/g, " ")
+  const directDeploymentId =
+    project?.deploymentId ??
+    project?.deploymentID ??
+    project?.deployment_id;
+
+  if (
+    directDeploymentId !== undefined &&
+    directDeploymentId !== null &&
+    String(directDeploymentId).trim() !== ""
+  ) {
+    return String(
+      directDeploymentId
+    ).trim();
+  }
+
+
+  /*
+   * Support common nested backend shapes.
+   *
+   * We still require an actual ID.
+   */
+  const nestedDeploymentId =
+    project?.deployment?.id ??
+    project?.deployment?._id ??
+    project?.deployment?.deploymentId ??
+    project?.deployment?.deploymentID ??
+    project?.deployment?.deployment_id ??
+    project?.deploy?.id ??
+    project?.deploy?._id ??
+    project?.deploy?.deploymentId ??
+    project?.deploy?.deploymentID ??
+    project?.deploy?.deployment_id;
+
+  if (
+    nestedDeploymentId !== undefined &&
+    nestedDeploymentId !== null &&
+    String(nestedDeploymentId).trim() !== ""
+  ) {
+    return String(
+      nestedDeploymentId
+    ).trim();
+  }
+
+  return null;
+}
+
+
+function hasRealDeployment(project) {
+  return Boolean(
+    getDeploymentId(project)
+  );
+}
+
+
+function getProjectStatus(project) {
+  /*
+   * CRITICAL:
+   *
+   * Never expose "Deployed" merely because backend status
+   * says deployed.
+   *
+   * A real deployment ID must exist.
+   */
+  if (
+    hasRealDeployment(project)
+  ) {
+    const rawStatus =
+      String(
+        project?.deploymentStatus ||
+        project?.status ||
+        project?.state ||
+        ""
+      )
+        .trim()
+        .toLowerCase()
+        .replace(/[_-]/g, " ");
+
+    /*
+     * If a real deployment exists, preserve useful status
+     * information. A deployed/live/production state is shown
+     * as "Deployed".
+     */
+    if (
+      [
+        "deployed",
+        "live",
+        "production",
+        "active",
+      ].includes(rawStatus)
+    ) {
+      return "Deployed";
+    }
+
+    if (rawStatus) {
+      return rawStatus
+        .replace(/\b\w/g, (letter) =>
+          letter.toUpperCase()
+        );
+    }
+
+    return "Deployed";
+  }
+
+
+  /*
+   * No deployment ID:
+   *
+   * Even if backend accidentally sends:
+   * status = "deployed"
+   *
+   * the dashboard must NOT show "Deployed".
+   */
+  const rawStatus =
+    String(
+      project?.deploymentStatus ||
+      project?.status ||
+      project?.state ||
+      ""
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/[_-]/g, " ");
+
+
+  if (
+    [
+      "deployed",
+      "live",
+      "production",
+    ].includes(rawStatus)
+  ) {
+    return "Not Deployed";
+  }
+
+
+  if (!rawStatus) {
+    return null;
+  }
+
+  return rawStatus
     .replace(/\b\w/g, (letter) =>
       letter.toUpperCase()
     );
@@ -301,15 +449,23 @@ function isActiveBuild(project) {
 }
 
 
-function isDeployed(project) {
-  const status =
-    getRawProjectStatus(project);
+/* =========================================================
+   CRITICAL DEPLOYMENT CHECK
 
-  return [
-    "deployed",
-    "live",
-    "production",
-  ].includes(status);
+   Deployment count MUST depend on a real deployment ID.
+
+   We intentionally DO NOT use:
+   status === "deployed"
+   status === "live"
+   status === "production"
+
+   without a deployment ID.
+========================================================= */
+
+function isDeployed(project) {
+  return hasRealDeployment(
+    project
+  );
 }
 
 
@@ -1000,7 +1156,7 @@ function Dashboard() {
 
               <div className={styles.metricMeta}>
                 <span>
-                  Current project state
+                  Requires deployment ID
                 </span>
 
                 <b>
@@ -1056,6 +1212,7 @@ function Dashboard() {
                 >
                   Manage →
                 </button>
+
               </div>
 
             </article>
@@ -1561,7 +1718,7 @@ function Dashboard() {
                   </strong>
 
                   <small>
-                    Live project state
+                    Real deployment IDs only
                   </small>
                 </div>
 

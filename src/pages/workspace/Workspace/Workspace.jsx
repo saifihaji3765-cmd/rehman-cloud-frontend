@@ -12,6 +12,10 @@ import {
   getProjects,
   createProject,
   updateProject,
+  createPreview,
+  getPreview,
+  getPreviewHealth,
+  stopPreview,
 } from "../../../services/workspaceService";
 
 import {
@@ -26,10 +30,10 @@ import githubService from "../../../services/githubService";
 
 import styles from "./Workspace.module.css";
 
-import {
-  SandpackPreview,
-  SandpackProvider,
-} from "@codesandbox/sandpack-react";
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
 
 const FRAMEWORKS = [
   "React",
@@ -43,209 +47,49 @@ const FRAMEWORKS = [
 const QUICK_PROMPTS = [
   {
     label: "AI SaaS dashboard",
-    prompt: "Build a production-ready AI SaaS dashboard",
+    prompt:
+      "Build a production-ready AI SaaS dashboard",
   },
   {
     label: "Landing page",
-    prompt: "Create a production-ready responsive landing page",
+    prompt:
+      "Create a production-ready responsive landing page",
   },
   {
     label: "Authentication",
-    prompt: "Add authentication and user accounts",
+    prompt:
+      "Add authentication and user accounts",
   },
   {
     label: "Admin control center",
-    prompt: "Build a production-ready admin control center",
+    prompt:
+      "Build a production-ready admin control center",
   },
 ];
 
-/* =========================================================
-   LOCAL PREVIEW RUNTIME
-========================================================= */
+const PREVIEW_POLL_INTERVAL =
+  4000;
 
-function buildSandpackFiles(files) {
-  const result = {};
+const PREVIEW_MAX_POLLS =
+  45;
 
-  for (const file of Array.isArray(files) ? files : []) {
-    const rawPath = getFilePath(file);
-    const content = getFileContent(file);
-
-    if (!rawPath || content === null || content === undefined) {
-      continue;
-    }
-
-    let path = String(rawPath)
-      .trim()
-      .replace(/\\/g, "/")
-      .replace(/^\.\//, "")
-      .replace(/^\/+/, "");
-
-    if (!path) {
-      continue;
-    }
-
-    if (path.toLowerCase() === "public/index.html") {
-      path = "index.html";
-    }
-
-    result[`/${path}`] = {
-      code: String(content),
-      active: path === "src/App.jsx" || path === "src/App.js",
-    };
-  }
-
-  return result;
-}
-
-function getSandpackDependencies(files) {
-  const packageFile = findFile(files, ["package.json"]);
-
-  if (!packageFile) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(getFileContent(packageFile) || "{}");
-
-    const dependencies = {
-      ...(parsed?.dependencies || {}),
-    };
-
-    for (const [name, version] of Object.entries(
-      parsed?.devDependencies || {}
-    )) {
-      if (!dependencies[name]) {
-        dependencies[name] = version;
-      }
-    }
-
-    delete dependencies["react"];
-    delete dependencies["react-dom"];
-
-    return dependencies;
-  } catch {
-    return {};
-  }
-}
-
-function getSandpackTemplate(framework) {
-  const value = String(framework || "React")
-    .trim()
-    .toLowerCase();
-
-  if (value === "vue") {
-    return "vue";
-  }
-
-  return "react";
-}
-
-function LocalProjectPreview({
-  files,
-  framework,
-  fullscreen = false,
-}) {
-  const sandpackFiles = useMemo(
-    () => buildSandpackFiles(files),
-    [files]
-  );
-
-  const dependencies = useMemo(
-    () => getSandpackDependencies(files),
-    [files]
-  );
-
-  const template = useMemo(
-    () => getSandpackTemplate(framework),
-    [framework]
-  );
-
-  const hasEntry = Boolean(
-    sandpackFiles["/src/index.js"] ||
-      sandpackFiles["/src/main.jsx"] ||
-      sandpackFiles["/src/main.js"] ||
-      sandpackFiles["/src/index.jsx"] ||
-      sandpackFiles["/index.js"] ||
-      sandpackFiles["/App.js"] ||
-      sandpackFiles["/App.jsx"]
-  );
-
-  if (!hasEntry) {
-    return (
-      <div className={styles.previewUnavailable}>
-        <div className={styles.previewIconLarge}>Z</div>
-
-        <span>PREVIEW RUNTIME</span>
-
-        <p>
-          No React/Vue entry file was found in the generated project.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={styles.sandpackPreviewHost}
-      style={{
-        width: "100%",
-        height: "100%",
-        minHeight: fullscreen ? "100%" : "520px",
-        overflow: "hidden",
-      }}
-    >
-      <SandpackProvider
-        template={template}
-        files={sandpackFiles}
-        customSetup={{
-          dependencies,
-          entry:
-            sandpackFiles["/src/index.js"]
-              ? "/src/index.js"
-              : sandpackFiles["/src/main.jsx"]
-              ? "/src/main.jsx"
-              : sandpackFiles["/src/main.js"]
-              ? "/src/main.js"
-              : sandpackFiles["/src/index.jsx"]
-              ? "/src/index.jsx"
-              : "/App.js",
-        }}
-        options={{
-          activeFile:
-            sandpackFiles["/src/App.jsx"]
-              ? "/src/App.jsx"
-              : sandpackFiles["/src/App.js"]
-              ? "/src/App.js"
-              : undefined,
-          autorun: true,
-          recompileMode: "delayed",
-        }}
-      >
-        <SandpackPreview
-          showOpenInCodeSandbox={false}
-          showRefreshButton
-          style={{
-            width: "100%",
-            height: "100%",
-            minHeight: fullscreen ? "100%" : "520px",
-            border: "0",
-          }}
-        />
-      </SandpackProvider>
-    </div>
-  );
-}
 
 /* =========================================================
    RESPONSE HELPERS
 ========================================================= */
 
 function unwrapApiResponse(response) {
-  if (response === undefined || response === null) {
+  if (
+    response === undefined ||
+    response === null
+  ) {
     return null;
   }
 
-  const root = response?.data !== undefined ? response.data : response;
+  const root =
+    response?.data !== undefined
+      ? response.data
+      : response;
 
   if (
     root &&
@@ -259,9 +103,104 @@ function unwrapApiResponse(response) {
   return root;
 }
 
-function extractProjectFromResponse(response) {
+
+function getErrorMessage(
+  error,
+  fallback
+) {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error?.message ||
+    error?.response?.data?.error ||
+    error?.response?.data?.detail ||
+    error?.data?.message ||
+    error?.message ||
+    fallback
+  );
+}
+
+
+function getServicePayload(response) {
   const root =
-    response?.data !== undefined ? response.data : response;
+    response?.data !== undefined
+      ? response.data
+      : response;
+
+  if (
+    root &&
+    typeof root === "object" &&
+    !Array.isArray(root) &&
+    root.data !== undefined
+  ) {
+    return root.data;
+  }
+
+  return root;
+}
+
+
+function getServiceList(
+  response,
+  keys = []
+) {
+  const root =
+    getServicePayload(response);
+
+  if (Array.isArray(root)) {
+    return root;
+  }
+
+  for (const key of keys) {
+    if (
+      Array.isArray(root?.[key])
+    ) {
+      return root[key];
+    }
+  }
+
+  return [];
+}
+
+
+function getServiceObject(
+  response,
+  keys = []
+) {
+  const root =
+    getServicePayload(response);
+
+  if (
+    root &&
+    typeof root === "object" &&
+    !Array.isArray(root)
+  ) {
+    for (const key of keys) {
+      if (
+        root[key] &&
+        typeof root[key] === "object"
+      ) {
+        return root[key];
+      }
+    }
+
+    return root;
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   PROJECT HELPERS
+========================================================= */
+
+function extractProjectFromResponse(
+  response
+) {
+  const root =
+    response?.data !== undefined
+      ? response.data
+      : response;
 
   const candidates = [
     root?.project,
@@ -272,7 +211,9 @@ function extractProjectFromResponse(response) {
     response?.data?.data?.project,
   ];
 
-  for (const candidate of candidates) {
+  for (
+    const candidate of candidates
+  ) {
     if (
       candidate &&
       typeof candidate === "object" &&
@@ -283,7 +224,9 @@ function extractProjectFromResponse(response) {
         candidate.projectId ||
         candidate.projectName ||
         candidate.name ||
-        Array.isArray(candidate.files)
+        Array.isArray(
+          candidate.files
+        )
       )
     ) {
       return candidate;
@@ -293,21 +236,43 @@ function extractProjectFromResponse(response) {
   return null;
 }
 
+
 function getProjectId(project) {
-  return project?._id || project?.id || project?.projectId || "";
+  return (
+    project?._id ||
+    project?.id ||
+    project?.projectId ||
+    ""
+  );
 }
+
 
 function getProjectName(project) {
-  return project?.projectName || project?.name || "New Project";
+  return (
+    project?.projectName ||
+    project?.name ||
+    "New Project"
+  );
 }
 
-function getProjectFramework(project) {
-  return project?.framework || "React";
+
+function getProjectFramework(
+  project
+) {
+  return (
+    project?.framework ||
+    "React"
+  );
 }
 
-function normalizeProjects(response) {
+
+function normalizeProjects(
+  response
+) {
   const root =
-    response?.data !== undefined ? response.data : response;
+    response?.data !== undefined
+      ? response.data
+      : response;
 
   const candidates = [
     root?.projects,
@@ -318,87 +283,25 @@ function normalizeProjects(response) {
     response?.data?.data?.projects,
   ];
 
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) {
+  for (
+    const candidate of candidates
+  ) {
+    if (
+      Array.isArray(candidate)
+    ) {
       return candidate;
     }
   }
 
-  return Array.isArray(root) ? root : [];
+  return Array.isArray(root)
+    ? root
+    : [];
 }
+
 
 /* =========================================================
-   PROJECT NAMING
+   PROJECT FILE HELPERS
 ========================================================= */
-
-function buildProjectName(promptValue) {
-  const value = String(promptValue || "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!value) {
-    return "New Project";
-  }
-
-  const cleaned = value
-    .replace(
-      /^(please\s+)?(build|create|make|develop|design|generate|add)\s+/i,
-      ""
-    )
-    .replace(/\s+(for|with)\s+me$/i, "")
-    .trim();
-
-  const source = cleaned || value;
-
-  const words = source
-    .split(" ")
-    .slice(0, 8);
-
-  const title = words
-    .join(" ")
-    .replace(/[.!?]+$/, "")
-    .trim();
-
-  if (!title) {
-    return "New Project";
-  }
-
-  return title.charAt(0).toUpperCase() + title.slice(1);
-}
-
-/* =========================================================
-   FILE HELPERS
-========================================================= */
-
-function normalizeProjectFiles(project, aiResult) {
-  const possibleCollections = [
-    project?.files,
-    project?.data?.files,
-    project?.project?.files,
-    project?.data?.project?.files,
-
-    aiResult?.files,
-    aiResult?.data?.files,
-    aiResult?.project?.files,
-    aiResult?.data?.project?.files,
-
-    aiResult?.orchestration?.buildResult?.data?.files,
-    aiResult?.orchestration?.buildResult?.files,
-    aiResult?.orchestration?.buildResult?.data?.data?.files,
-
-    aiResult?.data?.orchestration?.buildResult?.data?.files,
-    aiResult?.data?.orchestration?.buildResult?.files,
-    aiResult?.data?.orchestration?.buildResult?.data?.data?.files,
-  ];
-
-  for (const files of possibleCollections) {
-    if (Array.isArray(files)) {
-      return files;
-    }
-  }
-
-  return [];
-}
 
 function getFilePath(file) {
   return (
@@ -410,71 +313,442 @@ function getFilePath(file) {
   );
 }
 
+
 function getFileContent(file) {
   if (!file) {
-    return "No project file selected.";
+    return "";
   }
 
-  if (file.content !== undefined && file.content !== null) {
+  if (
+    file.content !== undefined &&
+    file.content !== null
+  ) {
     return String(file.content);
   }
 
-  if (file.code !== undefined && file.code !== null) {
+  if (
+    file.code !== undefined &&
+    file.code !== null
+  ) {
     return String(file.code);
   }
 
-  return "The backend returned this file without readable content.";
+  return "";
 }
 
-function findFile(files, names) {
-  const normalized = names.map((name) =>
-    String(name).replace(/^\.?\//, "").toLowerCase()
-  );
 
-  return files.find((file) => {
-    const path = getFilePath(file)
-      .replace(/^\.?\//, "")
-      .toLowerCase();
+function normalizeProjectFiles(
+  project,
+  aiResult
+) {
+  const possibleCollections = [
+    project?.files,
+    project?.data?.files,
+    project?.project?.files,
+    project?.data?.project?.files,
 
-    return normalized.includes(path);
-  });
+    aiResult?.files,
+    aiResult?.data?.files,
+    aiResult?.project?.files,
+    aiResult?.data?.project?.files,
+
+    aiResult?.orchestration
+      ?.buildResult
+      ?.data
+      ?.files,
+
+    aiResult?.orchestration
+      ?.buildResult
+      ?.files,
+
+    aiResult?.orchestration
+      ?.buildResult
+      ?.data
+      ?.data
+      ?.files,
+
+    aiResult?.data
+      ?.orchestration
+      ?.buildResult
+      ?.data
+      ?.files,
+
+    aiResult?.data
+      ?.orchestration
+      ?.buildResult
+      ?.files,
+  ];
+
+  for (
+    const files of possibleCollections
+  ) {
+    if (
+      Array.isArray(files)
+    ) {
+      return files;
+    }
+  }
+
+  return [];
 }
+
 
 /* =========================================================
-   PREVIEW HELPERS
+   BUILD EXTRACTION
 ========================================================= */
 
-function getPreviewUrl(project) {
+/*
+ * IMPORTANT:
+ *
+ * This does NOT invent a buildId.
+ *
+ * The frontend only accepts a build identifier that
+ * actually came from the backend.
+ */
+
+function extractAuthoritativeBuild(
+  ...responses
+) {
+  const candidates = [];
+
+  for (
+    const response of responses
+  ) {
+    if (!response) {
+      continue;
+    }
+
+    const root =
+      response?.data !== undefined
+        ? response.data
+        : response;
+
+    candidates.push(
+      root,
+      root?.data,
+      root?.build,
+      root?.data?.build,
+      root?.project,
+      root?.data?.project,
+
+      root?.buildResult,
+      root?.data?.buildResult,
+
+      root?.orchestration
+        ?.buildResult,
+
+      root?.data
+        ?.orchestration
+        ?.buildResult,
+
+      root?.orchestration
+        ?.authoritativeBuild,
+
+      root?.data
+        ?.orchestration
+        ?.authoritativeBuild,
+
+      root?.authoritativeBuild,
+      root?.data?.authoritativeBuild,
+
+      root?.currentBuild,
+      root?.latestBuild,
+      root?.project?.build,
+      root?.project?.currentBuild,
+      root?.project?.latestBuild
+    );
+  }
+
+  for (
+    const candidate of candidates
+  ) {
+    if (
+      !candidate ||
+      typeof candidate !== "object" ||
+      Array.isArray(candidate)
+    ) {
+      continue;
+    }
+
+    const metadata =
+      candidate.metadata ||
+      {};
+
+    const buildId =
+      candidate.buildId ||
+      candidate.id ||
+      candidate._id ||
+      "";
+
+    const status =
+      String(
+        candidate.status ||
+        ""
+      ).toLowerCase();
+
+    const authoritative =
+      candidate.authoritative === true ||
+      metadata.authoritative === true;
+
+    const validationMode =
+      candidate.validationMode ||
+      metadata.validationMode ||
+      "";
+
+    if (
+      buildId &&
+      (
+        authoritative ||
+        validationMode ===
+          "authoritative"
+      )
+    ) {
+      return {
+        ...candidate,
+        buildId:
+          String(buildId),
+        authoritative:
+          true,
+        validationMode:
+          validationMode ||
+          "authoritative",
+      };
+    }
+
+    /*
+     * Some backend responses may expose
+     * an authoritative build through status
+     * and metadata.
+     */
+
+    if (
+      buildId &&
+      status === "success" &&
+      metadata.authoritative === true
+    ) {
+      return {
+        ...candidate,
+        buildId:
+          String(buildId),
+        authoritative:
+          true,
+        validationMode:
+          validationMode ||
+          "authoritative",
+      };
+    }
+  }
+
+  return null;
+}
+
+
+function extractBuildId(
+  ...responses
+) {
+  const build =
+    extractAuthoritativeBuild(
+      ...responses
+    );
+
   return (
-    project?.previewUrl ||
-    project?.preview?.url ||
-    project?.preview?.liveUrl ||
-    project?.liveUrl ||
-    project?.deploymentUrl ||
-    project?.deployment?.url ||
-    project?.deployment?.liveUrl ||
+    build?.buildId ||
     ""
   );
 }
 
-function getPreviewStatus(project) {
+
+function extractSourceHash(
+  ...responses
+) {
+  const build =
+    extractAuthoritativeBuild(
+      ...responses
+    );
+
+  return (
+    build?.sourceHash ||
+    build?.metadata?.sourceHash ||
+    ""
+  );
+}
+
+
+/* =========================================================
+   PREVIEW EXTRACTION
+========================================================= */
+
+function extractPreview(
+  response
+) {
+  const root =
+    response?.data !== undefined
+      ? response.data
+      : response;
+
+  const candidates = [
+    root?.preview,
+    root?.data?.preview,
+    root?.data,
+    response?.preview,
+    response?.data?.preview,
+    response?.data?.data?.preview,
+  ];
+
+  for (
+    const candidate of candidates
+  ) {
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      !Array.isArray(candidate)
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+
+function extractPreviewId(
+  preview
+) {
+  return (
+    preview?.previewId ||
+    preview?.id ||
+    preview?._id ||
+    ""
+  );
+}
+
+
+function extractPreviewUrl(
+  preview
+) {
+  return (
+    preview?.publicUrl ||
+    preview?.previewUrl ||
+    preview?.url ||
+    ""
+  );
+}
+
+
+function normalizePreviewStatus(
+  preview
+) {
   return String(
-    project?.previewStatus ||
-      project?.preview?.status ||
-      ""
+    preview?.status ||
+    ""
   )
     .trim()
     .toLowerCase();
 }
 
+
+function isPreviewRunning(
+  preview
+) {
+  const status =
+    normalizePreviewStatus(
+      preview
+    );
+
+  return [
+    "running",
+    "ready",
+    "active",
+    "healthy",
+  ].includes(status);
+}
+
+
+function isPreviewTerminalFailure(
+  preview
+) {
+  const status =
+    normalizePreviewStatus(
+      preview
+    );
+
+  return [
+    "failed",
+    "error",
+    "unhealthy",
+    "stopped",
+    "expired",
+    "terminated",
+  ].includes(status);
+}
+
+
 /* =========================================================
-   DEPLOYMENT
+   PROJECT NAME
 ========================================================= */
 
-function normalizeDeploymentStatus(status) {
-  const value = String(status || "")
-    .trim()
-    .toLowerCase();
+function buildProjectName(
+  promptValue
+) {
+  const value =
+    String(
+      promptValue || ""
+    )
+      .replace(/\s+/g, " ")
+      .trim();
+
+  if (!value) {
+    return "New Project";
+  }
+
+  const cleaned =
+    value
+      .replace(
+        /^(please\s+)?(build|create|make|develop|design|generate|add)\s+/i,
+        ""
+      )
+      .replace(
+        /\s+(for|with)\s+me$/i,
+        ""
+      )
+      .trim();
+
+  const source =
+    cleaned || value;
+
+  const words =
+    source
+      .split(" ")
+      .slice(0, 8);
+
+  const title =
+    words
+      .join(" ")
+      .replace(/[.!?]+$/, "")
+      .trim();
+
+  if (!title) {
+    return "New Project";
+  }
+
+  return (
+    title.charAt(0).toUpperCase() +
+    title.slice(1)
+  );
+}
+
+
+/* =========================================================
+   DEPLOYMENT HELPERS
+========================================================= */
+
+function normalizeDeploymentStatus(
+  status
+) {
+  const value =
+    String(status || "")
+      .trim()
+      .toLowerCase();
 
   switch (value) {
     case "deployed":
@@ -502,67 +776,6 @@ function normalizeDeploymentStatus(status) {
   }
 }
 
-/* =========================================================
-   ERROR
-========================================================= */
-
-function getErrorMessage(error, fallback) {
-  return (
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
-    error?.response?.data?.details ||
-    error?.data?.message ||
-    error?.message ||
-    fallback
-  );
-}
-
-function getServicePayload(response) {
-  const root = response?.data !== undefined ? response.data : response;
-
-  if (
-    root &&
-    typeof root === "object" &&
-    !Array.isArray(root) &&
-    root.data !== undefined
-  ) {
-    return root.data;
-  }
-
-  return root;
-}
-
-function getServiceList(response, keys = []) {
-  const root = getServicePayload(response);
-
-  if (Array.isArray(root)) {
-    return root;
-  }
-
-  for (const key of keys) {
-    if (Array.isArray(root?.[key])) {
-      return root[key];
-    }
-  }
-
-  return [];
-}
-
-function getServiceObject(response, keys = []) {
-  const root = getServicePayload(response);
-
-  if (root && typeof root === "object" && !Array.isArray(root)) {
-    for (const key of keys) {
-      if (root[key] && typeof root[key] === "object") {
-        return root[key];
-      }
-    }
-
-    return root;
-  }
-
-  return null;
-}
 
 function getBackendLogId(log) {
   return (
@@ -574,40 +787,45 @@ function getBackendLogId(log) {
   );
 }
 
+
 function getBackendLogStatus(log) {
   return String(
     log?.status ||
-      log?.deploymentStatus ||
-      log?.state ||
-      ""
+    log?.deploymentStatus ||
+    log?.state ||
+    ""
   )
     .trim()
     .toLowerCase();
 }
 
-function normalizeBackendActivityEvent(event, index = 0) {
+
+function normalizeBackendActivityEvent(
+  event,
+  index = 0
+) {
   const message =
     event?.message ||
     event?.description ||
     event?.error?.message ||
     event?.details ||
-    "Deployment activity received.";
+    "Backend activity received.";
 
-  const rawType = String(
-    event?.type ||
+  const rawType =
+    String(
+      event?.type ||
       event?.level ||
       event?.status ||
       "info"
-  ).toLowerCase();
+    ).toLowerCase();
 
   const type =
-    rawType.includes("error") || rawType.includes("fail")
+    rawType.includes("error") ||
+    rawType.includes("fail")
       ? "error"
       : rawType.includes("success") ||
         rawType.includes("complete")
       ? "success"
-      : rawType.includes("warn")
-      ? "info"
       : rawType.includes("progress") ||
         rawType.includes("active")
       ? "active"
@@ -620,178 +838,374 @@ function normalizeBackendActivityEvent(event, index = 0) {
     new Date().toISOString();
 
   return {
-    id: `backend-${
-      event?._id || event?.id || index
-    }-${timestampValue}`,
-    message: String(message),
+    id:
+      `backend-${
+        event?._id ||
+        event?.id ||
+        index
+      }-${timestampValue}`,
+
+    message:
+      String(message),
+
     type,
-    timestamp: new Date(timestampValue).toLocaleTimeString(
-      [],
-      {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }
-    ),
-    source: "backend",
+
+    timestamp:
+      new Date(
+        timestampValue
+      ).toLocaleTimeString(
+        [],
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }
+      ),
+
+    source:
+      "backend",
   };
 }
 
+
 /* =========================================================
-   CHAT
+   MESSAGE
 ========================================================= */
 
-function createMessage(role, content, extra = {}) {
+function createMessage(
+  role,
+  content,
+  extra = {}
+) {
   return {
-    id: `${Date.now()}-${Math.random()}`,
+    id:
+      `${Date.now()}-${Math.random()}`,
+
     role,
+
     content,
-    timestamp: new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
+
+    timestamp:
+      new Date().toLocaleTimeString(
+        [],
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      ),
+
     ...extra,
   };
 }
+
 
 /* =========================================================
    COMPONENT
 ========================================================= */
 
 function Workspace() {
-  const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] =
-    useState(null);
-
-  const selectedProjectRef = useRef(null);
-
-  const [prompt, setPrompt] = useState("");
-  const [framework, setFramework] = useState("React");
-
-  const [loading, setLoading] = useState(false);
-  const [generatedFiles, setGeneratedFiles] = useState([]);
-  const [selectedFile, setSelectedFile] =
-    useState(null);
-
-  const [chatMessages, setChatMessages] = useState([]);
-
-  const [deploymentStatus, setDeploymentStatus] =
-    useState("Not deployed");
-
-  const [liveUrl, setLiveUrl] = useState("");
-
-  const [activeView, setActiveView] =
-    useState("preview");
-
-  const [mobilePanel, setMobilePanel] =
-    useState("workspace");
-
-  const [filesDrawerOpen, setFilesDrawerOpen] =
-    useState(false);
-
-  const [activityDrawerOpen, setActivityDrawerOpen] =
-    useState(false);
-
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [projectLoading, setProjectLoading] =
-    useState(true);
-
-  const [operation, setOperation] =
-    useState("idle");
-
-  const [operationStartedAt, setOperationStartedAt] =
-    useState(null);
-
-  const [elapsedSeconds, setElapsedSeconds] =
-    useState(0);
-
-  const [activityLog, setActivityLog] =
+  const [projects, setProjects] =
     useState([]);
 
-  const [previewFullscreen, setPreviewFullscreen] =
-    useState(false);
+  const [
+    selectedProject,
+    setSelectedProject,
+  ] = useState(null);
+
+  const selectedProjectRef =
+    useRef(null);
+
+  const [
+    prompt,
+    setPrompt,
+  ] = useState("");
+
+  const [
+    framework,
+    setFramework,
+  ] = useState("React");
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  const [
+    generatedFiles,
+    setGeneratedFiles,
+  ] = useState([]);
+
+  const [
+    selectedFile,
+    setSelectedFile,
+  ] = useState(null);
+
+  const [
+    chatMessages,
+    setChatMessages,
+  ] = useState([]);
+
+  const [
+    deploymentStatus,
+    setDeploymentStatus,
+  ] = useState("Not deployed");
+
+  const [
+    liveUrl,
+    setLiveUrl,
+  ] = useState("");
+
+  const [
+    activeView,
+    setActiveView,
+  ] = useState("preview");
+
+  const [
+    mobilePanel,
+    setMobilePanel,
+  ] = useState("workspace");
+
+  const [
+    filesDrawerOpen,
+    setFilesDrawerOpen,
+  ] = useState(false);
+
+  const [
+    activityDrawerOpen,
+    setActivityDrawerOpen,
+  ] = useState(false);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const [
+    notice,
+    setNotice,
+  ] = useState("");
+
+  const [
+    projectLoading,
+    setProjectLoading,
+  ] = useState(true);
+
+  const [
+    operation,
+    setOperation,
+  ] = useState("idle");
+
+  const [
+    operationStartedAt,
+    setOperationStartedAt,
+  ] = useState(null);
+
+  const [
+    elapsedSeconds,
+    setElapsedSeconds,
+  ] = useState(0);
+
+  const [
+    activityLog,
+    setActivityLog,
+  ] = useState([]);
+
+  const [
+    previewFullscreen,
+    setPreviewFullscreen,
+  ] = useState(false);
+
+
+  /* =======================================================
+     AUTHORITATIVE BUILD STATE
+  ======================================================= */
+
+  const [
+    authoritativeBuild,
+    setAuthoritativeBuild,
+  ] = useState(null);
+
+  const [
+    buildSourceHash,
+    setBuildSourceHash,
+  ] = useState("");
+
+  const [
+    buildState,
+    setBuildState,
+  ] = useState("idle");
+
+
+  /* =======================================================
+     PREVIEW STATE
+  ======================================================= */
+
+  const [
+    preview,
+    setPreview,
+  ] = useState(null);
+
+  const [
+    previewState,
+    setPreviewState,
+  ] = useState("idle");
+
+  const [
+    previewError,
+    setPreviewError,
+  ] = useState("");
+
+  const [
+    previewPolling,
+    setPreviewPolling,
+  ] = useState(false);
+
 
   /* =======================================================
      BACKEND WORKSPACE CONTEXT
   ======================================================= */
 
-  const [environments, setEnvironments] =
-    useState([]);
+  const [
+    environments,
+    setEnvironments,
+  ] = useState([]);
 
-  const [activeEnvironment, setActiveEnvironment] =
-    useState("development");
+  const [
+    activeEnvironment,
+    setActiveEnvironment,
+  ] = useState("development");
 
-  const [environmentReadiness, setEnvironmentReadiness] =
-    useState(null);
+  const [
+    environmentReadiness,
+    setEnvironmentReadiness,
+  ] = useState(null);
 
-  const [deploymentLog, setDeploymentLog] =
-    useState(null);
+  const [
+    deploymentLog,
+    setDeploymentLog,
+  ] = useState(null);
 
-  const [deploymentEvents, setDeploymentEvents] =
-    useState([]);
+  const [
+    deploymentEvents,
+    setDeploymentEvents,
+  ] = useState([]);
 
-  const [githubConnection, setGithubConnection] =
-    useState(null);
+  const [
+    githubConnection,
+    setGithubConnection,
+  ] = useState(null);
 
-  const [githubRepository, setGithubRepository] =
-    useState(null);
+  const [
+    githubRepository,
+    setGithubRepository,
+  ] = useState(null);
 
-  const [backendSyncing, setBackendSyncing] =
-    useState(false);
+  const [
+    backendSyncing,
+    setBackendSyncing,
+  ] = useState(false);
 
-  const [backendSyncError, setBackendSyncError] =
-    useState("");
+  const [
+    backendSyncError,
+    setBackendSyncError,
+  ] = useState("");
 
-  const chatEndRef = useRef(null);
-  const initialLoadStarted = useRef(false);
+  const chatEndRef =
+    useRef(null);
 
-  const projectName = getProjectName(selectedProject);
+  const initialLoadStarted =
+    useRef(false);
+
+  const previewPollRef =
+    useRef(null);
+
+
+  /* =======================================================
+     DERIVED STATE
+  ======================================================= */
+
+  const projectName =
+    getProjectName(
+      selectedProject
+    );
+
   const selectedProjectId =
-    getProjectId(selectedProject);
+    getProjectId(
+      selectedProject
+    );
 
-  const projectCount = projects.length;
+  const projectCount =
+    projects.length;
 
   const previewUrl =
-    liveUrl || getPreviewUrl(selectedProject);
-
-  const previewStatus =
-    getPreviewStatus(selectedProject);
+    liveUrl ||
+    extractPreviewUrl(
+      preview
+    );
 
   const operationRunning =
     operation !== "idle";
 
-  const currentOperationLabel = useMemo(() => {
-    if (operation === "build") {
-      return "Building";
-    }
-
-    if (operation === "change") {
-      return "Applying changes";
-    }
-
-    if (operation === "deploy") {
-      return "Deploying";
-    }
-
-    return "Ready";
-  }, [operation]);
-
-  const previewEntryFile = useMemo(() => {
-    return (
-      findFile(generatedFiles, [
-        "index.html",
-        "public/index.html",
-      ]) || null
+  const previewReady =
+    isPreviewRunning(
+      preview
     );
-  }, [generatedFiles]);
+
+  const authoritativeBuildReady =
+    Boolean(
+      authoritativeBuild?.buildId &&
+      authoritativeBuild?.authoritative ===
+        true &&
+      authoritativeBuild?.validationMode ===
+        "authoritative"
+    );
+
+  const canDeploy =
+    Boolean(
+      selectedProjectId &&
+      generatedFiles.length > 0 &&
+      authoritativeBuildReady
+    );
+
+
+  const currentOperationLabel =
+    useMemo(() => {
+      if (
+        operation === "build"
+      ) {
+        return "Building";
+      }
+
+      if (
+        operation === "change"
+      ) {
+        return "Applying changes";
+      }
+
+      if (
+        operation === "preview"
+      ) {
+        return "Starting preview";
+      }
+
+      if (
+        operation === "deploy"
+      ) {
+        return "Deploying";
+      }
+
+      return "Ready";
+    }, [operation]);
+
 
   /* =======================================================
      TIMER
   ======================================================= */
 
   useEffect(() => {
-    if (!operationStartedAt) {
+    if (
+      !operationStartedAt
+    ) {
       setElapsedSeconds(0);
       return undefined;
     }
@@ -801,8 +1215,10 @@ function Workspace() {
         Math.max(
           0,
           Math.floor(
-            (Date.now() - operationStartedAt) /
-              1000
+            (
+              Date.now() -
+              operationStartedAt
+            ) / 1000
           )
         )
       );
@@ -810,25 +1226,36 @@ function Workspace() {
 
     updateTimer();
 
-    const timer = window.setInterval(
-      updateTimer,
-      1000
-    );
+    const timer =
+      window.setInterval(
+        updateTimer,
+        1000
+      );
 
     return () =>
-      window.clearInterval(timer);
-  }, [operationStartedAt]);
+      window.clearInterval(
+        timer
+      );
+  }, [
+    operationStartedAt,
+  ]);
+
 
   /* =======================================================
-     CHAT AUTO SCROLL
+     CHAT SCROLL
   ======================================================= */
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-    });
-  }, [chatMessages]);
+    chatEndRef.current?.scrollIntoView(
+      {
+        behavior: "smooth",
+        block: "nearest",
+      }
+    );
+  }, [
+    chatMessages,
+  ]);
+
 
   /* =======================================================
      SELECTED PROJECT REF
@@ -837,143 +1264,343 @@ function Workspace() {
   useEffect(() => {
     selectedProjectRef.current =
       selectedProject;
-  }, [selectedProject]);
+  }, [
+    selectedProject,
+  ]);
+
 
   /* =======================================================
      ACTIVITY
   ======================================================= */
 
-  const addActivity = useCallback(
-    (message, type = "info") => {
-      setActivityLog((previous) =>
-        [
-          ...previous,
-          {
-            id: `${Date.now()}-${Math.random()}`,
-            message,
-            type,
-            timestamp:
-              new Date().toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              }),
-          },
-        ].slice(-40)
-      );
-    },
-    []
-  );
-
-  const startOperation = useCallback(
-    (type, message) => {
-      setOperation(type);
-      setOperationStartedAt(Date.now());
-
-      addActivity(
+  const addActivity =
+    useCallback(
+      (
         message,
-        "active"
-      );
-    },
-    [addActivity]
-  );
+        type = "info"
+      ) => {
+        setActivityLog(
+          (previous) =>
+            [
+              ...previous,
+              {
+                id:
+                  `${Date.now()}-${Math.random()}`,
 
-  const finishOperation = useCallback(
-    (success, message) => {
-      addActivity(
-        message,
-        success ? "success" : "error"
+                message,
+
+                type,
+
+                timestamp:
+                  new Date().toLocaleTimeString(
+                    [],
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    }
+                  ),
+              },
+            ].slice(-60)
+        );
+      },
+      []
+    );
+
+
+  const startOperation =
+    useCallback(
+      (
+        type,
+        message
+      ) => {
+        setOperation(type);
+
+        setOperationStartedAt(
+          Date.now()
+        );
+
+        addActivity(
+          message,
+          "active"
+        );
+      },
+      [
+        addActivity,
+      ]
+    );
+
+
+  const finishOperation =
+    useCallback(
+      (
+        success,
+        message
+      ) => {
+        addActivity(
+          message,
+          success
+            ? "success"
+            : "error"
+        );
+
+        setOperation(
+          "idle"
+        );
+
+        setOperationStartedAt(
+          null
+        );
+      },
+      [
+        addActivity,
+      ]
+    );
+
+
+  /* =======================================================
+     RESET BUILD / PREVIEW
+  ======================================================= */
+
+  const resetBuildAndPreview =
+    useCallback(() => {
+      setAuthoritativeBuild(
+        null
       );
 
-      setOperation("idle");
-      setOperationStartedAt(null);
-    },
-    [addActivity]
-  );
+      setBuildSourceHash(
+        ""
+      );
+
+      setBuildState(
+        "idle"
+      );
+
+      setPreview(
+        null
+      );
+
+      setPreviewState(
+        "idle"
+      );
+
+      setPreviewError(
+        ""
+      );
+
+      setLiveUrl(
+        ""
+      );
+    }, []);
+
 
   /* =======================================================
      APPLY PROJECT
   ======================================================= */
 
   const applySelectedProject =
-    useCallback((project) => {
-      if (!project) {
-        return;
-      }
+    useCallback(
+      (project) => {
+        if (!project) {
+          return;
+        }
 
-      selectedProjectRef.current =
-        project;
+        selectedProjectRef.current =
+          project;
 
-      setSelectedProject(project);
-
-      const files =
-        normalizeProjectFiles(
-          project,
-          null
+        setSelectedProject(
+          project
         );
 
-      setGeneratedFiles(files);
-      setSelectedFile(files[0] || null);
+        const files =
+          normalizeProjectFiles(
+            project,
+            null
+          );
 
-      setDeploymentStatus(
-        normalizeDeploymentStatus(
-          project?.deploymentStatus ||
+        setGeneratedFiles(
+          files
+        );
+
+        setSelectedFile(
+          files[0] || null
+        );
+
+        setDeploymentStatus(
+          normalizeDeploymentStatus(
+            project?.deploymentStatus ||
             project?.deployment?.status
-        )
-      );
-
-      setLiveUrl(
-        getPreviewUrl(project)
-      );
-
-      const projectFramework =
-        getProjectFramework(project);
-
-      if (
-        FRAMEWORKS.includes(
-          projectFramework
-        )
-      ) {
-        setFramework(
-          projectFramework
+          )
         );
-      }
-    }, []);
+
+        /*
+         * Existing backend preview data may be
+         * attached to the project.
+         *
+         * It is only displayed if a real URL
+         * exists.
+         */
+
+        const existingPreview =
+          project?.preview ||
+          null;
+
+        if (
+          existingPreview &&
+          typeof existingPreview ===
+            "object"
+        ) {
+          setPreview(
+            existingPreview
+          );
+
+          const existingUrl =
+            extractPreviewUrl(
+              existingPreview
+            );
+
+          setLiveUrl(
+            existingUrl
+          );
+
+          setPreviewState(
+            existingUrl
+              ? "ready"
+              : "idle"
+          );
+        } else {
+          setPreview(
+            null
+          );
+
+          setLiveUrl(
+            project?.previewUrl ||
+            ""
+          );
+
+          setPreviewState(
+            project?.previewUrl
+              ? "ready"
+              : "idle"
+          );
+        }
+
+
+        /*
+         * Existing authoritative build metadata.
+         */
+
+        const existingBuild =
+          extractAuthoritativeBuild(
+            project
+          );
+
+        if (existingBuild) {
+          setAuthoritativeBuild(
+            existingBuild
+          );
+
+          setBuildSourceHash(
+            extractSourceHash(
+              project
+            )
+          );
+
+          setBuildState(
+            "success"
+          );
+        } else {
+          setAuthoritativeBuild(
+            null
+          );
+
+          setBuildSourceHash(
+            ""
+          );
+
+          setBuildState(
+            "idle"
+          );
+        }
+
+
+        const projectFramework =
+          getProjectFramework(
+            project
+          );
+
+        if (
+          FRAMEWORKS.includes(
+            projectFramework
+          )
+        ) {
+          setFramework(
+            projectFramework
+          );
+        }
+      },
+      []
+    );
+
 
   /* =======================================================
-     BACKEND CONTEXT SYNC
+     BACKEND CONTEXT
   ======================================================= */
 
   const syncBackendContext =
     useCallback(
-      async (projectId) => {
+      async (
+        projectId
+      ) => {
         if (!projectId) {
           setEnvironments([]);
-          setEnvironmentReadiness(null);
-          setDeploymentLog(null);
-          setDeploymentEvents([]);
-          setGithubConnection(null);
-          setGithubRepository(null);
+          setEnvironmentReadiness(
+            null
+          );
+          setDeploymentLog(
+            null
+          );
+          setDeploymentEvents(
+            []
+          );
+          setGithubConnection(
+            null
+          );
+          setGithubRepository(
+            null
+          );
+
           return;
         }
 
-        setBackendSyncing(true);
-        setBackendSyncError("");
+        setBackendSyncing(
+          true
+        );
+
+        setBackendSyncError(
+          ""
+        );
 
         const results =
-          await Promise.allSettled([
-            environmentService.listEnvironments(
-              projectId
-            ),
+          await Promise.allSettled(
+            [
+              environmentService.listEnvironments(
+                projectId
+              ),
 
-            deploymentLogService.getLatestLog({
-              projectId,
-            }),
+              deploymentLogService.getLatestLog(
+                {
+                  projectId,
+                }
+              ),
 
-            githubService.getConnections({
-              projectId,
-            }),
-          ]);
+              githubService.getConnections(
+                {
+                  projectId,
+                }
+              ),
+            ]
+          );
 
         const environmentResult =
           results[0];
@@ -984,8 +1611,6 @@ function Workspace() {
         const githubResult =
           results[2];
 
-        let firstEnvironment =
-          null;
 
         if (
           environmentResult.status ===
@@ -1000,15 +1625,17 @@ function Workspace() {
               ]
             );
 
-          setEnvironments(list);
+          setEnvironments(
+            list
+          );
 
-          firstEnvironment =
+          const firstEnvironment =
             list.find(
               (item) =>
                 String(
                   item?.name ||
-                    item?.environment ||
-                    ""
+                  item?.environment ||
+                  ""
                 ).toLowerCase() ===
                 String(
                   activeEnvironment
@@ -1017,7 +1644,9 @@ function Workspace() {
             list[0] ||
             null;
 
-          if (firstEnvironment) {
+          if (
+            firstEnvironment
+          ) {
             const name =
               firstEnvironment?.name ||
               firstEnvironment?.environment ||
@@ -1048,15 +1677,14 @@ function Workspace() {
                 null
               );
             }
-          } else {
-            setEnvironmentReadiness(
-              null
-            );
           }
         } else {
           setEnvironments([]);
-          setEnvironmentReadiness(null);
+          setEnvironmentReadiness(
+            null
+          );
         }
+
 
         if (
           deploymentResult.status ===
@@ -1072,10 +1700,14 @@ function Workspace() {
               ]
             );
 
-          setDeploymentLog(log);
+          setDeploymentLog(
+            log
+          );
 
           const logId =
-            getBackendLogId(log);
+            getBackendLogId(
+              log
+            );
 
           if (logId) {
             try {
@@ -1109,26 +1741,13 @@ function Workspace() {
                 )
               );
             } catch {
-              setDeploymentEvents([]);
+              setDeploymentEvents(
+                []
+              );
             }
-          } else {
-            setDeploymentEvents([]);
           }
-
-          const logStatus =
-            getBackendLogStatus(log);
-
-          if (logStatus) {
-            setDeploymentStatus(
-              normalizeDeploymentStatus(
-                logStatus
-              )
-            );
-          }
-        } else {
-          setDeploymentLog(null);
-          setDeploymentEvents([]);
         }
+
 
         if (
           githubResult.status ===
@@ -1152,7 +1771,7 @@ function Workspace() {
                 ].includes(
                   String(
                     item?.status ||
-                      ""
+                    ""
                   ).toLowerCase()
                 )
             ) ||
@@ -1165,14 +1784,12 @@ function Workspace() {
 
           setGithubRepository(
             activeConnection?.defaultRepository ||
-              activeConnection?.repository ||
-              activeConnection?.defaultRepo ||
-              null
+            activeConnection?.repository ||
+            activeConnection?.defaultRepo ||
+            null
           );
-        } else {
-          setGithubConnection(null);
-          setGithubRepository(null);
         }
+
 
         if (
           environmentResult.status ===
@@ -1187,153 +1804,18 @@ function Workspace() {
           );
         }
 
-        setBackendSyncing(false);
+        setBackendSyncing(
+          false
+        );
       },
-      [activeEnvironment]
+      [
+        activeEnvironment,
+      ]
     );
 
-  /* =======================================================
-     DEPLOYMENT LOG REFRESH
-  ======================================================= */
-
-  useEffect(() => {
-    if (!selectedProjectId) {
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    const refresh = async () => {
-      try {
-        const response =
-          await deploymentLogService.getLatestLog(
-            {
-              projectId:
-                selectedProjectId,
-            }
-          );
-
-        if (cancelled) {
-          return;
-        }
-
-        const log =
-          getServiceObject(
-            response,
-            [
-              "log",
-              "deploymentLog",
-              "latest",
-            ]
-          );
-
-        if (!log) {
-          return;
-        }
-
-        setDeploymentLog(log);
-
-        const status =
-          getBackendLogStatus(log);
-
-        if (status) {
-          setDeploymentStatus(
-            normalizeDeploymentStatus(
-              status
-            )
-          );
-        }
-
-        const logId =
-          getBackendLogId(log);
-
-        if (!logId) {
-          return;
-        }
-
-        const eventsResponse =
-          await deploymentLogService.getEvents(
-            logId,
-            {
-              limit: 40,
-            }
-          );
-
-        if (cancelled) {
-          return;
-        }
-
-        const events =
-          getServiceList(
-            eventsResponse,
-            [
-              "events",
-              "items",
-            ]
-          );
-
-        setDeploymentEvents(
-          events.map(
-            (
-              event,
-              index
-            ) =>
-              normalizeBackendActivityEvent(
-                event,
-                index
-              )
-          )
-        );
-      } catch {
-        /* Background refresh must not replace main UI error. */
-      }
-    };
-
-    refresh();
-
-    const activeStatuses = [
-      "pending",
-      "building",
-      "deploying",
-      "in_progress",
-      "in-progress",
-      "running",
-    ];
-
-    const currentStatus =
-      getBackendLogStatus(
-        deploymentLog
-      );
-
-    if (
-      !activeStatuses.includes(
-        currentStatus
-      )
-    ) {
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const interval =
-      window.setInterval(
-        refresh,
-        5000
-      );
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(
-        interval
-      );
-    };
-  }, [
-    selectedProjectId,
-    deploymentLog,
-  ]);
 
   /* =======================================================
-     LOAD PROJECTS
+     PROJECT LOAD
   ======================================================= */
 
   const loadProjects =
@@ -1342,7 +1824,9 @@ function Workspace() {
         preferredProjectId = ""
       ) => {
         try {
-          setProjectLoading(true);
+          setProjectLoading(
+            true
+          );
 
           const response =
             await getProjects();
@@ -1352,7 +1836,9 @@ function Workspace() {
               response
             );
 
-          setProjects(normalized);
+          setProjects(
+            normalized
+          );
 
           const currentId =
             preferredProjectId ||
@@ -1389,9 +1875,9 @@ function Workspace() {
             }
           }
 
+
           if (
-            normalized.length >
-            0
+            normalized.length > 0
           ) {
             applySelectedProject(
               normalized[0]
@@ -1410,12 +1896,19 @@ function Workspace() {
               null
             );
 
-            setGeneratedFiles([]);
-            setSelectedFile(null);
+            setGeneratedFiles(
+              []
+            );
+
+            setSelectedFile(
+              null
+            );
+
+            resetBuildAndPreview();
+
             setDeploymentStatus(
               "Not deployed"
             );
-            setLiveUrl("");
           }
 
           return normalized;
@@ -1434,14 +1927,18 @@ function Workspace() {
 
           return [];
         } finally {
-          setProjectLoading(false);
+          setProjectLoading(
+            false
+          );
         }
       },
       [
         applySelectedProject,
         syncBackendContext,
+        resetBuildAndPreview,
       ]
     );
+
 
   /* =======================================================
      INITIAL LOAD
@@ -1458,7 +1955,10 @@ function Workspace() {
       true;
 
     loadProjects();
-  }, [loadProjects]);
+  }, [
+    loadProjects,
+  ]);
+
 
   /* =======================================================
      PROJECT SELECTION
@@ -1497,7 +1997,9 @@ function Workspace() {
         );
 
         syncBackendContext(
-          getProjectId(project)
+          getProjectId(
+            project
+          )
         );
       },
       [
@@ -1505,6 +2007,7 @@ function Workspace() {
         syncBackendContext,
       ]
     );
+
 
   /* =======================================================
      NEW PROJECT
@@ -1515,14 +2018,26 @@ function Workspace() {
       selectedProjectRef.current =
         null;
 
-      setSelectedProject(null);
-      setGeneratedFiles([]);
-      setSelectedFile(null);
+      setSelectedProject(
+        null
+      );
 
-      setPrompt("");
-      setChatMessages([]);
+      setGeneratedFiles(
+        []
+      );
 
-      setLiveUrl("");
+      setSelectedFile(
+        null
+      );
+
+      setPrompt(
+        ""
+      );
+
+      setChatMessages(
+        []
+      );
+
       setDeploymentStatus(
         "Not deployed"
       );
@@ -1551,12 +2066,20 @@ function Workspace() {
       setNotice("");
       setActivityLog([]);
 
-      setOperation("idle");
+      setOperation(
+        "idle"
+      );
+
       setOperationStartedAt(
         null
       );
 
-      setEnvironments([]);
+      resetBuildAndPreview();
+
+      setEnvironments(
+        []
+      );
+
       setActiveEnvironment(
         "development"
       );
@@ -1565,8 +2088,13 @@ function Workspace() {
         null
       );
 
-      setDeploymentLog(null);
-      setDeploymentEvents([]);
+      setDeploymentLog(
+        null
+      );
+
+      setDeploymentEvents(
+        []
+      );
 
       setGithubConnection(
         null
@@ -1576,8 +2104,13 @@ function Workspace() {
         null
       );
 
-      setBackendSyncError("");
-    }, []);
+      setBackendSyncError(
+        ""
+      );
+    }, [
+      resetBuildAndPreview,
+    ]);
+
 
   /* =======================================================
      QUICK PROMPT
@@ -1586,24 +2119,393 @@ function Workspace() {
   const handleQuickPrompt =
     useCallback(
       (value) => {
-        setPrompt(value);
+        setPrompt(
+          value
+        );
+
         setError("");
         setNotice("");
 
         setMobilePanel(
-          "workspace"
+          "ai"
         );
 
-        window.setTimeout(() => {
-          document
-            .querySelector(
-              '[data-zyrionos-chat-input="true"]'
-            )
-            ?.focus();
-        }, 50);
+        window.setTimeout(
+          () => {
+            document
+              .querySelector(
+                '[data-zyrionos-chat-input="true"]'
+              )
+              ?.focus();
+          },
+          50
+        );
       },
       []
     );
+
+
+  /* =======================================================
+     START REAL PREVIEW
+  ======================================================= */
+
+  const startRealPreview =
+    useCallback(
+      async (
+        projectId,
+        build
+      ) => {
+        if (
+          !projectId
+        ) {
+          throw new Error(
+            "Project ID is required before creating a preview."
+          );
+        }
+
+        if (
+          !build?.buildId
+        ) {
+          throw new Error(
+            "The backend did not return an authoritative build ID. Preview cannot be started."
+          );
+        }
+
+        setPreviewError(
+          ""
+        );
+
+        setPreviewState(
+          "starting"
+        );
+
+        startOperation(
+          "preview",
+          "Starting the isolated backend preview runtime..."
+        );
+
+        addActivity(
+          "Verifying the authoritative build artifact...",
+          "active"
+        );
+
+        let response;
+
+        try {
+          response =
+            await createPreview(
+              projectId,
+              {
+                buildId:
+                  build.buildId,
+
+                sourceHash:
+                  buildSourceHash ||
+                  undefined,
+              }
+            );
+        } catch (error) {
+          setPreviewState(
+            "error"
+          );
+
+          setPreviewError(
+            getErrorMessage(
+              error,
+              "The backend preview runtime could not be started."
+            )
+          );
+
+          finishOperation(
+            false,
+            "Preview runtime failed to start."
+          );
+
+          throw error;
+        }
+
+        const createdPreview =
+          extractPreview(
+            response
+          );
+
+        if (
+          !createdPreview
+        ) {
+          setPreviewState(
+            "error"
+          );
+
+          const message =
+            "Preview service returned no preview runtime.";
+
+          setPreviewError(
+            message
+          );
+
+          finishOperation(
+            false,
+            message
+          );
+
+          throw new Error(
+            message
+          );
+        }
+
+        setPreview(
+          createdPreview
+        );
+
+        const url =
+          extractPreviewUrl(
+            createdPreview
+          );
+
+        if (url) {
+          setLiveUrl(
+            url
+          );
+        }
+
+        addActivity(
+          "Preview runtime created by the backend.",
+          "success"
+        );
+
+        const status =
+          normalizePreviewStatus(
+            createdPreview
+          );
+
+        if (
+          isPreviewRunning(
+            createdPreview
+          )
+        ) {
+          setPreviewState(
+            "ready"
+          );
+
+          finishOperation(
+            true,
+            "Preview runtime is healthy."
+          );
+
+          return createdPreview;
+        }
+
+        /*
+         * Backend may return "starting",
+         * "building" or another transitional
+         * status. Poll the real health endpoint.
+         */
+
+        const previewId =
+          extractPreviewId(
+            createdPreview
+          );
+
+        if (!previewId) {
+          setPreviewState(
+            "error"
+          );
+
+          const message =
+            `Preview runtime returned status "${status || "unknown"}" but no preview ID was returned.`;
+
+          setPreviewError(
+            message
+          );
+
+          finishOperation(
+            false,
+            "Preview runtime returned an invalid response."
+          );
+
+          throw new Error(
+            message
+          );
+        }
+
+        setPreviewPolling(
+          true
+        );
+
+        for (
+          let attempt = 0;
+          attempt <
+            PREVIEW_MAX_POLLS;
+          attempt += 1
+        ) {
+          await new Promise(
+            (resolve) =>
+              window.setTimeout(
+                resolve,
+                PREVIEW_POLL_INTERVAL
+              )
+          );
+
+          try {
+            const healthResponse =
+              await getPreviewHealth(
+                projectId,
+                previewId
+              );
+
+            const healthPreview =
+              extractPreview(
+                healthResponse
+              );
+
+            const nextPreview =
+              healthPreview ||
+              createdPreview;
+
+            setPreview(
+              nextPreview
+            );
+
+            const nextUrl =
+              extractPreviewUrl(
+                nextPreview
+              );
+
+            if (nextUrl) {
+              setLiveUrl(
+                nextUrl
+              );
+            }
+
+            if (
+              isPreviewRunning(
+                nextPreview
+              )
+            ) {
+              setPreviewState(
+                "ready"
+              );
+
+              setPreviewPolling(
+                false
+              );
+
+              addActivity(
+                "Preview health check passed.",
+                "success"
+              );
+
+              finishOperation(
+                true,
+                "Preview runtime is ready."
+              );
+
+              return nextPreview;
+            }
+
+            if (
+              isPreviewTerminalFailure(
+                nextPreview
+              )
+            ) {
+              const failure =
+                nextPreview?.errorMessage ||
+                nextPreview?.error?.message ||
+                "Preview runtime entered a failed state.";
+
+              setPreviewState(
+                "error"
+              );
+
+              setPreviewError(
+                failure
+              );
+
+              setPreviewPolling(
+                false
+              );
+
+              addActivity(
+                failure,
+                "error"
+              );
+
+              finishOperation(
+                false,
+                "Preview runtime failed."
+              );
+
+              throw new Error(
+                failure
+              );
+            }
+          } catch (
+            healthError
+          ) {
+            if (
+              attempt >=
+              PREVIEW_MAX_POLLS - 1
+            ) {
+              setPreviewPolling(
+                false
+              );
+
+              setPreviewState(
+                "error"
+              );
+
+              const message =
+                getErrorMessage(
+                  healthError,
+                  "Preview health could not be verified."
+                );
+
+              setPreviewError(
+                message
+              );
+
+              finishOperation(
+                false,
+                message
+              );
+
+              throw healthError;
+            }
+          }
+        }
+
+        setPreviewPolling(
+          false
+        );
+
+        setPreviewState(
+          "error"
+        );
+
+        const timeoutMessage =
+          "Preview runtime did not become healthy within the allowed startup window.";
+
+        setPreviewError(
+          timeoutMessage
+        );
+
+        finishOperation(
+          false,
+          timeoutMessage
+        );
+
+        throw new Error(
+          timeoutMessage
+        );
+      },
+      [
+        buildSourceHash,
+        startOperation,
+        addActivity,
+        finishOperation,
+      ]
+    );
+
 
   /* =======================================================
      BUILD / CHANGE
@@ -1617,7 +2519,7 @@ function Workspace() {
         const userPrompt =
           String(
             suppliedPrompt ||
-              prompt
+            prompt
           ).trim();
 
         if (!userPrompt) {
@@ -1628,7 +2530,9 @@ function Workspace() {
           return;
         }
 
-        if (loading) {
+        if (
+          loading
+        ) {
           return;
         }
 
@@ -1640,7 +2544,30 @@ function Workspace() {
         try {
           setError("");
           setNotice("");
-          setLoading(true);
+
+          setLoading(
+            true
+          );
+
+          setBuildState(
+            "generating"
+          );
+
+          setPreviewState(
+            "idle"
+          );
+
+          setPreviewError(
+            ""
+          );
+
+          setLiveUrl(
+            ""
+          );
+
+          setPreview(
+            null
+          );
 
           setActiveView(
             "preview"
@@ -1664,15 +2591,17 @@ function Workspace() {
             isExistingProject
               ? "change"
               : "build",
+
             isExistingProject
               ? "Your change request is being processed..."
-              : "Your application is being built..."
+              : "Your application is being generated..."
           );
 
           addActivity(
             "Understanding the request...",
             "active"
           );
+
 
           const instruction =
             isExistingProject
@@ -1688,13 +2617,17 @@ function Workspace() {
                   "",
                   "Return the complete project files required for the implementation.",
                   "Preserve working functionality unless the requested change requires modifying it.",
-                ].join("\n")
+                ].join(
+                  "\n"
+                )
               : userPrompt;
 
+
           addActivity(
-            "Generating the application files...",
+            "Generating application files...",
             "active"
           );
+
 
           const aiResult =
             await generateCode(
@@ -1702,20 +2635,18 @@ function Workspace() {
               framework
             );
 
-          addActivity(
-            "Application files generated.",
-            "success"
-          );
 
           const assistantText =
             normalizeAIResponse(
               aiResult
             );
 
+
           const filesFromAI =
             getGeneratedFiles(
               aiResult
             );
+
 
           if (
             filesFromAI.length ===
@@ -1726,10 +2657,12 @@ function Workspace() {
             );
           }
 
+
           addActivity(
-            `${filesFromAI.length} project files received.`,
+            `${filesFromAI.length} project files received from the backend.`,
             "success"
           );
+
 
           setChatMessages(
             (previous) => [
@@ -1737,7 +2670,7 @@ function Workspace() {
               createMessage(
                 "assistant",
                 assistantText ||
-                  `The application is ready. ${filesFromAI.length} files were generated.`,
+                  `The backend returned ${filesFromAI.length} project files.`,
                 {
                   fileCount:
                     filesFromAI.length,
@@ -1745,6 +2678,14 @@ function Workspace() {
               ),
             ]
           );
+
+
+          let projectAfterSave =
+            null;
+
+          let saveResponse =
+            null;
+
 
           /* =================================================
              CREATE NEW PROJECT
@@ -1758,33 +2699,42 @@ function Workspace() {
                 userPrompt
               );
 
+
             addActivity(
-              "Saving the project to your workspace...",
+              "Saving the generated project...",
               "active"
             );
 
-            const projectResponse =
-              await createProject({
-                projectName:
-                  generatedProjectName,
-                description:
-                  userPrompt,
-                framework,
-                files:
-                  filesFromAI,
-              });
 
-            let createdProject =
-              extractProjectFromResponse(
-                projectResponse
+            saveResponse =
+              await createProject(
+                {
+                  projectName:
+                    generatedProjectName,
+
+                  description:
+                    userPrompt,
+
+                  framework,
+
+                  files:
+                    filesFromAI,
+                }
               );
 
+
+            projectAfterSave =
+              extractProjectFromResponse(
+                saveResponse
+              );
+
+
             if (
-              !createdProject
+              !projectAfterSave
             ) {
               const unwrapped =
                 unwrapApiResponse(
-                  projectResponse
+                  saveResponse
                 );
 
               if (
@@ -1803,17 +2753,18 @@ function Workspace() {
                   )
                 )
               ) {
-                createdProject =
+                projectAfterSave =
                   unwrapped;
               }
             }
 
+
             if (
-              createdProject
+              projectAfterSave
             ) {
               const savedFiles =
                 normalizeProjectFiles(
-                  createdProject,
+                  projectAfterSave,
                   null
                 );
 
@@ -1825,12 +2776,13 @@ function Workspace() {
 
               const projectWithFiles =
                 {
-                  ...createdProject,
+                  ...projectAfterSave,
                   projectName:
                     getProjectName(
-                      createdProject
+                      projectAfterSave
                     ) ||
                     generatedProjectName,
+
                   files:
                     finalFiles,
                 };
@@ -1847,37 +2799,45 @@ function Workspace() {
                 finalFiles[0] ||
                   null
               );
-
-              const createdId =
-                getProjectId(
-                  createdProject
-                );
-
-              if (createdId) {
-                await loadProjects(
-                  createdId
-                );
-              } else {
-                await loadProjects();
-              }
-            } else {
-              await loadProjects();
             }
 
-            setNotice(
-              `${generatedProjectName} was created and saved to your projects.`
-            );
-          } else {
-            /* ===============================================
-               UPDATE EXISTING PROJECT
-            =============================================== */
 
+            /*
+             * Refresh the authoritative project
+             * representation from backend.
+             */
+
+            const createdId =
+              getProjectId(
+                projectAfterSave
+              );
+
+            await loadProjects(
+              createdId
+            );
+
+            projectAfterSave =
+              selectedProjectRef.current ||
+              projectAfterSave;
+
+            setNotice(
+              `${generatedProjectName} was created and saved.`
+            );
+          }
+
+
+          /* =================================================
+             UPDATE EXISTING PROJECT
+          ================================================= */
+
+          else {
             addActivity(
               "Saving the updated project...",
               "active"
             );
 
-            const updateResponse =
+
+            saveResponse =
               await updateProject(
                 selectedProjectId,
                 {
@@ -1886,23 +2846,26 @@ function Workspace() {
                 }
               );
 
-            const updatedProject =
+
+            projectAfterSave =
               extractProjectFromResponse(
-                updateResponse
+                saveResponse
               );
 
+
             if (
-              updatedProject
+              projectAfterSave
             ) {
               const returnedFiles =
                 normalizeProjectFiles(
-                  updatedProject,
+                  projectAfterSave,
                   null
                 );
 
-              const appliedUpdatedProject =
+              const appliedProject =
                 {
-                  ...updatedProject,
+                  ...projectAfterSave,
+
                   files:
                     returnedFiles.length >
                     0
@@ -1911,33 +2874,38 @@ function Workspace() {
                 };
 
               applySelectedProject(
-                appliedUpdatedProject
+                appliedProject
               );
 
-              await syncBackendContext(
-                getProjectId(
-                  appliedUpdatedProject
-                ) ||
-                  selectedProjectId
+              setGeneratedFiles(
+                appliedProject.files
+              );
+
+              setSelectedFile(
+                appliedProject.files[0] ||
+                  null
               );
             } else {
-              await loadProjects(
-                selectedProjectId
+              setGeneratedFiles(
+                filesFromAI
+              );
+
+              setSelectedFile(
+                filesFromAI[0] ||
+                  null
               );
             }
 
-            setGeneratedFiles(
-              filesFromAI
+
+            await loadProjects(
+              selectedProjectId
             );
 
-            setSelectedFile(
-              filesFromAI[0] ||
-                null
-            );
 
             setNotice(
               `Changes saved to ${projectName}.`
             );
+
 
             addActivity(
               "Project changes saved.",
@@ -1945,17 +2913,161 @@ function Workspace() {
             );
           }
 
-          setPrompt("");
-          setActiveView(
-            "preview"
+
+          /*
+           * IMPORTANT:
+           *
+           * Do not pretend that AI generation is
+           * an authoritative build.
+           *
+           * We only accept an authoritative build
+           * if the backend actually returned one.
+           */
+
+          const build =
+            extractAuthoritativeBuild(
+              aiResult,
+              saveResponse,
+              projectAfterSave,
+              selectedProjectRef.current
+            );
+
+
+          if (!build) {
+            setBuildState(
+              "waiting"
+            );
+
+            setAuthoritativeBuild(
+              null
+            );
+
+            setPreviewState(
+              "blocked"
+            );
+
+            const message =
+              "Project files were saved, but the backend did not return an authoritative build ID. The live preview has not been fabricated or started.";
+
+            addActivity(
+              message,
+              "error"
+            );
+
+            setError(
+              message
+            );
+
+            setPrompt("");
+
+            finishOperation(
+              false,
+              "Project saved, but authoritative build is still unavailable."
+            );
+
+            return;
+          }
+
+
+          setAuthoritativeBuild(
+            build
           );
 
-          finishOperation(
-            true,
-            isExistingProject
-              ? "Changes completed successfully."
-              : "Project build completed successfully."
+          const sourceHash =
+            extractSourceHash(
+              build,
+              aiResult,
+              saveResponse
+            );
+
+          setBuildSourceHash(
+            sourceHash
           );
+
+          setBuildState(
+            "success"
+          );
+
+
+          addActivity(
+            `Authoritative build ${build.buildId} returned by backend.`,
+            "success"
+          );
+
+
+          /*
+           * Preview is created ONLY from the
+           * authoritative successful build.
+           */
+
+          const buildStatus =
+            String(
+              build.status ||
+              ""
+            ).toLowerCase();
+
+
+          if (
+            buildStatus &&
+            buildStatus !==
+              "success"
+          ) {
+            setPreviewState(
+              "blocked"
+            );
+
+            const message =
+              `Authoritative build ${build.buildId} is not successful yet. Current status: ${buildStatus}.`;
+
+            setError(
+              message
+            );
+
+            addActivity(
+              message,
+              "error"
+            );
+
+            finishOperation(
+              false,
+              "Authoritative build is not ready for preview."
+            );
+
+            return;
+          }
+
+
+          setLoading(
+            false
+          );
+
+
+          try {
+            await startRealPreview(
+              getProjectId(
+                projectAfterSave ||
+                selectedProjectRef.current
+              ) ||
+                selectedProjectId,
+              build
+            );
+
+            setPrompt("");
+
+            setActiveView(
+              "preview"
+            );
+
+            setNotice(
+              "Authoritative build completed and the real preview runtime is ready."
+            );
+          } catch {
+            /*
+             * startRealPreview already updates
+             * preview state and error.
+             */
+          }
+
         } catch (err) {
           console.error(
             "Workspace build error:",
@@ -1967,6 +3079,14 @@ function Workspace() {
               err,
               "The build could not be completed."
             );
+
+          setBuildState(
+            "failed"
+          );
+
+          setError(
+            message
+          );
 
           setChatMessages(
             (previous) => [
@@ -1981,14 +3101,19 @@ function Workspace() {
             ]
           );
 
-          setError(message);
+          addActivity(
+            message,
+            "error"
+          );
 
           finishOperation(
             false,
-            "The build could not be completed."
+            "The build operation failed."
           );
         } finally {
-          setLoading(false);
+          setLoading(
+            false
+          );
         }
       },
       [
@@ -2001,10 +3126,11 @@ function Workspace() {
         addActivity,
         applySelectedProject,
         loadProjects,
-        syncBackendContext,
         finishOperation,
+        startRealPreview,
       ]
     );
+
 
   /* =======================================================
      CHAT SUBMIT
@@ -2022,7 +3148,9 @@ function Workspace() {
           return;
         }
 
-        handleBuild(prompt);
+        handleBuild(
+          prompt
+        );
       },
       [
         loading,
@@ -2031,6 +3159,7 @@ function Workspace() {
       ]
     );
 
+
   /* =======================================================
      REVIEW / FIX
   ======================================================= */
@@ -2038,7 +3167,9 @@ function Workspace() {
   const handleReviewFix =
     useCallback(
       async () => {
-        if (!selectedProjectId) {
+        if (
+          !selectedProjectId
+        ) {
           setError(
             "Select a project before running Review / Fix."
           );
@@ -2046,7 +3177,9 @@ function Workspace() {
           return;
         }
 
-        if (loading) {
+        if (
+          loading
+        ) {
           return;
         }
 
@@ -2062,14 +3195,18 @@ function Workspace() {
                 prompt.trim(),
                 "",
                 "Return the complete project files required for the implementation.",
-              ].join("\n")
+              ].join(
+                "\n"
+              )
             : [
                 "Review the current project.",
                 "",
-                "Check for implementation errors, broken user experience, responsive issues, accessibility problems, and incomplete functionality.",
+                "Check the current implementation for errors, broken functionality, responsive problems, accessibility issues, incomplete functionality and build/runtime problems.",
                 "",
                 "Return the complete project files required for any fixes.",
-              ].join("\n");
+              ].join(
+                "\n"
+              );
 
         setPrompt(
           reviewInstruction
@@ -2088,18 +3225,16 @@ function Workspace() {
       ]
     );
 
+
   /* =======================================================
      DEPLOY
   ======================================================= */
 
   const handleDeploy =
     useCallback(() => {
-      const projectId =
-        getProjectId(
-          selectedProject
-        );
-
-      if (!projectId) {
+      if (
+        !selectedProjectId
+      ) {
         setError(
           "Select a project before deploying."
         );
@@ -2118,40 +3253,111 @@ function Workspace() {
         return;
       }
 
+      if (
+        !authoritativeBuildReady
+      ) {
+        setError(
+          "Deployment is blocked until the backend reports a successful authoritative build."
+        );
+
+        return;
+      }
+
       setError("");
 
       setNotice(
-        "Opening the deployment flow for this project..."
+        "Opening the deployment flow for the successfully built project..."
       );
 
       window.location.assign(
         `/billing?projectId=${encodeURIComponent(
-          projectId
-        )}&intent=deploy`
+          selectedProjectId
+        )}&intent=deploy&buildId=${encodeURIComponent(
+          authoritativeBuild.buildId
+        )}`
       );
     }, [
-      selectedProject,
+      selectedProjectId,
       generatedFiles.length,
+      authoritativeBuildReady,
+      authoritativeBuild,
     ]);
 
+
   /* =======================================================
-     PREVIEW
+     PREVIEW OPEN
   ======================================================= */
 
   const openPreview =
-    useCallback(() => {
-      setActiveView(
-        "preview"
-      );
+    useCallback(
+      async () => {
+        setActiveView(
+          "preview"
+        );
 
-      setMobilePanel(
-        "workspace"
-      );
+        setMobilePanel(
+          "workspace"
+        );
 
-      setPreviewFullscreen(
-        true
-      );
-    }, []);
+        setPreviewFullscreen(
+          true
+        );
+
+        /*
+         * If an active preview already exists,
+         * use it. Do not create a duplicate runtime.
+         */
+
+        if (
+          selectedProjectId &&
+          preview
+        ) {
+          const status =
+            normalizePreviewStatus(
+              preview
+            );
+
+          if (
+            [
+              "running",
+              "ready",
+              "active",
+              "healthy",
+            ].includes(
+              status
+            )
+          ) {
+            return;
+          }
+        }
+
+
+        if (
+          !selectedProjectId ||
+          !authoritativeBuildReady
+        ) {
+          return;
+        }
+
+
+        try {
+          await startRealPreview(
+            selectedProjectId,
+            authoritativeBuild
+          );
+        } catch {
+          /* State already updated. */
+        }
+      },
+      [
+        selectedProjectId,
+        preview,
+        authoritativeBuildReady,
+        authoritativeBuild,
+        startRealPreview,
+      ]
+    );
+
 
   const closePreview =
     useCallback(() => {
@@ -2159,6 +3365,86 @@ function Workspace() {
         false
       );
     }, []);
+
+
+  /* =======================================================
+     STOP PREVIEW
+  ======================================================= */
+
+  const handleStopPreview =
+    useCallback(
+      async () => {
+        const previewId =
+          extractPreviewId(
+            preview
+          );
+
+        if (
+          !selectedProjectId ||
+          !previewId
+        ) {
+          return;
+        }
+
+        try {
+          setPreviewState(
+            "stopping"
+          );
+
+          addActivity(
+            "Stopping preview runtime...",
+            "active"
+          );
+
+          await stopPreview(
+            selectedProjectId,
+            previewId
+          );
+
+          setPreview(
+            null
+          );
+
+          setLiveUrl(
+            ""
+          );
+
+          setPreviewState(
+            "stopped"
+          );
+
+          addActivity(
+            "Preview runtime stopped.",
+            "success"
+          );
+        } catch (err) {
+          const message =
+            getErrorMessage(
+              err,
+              "Preview runtime could not be stopped."
+            );
+
+          setPreviewError(
+            message
+          );
+
+          setPreviewState(
+            "error"
+          );
+
+          addActivity(
+            message,
+            "error"
+          );
+        }
+      },
+      [
+        selectedProjectId,
+        preview,
+        addActivity,
+      ]
+    );
+
 
   /* =======================================================
      FILES / ACTIVITY
@@ -2175,12 +3461,14 @@ function Workspace() {
       );
     }, []);
 
+
   const closeFilesDrawer =
     useCallback(() => {
       setFilesDrawerOpen(
         false
       );
     }, []);
+
 
   const openActivityDrawer =
     useCallback(() => {
@@ -2193,6 +3481,7 @@ function Workspace() {
       );
     }, []);
 
+
   const closeActivityDrawer =
     useCallback(() => {
       setActivityDrawerOpen(
@@ -2200,19 +3489,25 @@ function Workspace() {
       );
     }, []);
 
+
   const handleFileSelect =
     useCallback(
       (file) => {
-        setSelectedFile(file);
+        setSelectedFile(
+          file
+        );
+
         setFilesDrawerOpen(
           false
         );
+
         setActiveView(
           "code"
         );
       },
       []
     );
+
 
   /* =======================================================
      KEYBOARD
@@ -2222,44 +3517,212 @@ function Workspace() {
     useCallback(
       (event) => {
         if (
-          event.key === "Enter" &&
+          event.key ===
+            "Enter" &&
           !event.shiftKey
         ) {
           event.preventDefault();
-          handleChatSubmit(event);
+
+          handleChatSubmit(
+            event
+          );
         }
       },
-      [handleChatSubmit]
+      [
+        handleChatSubmit,
+      ]
     );
+
+
+  /* =======================================================
+     DEPLOYMENT LOG REFRESH
+  ======================================================= */
+
+  useEffect(() => {
+    if (
+      !selectedProjectId
+    ) {
+      return undefined;
+    }
+
+    let cancelled =
+      false;
+
+    const refresh =
+      async () => {
+        try {
+          const response =
+            await deploymentLogService.getLatestLog(
+              {
+                projectId:
+                  selectedProjectId,
+              }
+            );
+
+          if (
+            cancelled
+          ) {
+            return;
+          }
+
+          const log =
+            getServiceObject(
+              response,
+              [
+                "log",
+                "deploymentLog",
+                "latest",
+              ]
+            );
+
+          if (!log) {
+            return;
+          }
+
+          setDeploymentLog(
+            log
+          );
+
+          const status =
+            getBackendLogStatus(
+              log
+            );
+
+          if (status) {
+            setDeploymentStatus(
+              normalizeDeploymentStatus(
+                status
+              )
+            );
+          }
+
+          const logId =
+            getBackendLogId(
+              log
+            );
+
+          if (!logId) {
+            return;
+          }
+
+          const eventsResponse =
+            await deploymentLogService.getEvents(
+              logId,
+              {
+                limit: 40,
+              }
+            );
+
+          if (
+            cancelled
+          ) {
+            return;
+          }
+
+          const events =
+            getServiceList(
+              eventsResponse,
+              [
+                "events",
+                "items",
+              ]
+            );
+
+          setDeploymentEvents(
+            events.map(
+              (
+                event,
+                index
+              ) =>
+                normalizeBackendActivityEvent(
+                  event,
+                  index
+                )
+            )
+          );
+        } catch {
+          /*
+           * Background refresh must not
+           * replace the primary UI error.
+           */
+        }
+      };
+
+    refresh();
+
+    const activeStatuses = [
+      "pending",
+      "building",
+      "deploying",
+      "in_progress",
+      "in-progress",
+      "running",
+    ];
+
+    const currentStatus =
+      getBackendLogStatus(
+        deploymentLog
+      );
+
+    if (
+      !activeStatuses.includes(
+        currentStatus
+      )
+    ) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const interval =
+      window.setInterval(
+        refresh,
+        5000
+      );
+
+    return () => {
+      cancelled = true;
+
+      window.clearInterval(
+        interval
+      );
+    };
+  }, [
+    selectedProjectId,
+    deploymentLog,
+  ]);
+
+
+  /* =======================================================
+     COMBINED ACTIVITY
+  ======================================================= */
 
   const combinedActivityLog =
     useMemo(() => {
-      const local =
-        Array.isArray(
+      return [
+        ...(Array.isArray(
           activityLog
         )
           ? activityLog
-          : [];
+          : []),
 
-      const backend =
-        Array.isArray(
+        ...(Array.isArray(
           deploymentEvents
         )
           ? deploymentEvents
-          : [];
-
-      return [
-        ...local,
-        ...backend,
+          : []),
       ]
-        .sort((a, b) =>
-          String(
-            a?.timestamp || ""
-          ).localeCompare(
+        .sort(
+          (a, b) =>
             String(
-              b?.timestamp || ""
+              a?.timestamp ||
+              ""
+            ).localeCompare(
+              String(
+                b?.timestamp ||
+                ""
+              )
             )
-          )
         )
         .slice(-60);
     }, [
@@ -2267,18 +3730,21 @@ function Workspace() {
       deploymentEvents,
     ]);
 
+
   const backendDeploymentStatus =
     getBackendLogStatus(
       deploymentLog
     );
 
+
   const githubStatus =
     githubConnection
       ? String(
           githubConnection.status ||
-            "connected"
+          "connected"
         ).toLowerCase()
       : "disconnected";
+
 
   const environmentStatus =
     environmentReadiness?.ready ===
@@ -2289,6 +3755,30 @@ function Workspace() {
       : environmentReadiness
       ? "Check"
       : "Unknown";
+
+
+  /* =======================================================
+     PREVIEW DISPLAY
+  ======================================================= */
+
+  const previewDisplayStatus =
+    previewState ===
+    "ready"
+      ? "LIVE"
+      : previewState ===
+        "starting"
+      ? "STARTING"
+      : previewState ===
+        "blocked"
+      ? "BUILD REQUIRED"
+      : previewState ===
+        "error"
+      ? "ERROR"
+      : previewState ===
+        "stopped"
+      ? "STOPPED"
+      : "WAITING";
+
 
   /* =======================================================
      RENDER
@@ -2301,6 +3791,7 @@ function Workspace() {
           styles.workspace
         }
       >
+
         {/* =================================================
             HEADER
         ================================================= */}
@@ -2333,12 +3824,15 @@ function Workspace() {
               </span>
 
               <strong
-                title={projectName}
+                title={
+                  projectName
+                }
               >
                 {projectName}
               </strong>
             </div>
           </div>
+
 
           <div
             className={
@@ -2378,6 +3872,7 @@ function Workspace() {
             )}
           </div>
 
+
           <div
             className={
               styles.headerActions
@@ -2393,8 +3888,11 @@ function Workspace() {
               }
             >
               Files
+
               <b>
-                {generatedFiles.length}
+                {
+                  generatedFiles.length
+                }
               </b>
             </button>
 
@@ -2419,8 +3917,7 @@ function Workspace() {
                 openPreview
               }
               disabled={
-                generatedFiles.length ===
-                0
+                !authoritativeBuildReady
               }
             >
               Preview
@@ -2435,9 +3932,7 @@ function Workspace() {
                 handleDeploy
               }
               disabled={
-                !selectedProjectId ||
-                generatedFiles.length ===
-                  0
+                !canDeploy
               }
             >
               Deploy
@@ -2445,8 +3940,9 @@ function Workspace() {
           </div>
         </header>
 
+
         {/* =================================================
-            ALERTS
+            ERROR
         ================================================= */}
 
         {error && (
@@ -2463,7 +3959,9 @@ function Workspace() {
                 Workspace error
               </strong>
 
-              <p>{error}</p>
+              <p>
+                {error}
+              </p>
             </div>
 
             <button
@@ -2478,56 +3976,74 @@ function Workspace() {
           </div>
         )}
 
-        {notice && !error && (
-          <div
-            className={
-              styles.alertSuccess
-            }
-            role="status"
-          >
-            <span>✓</span>
 
-            <p>{notice}</p>
+        {/* =================================================
+            SUCCESS
+        ================================================= */}
 
-            <button
-              type="button"
-              onClick={() =>
-                setNotice("")
-              }
-              aria-label="Close notice"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-        {backendSyncError &&
+        {notice &&
           !error && (
             <div
               className={
-                styles.alertInfo
+                styles.alertSuccess
               }
               role="status"
             >
-              <span>i</span>
+              <span>✓</span>
 
               <p>
-                {backendSyncError}
+                {notice}
               </p>
 
               <button
                 type="button"
                 onClick={() =>
-                  setBackendSyncError(
-                    ""
-                  )
+                  setNotice("")
                 }
-                aria-label="Close backend status"
+                aria-label="Close notice"
               >
                 ×
               </button>
             </div>
           )}
+
+
+        {/* =================================================
+            PREVIEW ERROR
+        ================================================= */}
+
+        {previewError &&
+          !error && (
+            <div
+              className={
+                styles.alertError
+              }
+              role="alert"
+            >
+              <span>!</span>
+
+              <div>
+                <strong>
+                  Preview runtime error
+                </strong>
+
+                <p>
+                  {previewError}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPreviewError("")
+                }
+                aria-label="Close preview error"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
 
         {/* =================================================
             MOBILE NAV
@@ -2607,6 +4123,7 @@ function Workspace() {
           </button>
         </nav>
 
+
         {/* =================================================
             BODY
         ================================================= */}
@@ -2616,8 +4133,9 @@ function Workspace() {
             styles.workspaceBody
           }
         >
+
           {/* =================================================
-              PROJECTS
+              PROJECT RAIL
           ================================================= */}
 
           <aside
@@ -2656,6 +4174,7 @@ function Workspace() {
               </button>
             </div>
 
+
             <button
               type="button"
               className={
@@ -2665,7 +4184,9 @@ function Workspace() {
                 handleNewProject
               }
             >
-              <span>+</span>
+              <span>
+                +
+              </span>
 
               <div>
                 <strong>
@@ -2677,8 +4198,11 @@ function Workspace() {
                 </small>
               </div>
 
-              <b>→</b>
+              <b>
+                →
+              </b>
             </button>
+
 
             <div
               className={
@@ -2690,7 +4214,9 @@ function Workspace() {
               </span>
 
               {QUICK_PROMPTS.map(
-                (item) => (
+                (
+                  item
+                ) => (
                   <button
                     key={
                       item.label
@@ -2702,11 +4228,14 @@ function Workspace() {
                       )
                     }
                   >
-                    {item.label}
+                    {
+                      item.label
+                    }
                   </button>
                 )
               )}
             </div>
+
 
             <div
               className={
@@ -2749,7 +4278,9 @@ function Workspace() {
                 </div>
               ) : (
                 projects.map(
-                  (project) => {
+                  (
+                    project
+                  ) => {
                     const id =
                       getProjectId(
                         project
@@ -2819,9 +4350,11 @@ function Workspace() {
                           </strong>
 
                           <small>
-                            {getProjectFramework(
-                              project
-                            )}
+                            {
+                              getProjectFramework(
+                                project
+                              )
+                            }
 
                             {files.length >
                             0
@@ -2845,6 +4378,7 @@ function Workspace() {
             </div>
           </aside>
 
+
           {/* =================================================
               MAIN WORKSPACE
           ================================================= */}
@@ -2860,6 +4394,7 @@ function Workspace() {
               }
             `}
           >
+
             {/* TOOLBAR */}
 
             <div
@@ -2877,11 +4412,14 @@ function Workspace() {
                 </span>
 
                 <strong
-                  title={projectName}
+                  title={
+                    projectName
+                  }
                 >
                   {projectName}
                 </strong>
               </div>
+
 
               <div
                 className={
@@ -2905,8 +4443,7 @@ function Workspace() {
                       event
                     ) => {
                       const name =
-                        event.target
-                          .value;
+                        event.target.value;
 
                       setActiveEnvironment(
                         name
@@ -2966,7 +4503,8 @@ function Workspace() {
                         ? environments
                         : [
                             {
-                              name: "development",
+                              name:
+                                "development",
                             },
                           ]
                     ).map(
@@ -2980,18 +4518,23 @@ function Workspace() {
 
                         return (
                           <option
-                            key={name}
+                            key={
+                              name
+                            }
                             value={
                               name
                             }
                           >
-                            {name}
+                            {
+                              name
+                            }
                           </option>
                         );
                       }
                     )}
                   </select>
                 </div>
+
 
                 <span
                   className={
@@ -3000,12 +4543,12 @@ function Workspace() {
                       ? styles.contextReady
                       : styles.contextPending
                   }
-                  title="Environment readiness"
                 >
                   {
                     environmentStatus
                   }
                 </span>
+
 
                 <span
                   className={
@@ -3013,20 +4556,12 @@ function Workspace() {
                       ? styles.contextReady
                       : styles.contextPending
                   }
-                  title={
-                    githubRepository
-                      ? `GitHub: ${
-                          githubRepository?.fullName ||
-                          githubRepository?.name ||
-                          "connected"
-                        }`
-                      : "GitHub connection"
-                  }
                 >
                   {githubConnection
                     ? "GitHub"
                     : "No GitHub"}
                 </span>
+
 
                 {backendSyncing && (
                   <span
@@ -3038,13 +4573,13 @@ function Workspace() {
                   </span>
                 )}
 
+
                 <span
                   className={
                     backendDeploymentStatus
                       ? styles.contextDeployment
                       : styles.contextMuted
                   }
-                  title="Deployment log status"
                 >
                   {backendDeploymentStatus
                     ? normalizeDeploymentStatus(
@@ -3054,13 +4589,16 @@ function Workspace() {
                 </span>
               </div>
 
+
               <div
                 className={
                   styles.toolbarActions
                 }
               >
                 <select
-                  value={framework}
+                  value={
+                    framework
+                  }
                   onChange={(
                     event
                   ) =>
@@ -3078,7 +4616,9 @@ function Workspace() {
                   aria-label="Framework"
                 >
                   {FRAMEWORKS.map(
-                    (item) => (
+                    (
+                      item
+                    ) => (
                       <option
                         key={
                           item
@@ -3092,6 +4632,7 @@ function Workspace() {
                     )
                   )}
                 </select>
+
 
                 <button
                   type="button"
@@ -3109,6 +4650,7 @@ function Workspace() {
                 >
                   Preview
                 </button>
+
 
                 <button
                   type="button"
@@ -3129,7 +4671,10 @@ function Workspace() {
               </div>
             </div>
 
-            {/* WORK SURFACE */}
+
+            {/* =================================================
+                WORK SURFACE
+            ================================================= */}
 
             <div
               className={
@@ -3143,6 +4688,7 @@ function Workspace() {
                     styles.previewShell
                   }
                 >
+
                   <div
                     className={
                       styles.previewHeader
@@ -3158,6 +4704,7 @@ function Workspace() {
                       <i />
                     </div>
 
+
                     <span
                       className={
                         styles.previewProjectName
@@ -3169,53 +4716,51 @@ function Workspace() {
                       {projectName}
                     </span>
 
+
                     <div
                       className={
                         styles.previewAddress
                       }
                     >
                       {previewUrl ||
-                        (previewEntryFile
-                          ? "Local HTML preview"
-                          : "Preview runtime")}
+                        "Authoritative preview runtime"}
                     </div>
+
 
                     <span
                       className={
-                        previewUrl ||
-                        previewEntryFile
+                        previewReady
                           ? styles.previewReady
                           : styles.previewPending
                       }
                     >
-                      {previewUrl
-                        ? "LIVE"
-                        : previewEntryFile
-                        ? "READY"
-                        : previewStatus ||
-                          "WAITING"}
+                      {
+                        previewDisplayStatus
+                      }
                     </span>
 
-                    <button
-                      type="button"
-                      onClick={
-                        openPreview
-                      }
-                      disabled={
-                        generatedFiles.length ===
-                        0
-                      }
-                    >
-                      Open
-                    </button>
+
+                    {previewReady && (
+                      <button
+                        type="button"
+                        onClick={
+                          openPreview
+                        }
+                      >
+                        Open
+                      </button>
+                    )}
                   </div>
+
 
                   <div
                     className={
                       styles.previewContent
                     }
                   >
-                    {previewUrl ? (
+
+                    {previewReady &&
+                    previewUrl ? (
                       <iframe
                         title={`${projectName} application preview`}
                         src={
@@ -3225,18 +4770,6 @@ function Workspace() {
                           styles.previewFrame
                         }
                         allow="fullscreen"
-                      />
-                    ) : previewEntryFile ? (
-                      <LocalProjectPreview
-                        files={
-                          generatedFiles
-                        }
-                        framework={
-                          getProjectFramework(
-                            selectedProject
-                          ) ||
-                          framework
-                        }
                       />
                     ) : (
                       <div
@@ -3253,29 +4786,67 @@ function Workspace() {
                         </div>
 
                         <span>
-                          PREVIEW
+                          BACKEND PREVIEW RUNTIME
                         </span>
 
                         <h2>
-                          Project generated
+                          {previewState ===
+                          "starting"
+                            ? "Starting isolated runtime..."
+                            : previewState ===
+                              "blocked"
+                            ? "Authoritative build required"
+                            : previewState ===
+                              "error"
+                            ? "Preview runtime unavailable"
+                            : "Project ready for build"}
                         </h2>
 
                         <p>
-                          {generatedFiles.length >
-                          0
-                            ? `${generatedFiles.length} files are ready. The backend has not returned a live preview runtime URL yet.`
-                            : "Build an application to create the project files."}
+                          {previewState ===
+                          "starting"
+                            ? "The backend is preparing and health-checking the real preview runtime."
+                            : previewState ===
+                              "blocked"
+                            ? "Project files exist, but ZyrionOS will not display a fake preview until the backend returns a successful authoritative build."
+                            : previewError ||
+                              (
+                                authoritativeBuildReady
+                                  ? "The authoritative build is ready. Start the real preview runtime."
+                                  : "Generate and save the project, then complete the backend authoritative build."
+                              )}
                         </p>
 
-                        {generatedFiles.length >
-                          0 && (
+
+                        {authoritativeBuildReady &&
+                          !previewPolling &&
+                          !previewReady && (
+                            <button
+                              type="button"
+                              onClick={
+                                openPreview
+                              }
+                              disabled={
+                                previewState ===
+                                "starting"
+                              }
+                            >
+                              {previewState ===
+                              "error"
+                                ? "Retry Preview"
+                                : "Start Preview"}
+                            </button>
+                          )}
+
+
+                        {previewReady && (
                           <button
                             type="button"
                             onClick={
-                              openFilesDrawer
+                              handleStopPreview
                             }
                           >
-                            View project files
+                            Stop Preview
                           </button>
                         )}
                       </div>
@@ -3314,6 +4885,7 @@ function Workspace() {
                       Open Files
                     </button>
                   </div>
+
 
                   <div
                     className={
@@ -3364,12 +4936,15 @@ function Workspace() {
                                 •
                               </span>
 
-                              {path}
+                              {
+                                path
+                              }
                             </button>
                           );
                         }
                       )}
                     </div>
+
 
                     <pre
                       className={
@@ -3385,6 +4960,7 @@ function Workspace() {
               )}
             </div>
           </section>
+
 
           {/* =================================================
               AI CHAT
@@ -3429,27 +5005,12 @@ function Workspace() {
                   }
                 />
 
-                {operationRunning ? (
-                  <>
-                    <span>
-                      Working
-                    </span>
-
-                    <span
-                      className={
-                        styles.chatDots
-                      }
-                    >
-                      <i />
-                      <i />
-                      <i />
-                    </span>
-                  </>
-                ) : (
-                  "Ready"
-                )}
+                {operationRunning
+                  ? "Working"
+                  : "Ready"}
               </div>
             </div>
+
 
             <div
               className={
@@ -3506,7 +5067,9 @@ function Workspace() {
                 </div>
               ) : (
                 chatMessages.map(
-                  (message) => (
+                  (
+                    message
+                  ) => (
                     <div
                       key={
                         message.id
@@ -3591,6 +5154,7 @@ function Workspace() {
               />
             </div>
 
+
             <form
               className={
                 styles.chatComposer
@@ -3605,7 +5169,9 @@ function Workspace() {
                 }
               >
                 <div>
-                  <span>✓</span>
+                  <span>
+                    ✓
+                  </span>
 
                   <strong>
                     {selectedProject
@@ -3619,10 +5185,15 @@ function Workspace() {
                 </small>
               </div>
 
+
               <textarea
                 data-zyrionos-chat-input="true"
-                value={prompt}
-                onChange={(event) =>
+                value={
+                  prompt
+                }
+                onChange={(
+                  event
+                ) =>
                   setPrompt(
                     event.target
                       .value
@@ -3642,6 +5213,7 @@ function Workspace() {
                 }
               />
 
+
               <div
                 className={
                   styles.chatComposerBottom
@@ -3660,6 +5232,7 @@ function Workspace() {
                     Shift + Enter for a new line
                   </span>
                 </div>
+
 
                 <div
                   className={
@@ -3682,6 +5255,7 @@ function Workspace() {
                       Review / Fix
                     </button>
                   )}
+
 
                   <button
                     type="submit"
@@ -3708,8 +5282,9 @@ function Workspace() {
             </form>
           </aside>
 
+
           {/* =================================================
-              MOBILE ACTIVITY PANEL
+              MOBILE ACTIVITY
           ================================================= */}
 
           <aside
@@ -3751,6 +5326,7 @@ function Workspace() {
               </span>
             </div>
 
+
             <div
               className={
                 styles.activityPanelBody
@@ -3773,9 +5349,10 @@ function Workspace() {
 
                 <p>
                   {operationRunning
-                    ? "ZyrionOS is processing your request"
+                    ? "ZyrionOS is processing your request."
                     : "Ready for the next request."}
                 </p>
+
 
                 <div
                   className={
@@ -3783,9 +5360,14 @@ function Workspace() {
                   }
                 >
                   <span>
-                    ENV{" "}
+                    BUILD{" "}
+                    {buildState}
+                  </span>
+
+                  <span>
+                    PREVIEW{" "}
                     {
-                      activeEnvironment
+                      previewDisplayStatus
                     }
                   </span>
 
@@ -3797,13 +5379,6 @@ function Workspace() {
                   </span>
 
                   <span>
-                    GITHUB{" "}
-                    {githubConnection
-                      ? "CONNECTED"
-                      : "NOT CONNECTED"}
-                  </span>
-
-                  <span>
                     DEPLOY{" "}
                     {backendDeploymentStatus
                       ? normalizeDeploymentStatus(
@@ -3812,6 +5387,17 @@ function Workspace() {
                       : deploymentStatus}
                   </span>
                 </div>
+
+
+                {authoritativeBuildReady && (
+                  <p>
+                    Build:{" "}
+                    {
+                      authoritativeBuild.buildId
+                    }
+                  </p>
+                )}
+
 
                 {operationRunning && (
                   <div
@@ -3825,6 +5411,7 @@ function Workspace() {
                   </div>
                 )}
               </div>
+
 
               <div
                 className={
@@ -3847,6 +5434,7 @@ function Workspace() {
                   </b>
                 </div>
 
+
                 {combinedActivityLog.length ===
                 0 ? (
                   <p
@@ -3856,7 +5444,7 @@ function Workspace() {
                   >
                     Activity will appear here
                     while your project is being
-                    built.
+                    processed.
                   </p>
                 ) : (
                   <div
@@ -3914,6 +5502,7 @@ function Workspace() {
                 )}
               </div>
 
+
               <div
                 className={
                   styles.projectStats
@@ -3943,30 +5532,22 @@ function Workspace() {
 
                 <div>
                   <span>
-                    DEPLOYMENT
+                    BUILD
                   </span>
 
                   <strong>
-                    {backendDeploymentStatus
-                      ? normalizeDeploymentStatus(
-                          backendDeploymentStatus
-                        )
-                      : deploymentStatus}
+                    {buildState}
                   </strong>
                 </div>
 
                 <div>
                   <span>
-                    ENVIRONMENT
+                    PREVIEW
                   </span>
 
                   <strong>
                     {
-                      activeEnvironment
-                    }{" "}
-                    ·{" "}
-                    {
-                      environmentStatus
+                      previewDisplayStatus
                     }
                   </strong>
                 </div>
@@ -3987,6 +5568,7 @@ function Workspace() {
             </div>
           </aside>
         </section>
+
 
         {/* =================================================
             FILE DRAWER
@@ -4035,6 +5617,7 @@ function Workspace() {
                 </button>
               </div>
 
+
               <div
                 className={
                   styles.drawerProject
@@ -4048,10 +5631,11 @@ function Workspace() {
                   {
                     generatedFiles.length
                   }{" "}
-                  generated files ·{" "}
+                  files ·{" "}
                   {framework}
                 </small>
               </div>
+
 
               <div
                 className={
@@ -4070,7 +5654,9 @@ function Workspace() {
                   </div>
                 ) : (
                   generatedFiles.map(
-                    (file) => {
+                    (
+                      file
+                    ) => {
                       const path =
                         getFilePath(
                           file
@@ -4108,7 +5694,9 @@ function Workspace() {
                               path
                             }
                           >
-                            {path}
+                            {
+                              path
+                            }
                           </strong>
                         </button>
                       );
@@ -4116,6 +5704,7 @@ function Workspace() {
                   )
                 )}
               </div>
+
 
               <div
                 className={
@@ -4126,6 +5715,7 @@ function Workspace() {
                   type="button"
                   onClick={() => {
                     closeFilesDrawer();
+
                     setActiveView(
                       "code"
                     );
@@ -4137,6 +5727,7 @@ function Workspace() {
             </aside>
           </div>
         )}
+
 
         {/* =================================================
             ACTIVITY DRAWER
@@ -4184,6 +5775,7 @@ function Workspace() {
                   ×
                 </button>
               </div>
+
 
               <div
                 className={
@@ -4248,8 +5840,9 @@ function Workspace() {
           </div>
         )}
 
+
         {/* =================================================
-            FULL PAGE PREVIEW
+            FULLSCREEN PREVIEW
         ================================================= */}
 
         {previewFullscreen && (
@@ -4280,25 +5873,43 @@ function Workspace() {
                 </strong>
               </div>
 
+
               <div
                 className={
                   styles.previewOverlayActions
                 }
               >
-                {previewUrl && (
-                  <a
-                    href={
-                      previewUrl
+                {previewReady &&
+                  previewUrl && (
+                    <a
+                      href={
+                        previewUrl
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className={
+                        styles.previewExternalButton
+                      }
+                    >
+                      Open in new tab
+                    </a>
+                  )}
+
+
+                {previewReady && (
+                  <button
+                    type="button"
+                    onClick={
+                      handleStopPreview
                     }
-                    target="_blank"
-                    rel="noreferrer"
                     className={
-                      styles.previewExternalButton
+                      styles.previewCloseButton
                     }
                   >
-                    Open in new tab
-                  </a>
+                    Stop Preview
+                  </button>
                 )}
+
 
                 <button
                   type="button"
@@ -4314,12 +5925,14 @@ function Workspace() {
               </div>
             </div>
 
+
             <div
               className={
                 styles.previewOverlayBody
               }
             >
-              {previewUrl ? (
+              {previewReady &&
+              previewUrl ? (
                 <iframe
                   title={`${projectName} full preview`}
                   src={
@@ -4329,19 +5942,6 @@ function Workspace() {
                     styles.previewFullFrame
                   }
                   allow="fullscreen"
-                />
-              ) : previewEntryFile ? (
-                <LocalProjectPreview
-                  files={
-                    generatedFiles
-                  }
-                  framework={
-                    getProjectFramework(
-                      selectedProject
-                    ) ||
-                    framework
-                  }
-                  fullscreen
                 />
               ) : (
                 <div
@@ -4358,33 +5958,40 @@ function Workspace() {
                   </div>
 
                   <span>
-                    PREVIEW RUNTIME
+                    AUTHORITATIVE PREVIEW
                   </span>
 
                   <h2>
-                    Project files are ready
+                    {previewState ===
+                    "starting"
+                      ? "Starting runtime..."
+                      : previewState ===
+                        "error"
+                      ? "Runtime unavailable"
+                      : "No live runtime"}
                   </h2>
 
                   <p>
-                    This project does not
-                    yet have a live preview
-                    URL or a static HTML
-                    entry file. The preview
-                    screen is intentionally
-                    not faking an application.
+                    {previewError ||
+                      (
+                        authoritativeBuildReady
+                          ? "The authoritative build exists, but the preview runtime has not returned a healthy URL yet."
+                          : "No authoritative build is available. ZyrionOS will not simulate a preview."
+                      )}
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closePreview();
-                      setActiveView(
-                        "code"
-                      );
-                    }}
-                  >
-                    Open Generated Code
-                  </button>
+
+                  {authoritativeBuildReady &&
+                    !previewReady && (
+                      <button
+                        type="button"
+                        onClick={
+                          openPreview
+                        }
+                      >
+                        Start Real Preview
+                      </button>
+                    )}
                 </div>
               )}
             </div>
@@ -4394,5 +6001,6 @@ function Workspace() {
     </DashboardLayout>
   );
 }
+
 
 export default Workspace;

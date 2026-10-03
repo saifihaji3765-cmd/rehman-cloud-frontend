@@ -3,26 +3,47 @@ import api from "./api";
 
 /*
 |--------------------------------------------------------------------------
-| ZYRIONOS — PROJECT SERVICE
+| ZYRIONOS — ENTERPRISE PROJECT SERVICE
 |--------------------------------------------------------------------------
 |
-| Enterprise Project API Layer
-|
 | Responsibilities:
-| - Project creation
-| - Project listing
-| - Single project retrieval
-| - Project update
-| - Project deletion
-| - Project deployment
+|
+| PROJECT
+| - Create
+| - List
+| - Retrieve
+| - Update
+| - Delete
+| - Deploy
+|
+| PREVIEW
+| - Create authoritative preview
+| - Get active preview
+| - List previews
+| - Get preview by ID
+| - Health check
+| - Stop preview
+| - Expire preview
+|
+| INFRASTRUCTURE
 | - Project ID normalization
+| - Build ID validation
+| - Preview ID validation
 | - Consistent API error normalization
+| - Timeout control
+| - Safe request execution
 |
 | Backend remains authoritative.
 |
 |--------------------------------------------------------------------------
 */
 
+
+/*
+|--------------------------------------------------------------------------
+| API PREFIX
+|--------------------------------------------------------------------------
+*/
 
 const API_PREFIX =
   "/api/projects";
@@ -42,11 +63,49 @@ const DEPLOYMENT_TIMEOUT =
 
 
 /*
+ * Creating a preview can involve:
+ *
+ * - artifact verification
+ * - artifact extraction
+ * - dependency preparation
+ * - Docker runtime creation
+ * - health check
+ *
+ * Therefore it receives a longer timeout.
+ */
+
+const PREVIEW_CREATE_TIMEOUT =
+  180000;
+
+
+/*
+ * Preview health/read operations
+ * should remain relatively fast.
+ */
+
+const PREVIEW_READ_TIMEOUT =
+  30000;
+
+
+/*
+ * Stop/expire operations should not
+ * need the full creation timeout.
+ */
+
+const PREVIEW_CONTROL_TIMEOUT =
+  30000;
+
+
+/*
 |--------------------------------------------------------------------------
 | INTERNAL HELPERS
 |--------------------------------------------------------------------------
 */
 
+
+/*
+ * Normalize project ID.
+ */
 
 function normalizeProjectId(
   projectId
@@ -72,11 +131,139 @@ function normalizeProjectId(
     );
   }
 
+  /*
+   * Project IDs must never contain
+   * path traversal or control characters.
+   */
+
+  if (
+    normalizedId.includes("/") ||
+    normalizedId.includes("\\") ||
+    normalizedId.includes("..") ||
+    /[\r\n\t]/.test(
+      normalizedId
+    )
+  ) {
+    throw new Error(
+      "Invalid Project ID."
+    );
+  }
+
   return encodeURIComponent(
     normalizedId
   );
 }
 
+
+/*
+ * Normalize build ID.
+ */
+
+function normalizeBuildId(
+  buildId
+) {
+
+  if (
+    buildId === undefined ||
+    buildId === null
+  ) {
+    throw new Error(
+      "Build ID is required."
+    );
+  }
+
+  const normalizedId =
+    String(
+      buildId
+    ).trim();
+
+  if (!normalizedId) {
+    throw new Error(
+      "Build ID is required."
+    );
+  }
+
+  if (
+    normalizedId.length > 300
+  ) {
+    throw new Error(
+      "Build ID is too long."
+    );
+  }
+
+  if (
+    normalizedId.includes("/") ||
+    normalizedId.includes("\\") ||
+    normalizedId.includes("..") ||
+    /[\r\n\t]/.test(
+      normalizedId
+    )
+  ) {
+    throw new Error(
+      "Invalid Build ID."
+    );
+  }
+
+  return normalizedId;
+}
+
+
+/*
+ * Normalize preview ID.
+ */
+
+function normalizePreviewId(
+  previewId
+) {
+
+  if (
+    previewId === undefined ||
+    previewId === null
+  ) {
+    throw new Error(
+      "Preview ID is required."
+    );
+  }
+
+  const normalizedId =
+    String(
+      previewId
+    ).trim();
+
+  if (!normalizedId) {
+    throw new Error(
+      "Preview ID is required."
+    );
+  }
+
+  if (
+    normalizedId.length > 300
+  ) {
+    throw new Error(
+      "Preview ID is too long."
+    );
+  }
+
+  if (
+    normalizedId.includes("/") ||
+    normalizedId.includes("\\") ||
+    normalizedId.includes("..") ||
+    /[\r\n\t]/.test(
+      normalizedId
+    )
+  ) {
+    throw new Error(
+      "Invalid Preview ID."
+    );
+  }
+
+  return normalizedId;
+}
+
+
+/*
+ * Validate generic project data.
+ */
 
 function validateProjectData(
   projectData
@@ -90,6 +277,39 @@ function validateProjectData(
   ) {
     throw new Error(
       "Project data must be a valid object."
+    );
+  }
+}
+
+
+/*
+ * Validate preview creation payload.
+ */
+
+function validatePreviewOptions(
+  options
+) {
+
+  if (
+    options === null ||
+    options === undefined ||
+    typeof options !== "object" ||
+    Array.isArray(options)
+  ) {
+    throw new Error(
+      "Preview options must be a valid object."
+    );
+  }
+
+  if (
+    options.buildId === undefined ||
+    options.buildId === null ||
+    String(
+      options.buildId
+    ).trim() === ""
+  ) {
+    throw new Error(
+      "Authoritative build ID is required to create a preview."
     );
   }
 }
@@ -114,8 +334,28 @@ function normalizeApiError(
     error?.status ??
     null;
 
+
+  /*
+   * Backend response formats supported:
+   *
+   * {
+   *   message
+   * }
+   *
+   * {
+   *   error: {
+   *      message
+   *   }
+   * }
+   *
+   * {
+   *   data: ...
+   * }
+   */
+
   const backendMessage =
     responseData?.message ||
+    responseData?.error?.message ||
     responseData?.error ||
     responseData?.detail ||
     responseData?.reason;
@@ -201,7 +441,7 @@ function normalizeApiError(
   ) {
 
     message =
-      "The requested project could not be found.";
+      "The requested resource could not be found.";
   }
 
 
@@ -215,7 +455,7 @@ function normalizeApiError(
   ) {
 
     message =
-      "This project operation could not be completed because of a conflict.";
+      "This operation could not be completed because the resource is in a conflicting state.";
   }
 
 
@@ -229,7 +469,7 @@ function normalizeApiError(
   ) {
 
     message =
-      "The project data could not be validated.";
+      "The request could not be validated.";
   }
 
 
@@ -257,7 +497,7 @@ function normalizeApiError(
   ) {
 
     message =
-      "The project service encountered a server error. Please try again later.";
+      "The server encountered an error. Please try again later.";
   }
 
 
@@ -267,11 +507,16 @@ function normalizeApiError(
     );
 
 
+  /*
+   * Preserve useful metadata.
+   */
+
   normalizedError.status =
     status;
 
   normalizedError.code =
     responseData?.code ||
+    responseData?.error?.code ||
     error?.code ||
     null;
 
@@ -283,6 +528,16 @@ function normalizeApiError(
   normalizedError.isProjectError =
     true;
 
+
+  normalizedError.isPreviewError =
+    Boolean(
+      responseData?.preview ||
+      responseData?.error?.category ||
+      responseData?.error?.stage ||
+      error?.isPreviewError
+    );
+
+
   normalizedError.isTimeout =
     Boolean(
       error?.isTimeout ||
@@ -292,6 +547,7 @@ function normalizeApiError(
         "ETIMEDOUT"
     );
 
+
   normalizedError.isNetworkError =
     Boolean(
       error?.isNetworkError ||
@@ -299,8 +555,20 @@ function normalizeApiError(
         "ERR_NETWORK"
     );
 
+
   normalizedError.duration =
     error?.config?.metadata?.duration ??
+    null;
+
+
+  /*
+   * Preserve server-provided
+   * structured error information.
+   */
+
+  normalizedError.details =
+    responseData?.error ||
+    responseData?.details ||
     null;
 
 
@@ -358,9 +626,10 @@ export async function createProject(
         projectData,
         {
           timeout:
-            DEFAULT_PROJECT_TIMEOUT,
+            DEFAULT_PROJECT_TIMEOUT
         }
       ),
+
     "Unable to create the project."
   );
 }
@@ -384,9 +653,10 @@ export async function getProjects() {
         `${API_PREFIX}/me`,
         {
           timeout:
-            DEFAULT_PROJECT_TIMEOUT,
+            DEFAULT_PROJECT_TIMEOUT
         }
       ),
+
     "Unable to load your projects."
   );
 }
@@ -417,9 +687,10 @@ export async function getProject(
         `${API_PREFIX}/${id}`,
         {
           timeout:
-            DEFAULT_PROJECT_TIMEOUT,
+            DEFAULT_PROJECT_TIMEOUT
         }
       ),
+
     "Unable to load the project."
   );
 }
@@ -456,9 +727,10 @@ export async function updateProject(
         projectData,
         {
           timeout:
-            DEFAULT_PROJECT_TIMEOUT,
+            DEFAULT_PROJECT_TIMEOUT
         }
       ),
+
     "Unable to update the project."
   );
 }
@@ -489,9 +761,10 @@ export async function deleteProject(
         `${API_PREFIX}/delete/${id}`,
         {
           timeout:
-            DEFAULT_PROJECT_TIMEOUT,
+            DEFAULT_PROJECT_TIMEOUT
         }
       ),
+
     "Unable to delete the project."
   );
 }
@@ -503,9 +776,6 @@ export async function deleteProject(
 |--------------------------------------------------------------------------
 |
 | POST /api/projects/deploy/:projectId
-|
-| Deployment can legitimately take longer than
-| ordinary project CRUD requests.
 |
 |--------------------------------------------------------------------------
 */
@@ -526,10 +796,533 @@ export async function deployProject(
         undefined,
         {
           timeout:
-            DEPLOYMENT_TIMEOUT,
+            DEPLOYMENT_TIMEOUT
         }
       ),
+
     "Unable to deploy the project."
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW — CREATE
+|--------------------------------------------------------------------------
+|
+| POST /api/projects/:projectId/preview
+|
+| IMPORTANT:
+|
+| buildId MUST be an authoritative successful
+| build generated by the backend.
+|
+| The frontend cannot declare a build successful.
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function createPreview(
+  projectId,
+  options = {}
+) {
+
+  const id =
+    normalizeProjectId(
+      projectId
+    );
+
+  validatePreviewOptions(
+    options
+  );
+
+  const buildId =
+    normalizeBuildId(
+      options.buildId
+    );
+
+
+  const payload = {
+    buildId
+  };
+
+
+  /*
+   * Optional client request metadata.
+   *
+   * Do not send arbitrary objects from the UI.
+   */
+
+  if (
+    options.sourceHash
+  ) {
+
+    payload.sourceHash =
+      String(
+        options.sourceHash
+      ).trim();
+  }
+
+
+  if (
+    options.sourceVersionId
+  ) {
+
+    payload.sourceVersionId =
+      String(
+        options.sourceVersionId
+      ).trim();
+  }
+
+
+  return executeRequest(
+    () =>
+      api.post(
+        `${API_PREFIX}/${id}/preview`,
+        payload,
+        {
+          timeout:
+            PREVIEW_CREATE_TIMEOUT
+        }
+      ),
+
+    "Unable to create the project preview."
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW — GET ACTIVE
+|--------------------------------------------------------------------------
+|
+| GET /api/projects/:projectId/preview
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function getPreview(
+  projectId
+) {
+
+  const id =
+    normalizeProjectId(
+      projectId
+    );
+
+  return executeRequest(
+    () =>
+      api.get(
+        `${API_PREFIX}/${id}/preview`,
+        {
+          timeout:
+            PREVIEW_READ_TIMEOUT
+        }
+      ),
+
+    "Unable to load the project preview."
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW — LIST
+|--------------------------------------------------------------------------
+|
+| GET /api/projects/:projectId/previews
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function listPreviews(
+  projectId
+) {
+
+  const id =
+    normalizeProjectId(
+      projectId
+    );
+
+  return executeRequest(
+    () =>
+      api.get(
+        `${API_PREFIX}/${id}/previews`,
+        {
+          timeout:
+            PREVIEW_READ_TIMEOUT
+        }
+      ),
+
+    "Unable to load project previews."
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW — GET BY ID
+|--------------------------------------------------------------------------
+|
+| GET /api/projects/:projectId/preview/:previewId
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function getPreviewById(
+  projectId,
+  previewId
+) {
+
+  const id =
+    normalizeProjectId(
+      projectId
+    );
+
+  const preview =
+    normalizePreviewId(
+      previewId
+    );
+
+
+  return executeRequest(
+    () =>
+      api.get(
+        `${API_PREFIX}/${id}/preview/${encodeURIComponent(preview)}`,
+        {
+          timeout:
+            PREVIEW_READ_TIMEOUT
+        }
+      ),
+
+    "Unable to load the preview."
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW — HEALTH
+|--------------------------------------------------------------------------
+|
+| GET /api/projects/:projectId/preview/:previewId/health
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function getPreviewHealth(
+  projectId,
+  previewId
+) {
+
+  const id =
+    normalizeProjectId(
+      projectId
+    );
+
+  const preview =
+    normalizePreviewId(
+      previewId
+    );
+
+
+  return executeRequest(
+    () =>
+      api.get(
+        `${API_PREFIX}/${id}/preview/${encodeURIComponent(preview)}/health`,
+        {
+          timeout:
+            PREVIEW_READ_TIMEOUT
+        }
+      ),
+
+    "Unable to check preview health."
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW — STOP
+|--------------------------------------------------------------------------
+|
+| POST /api/projects/:projectId/preview/:previewId/stop
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function stopPreview(
+  projectId,
+  previewId
+) {
+
+  const id =
+    normalizeProjectId(
+      projectId
+    );
+
+  const preview =
+    normalizePreviewId(
+      previewId
+    );
+
+
+  return executeRequest(
+    () =>
+      api.post(
+        `${API_PREFIX}/${id}/preview/${encodeURIComponent(preview)}/stop`,
+        undefined,
+        {
+          timeout:
+            PREVIEW_CONTROL_TIMEOUT
+        }
+      ),
+
+    "Unable to stop the project preview."
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW — EXPIRE
+|--------------------------------------------------------------------------
+|
+| POST /api/projects/:projectId/preview/:previewId/expire
+|
+|--------------------------------------------------------------------------
+*/
+
+export async function expirePreview(
+  projectId,
+  previewId
+) {
+
+  const id =
+    normalizeProjectId(
+      projectId
+    );
+
+  const preview =
+    normalizePreviewId(
+      previewId
+    );
+
+
+  return executeRequest(
+    () =>
+      api.post(
+        `${API_PREFIX}/${id}/preview/${encodeURIComponent(preview)}/expire`,
+        undefined,
+        {
+          timeout:
+            PREVIEW_CONTROL_TIMEOUT
+        }
+      ),
+
+    "Unable to expire the project preview."
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW RESPONSE HELPERS
+|--------------------------------------------------------------------------
+|
+| These helpers allow Workspace.jsx to work with
+| slightly different backend response envelopes
+| without duplicating parsing logic.
+|
+|--------------------------------------------------------------------------
+*/
+
+
+export function getPreviewData(
+  response
+) {
+
+  return (
+    response?.data?.data?.preview ||
+    response?.data?.preview ||
+    response?.preview ||
+    null
+  );
+}
+
+
+export function getPreviewList(
+  response
+) {
+
+  const previews =
+    response?.data?.data?.previews ||
+    response?.data?.previews ||
+    response?.previews ||
+    [];
+
+  return Array.isArray(
+    previews
+  )
+    ? previews
+    : [];
+}
+
+
+export function getPreviewHealthData(
+  response
+) {
+
+  return (
+    response?.data?.data?.health ||
+    response?.data?.health ||
+    response?.health ||
+    null
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW STATE HELPERS
+|--------------------------------------------------------------------------
+*/
+
+
+export function isPreviewReady(
+  preview
+) {
+
+  if (!preview) {
+    return false;
+  }
+
+  const status =
+    String(
+      preview.status ||
+      ""
+    ).toLowerCase();
+
+
+  return (
+    status === "running" ||
+    status === "ready" ||
+    status === "active"
+  );
+}
+
+
+export function isPreviewFailed(
+  preview
+) {
+
+  if (!preview) {
+    return false;
+  }
+
+  const status =
+    String(
+      preview.status ||
+      ""
+    ).toLowerCase();
+
+
+  return (
+    status === "failed" ||
+    status === "error" ||
+    status === "unhealthy"
+  );
+}
+
+
+export function isPreviewStopped(
+  preview
+) {
+
+  if (!preview) {
+    return false;
+  }
+
+  const status =
+    String(
+      preview.status ||
+      ""
+    ).toLowerCase();
+
+
+  return (
+    status === "stopped" ||
+    status === "expired" ||
+    status === "terminated"
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW URL
+|--------------------------------------------------------------------------
+*/
+
+export function getPreviewUrl(
+  preview
+) {
+
+  if (!preview) {
+    return null;
+  }
+
+
+  const url =
+    preview.publicUrl ||
+    preview.previewUrl ||
+    preview.url ||
+    null;
+
+
+  if (!url) {
+    return null;
+  }
+
+
+  return String(
+    url
+  ).trim() || null;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| AUTHORITATIVE BUILD CHECK
+|--------------------------------------------------------------------------
+|
+| Workspace should only create a preview from
+| an authoritative successful build.
+|
+|--------------------------------------------------------------------------
+*/
+
+export function isAuthoritativeBuild(
+  build
+) {
+
+  if (!build) {
+    return false;
+  }
+
+
+  const metadata =
+    build.metadata ||
+    {};
+
+
+  return (
+    build.status ===
+      "success" &&
+    metadata.authoritative ===
+      true &&
+    metadata.validationMode ===
+      "authoritative"
   );
 }
 
@@ -551,11 +1344,104 @@ export function isValidProjectId(
     return false;
   }
 
+
   return (
     String(
       projectId
     ).trim().length > 0
   );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| BUILD ID VALIDATION
+|--------------------------------------------------------------------------
+*/
+
+export function isValidBuildId(
+  buildId
+) {
+
+  if (
+    buildId === undefined ||
+    buildId === null
+  ) {
+    return false;
+  }
+
+
+  const value =
+    String(
+      buildId
+    ).trim();
+
+
+  if (!value) {
+    return false;
+  }
+
+
+  if (
+    value.length > 300 ||
+    value.includes("/") ||
+    value.includes("\\") ||
+    value.includes("..") ||
+    /[\r\n\t]/.test(
+      value
+    )
+  ) {
+    return false;
+  }
+
+
+  return true;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW ID VALIDATION
+|--------------------------------------------------------------------------
+*/
+
+export function isValidPreviewId(
+  previewId
+) {
+
+  if (
+    previewId === undefined ||
+    previewId === null
+  ) {
+    return false;
+  }
+
+
+  const value =
+    String(
+      previewId
+    ).trim();
+
+
+  if (!value) {
+    return false;
+  }
+
+
+  if (
+    value.length > 300 ||
+    value.includes("/") ||
+    value.includes("\\") ||
+    value.includes("..") ||
+    /[\r\n\t]/.test(
+      value
+    )
+  ) {
+    return false;
+  }
+
+
+  return true;
 }
 
 
@@ -577,11 +1463,47 @@ export function getNormalizedProjectId(
 
 /*
 |--------------------------------------------------------------------------
+| NORMALIZED BUILD ID
+|--------------------------------------------------------------------------
+*/
+
+export function getNormalizedBuildId(
+  buildId
+) {
+
+  return normalizeBuildId(
+    buildId
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| NORMALIZED PREVIEW ID
+|--------------------------------------------------------------------------
+*/
+
+export function getNormalizedPreviewId(
+  previewId
+) {
+
+  return normalizePreviewId(
+    previewId
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | DEFAULT EXPORT
 |--------------------------------------------------------------------------
 */
 
 const projectService = {
+
+  /*
+   * Project
+   */
 
   createProject,
 
@@ -595,9 +1517,67 @@ const projectService = {
 
   deployProject,
 
+
+  /*
+   * Preview
+   */
+
+  createPreview,
+
+  getPreview,
+
+  listPreviews,
+
+  getPreviewById,
+
+  getPreviewHealth,
+
+  stopPreview,
+
+  expirePreview,
+
+
+  /*
+   * Preview helpers
+   */
+
+  getPreviewData,
+
+  getPreviewList,
+
+  getPreviewHealthData,
+
+  getPreviewUrl,
+
+  isPreviewReady,
+
+  isPreviewFailed,
+
+  isPreviewStopped,
+
+  isAuthoritativeBuild,
+
+
+  /*
+   * Validation
+   */
+
   isValidProjectId,
 
+  isValidBuildId,
+
+  isValidPreviewId,
+
+
+  /*
+   * Normalization
+   */
+
   getNormalizedProjectId,
+
+  getNormalizedBuildId,
+
+  getNormalizedPreviewId
 };
 
 

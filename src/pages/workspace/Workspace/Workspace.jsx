@@ -12,21 +12,11 @@ import {
   getProjects,
   createProject,
   updateProject,
-
   createPreview,
   getPreview,
   getPreviewHealth,
   stopPreview,
-
-  getPreviewData,
-  getPreviewHealthData,
-  getPreviewUrl,
-  isPreviewReady,
-  isPreviewStarting,
-  isPreviewFailed,
-  isAuthoritativeBuild,
-  getAuthoritativeBuildId,
-} from "../../../services/workspaceService";
+} from "../../../services/projectService";
 
 import {
   generateCode,
@@ -58,43 +48,39 @@ const QUICK_PROMPTS = [
   {
     label: "AI SaaS dashboard",
     prompt:
-      "Build a production-ready AI SaaS dashboard",
+      "Build a production-ready AI SaaS dashboard with responsive layout, professional navigation, analytics cards, project activity, AI usage statistics and polished mobile support.",
   },
   {
     label: "Landing page",
     prompt:
-      "Create a production-ready responsive landing page",
+      "Create a production-ready responsive landing page with a professional hero section, features, pricing, testimonials, CTA and mobile responsive design.",
   },
   {
     label: "Authentication",
     prompt:
-      "Add authentication and user accounts",
+      "Add a production-ready authentication experience with login, signup, protected dashboard structure and responsive UI.",
   },
   {
     label: "Admin control center",
     prompt:
-      "Build a production-ready admin control center",
+      "Build a production-ready admin control center with sidebar navigation, analytics, users, activity, settings and responsive mobile design.",
   },
 ];
 
 const PREVIEW_POLL_INTERVAL = 4000;
-
 const PREVIEW_MAX_POLLS = 45;
 
 
 /* =========================================================
-   RESPONSE HELPERS
+   GENERIC RESPONSE HELPERS
 ========================================================= */
 
 function unwrapApiResponse(response) {
-  if (
-    response === undefined ||
-    response === null
-  ) {
+  if (response === undefined || response === null) {
     return null;
   }
 
-  const root =
+  let root =
     response?.data !== undefined
       ? response.data
       : response;
@@ -105,23 +91,19 @@ function unwrapApiResponse(response) {
     !Array.isArray(root) &&
     root.data !== undefined
   ) {
-    return root.data;
+    root = root.data;
   }
 
   return root;
 }
 
 
-function getErrorMessage(
-  error,
-  fallback
-) {
+function getErrorMessage(error, fallback) {
   return (
     error?.response?.data?.message ||
     error?.response?.data?.error?.message ||
     (
-      typeof error?.response?.data?.error ===
-        "string"
+      typeof error?.response?.data?.error === "string"
         ? error.response.data.error
         : ""
     ) ||
@@ -134,39 +116,19 @@ function getErrorMessage(
 
 
 function getServicePayload(response) {
-  const root =
-    response?.data !== undefined
-      ? response.data
-      : response;
-
-  if (
-    root &&
-    typeof root === "object" &&
-    !Array.isArray(root) &&
-    root.data !== undefined
-  ) {
-    return root.data;
-  }
-
-  return root;
+  return unwrapApiResponse(response);
 }
 
 
-function getServiceList(
-  response,
-  keys = []
-) {
-  const root =
-    getServicePayload(response);
+function getServiceList(response, keys = []) {
+  const root = getServicePayload(response);
 
   if (Array.isArray(root)) {
     return root;
   }
 
   for (const key of keys) {
-    if (
-      Array.isArray(root?.[key])
-    ) {
+    if (Array.isArray(root?.[key])) {
       return root[key];
     }
   }
@@ -175,80 +137,33 @@ function getServiceList(
 }
 
 
-function getServiceObject(
-  response,
-  keys = []
-) {
-  const root =
-    getServicePayload(response);
+function getServiceObject(response, keys = []) {
+  const root = getServicePayload(response);
 
   if (
-    root &&
-    typeof root === "object" &&
-    !Array.isArray(root)
+    !root ||
+    typeof root !== "object" ||
+    Array.isArray(root)
   ) {
-    for (const key of keys) {
-      if (
-        root[key] &&
-        typeof root[key] === "object"
-      ) {
-        return root[key];
-      }
-    }
-
-    return root;
+    return null;
   }
 
-  return null;
+  for (const key of keys) {
+    if (
+      root[key] &&
+      typeof root[key] === "object"
+    ) {
+      return root[key];
+    }
+  }
+
+  return root;
 }
 
 
 /* =========================================================
    PROJECT HELPERS
 ========================================================= */
-
-function extractProjectFromResponse(
-  response
-) {
-  const root =
-    response?.data !== undefined
-      ? response.data
-      : response;
-
-  const candidates = [
-    root?.project,
-    root?.data?.project,
-    root?.data,
-    response?.project,
-    response?.data?.project,
-    response?.data?.data?.project,
-  ];
-
-  for (
-    const candidate of candidates
-  ) {
-    if (
-      candidate &&
-      typeof candidate === "object" &&
-      !Array.isArray(candidate) &&
-      (
-        candidate._id ||
-        candidate.id ||
-        candidate.projectId ||
-        candidate.projectName ||
-        candidate.name ||
-        Array.isArray(
-          candidate.files
-        )
-      )
-    ) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
 
 function getProjectId(project) {
   return (
@@ -269,46 +184,64 @@ function getProjectName(project) {
 }
 
 
-function getProjectFramework(
-  project
-) {
-  return (
-    project?.framework ||
-    "React"
-  );
+function getProjectFramework(project) {
+  return project?.framework || "React";
 }
 
 
-function normalizeProjects(
-  response
-) {
-  const root =
-    response?.data !== undefined
-      ? response.data
-      : response;
+function normalizeProjects(response) {
+  const root = unwrapApiResponse(response);
+
+  if (Array.isArray(root)) {
+    return root;
+  }
 
   const candidates = [
     root?.projects,
+    root?.items,
     root?.data?.projects,
     root?.data,
-    response?.projects,
-    response?.data?.projects,
-    response?.data?.data?.projects,
   ];
 
-  for (
-    const candidate of candidates
-  ) {
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+  }
+
+  return [];
+}
+
+
+function extractProjectFromResponse(response) {
+  const root = unwrapApiResponse(response);
+
+  const candidates = [
+    root?.project,
+    root?.data?.project,
+    root?.data,
+    root,
+  ];
+
+  for (const candidate of candidates) {
     if (
-      Array.isArray(candidate)
+      candidate &&
+      typeof candidate === "object" &&
+      !Array.isArray(candidate) &&
+      (
+        candidate._id ||
+        candidate.id ||
+        candidate.projectId ||
+        candidate.projectName ||
+        candidate.name ||
+        Array.isArray(candidate.files)
+      )
     ) {
       return candidate;
     }
   }
 
-  return Array.isArray(root)
-    ? root
-    : [];
+  return null;
 }
 
 
@@ -350,54 +283,25 @@ function getFileContent(file) {
 }
 
 
-function normalizeProjectFiles(
-  project,
-  aiResult
-) {
-  const possibleCollections = [
+function normalizeProjectFiles(project, aiResult) {
+  const collections = [
     project?.files,
     project?.data?.files,
     project?.project?.files,
-    project?.data?.project?.files,
 
     aiResult?.files,
     aiResult?.data?.files,
     aiResult?.project?.files,
-    aiResult?.data?.project?.files,
 
-    aiResult?.orchestration
-      ?.buildResult
-      ?.data
-      ?.files,
+    aiResult?.orchestration?.buildResult?.data?.files,
+    aiResult?.orchestration?.buildResult?.files,
 
-    aiResult?.orchestration
-      ?.buildResult
-      ?.files,
-
-    aiResult?.orchestration
-      ?.buildResult
-      ?.data
-      ?.data
-      ?.files,
-
-    aiResult?.data
-      ?.orchestration
-      ?.buildResult
-      ?.data
-      ?.files,
-
-    aiResult?.data
-      ?.orchestration
-      ?.buildResult
-      ?.files,
+    aiResult?.data?.orchestration?.buildResult?.data?.files,
+    aiResult?.data?.orchestration?.buildResult?.files,
   ];
 
-  for (
-    const files of possibleCollections
-  ) {
-    if (
-      Array.isArray(files)
-    ) {
+  for (const files of collections) {
+    if (Array.isArray(files)) {
       return files;
     }
   }
@@ -407,65 +311,84 @@ function normalizeProjectFiles(
 
 
 /* =========================================================
-   AUTHORITATIVE BUILD EXTRACTION
+   AUTHORITATIVE BUILD
 ========================================================= */
 
-function extractAuthoritativeBuild(
-  ...responses
-) {
+function getAuthoritativeBuildId(build) {
+  return String(
+    build?.buildId ||
+    build?.id ||
+    build?._id ||
+    ""
+  );
+}
+
+
+function isAuthoritativeBuild(build) {
+  if (
+    !build ||
+    typeof build !== "object"
+  ) {
+    return false;
+  }
+
+  const metadata = build.metadata || {};
+
+  const status = String(
+    build.status || ""
+  ).toLowerCase();
+
+  const validationMode = String(
+    build.validationMode ||
+    metadata.validationMode ||
+    ""
+  ).toLowerCase();
+
+  const authoritative =
+    build.authoritative === true ||
+    metadata.authoritative === true;
+
+  return (
+    status === "success" &&
+    authoritative &&
+    validationMode === "authoritative" &&
+    Boolean(getAuthoritativeBuildId(build))
+  );
+}
+
+
+function extractAuthoritativeBuild(...responses) {
   const candidates = [];
 
-  for (
-    const response of responses
-  ) {
+  for (const response of responses) {
     if (!response) {
       continue;
     }
 
-    const root =
-      response?.data !== undefined
-        ? response.data
-        : response;
+    const root = unwrapApiResponse(response);
 
     candidates.push(
       root,
       root?.data,
       root?.build,
       root?.data?.build,
-      root?.project,
-      root?.data?.project,
-
-      root?.buildResult,
-      root?.data?.buildResult,
-
-      root?.orchestration
-        ?.buildResult,
-
-      root?.data
-        ?.orchestration
-        ?.buildResult,
-
-      root?.orchestration
-        ?.authoritativeBuild,
-
-      root?.data
-        ?.orchestration
-        ?.authoritativeBuild,
-
       root?.authoritativeBuild,
       root?.data?.authoritativeBuild,
-
       root?.currentBuild,
       root?.latestBuild,
+      root?.buildResult,
+      root?.data?.buildResult,
+      root?.orchestration?.buildResult,
+      root?.data?.orchestration?.buildResult,
+      root?.orchestration?.authoritativeBuild,
+      root?.data?.orchestration?.authoritativeBuild,
       root?.project?.build,
       root?.project?.currentBuild,
-      root?.project?.latestBuild
+      root?.project?.latestBuild,
     );
   }
 
-  for (
-    const candidate of candidates
-  ) {
+  for (const candidate of candidates) {
     if (
       !candidate ||
       typeof candidate !== "object" ||
@@ -474,105 +397,62 @@ function extractAuthoritativeBuild(
       continue;
     }
 
-    const nestedCandidates = [
+    const nested = [
       candidate,
+      candidate.build,
     ];
 
-    if (
-      candidate.build &&
-      typeof candidate.build ===
-        "object"
-    ) {
-      nestedCandidates.push(
-        candidate.build
-      );
-    }
-
-    for (
-      const buildCandidate of
-        nestedCandidates
-    ) {
-      const buildId =
-        buildCandidate.buildId ||
-        buildCandidate.id ||
-        buildCandidate._id ||
-        "";
-
-      if (!buildId) {
+    for (const item of nested) {
+      if (
+        !item ||
+        typeof item !== "object" ||
+        Array.isArray(item)
+      ) {
         continue;
       }
 
-      /*
-       * The service-level validator is authoritative.
-       * It requires:
-       *
-       * status === success
-       * authoritative === true
-       * validationMode === authoritative
-       */
+      const metadata = item.metadata || {};
 
-      if (
-        isAuthoritativeBuild(
-          buildCandidate
-        )
-      ) {
-        return {
-          ...buildCandidate,
-          buildId:
-            String(
-              getAuthoritativeBuildId(
-                buildCandidate
-              )
-            ),
-          authoritative:
-            true,
-          validationMode:
-            "authoritative",
-        };
-      }
+      const status = String(
+        item.status ||
+        candidate.status ||
+        ""
+      ).toLowerCase();
 
-      /*
-       * Some backend responses expose
-       * authoritative flags at the parent.
-       */
-
-      const metadata =
-        buildCandidate.metadata ||
-        {};
-
-      const parentAuthoritative =
-        candidate.authoritative === true ||
-        candidate.metadata?.authoritative ===
-          true;
-
-      const validationMode =
-        buildCandidate.validationMode ||
+      const validationMode = String(
+        item.validationMode ||
         metadata.validationMode ||
         candidate.validationMode ||
         candidate.metadata?.validationMode ||
-        "";
+        ""
+      ).toLowerCase();
 
-      const status =
-        String(
-          buildCandidate.status ||
-          candidate.status ||
-          ""
-        ).toLowerCase();
+      const authoritative =
+        item.authoritative === true ||
+        metadata.authoritative === true ||
+        candidate.authoritative === true ||
+        candidate.metadata?.authoritative === true;
+
+      const buildId =
+        item.buildId ||
+        item.id ||
+        item._id ||
+        candidate.buildId ||
+        candidate.id ||
+        candidate._id ||
+        "";
 
       if (
         status === "success" &&
-        parentAuthoritative === true &&
-        validationMode ===
-          "authoritative"
+        authoritative &&
+        validationMode === "authoritative" &&
+        buildId
       ) {
         return {
-          ...buildCandidate,
-          buildId:
-            String(buildId),
-          authoritative:
-            true,
-          validationMode:
-            "authoritative",
+          ...item,
+          buildId: String(buildId),
+          authoritative: true,
+          validationMode: "authoritative",
         };
       }
     }
@@ -582,28 +462,9 @@ function extractAuthoritativeBuild(
 }
 
 
-function extractBuildId(
-  ...responses
-) {
+function extractSourceHash(...responses) {
   const build =
-    extractAuthoritativeBuild(
-      ...responses
-    );
-
-  return (
-    build?.buildId ||
-    ""
-  );
-}
-
-
-function extractSourceHash(
-  ...responses
-) {
-  const build =
-    extractAuthoritativeBuild(
-      ...responses
-    );
+    extractAuthoritativeBuild(...responses);
 
   return (
     build?.sourceHash ||
@@ -618,29 +479,50 @@ function extractSourceHash(
    PREVIEW HELPERS
 ========================================================= */
 
-function extractPreview(
-  response
-) {
-  const normalized =
-    getPreviewData(
-      response
-    );
+function extractPreview(response) {
+  const root = unwrapApiResponse(response);
 
-  if (
-    normalized &&
-    typeof normalized ===
-      "object"
-  ) {
-    return normalized;
+  const candidates = [
+    root?.preview,
+    root?.data?.preview,
+    root?.previewData,
+    root,
+  ];
+
+  for (const candidate of candidates) {
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      !Array.isArray(candidate) &&
+      (
+        candidate.previewId ||
+        candidate._id ||
+        candidate.id ||
+        candidate.status ||
+        candidate.url ||
+        candidate.publicUrl
+      )
+    ) {
+      return candidate;
+    }
   }
 
   return null;
 }
 
 
-function extractPreviewId(
-  preview
-) {
+function extractPreviewHealth(response) {
+  const root = unwrapApiResponse(response);
+
+  return (
+    root?.health ||
+    root?.data?.health ||
+    root
+  );
+}
+
+
+function extractPreviewId(preview) {
   return (
     preview?.previewId ||
     preview?.id ||
@@ -650,18 +532,19 @@ function extractPreviewId(
 }
 
 
-function extractPreviewUrl(
-  preview
-) {
-  return getPreviewUrl(
-    preview
-  ) || "";
+function extractPreviewUrl(preview) {
+  return (
+    preview?.publicUrl ||
+    preview?.url ||
+    preview?.previewUrl ||
+    preview?.runtimeInfo?.publicUrl ||
+    preview?.runtimeInfo?.url ||
+    ""
+  );
 }
 
 
-function normalizePreviewStatus(
-  preview
-) {
+function normalizePreviewStatus(preview) {
   return String(
     preview?.status ||
     preview?.runtimeInfo?.status ||
@@ -672,134 +555,126 @@ function normalizePreviewStatus(
 }
 
 
-function isPreviewRunning(
-  preview
-) {
-  return isPreviewReady(
-    preview
-  );
-}
+function isPreviewReady(preview) {
+  const status =
+    normalizePreviewStatus(preview);
 
-
-function isPreviewTerminalFailure(
-  preview
-) {
-  return isPreviewFailed(
-    preview
-  ) || [
-    "stopped",
-    "expired",
-    "cancelled",
-    "terminated",
-  ].includes(
-    normalizePreviewStatus(
-      preview
+  return (
+    status === "ready" ||
+    (
+      status === "running" &&
+      Boolean(extractPreviewUrl(preview))
     )
   );
 }
 
 
-/*
- * Merge a health response into the current
- * preview even when backend health endpoint
- * returns only health data.
- */
+function isPreviewStarting(preview) {
+  return [
+    "queued",
+    "building",
+    "starting",
+    "pending",
+  ].includes(
+    normalizePreviewStatus(preview)
+  );
+}
+
+
+function isPreviewFailed(preview) {
+  return [
+    "failed",
+    "error",
+    "crashed",
+  ].includes(
+    normalizePreviewStatus(preview)
+  );
+}
+
+
+function isPreviewTerminalFailure(preview) {
+  return (
+    isPreviewFailed(preview) ||
+    [
+      "stopped",
+      "expired",
+      "cancelled",
+      "terminated",
+    ].includes(
+      normalizePreviewStatus(preview)
+    )
+  );
+}
+
 
 function mergePreviewHealth(
   currentPreview,
   healthResponse
 ) {
-  const {
-    preview: backendPreview,
-    health,
-  } =
-    getPreviewHealthData(
-      healthResponse
-    );
+  const backendPreview =
+    extractPreview(healthResponse);
 
-  if (
-    backendPreview &&
-    typeof backendPreview ===
-      "object"
-  ) {
-    return {
-      ...(currentPreview || {}),
-      ...backendPreview,
-      runtimeInfo: {
-        ...(currentPreview?.runtimeInfo || {}),
-        ...(backendPreview.runtimeInfo || {}),
-      },
-      healthCheck: {
-        ...(currentPreview?.healthCheck || {}),
-        ...(backendPreview.healthCheck || {}),
-        ...(health || {}),
-      },
-    };
-  }
-
-  if (
-    !currentPreview
-  ) {
-    return null;
-  }
+  const health =
+    extractPreviewHealth(healthResponse);
 
   const merged = {
-    ...currentPreview,
+    ...(currentPreview || {}),
   };
+
+  if (backendPreview) {
+    Object.assign(
+      merged,
+      backendPreview
+    );
+
+    merged.runtimeInfo = {
+      ...(currentPreview?.runtimeInfo || {}),
+      ...(backendPreview.runtimeInfo || {}),
+    };
+
+    merged.healthCheck = {
+      ...(currentPreview?.healthCheck || {}),
+      ...(backendPreview.healthCheck || {}),
+    };
+  }
 
   if (
     health &&
     typeof health === "object"
   ) {
     merged.healthCheck = {
-      ...(currentPreview.healthCheck || {}),
+      ...(merged.healthCheck || {}),
       ...health,
     };
 
     if (
-      health.status
+      health.healthy === true ||
+      String(health.status || "").toLowerCase() === "healthy"
     ) {
-      const healthStatus =
-        String(
-          health.status
-        ).toLowerCase();
-
-      if (
-        healthStatus ===
-          "healthy" &&
-        !merged.status
-      ) {
-        merged.status =
-          "ready";
-      }
-
-      if (
-        [
-          "unhealthy",
-          "failed",
-        ].includes(
-          healthStatus
-        )
-      ) {
-        merged.status =
-          "failed";
-      }
+      merged.status = "ready";
     }
 
     if (
-      health.healthy ===
-        true
+      health.healthy === false ||
+      ["failed", "unhealthy"].includes(
+        String(health.status || "").toLowerCase()
+      )
     ) {
-      merged.status =
-        "ready";
+      merged.status = "failed";
     }
 
     if (
-      health.healthy ===
-        false
+      health.url &&
+      !merged.url
     ) {
-      merged.status =
-        "failed";
+      merged.url = health.url;
+    }
+
+    if (
+      health.publicUrl &&
+      !merged.publicUrl
+    ) {
+      merged.publicUrl = health.publicUrl;
     }
   }
 
@@ -811,13 +686,9 @@ function mergePreviewHealth(
    PROJECT NAME
 ========================================================= */
 
-function buildProjectName(
-  promptValue
-) {
+function buildProjectName(promptValue) {
   const value =
-    String(
-      promptValue || ""
-    )
+    String(promptValue || "")
       .replace(/\s+/g, " ")
       .trim();
 
@@ -840,25 +711,17 @@ function buildProjectName(
   const source =
     cleaned || value;
 
-  const words =
+  const title =
     source
       .split(" ")
-      .slice(0, 8);
-
-  const title =
-    words
+      .slice(0, 8)
       .join(" ")
       .replace(/[.!?]+$/, "")
       .trim();
 
-  if (!title) {
-    return "New Project";
-  }
-
-  return (
-    title.charAt(0).toUpperCase() +
-    title.slice(1)
-  );
+  return title
+    ? title.charAt(0).toUpperCase() + title.slice(1)
+    : "New Project";
 }
 
 
@@ -866,9 +729,7 @@ function buildProjectName(
    DEPLOYMENT HELPERS
 ========================================================= */
 
-function normalizeDeploymentStatus(
-  status
-) {
+function normalizeDeploymentStatus(status) {
   const value =
     String(status || "")
       .trim()
@@ -963,21 +824,14 @@ function normalizeBackendActivityEvent(
 
   return {
     id:
-      `backend-${
-        event?._id ||
-        event?.id ||
-        index
-      }-${timestampValue}`,
+      `backend-${event?._id || event?.id || index}-${timestampValue}`,
 
-    message:
-      String(message),
+    message: String(message),
 
     type,
 
     timestamp:
-      new Date(
-        timestampValue
-      ).toLocaleTimeString(
+      new Date(timestampValue).toLocaleTimeString(
         [],
         {
           hour: "2-digit",
@@ -986,8 +840,7 @@ function normalizeBackendActivityEvent(
         }
       ),
 
-    source:
-      "backend",
+    source: "backend",
   };
 }
 
@@ -1006,7 +859,6 @@ function createMessage(
       `${Date.now()}-${Math.random()}`,
 
     role,
-
     content,
 
     timestamp:
@@ -1024,247 +876,137 @@ function createMessage(
 
 
 /* =========================================================
-   COMPONENT
+   WORKSPACE
 ========================================================= */
 
 function Workspace() {
-  const [projects, setProjects] =
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const selectedProjectRef = useRef(null);
+
+  const [prompt, setPrompt] = useState("");
+  const [framework, setFramework] = useState("React");
+
+  const [loading, setLoading] = useState(false);
+
+  const [generatedFiles, setGeneratedFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const [chatMessages, setChatMessages] = useState([]);
+
+  const [deploymentStatus, setDeploymentStatus] =
+    useState("Not deployed");
+
+  const [liveUrl, setLiveUrl] = useState("");
+
+  const [activeView, setActiveView] =
+    useState("preview");
+
+  const [mobilePanel, setMobilePanel] =
+    useState("workspace");
+
+  const [filesDrawerOpen, setFilesDrawerOpen] =
+    useState(false);
+
+  const [activityDrawerOpen, setActivityDrawerOpen] =
+    useState(false);
+
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const [projectLoading, setProjectLoading] =
+    useState(true);
+
+  const [operation, setOperation] =
+    useState("idle");
+
+  const [operationStartedAt, setOperationStartedAt] =
+    useState(null);
+
+  const [elapsedSeconds, setElapsedSeconds] =
+    useState(0);
+
+  const [activityLog, setActivityLog] =
     useState([]);
 
-  const [
-    selectedProject,
-    setSelectedProject,
-  ] = useState(null);
+  const [previewFullscreen, setPreviewFullscreen] =
+    useState(false);
 
-  const selectedProjectRef =
-    useRef(null);
+  const [authoritativeBuild, setAuthoritativeBuild] =
+    useState(null);
 
-  const [
-    prompt,
-    setPrompt,
-  ] = useState("");
+  const [buildSourceHash, setBuildSourceHash] =
+    useState("");
 
-  const [
-    framework,
-    setFramework,
-  ] = useState("React");
+  const [buildState, setBuildState] =
+    useState("idle");
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(false);
+  const [preview, setPreview] =
+    useState(null);
 
-  const [
-    generatedFiles,
-    setGeneratedFiles,
-  ] = useState([]);
+  const [previewState, setPreviewState] =
+    useState("idle");
 
-  const [
-    selectedFile,
-    setSelectedFile,
-  ] = useState(null);
+  const [previewError, setPreviewError] =
+    useState("");
 
-  const [
-    chatMessages,
-    setChatMessages,
-  ] = useState([]);
+  const [previewPolling, setPreviewPolling] =
+    useState(false);
 
-  const [
-    deploymentStatus,
-    setDeploymentStatus,
-  ] = useState("Not deployed");
+  const [environments, setEnvironments] =
+    useState([]);
 
-  const [
-    liveUrl,
-    setLiveUrl,
-  ] = useState("");
+  const [activeEnvironment, setActiveEnvironment] =
+    useState("development");
 
-  const [
-    activeView,
-    setActiveView,
-  ] = useState("preview");
+  const [environmentReadiness, setEnvironmentReadiness] =
+    useState(null);
 
-  const [
-    mobilePanel,
-    setMobilePanel,
-  ] = useState("workspace");
+  const [deploymentLog, setDeploymentLog] =
+    useState(null);
 
-  const [
-    filesDrawerOpen,
-    setFilesDrawerOpen,
-  ] = useState(false);
+  const [deploymentEvents, setDeploymentEvents] =
+    useState([]);
 
-  const [
-    activityDrawerOpen,
-    setActivityDrawerOpen,
-  ] = useState(false);
+  const [githubConnection, setGithubConnection] =
+    useState(null);
 
-  const [
-    error,
-    setError,
-  ] = useState("");
+  const [githubRepository, setGithubRepository] =
+    useState(null);
 
-  const [
-    notice,
-    setNotice,
-  ] = useState("");
+  const [backendSyncing, setBackendSyncing] =
+    useState(false);
 
-  const [
-    projectLoading,
-    setProjectLoading,
-  ] = useState(true);
+  const [backendSyncError, setBackendSyncError] =
+    useState("");
 
-  const [
-    operation,
-    setOperation,
-  ] = useState("idle");
-
-  const [
-    operationStartedAt,
-    setOperationStartedAt,
-  ] = useState(null);
-
-  const [
-    elapsedSeconds,
-    setElapsedSeconds,
-  ] = useState(0);
-
-  const [
-    activityLog,
-    setActivityLog,
-  ] = useState([]);
-
-  const [
-    previewFullscreen,
-    setPreviewFullscreen,
-  ] = useState(false);
+  const chatEndRef = useRef(null);
+  const initialLoadStarted = useRef(false);
+  const previewPollRef = useRef(null);
 
 
   /* =======================================================
-     AUTHORITATIVE BUILD
-  ======================================================= */
-
-  const [
-    authoritativeBuild,
-    setAuthoritativeBuild,
-  ] = useState(null);
-
-  const [
-    buildSourceHash,
-    setBuildSourceHash,
-  ] = useState("");
-
-  const [
-    buildState,
-    setBuildState,
-  ] = useState("idle");
-
-
-  /* =======================================================
-     PREVIEW
-  ======================================================= */
-
-  const [
-    preview,
-    setPreview,
-  ] = useState(null);
-
-  const [
-    previewState,
-    setPreviewState,
-  ] = useState("idle");
-
-  const [
-    previewError,
-    setPreviewError,
-  ] = useState("");
-
-  const [
-    previewPolling,
-    setPreviewPolling,
-  ] = useState(false);
-
-
-  /* =======================================================
-     BACKEND CONTEXT
-  ======================================================= */
-
-  const [
-    environments,
-    setEnvironments,
-  ] = useState([]);
-
-  const [
-    activeEnvironment,
-    setActiveEnvironment,
-  ] = useState("development");
-
-  const [
-    environmentReadiness,
-    setEnvironmentReadiness,
-  ] = useState(null);
-
-  const [
-    deploymentLog,
-    setDeploymentLog,
-  ] = useState(null);
-
-  const [
-    deploymentEvents,
-    setDeploymentEvents,
-  ] = useState([]);
-
-  const [
-    githubConnection,
-    setGithubConnection,
-  ] = useState(null);
-
-  const [
-    githubRepository,
-    setGithubRepository,
-  ] = useState(null);
-
-  const [
-    backendSyncing,
-    setBackendSyncing,
-  ] = useState(false);
-
-  const [
-    backendSyncError,
-    setBackendSyncError,
-  ] = useState("");
-
-  const chatEndRef =
-    useRef(null);
-
-  const initialLoadStarted =
-    useRef(false);
-
-  const previewPollRef =
-    useRef(null);
-
-
-  /* =======================================================
-     DERIVED STATE
+     DERIVED
   ======================================================= */
 
   const projectName =
-    getProjectName(
-      selectedProject
-    );
+    getProjectName(selectedProject);
 
   const selectedProjectId =
-    getProjectId(
-      selectedProject
-    );
+    getProjectId(selectedProject);
 
   const projectCount =
     projects.length;
 
   const previewUrl =
     liveUrl ||
-    extractPreviewUrl(
-      preview
+    extractPreviewUrl(preview);
+
+  const previewReady =
+    Boolean(
+      preview &&
+      isPreviewReady(preview) &&
+      previewUrl
     );
 
   const operationRunning =
@@ -1273,9 +1015,7 @@ function Workspace() {
   const authoritativeBuildReady =
     Boolean(
       authoritativeBuild &&
-      isAuthoritativeBuild(
-        authoritativeBuild
-      )
+      isAuthoritativeBuild(authoritativeBuild)
     );
 
   const canDeploy =
@@ -1285,34 +1025,24 @@ function Workspace() {
       authoritativeBuildReady
     );
 
-
   const currentOperationLabel =
     useMemo(() => {
-      if (
-        operation === "build"
-      ) {
-        return "Building";
-      }
+      switch (operation) {
+        case "build":
+          return "Building";
 
-      if (
-        operation === "change"
-      ) {
-        return "Applying changes";
-      }
+        case "change":
+          return "Applying changes";
 
-      if (
-        operation === "preview"
-      ) {
-        return "Starting preview";
-      }
+        case "preview":
+          return "Starting preview";
 
-      if (
-        operation === "deploy"
-      ) {
-        return "Deploying";
-      }
+        case "deploy":
+          return "Deploying";
 
-      return "Ready";
+        default:
+          return "Ready";
+      }
     }, [operation]);
 
 
@@ -1321,9 +1051,7 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
-    if (
-      !operationStartedAt
-    ) {
+    if (!operationStartedAt) {
       setElapsedSeconds(0);
       return undefined;
     }
@@ -1333,10 +1061,7 @@ function Workspace() {
         Math.max(
           0,
           Math.floor(
-            (
-              Date.now() -
-              operationStartedAt
-            ) / 1000
+            (Date.now() - operationStartedAt) / 1000
           )
         )
       );
@@ -1345,18 +1070,11 @@ function Workspace() {
     updateTimer();
 
     const timer =
-      window.setInterval(
-        updateTimer,
-        1000
-      );
+      window.setInterval(updateTimer, 1000);
 
     return () =>
-      window.clearInterval(
-        timer
-      );
-  }, [
-    operationStartedAt,
-  ]);
+      window.clearInterval(timer);
+  }, [operationStartedAt]);
 
 
   /* =======================================================
@@ -1364,15 +1082,11 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView(
-      {
-        behavior: "smooth",
-        block: "nearest",
-      }
-    );
-  }, [
-    chatMessages,
-  ]);
+    chatEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }, [chatMessages]);
 
 
   /* =======================================================
@@ -1382,26 +1096,21 @@ function Workspace() {
   useEffect(() => {
     selectedProjectRef.current =
       selectedProject;
-  }, [
-    selectedProject,
-  ]);
+  }, [selectedProject]);
 
 
   /* =======================================================
-     PREVIEW POLL CLEANUP
+     PREVIEW CLEANUP
   ======================================================= */
 
   useEffect(() => {
     return () => {
-      if (
-        previewPollRef.current
-      ) {
+      if (previewPollRef.current) {
         window.clearTimeout(
           previewPollRef.current
         );
 
-        previewPollRef.current =
-          null;
+        previewPollRef.current = null;
       }
     };
   }, []);
@@ -1411,139 +1120,86 @@ function Workspace() {
      ACTIVITY
   ======================================================= */
 
-  const addActivity =
-    useCallback(
-      (
+  const addActivity = useCallback(
+    (message, type = "info") => {
+      setActivityLog((previous) =>
+        [
+          ...previous,
+          {
+            id:
+              `${Date.now()}-${Math.random()}`,
+
+            message,
+            type,
+
+            timestamp:
+              new Date().toLocaleTimeString(
+                [],
+                {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                }
+              ),
+          },
+        ].slice(-60)
+      );
+    },
+    []
+  );
+
+
+  const startOperation = useCallback(
+    (type, message) => {
+      setOperation(type);
+      setOperationStartedAt(Date.now());
+
+      addActivity(
         message,
-        type = "info"
-      ) => {
-        setActivityLog(
-          (previous) =>
-            [
-              ...previous,
-              {
-                id:
-                  `${Date.now()}-${Math.random()}`,
-
-                message,
-
-                type,
-
-                timestamp:
-                  new Date().toLocaleTimeString(
-                    [],
-                    {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    }
-                  ),
-              },
-            ].slice(-60)
-        );
-      },
-      []
-    );
+        "active"
+      );
+    },
+    [addActivity]
+  );
 
 
-  const startOperation =
-    useCallback(
-      (
-        type,
-        message
-      ) => {
-        setOperation(type);
+  const finishOperation = useCallback(
+    (success, message) => {
+      addActivity(
+        message,
+        success ? "success" : "error"
+      );
 
-        setOperationStartedAt(
-          Date.now()
-        );
-
-        addActivity(
-          message,
-          "active"
-        );
-      },
-      [
-        addActivity,
-      ]
-    );
-
-
-  const finishOperation =
-    useCallback(
-      (
-        success,
-        message
-      ) => {
-        addActivity(
-          message,
-          success
-            ? "success"
-            : "error"
-        );
-
-        setOperation(
-          "idle"
-        );
-
-        setOperationStartedAt(
-          null
-        );
-      },
-      [
-        addActivity,
-      ]
-    );
+      setOperation("idle");
+      setOperationStartedAt(null);
+    },
+    [addActivity]
+  );
 
 
   /* =======================================================
-     RESET BUILD / PREVIEW
+     RESET
   ======================================================= */
 
   const resetBuildAndPreview =
     useCallback(() => {
-      if (
-        previewPollRef.current
-      ) {
+      if (previewPollRef.current) {
         window.clearTimeout(
           previewPollRef.current
         );
 
-        previewPollRef.current =
-          null;
+        previewPollRef.current = null;
       }
 
-      setAuthoritativeBuild(
-        null
-      );
+      setAuthoritativeBuild(null);
+      setBuildSourceHash("");
+      setBuildState("idle");
 
-      setBuildSourceHash(
-        ""
-      );
-
-      setBuildState(
-        "idle"
-      );
-
-      setPreview(
-        null
-      );
-
-      setPreviewState(
-        "idle"
-      );
-
-      setPreviewError(
-        ""
-      );
-
-      setPreviewPolling(
-        false
-      );
-
-      setLiveUrl(
-        ""
-      );
+      setPreview(null);
+      setPreviewState("idle");
+      setPreviewError("");
+      setPreviewPolling(false);
+      setLiveUrl("");
     }, []);
 
 
@@ -1552,155 +1208,91 @@ function Workspace() {
   ======================================================= */
 
   const applySelectedProject =
-    useCallback(
-      (project) => {
-        if (!project) {
-          return;
-        }
+    useCallback((project) => {
+      if (!project) {
+        return;
+      }
 
-        selectedProjectRef.current =
-          project;
+      selectedProjectRef.current =
+        project;
 
-        setSelectedProject(
-          project
+      setSelectedProject(project);
+
+      const files =
+        normalizeProjectFiles(
+          project,
+          null
         );
 
-        const files =
-          normalizeProjectFiles(
-            project,
-            null
-          );
+      setGeneratedFiles(files);
+      setSelectedFile(files[0] || null);
 
-        setGeneratedFiles(
-          files
+      setDeploymentStatus(
+        normalizeDeploymentStatus(
+          project?.deploymentStatus ||
+          project?.deployment?.status
+        )
+      );
+
+      const existingPreview =
+        extractPreview(
+          project?.preview
+            ? {
+                preview: project.preview,
+              }
+            : project
         );
 
-        setSelectedFile(
-          files[0] || null
+      if (existingPreview) {
+        setPreview(existingPreview);
+
+        setLiveUrl(
+          extractPreviewUrl(existingPreview)
         );
 
-        setDeploymentStatus(
-          normalizeDeploymentStatus(
-            project?.deploymentStatus ||
-            project?.deployment?.status
-          )
+        setPreviewState(
+          isPreviewReady(existingPreview)
+            ? "ready"
+            : isPreviewStarting(existingPreview)
+            ? "starting"
+            : "idle"
         );
+      } else {
+        setPreview(null);
+        setLiveUrl("");
+        setPreviewState("idle");
+      }
 
+      const existingBuild =
+        extractAuthoritativeBuild(project);
 
-        /*
-         * Only use an existing preview
-         * when the backend actually provides one.
-         */
-
-        const existingPreview =
-          extractPreview(
-            project?.preview
-              ? {
-                  preview:
-                    project.preview,
-                }
-              : project
-          );
-
-        if (
-          existingPreview
-        ) {
-          setPreview(
-            existingPreview
-          );
-
-          const existingUrl =
-            extractPreviewUrl(
-              existingPreview
-            );
-
-          setLiveUrl(
-            existingUrl
-          );
-
-          setPreviewState(
-            isPreviewRunning(
-              existingPreview
-            )
-              ? "ready"
-              : isPreviewStarting(
-                  existingPreview
-                )
-              ? "starting"
-              : "idle"
-          );
-        } else {
-          setPreview(
-            null
-          );
-
-          setLiveUrl(
-            ""
-          );
-
-          setPreviewState(
-            "idle"
-          );
-        }
-
-
-        /*
-         * Existing authoritative build.
-         */
-
-        const existingBuild =
-          extractAuthoritativeBuild(
-            project
-          );
-
-        if (
+      if (existingBuild) {
+        setAuthoritativeBuild(
           existingBuild
-        ) {
-          setAuthoritativeBuild(
-            existingBuild
-          );
+        );
 
-          setBuildSourceHash(
-            extractSourceHash(
-              project
-            )
-          );
+        setBuildSourceHash(
+          extractSourceHash(project)
+        );
 
-          setBuildState(
-            "success"
-          );
-        } else {
-          setAuthoritativeBuild(
-            null
-          );
+        setBuildState("success");
+      } else {
+        setAuthoritativeBuild(null);
+        setBuildSourceHash("");
+        setBuildState("idle");
+      }
 
-          setBuildSourceHash(
-            ""
-          );
+      const projectFramework =
+        getProjectFramework(project);
 
-          setBuildState(
-            "idle"
-          );
-        }
-
-
-        const projectFramework =
-          getProjectFramework(
-            project
-          );
-
-        if (
-          FRAMEWORKS.includes(
-            projectFramework
-          )
-        ) {
-          setFramework(
-            projectFramework
-          );
-        }
-      },
-      []
-    );
+      if (
+        FRAMEWORKS.includes(
+          projectFramework
+        )
+      ) {
+        setFramework(projectFramework);
+      }
+    }, []);
 
 
   /* =======================================================
@@ -1709,296 +1301,246 @@ function Workspace() {
 
   const syncBackendContext =
     useCallback(
-      async (
-        projectId
-      ) => {
+      async (projectId) => {
         if (!projectId) {
           setEnvironments([]);
-          setEnvironmentReadiness(
-            null
-          );
-          setDeploymentLog(
-            null
-          );
-          setDeploymentEvents(
-            []
-          );
-          setGithubConnection(
-            null
-          );
-          setGithubRepository(
-            null
-          );
-
+          setEnvironmentReadiness(null);
+          setDeploymentLog(null);
+          setDeploymentEvents([]);
+          setGithubConnection(null);
+          setGithubRepository(null);
           return;
         }
 
-        setBackendSyncing(
-          true
-        );
+        setBackendSyncing(true);
+        setBackendSyncError("");
 
-        setBackendSyncError(
-          ""
-        );
-
-        const results =
-          await Promise.allSettled(
-            [
+        try {
+          const results =
+            await Promise.allSettled([
               environmentService.listEnvironments(
                 projectId
               ),
 
-              deploymentLogService.getLatestLog(
-                {
-                  projectId,
-                }
-              ),
+              deploymentLogService.getLatestLog({
+                projectId,
+              }),
 
-              githubService.getConnections(
-                {
-                  projectId,
-                }
-              ),
-            ]
-          );
+              githubService.getConnections({
+                projectId,
+              }),
+            ]);
 
-        const environmentResult =
-          results[0];
+          const environmentResult =
+            results[0];
 
-        const deploymentResult =
-          results[1];
+          const deploymentResult =
+            results[1];
 
-        const githubResult =
-          results[2];
-
-
-        if (
-          environmentResult.status ===
-          "fulfilled"
-        ) {
-          const list =
-            getServiceList(
-              environmentResult.value,
-              [
-                "environments",
-                "items",
-              ]
-            );
-
-          setEnvironments(
-            list
-          );
-
-          const firstEnvironment =
-            list.find(
-              (item) =>
-                String(
-                  item?.name ||
-                  item?.environment ||
-                  ""
-                ).toLowerCase() ===
-                String(
-                  activeEnvironment
-                ).toLowerCase()
-            ) ||
-            list[0] ||
-            null;
+          const githubResult =
+            results[2];
 
           if (
-            firstEnvironment
+            environmentResult.status ===
+            "fulfilled"
           ) {
-            const name =
-              firstEnvironment?.name ||
-              firstEnvironment?.environment ||
-              "development";
+            const list =
+              getServiceList(
+                environmentResult.value,
+                [
+                  "environments",
+                  "items",
+                ]
+              );
 
-            setActiveEnvironment(
-              String(name)
-            );
+            setEnvironments(list);
 
-            try {
-              const readiness =
-                await environmentService.getDeploymentReadiness(
-                  projectId,
-                  name
+            const first =
+              list.find(
+                (item) =>
+                  String(
+                    item?.name ||
+                    item?.environment ||
+                    ""
+                  ).toLowerCase() ===
+                  String(
+                    activeEnvironment
+                  ).toLowerCase()
+              ) ||
+              list[0] ||
+              null;
+
+            if (first) {
+              const name =
+                first?.name ||
+                first?.environment ||
+                "development";
+
+              setActiveEnvironment(
+                String(name)
+              );
+
+              try {
+                const readiness =
+                  await environmentService
+                    .getDeploymentReadiness(
+                      projectId,
+                      name
+                    );
+
+                setEnvironmentReadiness(
+                  getServiceObject(
+                    readiness,
+                    [
+                      "readiness",
+                      "deploymentReadiness",
+                    ]
+                  )
                 );
-
-              setEnvironmentReadiness(
-                getServiceObject(
-                  readiness,
-                  [
-                    "readiness",
-                    "deploymentReadiness",
-                  ]
-                )
-              );
-            } catch {
-              setEnvironmentReadiness(
-                null
-              );
+              } catch {
+                setEnvironmentReadiness(
+                  null
+                );
+              }
             }
+          } else {
+            setEnvironments([]);
+            setEnvironmentReadiness(null);
           }
-        } else {
-          setEnvironments([]);
-          setEnvironmentReadiness(
-            null
-          );
-        }
 
+          if (
+            deploymentResult.status ===
+            "fulfilled"
+          ) {
+            const log =
+              getServiceObject(
+                deploymentResult.value,
+                [
+                  "log",
+                  "deploymentLog",
+                  "latest",
+                ]
+              );
 
-        if (
-          deploymentResult.status ===
-          "fulfilled"
-        ) {
-          const log =
-            getServiceObject(
-              deploymentResult.value,
-              [
-                "log",
-                "deploymentLog",
-                "latest",
-              ]
-            );
+            setDeploymentLog(log);
 
-          setDeploymentLog(
-            log
-          );
+            const logId =
+              getBackendLogId(log);
 
-          const logId =
-            getBackendLogId(
-              log
-            );
+            if (logId) {
+              try {
+                const eventsResponse =
+                  await deploymentLogService
+                    .getEvents(
+                      logId,
+                      {
+                        limit: 40,
+                      }
+                    );
 
-          if (logId) {
-            try {
-              const eventsResponse =
-                await deploymentLogService.getEvents(
-                  logId,
-                  {
-                    limit: 40,
-                  }
-                );
+                const events =
+                  getServiceList(
+                    eventsResponse,
+                    [
+                      "events",
+                      "items",
+                    ]
+                  );
 
-              const events =
-                getServiceList(
-                  eventsResponse,
-                  [
-                    "events",
-                    "items",
-                  ]
-                );
-
-              setDeploymentEvents(
-                events.map(
-                  (
-                    event,
-                    index
-                  ) =>
-                    normalizeBackendActivityEvent(
+                setDeploymentEvents(
+                  events.map(
+                    (
                       event,
                       index
-                    )
-                )
-              );
-            } catch {
-              setDeploymentEvents(
-                []
-              );
+                    ) =>
+                      normalizeBackendActivityEvent(
+                        event,
+                        index
+                      )
+                  )
+                );
+              } catch {
+                setDeploymentEvents([]);
+              }
             }
           }
-        }
 
-
-        if (
-          githubResult.status ===
-          "fulfilled"
-        ) {
-          const connections =
-            getServiceList(
-              githubResult.value,
-              [
-                "connections",
-                "items",
-              ]
-            );
-
-          const activeConnection =
-            connections.find(
-              (item) =>
+          if (
+            githubResult.status ===
+            "fulfilled"
+          ) {
+            const connections =
+              getServiceList(
+                githubResult.value,
                 [
-                  "active",
-                  "connected",
-                ].includes(
-                  String(
-                    item?.status ||
-                    ""
-                  ).toLowerCase()
-                )
-            ) ||
-            connections[0] ||
-            null;
+                  "connections",
+                  "items",
+                ]
+              );
 
-          setGithubConnection(
-            activeConnection
-          );
+            const active =
+              connections.find(
+                (item) =>
+                  [
+                    "active",
+                    "connected",
+                  ].includes(
+                    String(
+                      item?.status ||
+                      ""
+                    ).toLowerCase()
+                  )
+              ) ||
+              connections[0] ||
+              null;
 
-          setGithubRepository(
-            activeConnection?.defaultRepository ||
-            activeConnection?.repository ||
-            activeConnection?.defaultRepo ||
-            null
-          );
+            setGithubConnection(active);
+
+            setGithubRepository(
+              active?.defaultRepository ||
+              active?.repository ||
+              active?.defaultRepo ||
+              null
+            );
+          }
+
+          if (
+            environmentResult.status ===
+              "rejected" &&
+            deploymentResult.status ===
+              "rejected" &&
+            githubResult.status ===
+              "rejected"
+          ) {
+            setBackendSyncError(
+              "Backend workspace context could not be synchronized."
+            );
+          }
+        } finally {
+          setBackendSyncing(false);
         }
-
-
-        if (
-          environmentResult.status ===
-            "rejected" &&
-          deploymentResult.status ===
-            "rejected" &&
-          githubResult.status ===
-            "rejected"
-        ) {
-          setBackendSyncError(
-            "Backend workspace context could not be synchronized."
-          );
-        }
-
-        setBackendSyncing(
-          false
-        );
       },
-      [
-        activeEnvironment,
-      ]
+      [activeEnvironment]
     );
 
 
   /* =======================================================
-     PROJECT LOAD
+     LOAD PROJECTS
   ======================================================= */
 
   const loadProjects =
     useCallback(
-      async (
-        preferredProjectId = ""
-      ) => {
+      async (preferredProjectId = "") => {
         try {
-          setProjectLoading(
-            true
-          );
+          setProjectLoading(true);
 
           const response =
             await getProjects();
 
           const normalized =
-            normalizeProjects(
-              response
-            );
+            normalizeProjects(response);
 
-          setProjects(
-            normalized
-          );
+          setProjects(normalized);
 
           const currentId =
             preferredProjectId ||
@@ -2011,13 +1553,9 @@ function Workspace() {
               normalized.find(
                 (project) =>
                   String(
-                    getProjectId(
-                      project
-                    )
+                    getProjectId(project)
                   ) ===
-                  String(
-                    currentId
-                  )
+                  String(currentId)
               );
 
             if (preferred) {
@@ -2026,43 +1564,28 @@ function Workspace() {
               );
 
               await syncBackendContext(
-                getProjectId(
-                  preferred
-                )
+                getProjectId(preferred)
               );
 
               return normalized;
             }
           }
 
-
-          if (
-            normalized.length > 0
-          ) {
+          if (normalized.length > 0) {
             applySelectedProject(
               normalized[0]
             );
 
             await syncBackendContext(
-              getProjectId(
-                normalized[0]
-              )
+              getProjectId(normalized[0])
             );
           } else {
             selectedProjectRef.current =
               null;
 
-            setSelectedProject(
-              null
-            );
-
-            setGeneratedFiles(
-              []
-            );
-
-            setSelectedFile(
-              null
-            );
+            setSelectedProject(null);
+            setGeneratedFiles([]);
+            setSelectedFile(null);
 
             resetBuildAndPreview();
 
@@ -2087,9 +1610,7 @@ function Workspace() {
 
           return [];
         } finally {
-          setProjectLoading(
-            false
-          );
+          setProjectLoading(false);
         }
       },
       [
@@ -2105,23 +1626,18 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
-    if (
-      initialLoadStarted.current
-    ) {
+    if (initialLoadStarted.current) {
       return;
     }
 
-    initialLoadStarted.current =
-      true;
+    initialLoadStarted.current = true;
 
     loadProjects();
-  }, [
-    loadProjects,
-  ]);
+  }, [loadProjects]);
 
 
   /* =======================================================
-     PROJECT SELECTION
+     PROJECT SELECT
   ======================================================= */
 
   const handleSelectProject =
@@ -2132,34 +1648,17 @@ function Workspace() {
         setActivityLog([]);
         setChatMessages([]);
 
-        setActiveView(
-          "preview"
-        );
+        setActiveView("preview");
+        setMobilePanel("workspace");
 
-        setMobilePanel(
-          "workspace"
-        );
+        setFilesDrawerOpen(false);
+        setActivityDrawerOpen(false);
+        setPreviewFullscreen(false);
 
-        setFilesDrawerOpen(
-          false
-        );
-
-        setActivityDrawerOpen(
-          false
-        );
-
-        setPreviewFullscreen(
-          false
-        );
-
-        applySelectedProject(
-          project
-        );
+        applySelectedProject(project);
 
         syncBackendContext(
-          getProjectId(
-            project
-          )
+          getProjectId(project)
         );
       },
       [
@@ -2178,98 +1677,45 @@ function Workspace() {
       selectedProjectRef.current =
         null;
 
-      setSelectedProject(
-        null
-      );
+      setSelectedProject(null);
+      setGeneratedFiles([]);
+      setSelectedFile(null);
 
-      setGeneratedFiles(
-        []
-      );
-
-      setSelectedFile(
-        null
-      );
-
-      setPrompt(
-        ""
-      );
-
-      setChatMessages(
-        []
-      );
+      setPrompt("");
+      setChatMessages([]);
 
       setDeploymentStatus(
         "Not deployed"
       );
 
-      setActiveView(
-        "preview"
-      );
+      setActiveView("preview");
+      setMobilePanel("workspace");
 
-      setMobilePanel(
-        "workspace"
-      );
-
-      setFilesDrawerOpen(
-        false
-      );
-
-      setActivityDrawerOpen(
-        false
-      );
-
-      setPreviewFullscreen(
-        false
-      );
+      setFilesDrawerOpen(false);
+      setActivityDrawerOpen(false);
+      setPreviewFullscreen(false);
 
       setError("");
       setNotice("");
       setActivityLog([]);
 
-      setOperation(
-        "idle"
-      );
-
-      setOperationStartedAt(
-        null
-      );
+      setOperation("idle");
+      setOperationStartedAt(null);
 
       resetBuildAndPreview();
 
-      setEnvironments(
-        []
-      );
+      setEnvironments([]);
+      setActiveEnvironment("development");
+      setEnvironmentReadiness(null);
 
-      setActiveEnvironment(
-        "development"
-      );
+      setDeploymentLog(null);
+      setDeploymentEvents([]);
 
-      setEnvironmentReadiness(
-        null
-      );
+      setGithubConnection(null);
+      setGithubRepository(null);
 
-      setDeploymentLog(
-        null
-      );
-
-      setDeploymentEvents(
-        []
-      );
-
-      setGithubConnection(
-        null
-      );
-
-      setGithubRepository(
-        null
-      );
-
-      setBackendSyncError(
-        ""
-      );
-    }, [
-      resetBuildAndPreview,
-    ]);
+      setBackendSyncError("");
+    }, [resetBuildAndPreview]);
 
 
   /* =======================================================
@@ -2277,32 +1723,22 @@ function Workspace() {
   ======================================================= */
 
   const handleQuickPrompt =
-    useCallback(
-      (value) => {
-        setPrompt(
-          value
-        );
+    useCallback((value) => {
+      setPrompt(value);
 
-        setError("");
-        setNotice("");
+      setError("");
+      setNotice("");
 
-        setMobilePanel(
-          "ai"
-        );
+      setMobilePanel("ai");
 
-        window.setTimeout(
-          () => {
-            document
-              .querySelector(
-                '[data-zyrionos-chat-input="true"]'
-              )
-              ?.focus();
-          },
-          50
-        );
-      },
-      []
-    );
+      window.setTimeout(() => {
+        document
+          .querySelector(
+            '[data-zyrionos-chat-input="true"]'
+          )
+          ?.focus();
+      }, 50);
+    }, []);
 
 
   /* =======================================================
@@ -2323,9 +1759,7 @@ function Workspace() {
 
         if (
           !build ||
-          !isAuthoritativeBuild(
-            build
-          )
+          !isAuthoritativeBuild(build)
         ) {
           throw new Error(
             "Preview requires a successful authoritative build."
@@ -2333,9 +1767,7 @@ function Workspace() {
         }
 
         const buildId =
-          getAuthoritativeBuildId(
-            build
-          );
+          getAuthoritativeBuildId(build);
 
         if (!buildId) {
           throw new Error(
@@ -2343,34 +1775,17 @@ function Workspace() {
           );
         }
 
-
-        /*
-         * Stop an old polling loop.
-         */
-
-        if (
-          previewPollRef.current
-        ) {
+        if (previewPollRef.current) {
           window.clearTimeout(
             previewPollRef.current
           );
 
-          previewPollRef.current =
-            null;
+          previewPollRef.current = null;
         }
 
-
-        setPreviewError(
-          ""
-        );
-
-        setPreviewState(
-          "starting"
-        );
-
-        setPreviewPolling(
-          false
-        );
+        setPreviewError("");
+        setPreviewState("starting");
+        setPreviewPolling(false);
 
         startOperation(
           "preview",
@@ -2382,7 +1797,6 @@ function Workspace() {
           "active"
         );
 
-
         let response;
 
         try {
@@ -2391,26 +1805,20 @@ function Workspace() {
               projectId,
               {
                 buildId,
-
                 sourceHash:
                   buildSourceHash ||
                   undefined,
               }
             );
-        } catch (error) {
+        } catch (err) {
           const message =
             getErrorMessage(
-              error,
+              err,
               "The backend preview runtime could not be started."
             );
 
-          setPreviewState(
-            "error"
-          );
-
-          setPreviewError(
-            message
-          );
+          setPreviewState("error");
+          setPreviewError(message);
 
           addActivity(
             message,
@@ -2422,57 +1830,32 @@ function Workspace() {
             "Preview runtime failed to start."
           );
 
-          throw error;
+          throw err;
         }
 
-
         let createdPreview =
-          extractPreview(
-            response
-          );
+          extractPreview(response);
 
-
-        /*
-         * Some APIs return a generic response.
-         * In that case immediately retrieve the
-         * authoritative active preview.
-         */
-
-        if (
-          !createdPreview
-        ) {
+        if (!createdPreview) {
           try {
             const activeResponse =
-              await getPreview(
-                projectId
-              );
+              await getPreview(projectId);
 
             createdPreview =
               extractPreview(
                 activeResponse
               );
           } catch {
-            /*
-             * Original create response
-             * remains the source of truth.
-             */
+            /* create response remains source */
           }
         }
 
-
-        if (
-          !createdPreview
-        ) {
+        if (!createdPreview) {
           const message =
             "Preview service returned no preview runtime.";
 
-          setPreviewState(
-            "error"
-          );
-
-          setPreviewError(
-            message
-          );
+          setPreviewState("error");
+          setPreviewError(message);
 
           addActivity(
             message,
@@ -2481,59 +1864,39 @@ function Workspace() {
 
           finishOperation(
             false,
-            "Preview runtime returned an invalid response."
-          );
-
-          throw new Error(
             message
           );
+
+          throw new Error(message);
         }
 
-
-        setPreview(
-          createdPreview
-        );
-
+        setPreview(createdPreview);
 
         const createdUrl =
           extractPreviewUrl(
             createdPreview
           );
 
-        if (
-          createdUrl
-        ) {
-          setLiveUrl(
-            createdUrl
-          );
+        if (createdUrl) {
+          setLiveUrl(createdUrl);
         }
-
 
         const createdStatus =
           normalizePreviewStatus(
             createdPreview
           );
 
-
         addActivity(
           `Preview runtime created with status "${createdStatus || "unknown"}".`,
           "success"
         );
 
-
         if (
-          isPreviewRunning(
-            createdPreview
-          ) &&
+          isPreviewReady(createdPreview) &&
           createdUrl
         ) {
-          setPreviewState(
-            "ready"
-          );
-
-          setPreviewPolling(
-            false
-          );
+          setPreviewState("ready");
+          setPreviewPolling(false);
 
           addActivity(
             "Preview runtime is healthy and ready.",
@@ -2548,24 +1911,17 @@ function Workspace() {
           return createdPreview;
         }
 
-
         const previewId =
           extractPreviewId(
             createdPreview
           );
 
-
         if (!previewId) {
           const message =
             "Preview runtime was created but no preview ID was returned.";
 
-          setPreviewState(
-            "error"
-          );
-
-          setPreviewError(
-            message
-          );
+          setPreviewState("error");
+          setPreviewError(message);
 
           addActivity(
             message,
@@ -2577,25 +1933,14 @@ function Workspace() {
             message
           );
 
-          throw new Error(
-            message
-          );
+          throw new Error(message);
         }
 
-
-        /*
-         * Poll backend health.
-         */
-
-        setPreviewPolling(
-          true
-        );
-
+        setPreviewPolling(true);
 
         for (
           let attempt = 0;
-          attempt <
-            PREVIEW_MAX_POLLS;
+          attempt < PREVIEW_MAX_POLLS;
           attempt += 1
         ) {
           await new Promise(
@@ -2608,10 +1953,7 @@ function Workspace() {
             }
           );
 
-
-          previewPollRef.current =
-            null;
-
+          previewPollRef.current = null;
 
           try {
             const healthResponse =
@@ -2620,58 +1962,38 @@ function Workspace() {
                 previewId
               );
 
-
             const nextPreview =
               mergePreviewHealth(
                 createdPreview,
                 healthResponse
               );
 
-
-            if (
-              nextPreview
-            ) {
+            if (nextPreview) {
               createdPreview =
                 nextPreview;
 
-              setPreview(
-                nextPreview
-              );
-
+              setPreview(nextPreview);
 
               const nextUrl =
                 extractPreviewUrl(
                   nextPreview
                 );
 
-              if (
-                nextUrl
-              ) {
-                setLiveUrl(
-                  nextUrl
-                );
+              if (nextUrl) {
+                setLiveUrl(nextUrl);
               }
-
 
               const nextStatus =
                 normalizePreviewStatus(
                   nextPreview
                 );
 
-
               if (
-                isPreviewRunning(
-                  nextPreview
-                ) &&
+                isPreviewReady(nextPreview) &&
                 nextUrl
               ) {
-                setPreviewState(
-                  "ready"
-                );
-
-                setPreviewPolling(
-                  false
-                );
+                setPreviewState("ready");
+                setPreviewPolling(false);
 
                 addActivity(
                   "Preview health check passed.",
@@ -2686,7 +2008,6 @@ function Workspace() {
                 return nextPreview;
               }
 
-
               if (
                 isPreviewTerminalFailure(
                   nextPreview
@@ -2695,22 +2016,20 @@ function Workspace() {
                 const failure =
                   nextPreview?.errorMessage ||
                   nextPreview?.error?.message ||
-                  nextPreview?.errors?.[
-                    nextPreview.errors.length - 1
-                  ]?.message ||
+                  (
+                    Array.isArray(
+                      nextPreview?.errors
+                    )
+                      ? nextPreview.errors[
+                          nextPreview.errors.length - 1
+                        ]?.message
+                      : ""
+                  ) ||
                   `Preview runtime entered state "${nextStatus}".`;
 
-                setPreviewState(
-                  "error"
-                );
-
-                setPreviewError(
-                  failure
-                );
-
-                setPreviewPolling(
-                  false
-                );
+                setPreviewState("error");
+                setPreviewError(failure);
+                setPreviewPolling(false);
 
                 addActivity(
                   failure,
@@ -2722,74 +2041,45 @@ function Workspace() {
                   "Preview runtime failed."
                 );
 
-                throw new Error(
-                  failure
-                );
+                throw new Error(failure);
               }
 
-
-              /*
-               * Still starting.
-               */
-
-              setPreviewState(
-                "starting"
-              );
+              setPreviewState("starting");
             }
-          } catch (
-            healthError
-          ) {
-            /*
-             * If this is an actual backend/runtime
-             * failure, stop immediately.
-             *
-             * Otherwise retry health polling.
-             */
-
+          } catch (healthError) {
             const status =
+              healthError?.response?.status ||
               healthError?.status;
 
             const code =
+              healthError?.response?.data?.code ||
               healthError?.code;
 
             const terminal =
               status === 404 ||
               status === 409 ||
               status === 422 ||
-              code ===
-                "ARTIFACT_NOT_FOUND" ||
-              code ===
-                "ARTIFACT_INVALID" ||
-              code ===
-                "ARTIFACT_CHECKSUM_MISMATCH" ||
-              code ===
-                "DOCKER_UNAVAILABLE" ||
-              code ===
-                "PREVIEW_RUNTIME_FAILED" ||
-              code ===
-                "HEALTH_CHECK_FAILED";
+              [
+                "BUILD_NOT_FOUND",
+                "BUILD_NOT_SUCCESSFUL",
+                "ARTIFACT_NOT_FOUND",
+                "ARTIFACT_INVALID",
+                "ARTIFACT_CHECKSUM_MISMATCH",
+                "DOCKER_UNAVAILABLE",
+                "PREVIEW_RUNTIME_FAILED",
+                "HEALTH_CHECK_FAILED",
+              ].includes(code);
 
-
-            if (
-              terminal
-            ) {
+            if (terminal) {
               const message =
                 getErrorMessage(
                   healthError,
                   "Preview health verification failed."
                 );
 
-              setPreviewState(
-                "error"
-              );
-
-              setPreviewError(
-                message
-              );
-
-              setPreviewPolling(
-                false
-              );
+              setPreviewState("error");
+              setPreviewError(message);
+              setPreviewPolling(false);
 
               addActivity(
                 message,
@@ -2804,12 +2094,6 @@ function Workspace() {
               throw healthError;
             }
 
-
-            /*
-             * Temporary health/network
-             * failure: continue polling.
-             */
-
             if (
               attempt >=
               PREVIEW_MAX_POLLS - 1
@@ -2820,17 +2104,9 @@ function Workspace() {
                   "Preview health could not be verified."
                 );
 
-              setPreviewState(
-                "error"
-              );
-
-              setPreviewError(
-                message
-              );
-
-              setPreviewPolling(
-                false
-              );
+              setPreviewState("error");
+              setPreviewError(message);
+              setPreviewPolling(false);
 
               addActivity(
                 message,
@@ -2847,14 +2123,8 @@ function Workspace() {
           }
         }
 
-
-        setPreviewPolling(
-          false
-        );
-
-        setPreviewState(
-          "error"
-        );
+        setPreviewPolling(false);
+        setPreviewState("error");
 
         const timeoutMessage =
           "Preview runtime did not become healthy within the allowed startup window.";
@@ -2892,13 +2162,10 @@ function Workspace() {
 
   const handleBuild =
     useCallback(
-      async (
-        suppliedPrompt = ""
-      ) => {
+      async (suppliedPrompt = "") => {
         const userPrompt =
           String(
-            suppliedPrompt ||
-            prompt
+            suppliedPrompt || prompt
           ).trim();
 
         if (!userPrompt) {
@@ -2909,53 +2176,27 @@ function Workspace() {
           return;
         }
 
-        if (
-          loading
-        ) {
+        if (loading) {
           return;
         }
 
         const isExistingProject =
-          Boolean(
-            selectedProjectId
-          );
-
+          Boolean(selectedProjectId);
 
         try {
           setError("");
           setNotice("");
+          setLoading(true);
 
-          setLoading(
-            true
-          );
+          setBuildState("generating");
 
-          setBuildState(
-            "generating"
-          );
+          setPreviewState("idle");
+          setPreviewError("");
+          setLiveUrl("");
+          setPreview(null);
 
-          setPreviewState(
-            "idle"
-          );
-
-          setPreviewError(
-            ""
-          );
-
-          setLiveUrl(
-            ""
-          );
-
-          setPreview(
-            null
-          );
-
-          setActiveView(
-            "preview"
-          );
-
-          setMobilePanel(
-            "workspace"
-          );
+          setActiveView("preview");
+          setMobilePanel("workspace");
 
           setChatMessages(
             (previous) => [
@@ -2971,7 +2212,6 @@ function Workspace() {
             isExistingProject
               ? "change"
               : "build",
-
             isExistingProject
               ? "Your change request is being processed..."
               : "Your application is being generated..."
@@ -2981,7 +2221,6 @@ function Workspace() {
             "Understanding the request...",
             "active"
           );
-
 
           const instruction =
             isExistingProject
@@ -2997,17 +2236,13 @@ function Workspace() {
                   "",
                   "Return the complete project files required for the implementation.",
                   "Preserve working functionality unless the requested change requires modifying it.",
-                ].join(
-                  "\n"
-                )
+                ].join("\n")
               : userPrompt;
-
 
           addActivity(
             "Generating application files...",
             "active"
           );
-
 
           const aiResult =
             await generateCode(
@@ -3015,34 +2250,29 @@ function Workspace() {
               framework
             );
 
-
           const assistantText =
             normalizeAIResponse(
               aiResult
             );
-
 
           const filesFromAI =
             getGeneratedFiles(
               aiResult
             );
 
-
           if (
-            filesFromAI.length ===
-            0
+            !Array.isArray(filesFromAI) ||
+            filesFromAI.length === 0
           ) {
             throw new Error(
               "AI generation completed, but no project files were returned by the backend."
             );
           }
 
-
           addActivity(
             `${filesFromAI.length} project files received from the backend.`,
             "success"
           );
-
 
           setChatMessages(
             (previous) => [
@@ -3059,89 +2289,42 @@ function Workspace() {
             ]
           );
 
+          let projectAfterSave = null;
+          let saveResponse = null;
 
-          let projectAfterSave =
-            null;
+          /* CREATE */
 
-          let saveResponse =
-            null;
-
-
-          /* =================================================
-             CREATE
-          ================================================= */
-
-          if (
-            !isExistingProject
-          ) {
+          if (!isExistingProject) {
             const generatedProjectName =
               buildProjectName(
                 userPrompt
               );
-
 
             addActivity(
               "Saving the generated project...",
               "active"
             );
 
-
             saveResponse =
-              await createProject(
-                {
-                  projectName:
-                    generatedProjectName,
+              await createProject({
+                projectName:
+                  generatedProjectName,
 
-                  description:
-                    userPrompt,
+                description:
+                  userPrompt,
 
-                  framework,
+                framework,
 
-                  files:
-                    filesFromAI,
-                }
-              );
-
+                files:
+                  filesFromAI,
+              });
 
             projectAfterSave =
               extractProjectFromResponse(
                 saveResponse
               );
 
-
-            if (
-              !projectAfterSave
-            ) {
-              const unwrapped =
-                unwrapApiResponse(
-                  saveResponse
-                );
-
-              if (
-                unwrapped &&
-                typeof unwrapped ===
-                  "object" &&
-                !Array.isArray(
-                  unwrapped
-                ) &&
-                (
-                  unwrapped._id ||
-                  unwrapped.id ||
-                  unwrapped.projectName ||
-                  Array.isArray(
-                    unwrapped.files
-                  )
-                )
-              ) {
-                projectAfterSave =
-                  unwrapped;
-              }
-            }
-
-
-            if (
-              projectAfterSave
-            ) {
+            if (projectAfterSave) {
               const savedFiles =
                 normalizeProjectFiles(
                   projectAfterSave,
@@ -3149,24 +2332,21 @@ function Workspace() {
                 );
 
               const finalFiles =
-                savedFiles.length >
-                0
+                savedFiles.length > 0
                   ? savedFiles
                   : filesFromAI;
 
-              const projectWithFiles =
-                {
-                  ...projectAfterSave,
+              const projectWithFiles = {
+                ...projectAfterSave,
 
-                  projectName:
-                    getProjectName(
-                      projectAfterSave
-                    ) ||
-                    generatedProjectName,
+                projectName:
+                  getProjectName(
+                    projectAfterSave
+                  ) ||
+                  generatedProjectName,
 
-                  files:
-                    finalFiles,
-                };
+                files: finalFiles,
+              };
 
               applySelectedProject(
                 projectWithFiles
@@ -3181,7 +2361,6 @@ function Workspace() {
                   null
               );
             }
-
 
             const createdId =
               getProjectId(
@@ -3201,17 +2380,13 @@ function Workspace() {
             );
           }
 
-
-          /* =================================================
-             UPDATE
-          ================================================= */
+          /* UPDATE */
 
           else {
             addActivity(
               "Saving the updated project...",
               "active"
             );
-
 
             saveResponse =
               await updateProject(
@@ -3222,43 +2397,34 @@ function Workspace() {
                 }
               );
 
-
             projectAfterSave =
               extractProjectFromResponse(
                 saveResponse
               );
 
-
-            if (
-              projectAfterSave
-            ) {
+            if (projectAfterSave) {
               const returnedFiles =
                 normalizeProjectFiles(
                   projectAfterSave,
                   null
                 );
 
-              const appliedProject =
-                {
-                  ...projectAfterSave,
+              const finalFiles =
+                returnedFiles.length > 0
+                  ? returnedFiles
+                  : filesFromAI;
 
-                  files:
-                    returnedFiles.length >
-                    0
-                      ? returnedFiles
-                      : filesFromAI,
-                };
-
-              applySelectedProject(
-                appliedProject
-              );
+              applySelectedProject({
+                ...projectAfterSave,
+                files: finalFiles,
+              });
 
               setGeneratedFiles(
-                appliedProject.files
+                finalFiles
               );
 
               setSelectedFile(
-                appliedProject.files[0] ||
+                finalFiles[0] ||
                   null
               );
             } else {
@@ -3272,16 +2438,13 @@ function Workspace() {
               );
             }
 
-
             await loadProjects(
               selectedProjectId
             );
 
-
             setNotice(
               `Changes saved to ${projectName}.`
             );
-
 
             addActivity(
               "Project changes saved.",
@@ -3289,11 +2452,9 @@ function Workspace() {
             );
           }
 
-
           /*
-           * IMPORTANT:
-           *
-           * AI output itself is NOT an authoritative build.
+           * CRITICAL:
+           * AI response is NOT authoritative.
            */
 
           const build =
@@ -3304,19 +2465,10 @@ function Workspace() {
               selectedProjectRef.current
             );
 
-
           if (!build) {
-            setBuildState(
-              "waiting"
-            );
-
-            setAuthoritativeBuild(
-              null
-            );
-
-            setPreviewState(
-              "blocked"
-            );
+            setBuildState("waiting");
+            setAuthoritativeBuild(null);
+            setPreviewState("blocked");
 
             const message =
               "Project files were saved, but the backend did not return a successful authoritative build. Preview is blocked until Engineering Agent produces one.";
@@ -3326,10 +2478,7 @@ function Workspace() {
               "error"
             );
 
-            setError(
-              message
-            );
-
+            setError(message);
             setPrompt("");
 
             finishOperation(
@@ -3340,10 +2489,7 @@ function Workspace() {
             return;
           }
 
-
-          setAuthoritativeBuild(
-            build
-          );
+          setAuthoritativeBuild(build);
 
           const sourceHash =
             extractSourceHash(
@@ -3356,58 +2502,42 @@ function Workspace() {
             sourceHash
           );
 
-          setBuildState(
-            "success"
-          );
-
+          setBuildState("success");
 
           const realBuildId =
             getAuthoritativeBuildId(
               build
             );
 
-
           addActivity(
             `Authoritative build ${realBuildId} returned by Engineering Agent.`,
             "success"
           );
 
-
-          /*
-           * Preview ONLY after authoritative build.
-           */
-
-          setLoading(
-            false
-          );
-
+          setLoading(false);
 
           try {
-            await startRealPreview(
+            const finalProjectId =
               getProjectId(
                 projectAfterSave ||
                 selectedProjectRef.current
               ) ||
-                selectedProjectId,
+              selectedProjectId;
 
+            await startRealPreview(
+              finalProjectId,
               build
             );
 
             setPrompt("");
-
-            setActiveView(
-              "preview"
-            );
+            setActiveView("preview");
 
             setNotice(
               "Authoritative build completed and the real preview runtime is ready."
             );
           } catch {
-            /*
-             * Preview function already updates UI.
-             */
+            /* Preview state already contains error */
           }
-
         } catch (err) {
           console.error(
             "Workspace build error:",
@@ -3420,13 +2550,8 @@ function Workspace() {
               "The build could not be completed."
             );
 
-          setBuildState(
-            "failed"
-          );
-
-          setError(
-            message
-          );
+          setBuildState("failed");
+          setError(message);
 
           setChatMessages(
             (previous) => [
@@ -3451,9 +2576,7 @@ function Workspace() {
             "The build operation failed."
           );
         } finally {
-          setLoading(
-            false
-          );
+          setLoading(false);
         }
       },
       [
@@ -3473,7 +2596,7 @@ function Workspace() {
 
 
   /* =======================================================
-     CHAT SUBMIT
+     CHAT
   ======================================================= */
 
   const handleChatSubmit =
@@ -3488,15 +2611,28 @@ function Workspace() {
           return;
         }
 
-        handleBuild(
-          prompt
-        );
+        handleBuild(prompt);
       },
       [
         loading,
         prompt,
         handleBuild,
       ]
+    );
+
+
+  const handlePromptKeyDown =
+    useCallback(
+      (event) => {
+        if (
+          event.key === "Enter" &&
+          !event.shiftKey
+        ) {
+          event.preventDefault();
+          handleChatSubmit(event);
+        }
+      },
+      [handleChatSubmit]
     );
 
 
@@ -3507,9 +2643,7 @@ function Workspace() {
   const handleReviewFix =
     useCallback(
       async () => {
-        if (
-          !selectedProjectId
-        ) {
+        if (!selectedProjectId) {
           setError(
             "Select a project before running Review / Fix."
           );
@@ -3517,14 +2651,15 @@ function Workspace() {
           return;
         }
 
-        if (
-          loading
-        ) {
+        if (loading) {
           return;
         }
 
+        const requestedChange =
+          prompt.trim();
+
         const reviewInstruction =
-          prompt.trim()
+          requestedChange
             ? [
                 "Review and improve the current project.",
                 "",
@@ -3532,25 +2667,17 @@ function Workspace() {
                 `Project name: ${projectName}`,
                 "",
                 "Requested review/change:",
-                prompt.trim(),
+                requestedChange,
                 "",
                 "Return the complete project files required for the implementation.",
-              ].join(
-                "\n"
-              )
+              ].join("\n")
             : [
                 "Review the current project.",
                 "",
                 "Check the current implementation for errors, broken functionality, responsive problems, accessibility issues, incomplete functionality and build/runtime problems.",
                 "",
                 "Return the complete project files required for any fixes.",
-              ].join(
-                "\n"
-              );
-
-        setPrompt(
-          reviewInstruction
-        );
+              ].join("\n");
 
         await handleBuild(
           reviewInstruction
@@ -3572,9 +2699,7 @@ function Workspace() {
 
   const handleDeploy =
     useCallback(() => {
-      if (
-        !selectedProjectId
-      ) {
+      if (!selectedProjectId) {
         setError(
           "Select a project before deploying."
         );
@@ -3582,10 +2707,7 @@ function Workspace() {
         return;
       }
 
-      if (
-        generatedFiles.length ===
-        0
-      ) {
+      if (generatedFiles.length === 0) {
         setError(
           "This project has no generated files to deploy."
         );
@@ -3593,9 +2715,7 @@ function Workspace() {
         return;
       }
 
-      if (
-        !authoritativeBuildReady
-      ) {
+      if (!authoritativeBuildReady) {
         setError(
           "Deployment is blocked until the backend reports a successful authoritative build."
         );
@@ -3613,7 +2733,9 @@ function Workspace() {
         `/billing?projectId=${encodeURIComponent(
           selectedProjectId
         )}&intent=deploy&buildId=${encodeURIComponent(
-          authoritativeBuild.buildId
+          getAuthoritativeBuildId(
+            authoritativeBuild
+          )
         )}`
       );
     }, [
@@ -3631,40 +2753,17 @@ function Workspace() {
   const openPreview =
     useCallback(
       async () => {
-        setActiveView(
-          "preview"
-        );
-
-        setMobilePanel(
-          "workspace"
-        );
-
-        setPreviewFullscreen(
-          true
-        );
-
-
-        /*
-         * Existing healthy runtime:
-         * do not create another one.
-         */
+        setActiveView("preview");
+        setMobilePanel("workspace");
+        setPreviewFullscreen(true);
 
         if (
-          preview &&
-          isPreviewRunning(
-            preview
-          ) &&
-          extractPreviewUrl(
-            preview
-          )
+          previewReady
         ) {
           return;
         }
 
-
-        if (
-          !selectedProjectId
-        ) {
+        if (!selectedProjectId) {
           setPreviewError(
             "Select a project before starting Preview."
           );
@@ -3672,13 +2771,8 @@ function Workspace() {
           return;
         }
 
-
-        if (
-          !authoritativeBuildReady
-        ) {
-          setPreviewState(
-            "blocked"
-          );
+        if (!authoritativeBuildReady) {
+          setPreviewState("blocked");
 
           setPreviewError(
             "Authoritative build required. Preview cannot start from unverified project files."
@@ -3687,19 +2781,18 @@ function Workspace() {
           return;
         }
 
-
         try {
           await startRealPreview(
             selectedProjectId,
             authoritativeBuild
           );
         } catch {
-          /* State already updated. */
+          /* state already updated */
         }
       },
       [
         selectedProjectId,
-        preview,
+        previewReady,
         authoritativeBuildReady,
         authoritativeBuild,
         startRealPreview,
@@ -3709,9 +2802,7 @@ function Workspace() {
 
   const closePreview =
     useCallback(() => {
-      setPreviewFullscreen(
-        false
-      );
+      setPreviewFullscreen(false);
     }, []);
 
 
@@ -3723,9 +2814,7 @@ function Workspace() {
     useCallback(
       async () => {
         const previewId =
-          extractPreviewId(
-            preview
-          );
+          extractPreviewId(preview);
 
         if (
           !selectedProjectId ||
@@ -3735,9 +2824,7 @@ function Workspace() {
         }
 
         try {
-          setPreviewState(
-            "stopping"
-          );
+          setPreviewState("stopping");
 
           addActivity(
             "Stopping preview runtime...",
@@ -3749,17 +2836,9 @@ function Workspace() {
             previewId
           );
 
-          setPreview(
-            null
-          );
-
-          setLiveUrl(
-            ""
-          );
-
-          setPreviewState(
-            "stopped"
-          );
+          setPreview(null);
+          setLiveUrl("");
+          setPreviewState("stopped");
 
           addActivity(
             "Preview runtime stopped.",
@@ -3772,13 +2851,8 @@ function Workspace() {
               "Preview runtime could not be stopped."
             );
 
-          setPreviewError(
-            message
-          );
-
-          setPreviewState(
-            "error"
-          );
+          setPreviewError(message);
+          setPreviewState("error");
 
           addActivity(
             message,
@@ -3795,91 +2869,37 @@ function Workspace() {
 
 
   /* =======================================================
-     FILES / ACTIVITY
+     DRAWERS
   ======================================================= */
 
   const openFilesDrawer =
     useCallback(() => {
-      setFilesDrawerOpen(
-        true
-      );
-
-      setActivityDrawerOpen(
-        false
-      );
+      setFilesDrawerOpen(true);
+      setActivityDrawerOpen(false);
     }, []);
-
 
   const closeFilesDrawer =
     useCallback(() => {
-      setFilesDrawerOpen(
-        false
-      );
+      setFilesDrawerOpen(false);
     }, []);
-
 
   const openActivityDrawer =
     useCallback(() => {
-      setActivityDrawerOpen(
-        true
-      );
-
-      setFilesDrawerOpen(
-        false
-      );
+      setActivityDrawerOpen(true);
+      setFilesDrawerOpen(false);
     }, []);
-
 
   const closeActivityDrawer =
     useCallback(() => {
-      setActivityDrawerOpen(
-        false
-      );
+      setActivityDrawerOpen(false);
     }, []);
 
-
   const handleFileSelect =
-    useCallback(
-      (file) => {
-        setSelectedFile(
-          file
-        );
-
-        setFilesDrawerOpen(
-          false
-        );
-
-        setActiveView(
-          "code"
-        );
-      },
-      []
-    );
-
-
-  /* =======================================================
-     KEYBOARD
-  ======================================================= */
-
-  const handlePromptKeyDown =
-    useCallback(
-      (event) => {
-        if (
-          event.key ===
-            "Enter" &&
-          !event.shiftKey
-        ) {
-          event.preventDefault();
-
-          handleChatSubmit(
-            event
-          );
-        }
-      },
-      [
-        handleChatSubmit,
-      ]
-    );
+    useCallback((file) => {
+      setSelectedFile(file);
+      setFilesDrawerOpen(false);
+      setActiveView("code");
+    }, []);
 
 
   /* =======================================================
@@ -3887,140 +2907,99 @@ function Workspace() {
   ======================================================= */
 
   useEffect(() => {
-    if (
-      !selectedProjectId
-    ) {
+    if (!selectedProjectId) {
       return undefined;
     }
 
-    let cancelled =
-      false;
+    let cancelled = false;
 
-    const refresh =
-      async () => {
-        try {
-          const response =
-            await deploymentLogService.getLatestLog(
-              {
-                projectId:
-                  selectedProjectId,
-              }
-            );
+    const refresh = async () => {
+      try {
+        const response =
+          await deploymentLogService
+            .getLatestLog({
+              projectId:
+                selectedProjectId,
+            });
 
-          if (
-            cancelled
-          ) {
-            return;
-          }
+        if (cancelled) {
+          return;
+        }
 
-          const log =
-            getServiceObject(
-              response,
-              [
-                "log",
-                "deploymentLog",
-                "latest",
-              ]
-            );
-
-          if (!log) {
-            return;
-          }
-
-          setDeploymentLog(
-            log
+        const log =
+          getServiceObject(
+            response,
+            [
+              "log",
+              "deploymentLog",
+              "latest",
+            ]
           );
 
-          const status =
-            getBackendLogStatus(
-              log
-            );
+        if (!log) {
+          return;
+        }
 
-          if (status) {
-            setDeploymentStatus(
-              normalizeDeploymentStatus(
-                status
-              )
-            );
-          }
+        setDeploymentLog(log);
 
-          const logId =
-            getBackendLogId(
-              log
-            );
+        const status =
+          getBackendLogStatus(log);
 
-          if (!logId) {
-            return;
-          }
+        if (status) {
+          setDeploymentStatus(
+            normalizeDeploymentStatus(
+              status
+            )
+          );
+        }
 
-          const eventsResponse =
-            await deploymentLogService.getEvents(
+        const logId =
+          getBackendLogId(log);
+
+        if (!logId) {
+          return;
+        }
+
+        const eventsResponse =
+          await deploymentLogService
+            .getEvents(
               logId,
               {
                 limit: 40,
               }
             );
 
-          if (
-            cancelled
-          ) {
-            return;
-          }
+        if (cancelled) {
+          return;
+        }
 
-          const events =
-            getServiceList(
-              eventsResponse,
-              [
-                "events",
-                "items",
-              ]
-            );
+        const events =
+          getServiceList(
+            eventsResponse,
+            [
+              "events",
+              "items",
+            ]
+          );
 
-          setDeploymentEvents(
-            events.map(
-              (
+        setDeploymentEvents(
+          events.map(
+            (
+              event,
+              index
+            ) =>
+              normalizeBackendActivityEvent(
                 event,
                 index
-              ) =>
-                normalizeBackendActivityEvent(
-                  event,
-                  index
-                )
-            )
-          );
-        } catch {
-          /*
-           * Background refresh intentionally
-           * does not overwrite primary UI errors.
-           */
-        }
-      };
+              )
+          )
+        );
+      } catch {
+        /* background refresh */
+      }
+    };
 
     refresh();
-
-    const activeStatuses = [
-      "pending",
-      "building",
-      "deploying",
-      "in_progress",
-      "in-progress",
-      "running",
-    ];
-
-    const currentStatus =
-      getBackendLogStatus(
-        deploymentLog
-      );
-
-    if (
-      !activeStatuses.includes(
-        currentStatus
-      )
-    ) {
-      return () => {
-        cancelled = true;
-      };
-    }
 
     const interval =
       window.setInterval(
@@ -4030,15 +3009,9 @@ function Workspace() {
 
     return () => {
       cancelled = true;
-
-      window.clearInterval(
-        interval
-      );
+      window.clearInterval(interval);
     };
-  }, [
-    selectedProjectId,
-    deploymentLog,
-  ]);
+  }, [selectedProjectId]);
 
 
   /* =======================================================
@@ -4046,37 +3019,37 @@ function Workspace() {
   ======================================================= */
 
   const combinedActivityLog =
-    useMemo(() => {
-      return [
-        ...(Array.isArray(
-          activityLog
-        )
-          ? activityLog
-          : []),
+    useMemo(
+      () =>
+        [
+          ...(Array.isArray(
+            activityLog
+          )
+            ? activityLog
+            : []),
 
-        ...(Array.isArray(
-          deploymentEvents
-        )
-          ? deploymentEvents
-          : []),
-      ]
-        .sort(
-          (a, b) =>
-            String(
-              a?.timestamp ||
-              ""
-            ).localeCompare(
+          ...(Array.isArray(
+            deploymentEvents
+          )
+            ? deploymentEvents
+            : []),
+        ]
+          .sort(
+            (a, b) =>
               String(
-                b?.timestamp ||
-                ""
+                a?.timestamp || ""
+              ).localeCompare(
+                String(
+                  b?.timestamp || ""
+                )
               )
-            )
-        )
-        .slice(-60);
-    }, [
-      activityLog,
-      deploymentEvents,
-    ]);
+          )
+          .slice(-60),
+      [
+        activityLog,
+        deploymentEvents,
+      ]
+    );
 
 
   const backendDeploymentStatus =
@@ -4095,35 +3068,24 @@ function Workspace() {
 
 
   const environmentStatus =
-    environmentReadiness?.ready ===
-      true ||
-    environmentReadiness?.isReady ===
-      true
+    environmentReadiness?.ready === true ||
+    environmentReadiness?.isReady === true
       ? "Ready"
       : environmentReadiness
       ? "Check"
       : "Unknown";
 
 
-  /* =======================================================
-     PREVIEW DISPLAY
-  ======================================================= */
-
   const previewDisplayStatus =
-    previewState ===
-    "ready"
+    previewState === "ready"
       ? "LIVE"
-      : previewState ===
-        "starting"
+      : previewState === "starting"
       ? "STARTING"
-      : previewState ===
-        "blocked"
+      : previewState === "blocked"
       ? "BUILD REQUIRED"
-      : previewState ===
-        "error"
+      : previewState === "error"
       ? "ERROR"
-      : previewState ===
-        "stopped"
+      : previewState === "stopped"
       ? "STOPPED"
       : "WAITING";
 
@@ -4134,59 +3096,28 @@ function Workspace() {
 
   return (
     <DashboardLayout>
-      <main
-        className={
-          styles.workspace
-        }
-      >
+      <main className={styles.workspace}>
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
+        {/* HEADER */}
 
-        <header
-          className={
-            styles.workspaceHeader
-          }
-        >
-          <div
-            className={
-              styles.brandBlock
-            }
-          >
-            <div
-              className={
-                styles.projectMark
-              }
-            >
+        <header className={styles.workspaceHeader}>
+          <div className={styles.brandBlock}>
+            <div className={styles.projectMark}>
               Z
             </div>
 
-            <div
-              className={
-                styles.brandCopy
-              }
-            >
+            <div className={styles.brandCopy}>
               <span>
                 ZYRIONOS WORKSPACE
               </span>
 
-              <strong
-                title={
-                  projectName
-                }
-              >
+              <strong title={projectName}>
                 {projectName}
               </strong>
             </div>
           </div>
 
-
-          <div
-            className={
-              styles.headerStatus
-            }
-          >
+          <div className={styles.headerStatus}>
             <span
               className={
                 operationRunning
@@ -4202,86 +3133,51 @@ function Workspace() {
             </strong>
 
             {operationRunning && (
-              <span
-                className={
-                  styles.statusDots
-                }
-              >
-                <i />
-                <i />
-                <i />
-              </span>
-            )}
+              <>
+                <span className={styles.statusDots}>
+                  <i />
+                  <i />
+                  <i />
+                </span>
 
-            {operationRunning && (
-              <small>
-                {elapsedSeconds}s
-              </small>
+                <small>
+                  {elapsedSeconds}s
+                </small>
+              </>
             )}
           </div>
 
-
-          <div
-            className={
-              styles.headerActions
-            }
-          >
+          <div className={styles.headerActions}>
             <button
               type="button"
-              className={
-                styles.headerButton
-              }
-              onClick={
-                openFilesDrawer
-              }
+              className={styles.headerButton}
+              onClick={openFilesDrawer}
             >
-              Files
-
-              <b>
-                {
-                  generatedFiles.length
-                }
-              </b>
+              Files <b>{generatedFiles.length}</b>
             </button>
 
             <button
               type="button"
-              className={
-                styles.headerButton
-              }
-              onClick={
-                openActivityDrawer
-              }
+              className={styles.headerButton}
+              onClick={openActivityDrawer}
             >
               Activity
             </button>
 
             <button
               type="button"
-              className={
-                styles.previewTopButton
-              }
-              onClick={
-                openPreview
-              }
-              disabled={
-                !authoritativeBuildReady
-              }
+              className={styles.previewTopButton}
+              onClick={openPreview}
+              disabled={!authoritativeBuildReady}
             >
               Preview
             </button>
 
             <button
               type="button"
-              className={
-                styles.deployButton
-              }
-              onClick={
-                handleDeploy
-              }
-              disabled={
-                !canDeploy
-              }
+              className={styles.deployButton}
+              onClick={handleDeploy}
+              disabled={!canDeploy}
             >
               Deploy
             </button>
@@ -4289,15 +3185,11 @@ function Workspace() {
         </header>
 
 
-        {/* =================================================
-            ERROR
-        ================================================= */}
+        {/* ERROR */}
 
         {error && (
           <div
-            className={
-              styles.alertError
-            }
+            className={styles.alertError}
             role="alert"
           >
             <span>!</span>
@@ -4307,16 +3199,12 @@ function Workspace() {
                 Workspace error
               </strong>
 
-              <p>
-                {error}
-              </p>
+              <p>{error}</p>
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                setError("")
-              }
+              onClick={() => setError("")}
               aria-label="Close error"
             >
               ×
@@ -4325,216 +3213,123 @@ function Workspace() {
         )}
 
 
-        {/* =================================================
-            SUCCESS
-        ================================================= */}
+        {/* SUCCESS */}
 
-        {notice &&
-          !error && (
-            <div
-              className={
-                styles.alertSuccess
-              }
-              role="status"
+        {notice && !error && (
+          <div
+            className={styles.alertSuccess}
+            role="status"
+          >
+            <span>✓</span>
+
+            <p>{notice}</p>
+
+            <button
+              type="button"
+              onClick={() => setNotice("")}
+              aria-label="Close notice"
             >
-              <span>✓</span>
+              ×
+            </button>
+          </div>
+        )}
 
-              <p>
-                {notice}
-              </p>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setNotice("")
-                }
-                aria-label="Close notice"
-              >
-                ×
-              </button>
+        {/* PREVIEW ERROR */}
+
+        {previewError && !error && (
+          <div
+            className={styles.alertError}
+            role="alert"
+          >
+            <span>!</span>
+
+            <div>
+              <strong>
+                Preview runtime error
+              </strong>
+
+              <p>{previewError}</p>
             </div>
-          )}
 
-
-        {/* =================================================
-            PREVIEW ERROR
-        ================================================= */}
-
-        {previewError &&
-          !error && (
-            <div
-              className={
-                styles.alertError
+            <button
+              type="button"
+              onClick={() =>
+                setPreviewError("")
               }
-              role="alert"
+              aria-label="Close preview error"
             >
-              <span>!</span>
+              ×
+            </button>
+          </div>
+        )}
 
-              <div>
-                <strong>
-                  Preview runtime error
-                </strong>
 
-                <p>
-                  {previewError}
-                </p>
-              </div>
+        {/* MOBILE NAV */}
 
+        <nav className={styles.mobileNav}>
+          {[
+            ["projects", "Projects"],
+            ["workspace", "Workspace"],
+            ["ai", "AI"],
+            ["activity", "Activity"],
+          ].map(
+            ([key, label]) => (
               <button
+                key={key}
                 type="button"
-                onClick={() =>
-                  setPreviewError("")
+                className={
+                  mobilePanel === key
+                    ? styles.mobileNavActive
+                    : ""
                 }
-                aria-label="Close preview error"
+                onClick={() =>
+                  setMobilePanel(key)
+                }
               >
-                ×
+                {label}
               </button>
-            </div>
+            )
           )}
-
-
-        {/* =================================================
-            MOBILE NAV
-        ================================================= */}
-
-        <nav
-          className={
-            styles.mobileNav
-          }
-        >
-          <button
-            type="button"
-            className={
-              mobilePanel ===
-              "projects"
-                ? styles.mobileNavActive
-                : ""
-            }
-            onClick={() =>
-              setMobilePanel(
-                "projects"
-              )
-            }
-          >
-            Projects
-          </button>
-
-          <button
-            type="button"
-            className={
-              mobilePanel ===
-              "workspace"
-                ? styles.mobileNavActive
-                : ""
-            }
-            onClick={() =>
-              setMobilePanel(
-                "workspace"
-              )
-            }
-          >
-            Workspace
-          </button>
-
-          <button
-            type="button"
-            className={
-              mobilePanel ===
-              "ai"
-                ? styles.mobileNavActive
-                : ""
-            }
-            onClick={() =>
-              setMobilePanel(
-                "ai"
-              )
-            }
-          >
-            AI
-          </button>
-
-          <button
-            type="button"
-            className={
-              mobilePanel ===
-              "activity"
-                ? styles.mobileNavActive
-                : ""
-            }
-            onClick={() =>
-              setMobilePanel(
-                "activity"
-              )
-            }
-          >
-            Activity
-          </button>
         </nav>
 
 
-        {/* =================================================
-            BODY
-        ================================================= */}
+        {/* BODY */}
 
-        <section
-          className={
-            styles.workspaceBody
-          }
-        >
+        <section className={styles.workspaceBody}>
 
-          {/* =================================================
-              PROJECT RAIL
-          ================================================= */}
+          {/* PROJECT RAIL */}
 
           <aside
             className={`
               ${styles.projectRail}
               ${
-                mobilePanel ===
-                "projects"
+                mobilePanel === "projects"
                   ? styles.mobileVisible
                   : ""
               }
             `}
           >
-            <div
-              className={
-                styles.railHeader
-              }
-            >
+            <div className={styles.railHeader}>
               <div>
-                <span>
-                  PROJECTS
-                </span>
-
-                <b>
-                  {projectCount}
-                </b>
+                <span>PROJECTS</span>
+                <b>{projectCount}</b>
               </div>
 
               <button
                 type="button"
-                onClick={
-                  handleNewProject
-                }
+                onClick={handleNewProject}
               >
                 + New
               </button>
             </div>
 
-
             <button
               type="button"
-              className={
-                styles.newProjectCard
-              }
-              onClick={
-                handleNewProject
-              }
+              className={styles.newProjectCard}
+              onClick={handleNewProject}
             >
-              <span>
-                +
-              </span>
+              <span>+</span>
 
               <div>
                 <strong>
@@ -4546,29 +3341,16 @@ function Workspace() {
                 </small>
               </div>
 
-              <b>
-                →
-              </b>
+              <b>→</b>
             </button>
 
-
-            <div
-              className={
-                styles.quickPromptList
-              }
-            >
-              <span>
-                START WITH
-              </span>
+            <div className={styles.quickPromptList}>
+              <span>START WITH</span>
 
               {QUICK_PROMPTS.map(
-                (
-                  item
-                ) => (
+                (item) => (
                   <button
-                    key={
-                      item.label
-                    }
+                    key={item.label}
                     type="button"
                     onClick={() =>
                       handleQuickPrompt(
@@ -4576,68 +3358,44 @@ function Workspace() {
                       )
                     }
                   >
-                    {
-                      item.label
-                    }
+                    {item.label}
                   </button>
                 )
               )}
             </div>
 
-
-            <div
-              className={
-                styles.projectList
-              }
-            >
+            <div className={styles.projectList}>
               {projectLoading ? (
-                <div
-                  className={
-                    styles.projectLoading
-                  }
-                >
+                <div className={styles.projectLoading}>
                   Loading projects...
                 </div>
-              ) : projects.length ===
-                0 ? (
-                <div
-                  className={
-                    styles.noProjects
-                  }
-                >
+              ) : projects.length === 0 ? (
+                <div className={styles.noProjects}>
                   <strong>
                     No projects yet
                   </strong>
 
                   <p>
-                    Start with an idea
-                    and your project
-                    will be saved here.
+                    Start with an idea and
+                    your project will be
+                    saved here.
                   </p>
 
                   <button
                     type="button"
-                    onClick={
-                      handleNewProject
-                    }
+                    onClick={handleNewProject}
                   >
                     Start building
                   </button>
                 </div>
               ) : (
                 projects.map(
-                  (
-                    project
-                  ) => {
+                  (project) => {
                     const id =
-                      getProjectId(
-                        project
-                      );
+                      getProjectId(project);
 
                     const name =
-                      getProjectName(
-                        project
-                      );
+                      getProjectName(project);
 
                     const active =
                       String(id) ===
@@ -4654,8 +3412,7 @@ function Workspace() {
                     return (
                       <button
                         key={
-                          id ||
-                          name
+                          id || name
                         }
                         type="button"
                         className={`
@@ -4678,9 +3435,7 @@ function Workspace() {
                           }
                         >
                           {name
-                            .charAt(
-                              0
-                            )
+                            .charAt(0)
                             .toUpperCase()}
                         </span>
 
@@ -4690,9 +3445,7 @@ function Workspace() {
                           }
                         >
                           <strong
-                            title={
-                              name
-                            }
+                            title={name}
                           >
                             {name}
                           </strong>
@@ -4704,8 +3457,7 @@ function Workspace() {
                               )
                             }
 
-                            {files.length >
-                            0
+                            {files.length > 0
                               ? ` · ${files.length} files`
                               : ""}
                           </small>
@@ -4727,67 +3479,34 @@ function Workspace() {
           </aside>
 
 
-          {/* =================================================
-              MAIN WORKSPACE
-          ================================================= */}
+          {/* MAIN WORKSPACE */}
 
           <section
             className={`
               ${styles.mainWorkspace}
               ${
-                mobilePanel ===
-                "workspace"
+                mobilePanel === "workspace"
                   ? styles.mobileVisible
                   : ""
               }
             `}
           >
+            <div className={styles.workspaceToolbar}>
+              <div className={styles.workspaceTitle}>
+                <span>APPLICATION</span>
 
-            <div
-              className={
-                styles.workspaceToolbar
-              }
-            >
-              <div
-                className={
-                  styles.workspaceTitle
-                }
-              >
-                <span>
-                  APPLICATION
-                </span>
-
-                <strong
-                  title={
-                    projectName
-                  }
-                >
+                <strong title={projectName}>
                   {projectName}
                 </strong>
               </div>
 
-
-              <div
-                className={
-                  styles.workspaceContext
-                }
-              >
-                <div
-                  className={
-                    styles.contextItem
-                  }
-                >
-                  <span>
-                    ENV
-                  </span>
+              <div className={styles.workspaceContext}>
+                <div className={styles.contextItem}>
+                  <span>ENV</span>
 
                   <select
-                    value={
-                      activeEnvironment
-                    }
-                    onChange={async (
-                      event
-                    ) => {
+                    value={activeEnvironment}
+                    onChange={async (event) => {
                       const name =
                         event.target.value;
 
@@ -4803,10 +3522,11 @@ function Workspace() {
 
                       try {
                         const readiness =
-                          await environmentService.getDeploymentReadiness(
-                            selectedProjectId,
-                            name
-                          );
+                          await environmentService
+                            .getDeploymentReadiness(
+                              selectedProjectId,
+                              name
+                            );
 
                         setEnvironmentReadiness(
                           getServiceObject(
@@ -4817,9 +3537,7 @@ function Workspace() {
                             ]
                           )
                         );
-                      } catch (
-                        err
-                      ) {
+                      } catch (err) {
                         setEnvironmentReadiness(
                           null
                         );
@@ -4834,9 +3552,7 @@ function Workspace() {
                     }}
                     disabled={
                       loading ||
-                      backendSyncing ||
-                      environments.length ===
-                        0
+                      backendSyncing
                     }
                     className={
                       styles.environmentSelect
@@ -4844,8 +3560,7 @@ function Workspace() {
                     aria-label="Environment"
                   >
                     {(
-                      environments.length >
-                      0
+                      environments.length
                         ? environments
                         : [
                             {
@@ -4854,9 +3569,7 @@ function Workspace() {
                             },
                           ]
                     ).map(
-                      (
-                        environment
-                      ) => {
+                      (environment) => {
                         const name =
                           environment?.name ||
                           environment?.environment ||
@@ -4864,23 +3577,16 @@ function Workspace() {
 
                         return (
                           <option
-                            key={
-                              name
-                            }
-                            value={
-                              name
-                            }
+                            key={name}
+                            value={name}
                           >
-                            {
-                              name
-                            }
+                            {name}
                           </option>
                         );
                       }
                     )}
                   </select>
                 </div>
-
 
                 <span
                   className={
@@ -4890,11 +3596,8 @@ function Workspace() {
                       : styles.contextPending
                   }
                 >
-                  {
-                    environmentStatus
-                  }
+                  {environmentStatus}
                 </span>
-
 
                 <span
                   className={
@@ -4908,7 +3611,6 @@ function Workspace() {
                     : "No GitHub"}
                 </span>
 
-
                 {backendSyncing && (
                   <span
                     className={
@@ -4918,7 +3620,6 @@ function Workspace() {
                     Syncing
                   </span>
                 )}
-
 
                 <span
                   className={
@@ -4933,43 +3634,25 @@ function Workspace() {
                 </span>
               </div>
 
-
-              <div
-                className={
-                  styles.toolbarActions
-                }
-              >
+              <div className={styles.toolbarActions}>
                 <select
-                  value={
-                    framework
-                  }
-                  onChange={(
-                    event
-                  ) =>
+                  value={framework}
+                  onChange={(event) =>
                     setFramework(
-                      event.target
-                        .value
+                      event.target.value
                     )
                   }
-                  disabled={
-                    loading
-                  }
+                  disabled={loading}
                   className={
                     styles.frameworkSelect
                   }
                   aria-label="Framework"
                 >
                   {FRAMEWORKS.map(
-                    (
-                      item
-                    ) => (
+                    (item) => (
                       <option
-                        key={
-                          item
-                        }
-                        value={
-                          item
-                        }
+                        key={item}
+                        value={item}
                       >
                         {item}
                       </option>
@@ -4977,37 +3660,29 @@ function Workspace() {
                   )}
                 </select>
 
-
                 <button
                   type="button"
                   className={
-                    activeView ===
-                    "preview"
+                    activeView === "preview"
                       ? styles.toolbarActive
                       : styles.toolbarButton
                   }
                   onClick={() =>
-                    setActiveView(
-                      "preview"
-                    )
+                    setActiveView("preview")
                   }
                 >
                   Preview
                 </button>
 
-
                 <button
                   type="button"
                   className={
-                    activeView ===
-                    "code"
+                    activeView === "code"
                       ? styles.toolbarActive
                       : styles.toolbarButton
                   }
                   onClick={() =>
-                    setActiveView(
-                      "code"
-                    )
+                    setActiveView("code")
                   }
                 >
                   Code
@@ -5016,23 +3691,15 @@ function Workspace() {
             </div>
 
 
-            {/* =================================================
-                WORK SURFACE
-            ================================================= */}
+            {/* WORK SURFACE */}
 
-            <div
-              className={
-                styles.visualArea
-              }
-            >
-              {activeView ===
-              "preview" ? (
+            <div className={styles.visualArea}>
+              {activeView === "preview" ? (
                 <div
                   className={
                     styles.previewShell
                   }
                 >
-
                   <div
                     className={
                       styles.previewHeader
@@ -5048,18 +3715,14 @@ function Workspace() {
                       <i />
                     </div>
 
-
                     <span
                       className={
                         styles.previewProjectName
                       }
-                      title={
-                        projectName
-                      }
+                      title={projectName}
                     >
                       {projectName}
                     </span>
-
 
                     <div
                       className={
@@ -5070,7 +3733,6 @@ function Workspace() {
                         "Authoritative preview runtime"}
                     </div>
 
-
                     <span
                       className={
                         previewReady
@@ -5078,38 +3740,29 @@ function Workspace() {
                           : styles.previewPending
                       }
                     >
-                      {
-                        previewDisplayStatus
-                      }
+                      {previewDisplayStatus}
                     </span>
-
 
                     {previewReady && (
                       <button
                         type="button"
-                        onClick={
-                          openPreview
-                        }
+                        onClick={openPreview}
                       >
                         Open
                       </button>
                     )}
                   </div>
 
-
                   <div
                     className={
                       styles.previewContent
                     }
                   >
-
                     {previewReady &&
                     previewUrl ? (
                       <iframe
                         title={`${projectName} application preview`}
-                        src={
-                          previewUrl
-                        }
+                        src={previewUrl}
                         className={
                           styles.previewFrame
                         }
@@ -5161,15 +3814,12 @@ function Workspace() {
                               )}
                         </p>
 
-
                         {authoritativeBuildReady &&
                           !previewPolling &&
                           !previewReady && (
                             <button
                               type="button"
-                              onClick={
-                                openPreview
-                              }
+                              onClick={openPreview}
                               disabled={
                                 previewState ===
                                 "starting"
@@ -5181,18 +3831,6 @@ function Workspace() {
                                 : "Start Preview"}
                             </button>
                           )}
-
-
-                        {previewReady && (
-                          <button
-                            type="button"
-                            onClick={
-                              handleStopPreview
-                            }
-                          >
-                            Stop Preview
-                          </button>
-                        )}
                       </div>
                     )}
                   </div>
@@ -5222,14 +3860,11 @@ function Workspace() {
 
                     <button
                       type="button"
-                      onClick={
-                        openFilesDrawer
-                      }
+                      onClick={openFilesDrawer}
                     >
                       Open Files
                     </button>
                   </div>
-
 
                   <div
                     className={
@@ -5242,10 +3877,8 @@ function Workspace() {
                       }
                     >
                       {generatedFiles.map(
-                        (
-                          file
-                        ) => {
-                          const path =
+                        (file) => {
+                          const filePath =
                             getFilePath(
                               file
                             );
@@ -5259,7 +3892,7 @@ function Workspace() {
                               key={
                                 file?._id ||
                                 file?.id ||
-                                path
+                                filePath
                               }
                               type="button"
                               className={
@@ -5273,22 +3906,16 @@ function Workspace() {
                                 )
                               }
                               title={
-                                path
+                                filePath
                               }
                             >
-                              <span>
-                                •
-                              </span>
-
-                              {
-                                path
-                              }
+                              <span>•</span>
+                              {filePath}
                             </button>
                           );
                         }
                       )}
                     </div>
-
 
                     <pre
                       className={
@@ -5306,16 +3933,13 @@ function Workspace() {
           </section>
 
 
-          {/* =================================================
-              AI CHAT
-          ================================================= */}
+          {/* AI CHAT */}
 
           <aside
             className={`
               ${styles.chatArea}
               ${
-                mobilePanel ===
-                "ai"
+                mobilePanel === "ai"
                   ? styles.mobileVisible
                   : ""
               }
@@ -5355,14 +3979,12 @@ function Workspace() {
               </div>
             </div>
 
-
             <div
               className={
                 styles.chatMessages
               }
             >
-              {chatMessages.length ===
-              0 ? (
+              {chatMessages.length === 0 ? (
                 <div
                   className={
                     styles.chatWelcome
@@ -5387,9 +4009,7 @@ function Workspace() {
                       0,
                       3
                     ).map(
-                      (
-                        item
-                      ) => (
+                      (item) => (
                         <button
                           key={
                             item.label
@@ -5401,9 +4021,7 @@ function Workspace() {
                             )
                           }
                         >
-                          {
-                            item.label
-                          }
+                          {item.label}
                         </button>
                       )
                     )}
@@ -5411,9 +4029,7 @@ function Workspace() {
                 </div>
               ) : (
                 chatMessages.map(
-                  (
-                    message
-                  ) => (
+                  (message) => (
                     <div
                       key={
                         message.id
@@ -5492,12 +4108,9 @@ function Workspace() {
               )}
 
               <div
-                ref={
-                  chatEndRef
-                }
+                ref={chatEndRef}
               />
             </div>
-
 
             <form
               className={
@@ -5513,9 +4126,7 @@ function Workspace() {
                 }
               >
                 <div>
-                  <span>
-                    ✓
-                  </span>
+                  <span>✓</span>
 
                   <strong>
                     {selectedProject
@@ -5529,26 +4140,18 @@ function Workspace() {
                 </small>
               </div>
 
-
               <textarea
                 data-zyrionos-chat-input="true"
-                value={
-                  prompt
-                }
-                onChange={(
-                  event
-                ) =>
+                value={prompt}
+                onChange={(event) =>
                   setPrompt(
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
                 onKeyDown={
                   handlePromptKeyDown
                 }
-                disabled={
-                  loading
-                }
+                disabled={loading}
                 rows={3}
                 placeholder={
                   selectedProject
@@ -5556,7 +4159,6 @@ function Workspace() {
                     : "Describe the application you want to build..."
                 }
               />
-
 
               <div
                 className={
@@ -5577,7 +4179,6 @@ function Workspace() {
                   </span>
                 </div>
 
-
                 <div
                   className={
                     styles.chatActions
@@ -5589,9 +4190,7 @@ function Workspace() {
                       className={
                         styles.reviewButton
                       }
-                      disabled={
-                        loading
-                      }
+                      disabled={loading}
                       onClick={
                         handleReviewFix
                       }
@@ -5599,7 +4198,6 @@ function Workspace() {
                       Review / Fix
                     </button>
                   )}
-
 
                   <button
                     type="submit"
@@ -5617,9 +4215,7 @@ function Workspace() {
                       ? "Apply Change"
                       : "Build App"}
 
-                    <span>
-                      →
-                    </span>
+                    <span>→</span>
                   </button>
                 </div>
               </div>
@@ -5627,16 +4223,13 @@ function Workspace() {
           </aside>
 
 
-          {/* =================================================
-              MOBILE ACTIVITY
-          ================================================= */}
+          {/* ACTIVITY */}
 
           <aside
             className={`
               ${styles.activityPanel}
               ${
-                mobilePanel ===
-                "activity"
+                mobilePanel === "activity"
                   ? styles.mobileVisible
                   : ""
               }
@@ -5648,9 +4241,7 @@ function Workspace() {
               }
             >
               <div>
-                <span>
-                  WORKSPACE
-                </span>
+                <span>WORKSPACE</span>
 
                 <strong>
                   Activity
@@ -5669,7 +4260,6 @@ function Workspace() {
                   : "Ready"}
               </span>
             </div>
-
 
             <div
               className={
@@ -5697,15 +4287,13 @@ function Workspace() {
                     : "Ready for the next request."}
                 </p>
 
-
                 <div
                   className={
                     styles.backendStatusGrid
                   }
                 >
                   <span>
-                    BUILD{" "}
-                    {buildState}
+                    BUILD {buildState}
                   </span>
 
                   <span>
@@ -5716,10 +4304,7 @@ function Workspace() {
                   </span>
 
                   <span>
-                    ENV{" "}
-                    {
-                      environmentStatus
-                    }
+                    ENV {environmentStatus}
                   </span>
 
                   <span>
@@ -5732,16 +4317,16 @@ function Workspace() {
                   </span>
                 </div>
 
-
                 {authoritativeBuildReady && (
                   <p>
                     Build:{" "}
                     {
-                      authoritativeBuild.buildId
+                      getAuthoritativeBuildId(
+                        authoritativeBuild
+                      )
                     }
                   </p>
                 )}
-
 
                 {operationRunning && (
                   <div
@@ -5756,7 +4341,6 @@ function Workspace() {
                 )}
               </div>
 
-
               <div
                 className={
                   styles.activityListCard
@@ -5767,9 +4351,7 @@ function Workspace() {
                     styles.activityListHeader
                   }
                 >
-                  <span>
-                    ACTIVITY
-                  </span>
+                  <span>ACTIVITY</span>
 
                   <b>
                     {
@@ -5777,7 +4359,6 @@ function Workspace() {
                     }
                   </b>
                 </div>
-
 
                 {combinedActivityLog.length ===
                 0 ? (
@@ -5800,9 +4381,7 @@ function Workspace() {
                       .slice()
                       .reverse()
                       .map(
-                        (
-                          item
-                        ) => (
+                        (item) => (
                           <div
                             key={
                               item.id
@@ -5846,7 +4425,6 @@ function Workspace() {
                 )}
               </div>
 
-
               <div
                 className={
                   styles.projectStats
@@ -5875,9 +4453,7 @@ function Workspace() {
                 </div>
 
                 <div>
-                  <span>
-                    BUILD
-                  </span>
+                  <span>BUILD</span>
 
                   <strong>
                     {buildState}
@@ -5885,9 +4461,7 @@ function Workspace() {
                 </div>
 
                 <div>
-                  <span>
-                    PREVIEW
-                  </span>
+                  <span>PREVIEW</span>
 
                   <strong>
                     {
@@ -5897,9 +4471,7 @@ function Workspace() {
                 </div>
 
                 <div>
-                  <span>
-                    GITHUB
-                  </span>
+                  <span>GITHUB</span>
 
                   <strong>
                     {githubStatus ===
@@ -5914,9 +4486,7 @@ function Workspace() {
         </section>
 
 
-        {/* =================================================
-            FILE DRAWER
-        ================================================= */}
+        {/* FILE DRAWER */}
 
         {filesDrawerOpen && (
           <div
@@ -5941,13 +4511,9 @@ function Workspace() {
                 }
               >
                 <div>
-                  <span>
-                    PROJECT
-                  </span>
+                  <span>PROJECT</span>
 
-                  <strong>
-                    Files
-                  </strong>
+                  <strong>Files</strong>
                 </div>
 
                 <button
@@ -5960,7 +4526,6 @@ function Workspace() {
                   ×
                 </button>
               </div>
-
 
               <div
                 className={
@@ -5975,11 +4540,9 @@ function Workspace() {
                   {
                     generatedFiles.length
                   }{" "}
-                  files ·{" "}
-                  {framework}
+                  files · {framework}
                 </small>
               </div>
-
 
               <div
                 className={
@@ -5998,10 +4561,8 @@ function Workspace() {
                   </div>
                 ) : (
                   generatedFiles.map(
-                    (
-                      file
-                    ) => {
-                      const path =
+                    (file) => {
+                      const filePath =
                         getFilePath(
                           file
                         );
@@ -6015,7 +4576,7 @@ function Workspace() {
                           key={
                             file?._id ||
                             file?.id ||
-                            path
+                            filePath
                           }
                           type="button"
                           className={
@@ -6029,18 +4590,14 @@ function Workspace() {
                             )
                           }
                         >
-                          <span>
-                            •
-                          </span>
+                          <span>•</span>
 
                           <strong
                             title={
-                              path
+                              filePath
                             }
                           >
-                            {
-                              path
-                            }
+                            {filePath}
                           </strong>
                         </button>
                       );
@@ -6048,7 +4605,6 @@ function Workspace() {
                   )
                 )}
               </div>
-
 
               <div
                 className={
@@ -6073,9 +4629,7 @@ function Workspace() {
         )}
 
 
-        {/* =================================================
-            ACTIVITY DRAWER
-        ================================================= */}
+        {/* ACTIVITY DRAWER */}
 
         {activityDrawerOpen && (
           <div
@@ -6100,9 +4654,7 @@ function Workspace() {
                 }
               >
                 <div>
-                  <span>
-                    WORKSPACE
-                  </span>
+                  <span>WORKSPACE</span>
 
                   <strong>
                     Activity
@@ -6120,7 +4672,6 @@ function Workspace() {
                 </button>
               </div>
 
-
               <div
                 className={
                   styles.activityDrawerBody
@@ -6136,9 +4687,7 @@ function Workspace() {
                     .slice()
                     .reverse()
                     .map(
-                      (
-                        item
-                      ) => (
+                      (item) => (
                         <div
                           key={
                             item.id
@@ -6185,9 +4734,7 @@ function Workspace() {
         )}
 
 
-        {/* =================================================
-            FULLSCREEN PREVIEW
-        ================================================= */}
+        {/* FULLSCREEN PREVIEW */}
 
         {previewFullscreen && (
           <div
@@ -6204,19 +4751,14 @@ function Workspace() {
               }
             >
               <div>
-                <span>
-                  PREVIEW
-                </span>
+                <span>PREVIEW</span>
 
                 <strong
-                  title={
-                    projectName
-                  }
+                  title={projectName}
                 >
                   {projectName}
                 </strong>
               </div>
-
 
               <div
                 className={
@@ -6226,9 +4768,7 @@ function Workspace() {
                 {previewReady &&
                   previewUrl && (
                     <a
-                      href={
-                        previewUrl
-                      }
+                      href={previewUrl}
                       target="_blank"
                       rel="noreferrer"
                       className={
@@ -6238,7 +4778,6 @@ function Workspace() {
                       Open in new tab
                     </a>
                   )}
-
 
                 {previewReady && (
                   <button
@@ -6254,12 +4793,9 @@ function Workspace() {
                   </button>
                 )}
 
-
                 <button
                   type="button"
-                  onClick={
-                    closePreview
-                  }
+                  onClick={closePreview}
                   className={
                     styles.previewCloseButton
                   }
@@ -6268,7 +4804,6 @@ function Workspace() {
                 </button>
               </div>
             </div>
-
 
             <div
               className={
@@ -6279,9 +4814,7 @@ function Workspace() {
               previewUrl ? (
                 <iframe
                   title={`${projectName} full preview`}
-                  src={
-                    previewUrl
-                  }
+                  src={previewUrl}
                   className={
                     styles.previewFullFrame
                   }
@@ -6324,13 +4857,16 @@ function Workspace() {
                       )}
                   </p>
 
-
                   {authoritativeBuildReady &&
                     !previewReady && (
                       <button
                         type="button"
                         onClick={
                           openPreview
+                        }
+                        disabled={
+                          previewState ===
+                          "starting"
                         }
                       >
                         Start Real Preview

@@ -12,10 +12,20 @@ import {
   getProjects,
   createProject,
   updateProject,
+
   createPreview,
   getPreview,
   getPreviewHealth,
   stopPreview,
+
+  getPreviewData,
+  getPreviewHealthData,
+  getPreviewUrl,
+  isPreviewReady,
+  isPreviewStarting,
+  isPreviewFailed,
+  isAuthoritativeBuild,
+  getAuthoritativeBuildId,
 } from "../../../services/workspaceService";
 
 import {
@@ -67,11 +77,9 @@ const QUICK_PROMPTS = [
   },
 ];
 
-const PREVIEW_POLL_INTERVAL =
-  4000;
+const PREVIEW_POLL_INTERVAL = 4000;
 
-const PREVIEW_MAX_POLLS =
-  45;
+const PREVIEW_MAX_POLLS = 45;
 
 
 /* =========================================================
@@ -111,7 +119,12 @@ function getErrorMessage(
   return (
     error?.response?.data?.message ||
     error?.response?.data?.error?.message ||
-    error?.response?.data?.error ||
+    (
+      typeof error?.response?.data?.error ===
+        "string"
+        ? error.response.data.error
+        : ""
+    ) ||
     error?.response?.data?.detail ||
     error?.data?.message ||
     error?.message ||
@@ -300,7 +313,7 @@ function normalizeProjects(
 
 
 /* =========================================================
-   PROJECT FILE HELPERS
+   FILE HELPERS
 ========================================================= */
 
 function getFilePath(file) {
@@ -394,17 +407,8 @@ function normalizeProjectFiles(
 
 
 /* =========================================================
-   BUILD EXTRACTION
+   AUTHORITATIVE BUILD EXTRACTION
 ========================================================= */
-
-/*
- * IMPORTANT:
- *
- * This does NOT invent a buildId.
- *
- * The frontend only accepts a build identifier that
- * actually came from the backend.
- */
 
 function extractAuthoritativeBuild(
   ...responses
@@ -470,72 +474,107 @@ function extractAuthoritativeBuild(
       continue;
     }
 
-    const metadata =
-      candidate.metadata ||
-      {};
-
-    const buildId =
-      candidate.buildId ||
-      candidate.id ||
-      candidate._id ||
-      "";
-
-    const status =
-      String(
-        candidate.status ||
-        ""
-      ).toLowerCase();
-
-    const authoritative =
-      candidate.authoritative === true ||
-      metadata.authoritative === true;
-
-    const validationMode =
-      candidate.validationMode ||
-      metadata.validationMode ||
-      "";
+    const nestedCandidates = [
+      candidate,
+    ];
 
     if (
-      buildId &&
-      (
-        authoritative ||
-        validationMode ===
-          "authoritative"
-      )
+      candidate.build &&
+      typeof candidate.build ===
+        "object"
     ) {
-      return {
-        ...candidate,
-        buildId:
-          String(buildId),
-        authoritative:
-          true,
-        validationMode:
-          validationMode ||
-          "authoritative",
-      };
+      nestedCandidates.push(
+        candidate.build
+      );
     }
 
-    /*
-     * Some backend responses may expose
-     * an authoritative build through status
-     * and metadata.
-     */
-
-    if (
-      buildId &&
-      status === "success" &&
-      metadata.authoritative === true
+    for (
+      const buildCandidate of
+        nestedCandidates
     ) {
-      return {
-        ...candidate,
-        buildId:
-          String(buildId),
-        authoritative:
-          true,
-        validationMode:
-          validationMode ||
-          "authoritative",
-      };
+      const buildId =
+        buildCandidate.buildId ||
+        buildCandidate.id ||
+        buildCandidate._id ||
+        "";
+
+      if (!buildId) {
+        continue;
+      }
+
+      /*
+       * The service-level validator is authoritative.
+       * It requires:
+       *
+       * status === success
+       * authoritative === true
+       * validationMode === authoritative
+       */
+
+      if (
+        isAuthoritativeBuild(
+          buildCandidate
+        )
+      ) {
+        return {
+          ...buildCandidate,
+          buildId:
+            String(
+              getAuthoritativeBuildId(
+                buildCandidate
+              )
+            ),
+          authoritative:
+            true,
+          validationMode:
+            "authoritative",
+        };
+      }
+
+      /*
+       * Some backend responses expose
+       * authoritative flags at the parent.
+       */
+
+      const metadata =
+        buildCandidate.metadata ||
+        {};
+
+      const parentAuthoritative =
+        candidate.authoritative === true ||
+        candidate.metadata?.authoritative ===
+          true;
+
+      const validationMode =
+        buildCandidate.validationMode ||
+        metadata.validationMode ||
+        candidate.validationMode ||
+        candidate.metadata?.validationMode ||
+        "";
+
+      const status =
+        String(
+          buildCandidate.status ||
+          candidate.status ||
+          ""
+        ).toLowerCase();
+
+      if (
+        status === "success" &&
+        parentAuthoritative === true &&
+        validationMode ===
+          "authoritative"
+      ) {
+        return {
+          ...buildCandidate,
+          buildId:
+            String(buildId),
+          authoritative:
+            true,
+          validationMode:
+            "authoritative",
+        };
+      }
     }
   }
 
@@ -569,42 +608,30 @@ function extractSourceHash(
   return (
     build?.sourceHash ||
     build?.metadata?.sourceHash ||
+    build?.metadata?.sourceChecksum ||
     ""
   );
 }
 
 
 /* =========================================================
-   PREVIEW EXTRACTION
+   PREVIEW HELPERS
 ========================================================= */
 
 function extractPreview(
   response
 ) {
-  const root =
-    response?.data !== undefined
-      ? response.data
-      : response;
+  const normalized =
+    getPreviewData(
+      response
+    );
 
-  const candidates = [
-    root?.preview,
-    root?.data?.preview,
-    root?.data,
-    response?.preview,
-    response?.data?.preview,
-    response?.data?.data?.preview,
-  ];
-
-  for (
-    const candidate of candidates
+  if (
+    normalized &&
+    typeof normalized ===
+      "object"
   ) {
-    if (
-      candidate &&
-      typeof candidate === "object" &&
-      !Array.isArray(candidate)
-    ) {
-      return candidate;
-    }
+    return normalized;
   }
 
   return null;
@@ -626,12 +653,9 @@ function extractPreviewId(
 function extractPreviewUrl(
   preview
 ) {
-  return (
-    preview?.publicUrl ||
-    preview?.previewUrl ||
-    preview?.url ||
-    ""
-  );
+  return getPreviewUrl(
+    preview
+  ) || "";
 }
 
 
@@ -640,6 +664,7 @@ function normalizePreviewStatus(
 ) {
   return String(
     preview?.status ||
+    preview?.runtimeInfo?.status ||
     ""
   )
     .trim()
@@ -650,36 +675,135 @@ function normalizePreviewStatus(
 function isPreviewRunning(
   preview
 ) {
-  const status =
-    normalizePreviewStatus(
-      preview
-    );
-
-  return [
-    "running",
-    "ready",
-    "active",
-    "healthy",
-  ].includes(status);
+  return isPreviewReady(
+    preview
+  );
 }
 
 
 function isPreviewTerminalFailure(
   preview
 ) {
-  const status =
-    normalizePreviewStatus(
-      preview
-    );
-
-  return [
-    "failed",
-    "error",
-    "unhealthy",
+  return isPreviewFailed(
+    preview
+  ) || [
     "stopped",
     "expired",
+    "cancelled",
     "terminated",
-  ].includes(status);
+  ].includes(
+    normalizePreviewStatus(
+      preview
+    )
+  );
+}
+
+
+/*
+ * Merge a health response into the current
+ * preview even when backend health endpoint
+ * returns only health data.
+ */
+
+function mergePreviewHealth(
+  currentPreview,
+  healthResponse
+) {
+  const {
+    preview: backendPreview,
+    health,
+  } =
+    getPreviewHealthData(
+      healthResponse
+    );
+
+  if (
+    backendPreview &&
+    typeof backendPreview ===
+      "object"
+  ) {
+    return {
+      ...(currentPreview || {}),
+      ...backendPreview,
+      runtimeInfo: {
+        ...(currentPreview?.runtimeInfo || {}),
+        ...(backendPreview.runtimeInfo || {}),
+      },
+      healthCheck: {
+        ...(currentPreview?.healthCheck || {}),
+        ...(backendPreview.healthCheck || {}),
+        ...(health || {}),
+      },
+    };
+  }
+
+  if (
+    !currentPreview
+  ) {
+    return null;
+  }
+
+  const merged = {
+    ...currentPreview,
+  };
+
+  if (
+    health &&
+    typeof health === "object"
+  ) {
+    merged.healthCheck = {
+      ...(currentPreview.healthCheck || {}),
+      ...health,
+    };
+
+    if (
+      health.status
+    ) {
+      const healthStatus =
+        String(
+          health.status
+        ).toLowerCase();
+
+      if (
+        healthStatus ===
+          "healthy" &&
+        !merged.status
+      ) {
+        merged.status =
+          "ready";
+      }
+
+      if (
+        [
+          "unhealthy",
+          "failed",
+        ].includes(
+          healthStatus
+        )
+      ) {
+        merged.status =
+          "failed";
+      }
+    }
+
+    if (
+      health.healthy ===
+        true
+    ) {
+      merged.status =
+        "ready";
+    }
+
+    if (
+      health.healthy ===
+        false
+    ) {
+      merged.status =
+        "failed";
+    }
+  }
+
+  return merged;
 }
 
 
@@ -1017,7 +1141,7 @@ function Workspace() {
 
 
   /* =======================================================
-     AUTHORITATIVE BUILD STATE
+     AUTHORITATIVE BUILD
   ======================================================= */
 
   const [
@@ -1037,7 +1161,7 @@ function Workspace() {
 
 
   /* =======================================================
-     PREVIEW STATE
+     PREVIEW
   ======================================================= */
 
   const [
@@ -1062,7 +1186,7 @@ function Workspace() {
 
 
   /* =======================================================
-     BACKEND WORKSPACE CONTEXT
+     BACKEND CONTEXT
   ======================================================= */
 
   const [
@@ -1146,18 +1270,12 @@ function Workspace() {
   const operationRunning =
     operation !== "idle";
 
-  const previewReady =
-    isPreviewRunning(
-      preview
-    );
-
   const authoritativeBuildReady =
     Boolean(
-      authoritativeBuild?.buildId &&
-      authoritativeBuild?.authoritative ===
-        true &&
-      authoritativeBuild?.validationMode ===
-        "authoritative"
+      authoritativeBuild &&
+      isAuthoritativeBuild(
+        authoritativeBuild
+      )
     );
 
   const canDeploy =
@@ -1270,6 +1388,26 @@ function Workspace() {
 
 
   /* =======================================================
+     PREVIEW POLL CLEANUP
+  ======================================================= */
+
+  useEffect(() => {
+    return () => {
+      if (
+        previewPollRef.current
+      ) {
+        window.clearTimeout(
+          previewPollRef.current
+        );
+
+        previewPollRef.current =
+          null;
+      }
+    };
+  }, []);
+
+
+  /* =======================================================
      ACTIVITY
   ======================================================= */
 
@@ -1364,6 +1502,17 @@ function Workspace() {
 
   const resetBuildAndPreview =
     useCallback(() => {
+      if (
+        previewPollRef.current
+      ) {
+        window.clearTimeout(
+          previewPollRef.current
+        );
+
+        previewPollRef.current =
+          null;
+      }
+
       setAuthoritativeBuild(
         null
       );
@@ -1386,6 +1535,10 @@ function Workspace() {
 
       setPreviewError(
         ""
+      );
+
+      setPreviewPolling(
+        false
       );
 
       setLiveUrl(
@@ -1433,22 +1586,24 @@ function Workspace() {
           )
         );
 
+
         /*
-         * Existing backend preview data may be
-         * attached to the project.
-         *
-         * It is only displayed if a real URL
-         * exists.
+         * Only use an existing preview
+         * when the backend actually provides one.
          */
 
         const existingPreview =
-          project?.preview ||
-          null;
+          extractPreview(
+            project?.preview
+              ? {
+                  preview:
+                    project.preview,
+                }
+              : project
+          );
 
         if (
-          existingPreview &&
-          typeof existingPreview ===
-            "object"
+          existingPreview
         ) {
           setPreview(
             existingPreview
@@ -1464,8 +1619,14 @@ function Workspace() {
           );
 
           setPreviewState(
-            existingUrl
+            isPreviewRunning(
+              existingPreview
+            )
               ? "ready"
+              : isPreviewStarting(
+                  existingPreview
+                )
+              ? "starting"
               : "idle"
           );
         } else {
@@ -1474,20 +1635,17 @@ function Workspace() {
           );
 
           setLiveUrl(
-            project?.previewUrl ||
             ""
           );
 
           setPreviewState(
-            project?.previewUrl
-              ? "ready"
-              : "idle"
+            "idle"
           );
         }
 
 
         /*
-         * Existing authoritative build metadata.
+         * Existing authoritative build.
          */
 
         const existingBuild =
@@ -1495,7 +1653,9 @@ function Workspace() {
             project
           );
 
-        if (existingBuild) {
+        if (
+          existingBuild
+        ) {
           setAuthoritativeBuild(
             existingBuild
           );
@@ -2146,7 +2306,7 @@ function Workspace() {
 
 
   /* =======================================================
-     START REAL PREVIEW
+     REAL PREVIEW
   ======================================================= */
 
   const startRealPreview =
@@ -2155,21 +2315,50 @@ function Workspace() {
         projectId,
         build
       ) => {
-        if (
-          !projectId
-        ) {
+        if (!projectId) {
           throw new Error(
             "Project ID is required before creating a preview."
           );
         }
 
         if (
-          !build?.buildId
+          !build ||
+          !isAuthoritativeBuild(
+            build
+          )
         ) {
           throw new Error(
-            "The backend did not return an authoritative build ID. Preview cannot be started."
+            "Preview requires a successful authoritative build."
           );
         }
+
+        const buildId =
+          getAuthoritativeBuildId(
+            build
+          );
+
+        if (!buildId) {
+          throw new Error(
+            "The backend did not return an authoritative build ID."
+          );
+        }
+
+
+        /*
+         * Stop an old polling loop.
+         */
+
+        if (
+          previewPollRef.current
+        ) {
+          window.clearTimeout(
+            previewPollRef.current
+          );
+
+          previewPollRef.current =
+            null;
+        }
+
 
         setPreviewError(
           ""
@@ -2179,15 +2368,20 @@ function Workspace() {
           "starting"
         );
 
+        setPreviewPolling(
+          false
+        );
+
         startOperation(
           "preview",
           "Starting the isolated backend preview runtime..."
         );
 
         addActivity(
-          "Verifying the authoritative build artifact...",
+          `Creating preview from authoritative build ${buildId}...`,
           "active"
         );
+
 
         let response;
 
@@ -2196,8 +2390,7 @@ function Workspace() {
             await createPreview(
               projectId,
               {
-                buildId:
-                  build.buildId,
+                buildId,
 
                 sourceHash:
                   buildSourceHash ||
@@ -2205,15 +2398,23 @@ function Workspace() {
               }
             );
         } catch (error) {
+          const message =
+            getErrorMessage(
+              error,
+              "The backend preview runtime could not be started."
+            );
+
           setPreviewState(
             "error"
           );
 
           setPreviewError(
-            getErrorMessage(
-              error,
-              "The backend preview runtime could not be started."
-            )
+            message
+          );
+
+          addActivity(
+            message,
+            "error"
           );
 
           finishOperation(
@@ -2224,98 +2425,58 @@ function Workspace() {
           throw error;
         }
 
-        const createdPreview =
+
+        let createdPreview =
           extractPreview(
             response
           );
 
+
+        /*
+         * Some APIs return a generic response.
+         * In that case immediately retrieve the
+         * authoritative active preview.
+         */
+
         if (
           !createdPreview
         ) {
-          setPreviewState(
-            "error"
-          );
+          try {
+            const activeResponse =
+              await getPreview(
+                projectId
+              );
 
+            createdPreview =
+              extractPreview(
+                activeResponse
+              );
+          } catch {
+            /*
+             * Original create response
+             * remains the source of truth.
+             */
+          }
+        }
+
+
+        if (
+          !createdPreview
+        ) {
           const message =
             "Preview service returned no preview runtime.";
 
-          setPreviewError(
-            message
-          );
-
-          finishOperation(
-            false,
-            message
-          );
-
-          throw new Error(
-            message
-          );
-        }
-
-        setPreview(
-          createdPreview
-        );
-
-        const url =
-          extractPreviewUrl(
-            createdPreview
-          );
-
-        if (url) {
-          setLiveUrl(
-            url
-          );
-        }
-
-        addActivity(
-          "Preview runtime created by the backend.",
-          "success"
-        );
-
-        const status =
-          normalizePreviewStatus(
-            createdPreview
-          );
-
-        if (
-          isPreviewRunning(
-            createdPreview
-          )
-        ) {
-          setPreviewState(
-            "ready"
-          );
-
-          finishOperation(
-            true,
-            "Preview runtime is healthy."
-          );
-
-          return createdPreview;
-        }
-
-        /*
-         * Backend may return "starting",
-         * "building" or another transitional
-         * status. Poll the real health endpoint.
-         */
-
-        const previewId =
-          extractPreviewId(
-            createdPreview
-          );
-
-        if (!previewId) {
           setPreviewState(
             "error"
           );
 
-          const message =
-            `Preview runtime returned status "${status || "unknown"}" but no preview ID was returned.`;
-
           setPreviewError(
             message
+          );
+
+          addActivity(
+            message,
+            "error"
           );
 
           finishOperation(
@@ -2328,9 +2489,108 @@ function Workspace() {
           );
         }
 
+
+        setPreview(
+          createdPreview
+        );
+
+
+        const createdUrl =
+          extractPreviewUrl(
+            createdPreview
+          );
+
+        if (
+          createdUrl
+        ) {
+          setLiveUrl(
+            createdUrl
+          );
+        }
+
+
+        const createdStatus =
+          normalizePreviewStatus(
+            createdPreview
+          );
+
+
+        addActivity(
+          `Preview runtime created with status "${createdStatus || "unknown"}".`,
+          "success"
+        );
+
+
+        if (
+          isPreviewRunning(
+            createdPreview
+          ) &&
+          createdUrl
+        ) {
+          setPreviewState(
+            "ready"
+          );
+
+          setPreviewPolling(
+            false
+          );
+
+          addActivity(
+            "Preview runtime is healthy and ready.",
+            "success"
+          );
+
+          finishOperation(
+            true,
+            "Preview runtime is ready."
+          );
+
+          return createdPreview;
+        }
+
+
+        const previewId =
+          extractPreviewId(
+            createdPreview
+          );
+
+
+        if (!previewId) {
+          const message =
+            "Preview runtime was created but no preview ID was returned.";
+
+          setPreviewState(
+            "error"
+          );
+
+          setPreviewError(
+            message
+          );
+
+          addActivity(
+            message,
+            "error"
+          );
+
+          finishOperation(
+            false,
+            message
+          );
+
+          throw new Error(
+            message
+          );
+        }
+
+
+        /*
+         * Poll backend health.
+         */
+
         setPreviewPolling(
           true
         );
+
 
         for (
           let attempt = 0;
@@ -2339,12 +2599,19 @@ function Workspace() {
           attempt += 1
         ) {
           await new Promise(
-            (resolve) =>
-              window.setTimeout(
-                resolve,
-                PREVIEW_POLL_INTERVAL
-              )
+            (resolve) => {
+              previewPollRef.current =
+                window.setTimeout(
+                  resolve,
+                  PREVIEW_POLL_INTERVAL
+                );
+            }
           );
+
+
+          previewPollRef.current =
+            null;
+
 
           try {
             const healthResponse =
@@ -2353,72 +2620,171 @@ function Workspace() {
                 previewId
               );
 
-            const healthPreview =
-              extractPreview(
+
+            const nextPreview =
+              mergePreviewHealth(
+                createdPreview,
                 healthResponse
               );
 
-            const nextPreview =
-              healthPreview ||
-              createdPreview;
 
-            setPreview(
+            if (
               nextPreview
-            );
+            ) {
+              createdPreview =
+                nextPreview;
 
-            const nextUrl =
-              extractPreviewUrl(
+              setPreview(
                 nextPreview
               );
 
-            if (nextUrl) {
-              setLiveUrl(
+
+              const nextUrl =
+                extractPreviewUrl(
+                  nextPreview
+                );
+
+              if (
                 nextUrl
-              );
-            }
+              ) {
+                setLiveUrl(
+                  nextUrl
+                );
+              }
 
-            if (
-              isPreviewRunning(
-                nextPreview
-              )
-            ) {
+
+              const nextStatus =
+                normalizePreviewStatus(
+                  nextPreview
+                );
+
+
+              if (
+                isPreviewRunning(
+                  nextPreview
+                ) &&
+                nextUrl
+              ) {
+                setPreviewState(
+                  "ready"
+                );
+
+                setPreviewPolling(
+                  false
+                );
+
+                addActivity(
+                  "Preview health check passed.",
+                  "success"
+                );
+
+                finishOperation(
+                  true,
+                  "Preview runtime is ready."
+                );
+
+                return nextPreview;
+              }
+
+
+              if (
+                isPreviewTerminalFailure(
+                  nextPreview
+                )
+              ) {
+                const failure =
+                  nextPreview?.errorMessage ||
+                  nextPreview?.error?.message ||
+                  nextPreview?.errors?.[
+                    nextPreview.errors.length - 1
+                  ]?.message ||
+                  `Preview runtime entered state "${nextStatus}".`;
+
+                setPreviewState(
+                  "error"
+                );
+
+                setPreviewError(
+                  failure
+                );
+
+                setPreviewPolling(
+                  false
+                );
+
+                addActivity(
+                  failure,
+                  "error"
+                );
+
+                finishOperation(
+                  false,
+                  "Preview runtime failed."
+                );
+
+                throw new Error(
+                  failure
+                );
+              }
+
+
+              /*
+               * Still starting.
+               */
+
               setPreviewState(
-                "ready"
+                "starting"
               );
-
-              setPreviewPolling(
-                false
-              );
-
-              addActivity(
-                "Preview health check passed.",
-                "success"
-              );
-
-              finishOperation(
-                true,
-                "Preview runtime is ready."
-              );
-
-              return nextPreview;
             }
+          } catch (
+            healthError
+          ) {
+            /*
+             * If this is an actual backend/runtime
+             * failure, stop immediately.
+             *
+             * Otherwise retry health polling.
+             */
+
+            const status =
+              healthError?.status;
+
+            const code =
+              healthError?.code;
+
+            const terminal =
+              status === 404 ||
+              status === 409 ||
+              status === 422 ||
+              code ===
+                "ARTIFACT_NOT_FOUND" ||
+              code ===
+                "ARTIFACT_INVALID" ||
+              code ===
+                "ARTIFACT_CHECKSUM_MISMATCH" ||
+              code ===
+                "DOCKER_UNAVAILABLE" ||
+              code ===
+                "PREVIEW_RUNTIME_FAILED" ||
+              code ===
+                "HEALTH_CHECK_FAILED";
+
 
             if (
-              isPreviewTerminalFailure(
-                nextPreview
-              )
+              terminal
             ) {
-              const failure =
-                nextPreview?.errorMessage ||
-                nextPreview?.error?.message ||
-                "Preview runtime entered a failed state.";
+              const message =
+                getErrorMessage(
+                  healthError,
+                  "Preview health verification failed."
+                );
 
               setPreviewState(
                 "error"
               );
 
               setPreviewError(
-                failure
+                message
               );
 
               setPreviewPolling(
@@ -2426,53 +2792,61 @@ function Workspace() {
               );
 
               addActivity(
-                failure,
+                message,
                 "error"
               );
 
               finishOperation(
                 false,
-                "Preview runtime failed."
+                "Preview health verification failed."
               );
 
-              throw new Error(
-                failure
-              );
+              throw healthError;
             }
-          } catch (
-            healthError
-          ) {
+
+
+            /*
+             * Temporary health/network
+             * failure: continue polling.
+             */
+
             if (
               attempt >=
               PREVIEW_MAX_POLLS - 1
             ) {
-              setPreviewPolling(
-                false
-              );
-
-              setPreviewState(
-                "error"
-              );
-
               const message =
                 getErrorMessage(
                   healthError,
                   "Preview health could not be verified."
                 );
 
+              setPreviewState(
+                "error"
+              );
+
               setPreviewError(
                 message
               );
 
+              setPreviewPolling(
+                false
+              );
+
+              addActivity(
+                message,
+                "error"
+              );
+
               finishOperation(
                 false,
-                message
+                "Preview health verification timed out."
               );
 
               throw healthError;
             }
           }
         }
+
 
         setPreviewPolling(
           false
@@ -2487,6 +2861,11 @@ function Workspace() {
 
         setPreviewError(
           timeoutMessage
+        );
+
+        addActivity(
+          timeoutMessage,
+          "error"
         );
 
         finishOperation(
@@ -2508,7 +2887,7 @@ function Workspace() {
 
 
   /* =======================================================
-     BUILD / CHANGE
+     BUILD
   ======================================================= */
 
   const handleBuild =
@@ -2540,6 +2919,7 @@ function Workspace() {
           Boolean(
             selectedProjectId
           );
+
 
         try {
           setError("");
@@ -2688,7 +3068,7 @@ function Workspace() {
 
 
           /* =================================================
-             CREATE NEW PROJECT
+             CREATE
           ================================================= */
 
           if (
@@ -2777,6 +3157,7 @@ function Workspace() {
               const projectWithFiles =
                 {
                   ...projectAfterSave,
+
                   projectName:
                     getProjectName(
                       projectAfterSave
@@ -2802,11 +3183,6 @@ function Workspace() {
             }
 
 
-            /*
-             * Refresh the authoritative project
-             * representation from backend.
-             */
-
             const createdId =
               getProjectId(
                 projectAfterSave
@@ -2827,7 +3203,7 @@ function Workspace() {
 
 
           /* =================================================
-             UPDATE EXISTING PROJECT
+             UPDATE
           ================================================= */
 
           else {
@@ -2917,11 +3293,7 @@ function Workspace() {
           /*
            * IMPORTANT:
            *
-           * Do not pretend that AI generation is
-           * an authoritative build.
-           *
-           * We only accept an authoritative build
-           * if the backend actually returned one.
+           * AI output itself is NOT an authoritative build.
            */
 
           const build =
@@ -2947,7 +3319,7 @@ function Workspace() {
             );
 
             const message =
-              "Project files were saved, but the backend did not return an authoritative build ID. The live preview has not been fabricated or started.";
+              "Project files were saved, but the backend did not return a successful authoritative build. Preview is blocked until Engineering Agent produces one.";
 
             addActivity(
               message,
@@ -2962,7 +3334,7 @@ function Workspace() {
 
             finishOperation(
               false,
-              "Project saved, but authoritative build is still unavailable."
+              "Project saved, but authoritative build is unavailable."
             );
 
             return;
@@ -2989,53 +3361,21 @@ function Workspace() {
           );
 
 
+          const realBuildId =
+            getAuthoritativeBuildId(
+              build
+            );
+
+
           addActivity(
-            `Authoritative build ${build.buildId} returned by backend.`,
+            `Authoritative build ${realBuildId} returned by Engineering Agent.`,
             "success"
           );
 
 
           /*
-           * Preview is created ONLY from the
-           * authoritative successful build.
+           * Preview ONLY after authoritative build.
            */
-
-          const buildStatus =
-            String(
-              build.status ||
-              ""
-            ).toLowerCase();
-
-
-          if (
-            buildStatus &&
-            buildStatus !==
-              "success"
-          ) {
-            setPreviewState(
-              "blocked"
-            );
-
-            const message =
-              `Authoritative build ${build.buildId} is not successful yet. Current status: ${buildStatus}.`;
-
-            setError(
-              message
-            );
-
-            addActivity(
-              message,
-              "error"
-            );
-
-            finishOperation(
-              false,
-              "Authoritative build is not ready for preview."
-            );
-
-            return;
-          }
-
 
           setLoading(
             false
@@ -3049,6 +3389,7 @@ function Workspace() {
                 selectedProjectRef.current
               ) ||
                 selectedProjectId,
+
               build
             );
 
@@ -3063,8 +3404,7 @@ function Workspace() {
             );
           } catch {
             /*
-             * startRealPreview already updates
-             * preview state and error.
+             * Preview function already updates UI.
              */
           }
 
@@ -3285,7 +3625,7 @@ function Workspace() {
 
 
   /* =======================================================
-     PREVIEW OPEN
+     OPEN PREVIEW
   ======================================================= */
 
   const openPreview =
@@ -3303,39 +3643,47 @@ function Workspace() {
           true
         );
 
+
         /*
-         * If an active preview already exists,
-         * use it. Do not create a duplicate runtime.
+         * Existing healthy runtime:
+         * do not create another one.
          */
 
         if (
-          selectedProjectId &&
-          preview
+          preview &&
+          isPreviewRunning(
+            preview
+          ) &&
+          extractPreviewUrl(
+            preview
+          )
         ) {
-          const status =
-            normalizePreviewStatus(
-              preview
-            );
-
-          if (
-            [
-              "running",
-              "ready",
-              "active",
-              "healthy",
-            ].includes(
-              status
-            )
-          ) {
-            return;
-          }
+          return;
         }
 
 
         if (
-          !selectedProjectId ||
+          !selectedProjectId
+        ) {
+          setPreviewError(
+            "Select a project before starting Preview."
+          );
+
+          return;
+        }
+
+
+        if (
           !authoritativeBuildReady
         ) {
+          setPreviewState(
+            "blocked"
+          );
+
+          setPreviewError(
+            "Authoritative build required. Preview cannot start from unverified project files."
+          );
+
           return;
         }
 
@@ -3642,8 +3990,8 @@ function Workspace() {
           );
         } catch {
           /*
-           * Background refresh must not
-           * replace the primary UI error.
+           * Background refresh intentionally
+           * does not overwrite primary UI errors.
            */
         }
       };
@@ -4395,8 +4743,6 @@ function Workspace() {
             `}
           >
 
-            {/* TOOLBAR */}
-
             <div
               className={
                 styles.workspaceToolbar
@@ -4576,9 +4922,7 @@ function Workspace() {
 
                 <span
                   className={
-                    backendDeploymentStatus
-                      ? styles.contextDeployment
-                      : styles.contextMuted
+                    styles.contextDeployment
                   }
                 >
                   {backendDeploymentStatus
@@ -4808,7 +5152,7 @@ function Workspace() {
                             ? "The backend is preparing and health-checking the real preview runtime."
                             : previewState ===
                               "blocked"
-                            ? "Project files exist, but ZyrionOS will not display a fake preview until the backend returns a successful authoritative build."
+                            ? "Project files exist, but ZyrionOS will not display a fake preview until Engineering Agent returns a successful authoritative build."
                             : previewError ||
                               (
                                 authoritativeBuildReady

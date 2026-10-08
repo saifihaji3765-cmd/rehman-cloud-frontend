@@ -12,11 +12,21 @@ import {
   getProjects,
   createProject,
   updateProject,
+
   createPreview,
   getPreview,
   getPreviewHealth,
   stopPreview,
-} from "../../../services/projectService";
+
+  getPreviewData,
+  getPreviewHealthData,
+  getPreviewUrl,
+  isPreviewReady,
+  isPreviewStarting,
+  isPreviewFailed,
+  isAuthoritativeBuild,
+  getAuthoritativeBuildId,
+} from "../../../services/workspaceService.js";
 
 import {
   generateCode,

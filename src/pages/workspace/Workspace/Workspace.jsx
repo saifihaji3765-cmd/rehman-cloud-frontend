@@ -21,9 +21,6 @@ import {
   getPreviewData,
   getPreviewHealthData,
   getPreviewUrl,
-  isPreviewReady,
-  isPreviewStarting,
-  isPreviewFailed,
   isAuthoritativeBuild,
   getAuthoritativeBuildId,
 } from "../../../services/workspaceService.js";

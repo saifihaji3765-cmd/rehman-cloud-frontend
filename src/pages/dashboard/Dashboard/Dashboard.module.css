@@ -1,4 +1,3 @@
-
 .page {
   --bg: #f5f7fc;
   --surface: #ffffff;
@@ -18,8 +17,8 @@
   background:
     radial-gradient(
       ellipse at 85% 0%,
-      rgba(89, 75, 232, 0.09),
-      transparent 32%
+      rgba(89, 75, 232, 0.08),
+      transparent 34%
     ),
     var(--bg);
   font-family: inherit;
@@ -44,7 +43,9 @@
   padding: 30px clamp(18px, 3vw, 48px) 24px;
 }
 
-/* Header */
+/* =========================================================
+   HEADER
+   ========================================================= */
 
 .header {
   display: flex;
@@ -55,8 +56,8 @@
 }
 
 .brand,
-.headerActions,
-.brandText {
+.brandText,
+.headerActions {
   display: flex;
 }
 
@@ -73,7 +74,7 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: #ffffff;
   background: linear-gradient(145deg, #7164f6, #4d3ed6);
   font-weight: 850;
 }
@@ -92,6 +93,7 @@
 }
 
 .brandName {
+  color: var(--text);
   font-size: 17px;
   font-weight: 850;
   letter-spacing: -0.04em;
@@ -144,7 +146,7 @@
 .closingButton {
   padding: 0 18px;
   border: 1px solid var(--primary);
-  color: #fff;
+  color: #ffffff;
   background: var(--primary);
 }
 
@@ -165,22 +167,26 @@
 .secondaryAction {
   padding: 0 3px;
   color: var(--secondary);
+  background: transparent;
 }
 
 .secondaryAction:hover {
   color: var(--primary);
 }
 
-/* Founder hero */
+/* =========================================================
+   FOUNDER INTRODUCTION / HERO
+   First photo appears beside the introduction.
+   ========================================================= */
 
 .hero {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.12fr) minmax(280px, 0.88fr);
   align-items: center;
-  gap: clamp(30px, 5vw, 76px);
+  gap: clamp(30px, 4vw, 64px);
   min-width: 0;
-  padding: clamp(28px, 4.5vw, 64px);
+  padding: clamp(28px, 4.2vw, 62px);
   overflow: hidden;
   border: 1px solid #e5e7f5;
   border-radius: var(--radius-lg);
@@ -190,7 +196,7 @@
       rgba(115, 99, 255, 0.1),
       transparent 36%
     ),
-    linear-gradient(125deg, #fff 40%, #f8f7ff 100%);
+    linear-gradient(125deg, #ffffff 40%, #f8f7ff 100%);
   box-shadow: 0 12px 38px rgba(25, 35, 65, 0.045);
 }
 
@@ -212,12 +218,13 @@
 }
 
 .eyebrow {
-  margin-bottom: 24px;
+  margin-bottom: 23px;
 }
 
 .eyebrowDot {
   width: 8px;
   height: 8px;
+  flex: 0 0 auto;
   border-radius: 50%;
   background: var(--primary);
   box-shadow: 0 0 0 4px var(--primary-soft);
@@ -236,7 +243,7 @@
   color: var(--text);
   font-size: clamp(36px, 4.4vw, 66px);
   font-weight: 850;
-  line-height: 1.04;
+  line-height: 1.08;
   letter-spacing: -0.065em;
   overflow-wrap: anywhere;
 }
@@ -258,7 +265,8 @@
   margin: 24px 0 0;
   color: var(--secondary);
   font-size: 14px;
-  line-height: 2;
+  line-height: 1.95;
+  overflow-wrap: anywhere;
 }
 
 .heroActions {
@@ -291,16 +299,18 @@
   line-height: 1.5;
 }
 
-/* Portraits */
+/* =========================================================
+   FIRST FOUNDER PHOTO
+   ========================================================= */
 
 .portraitArea {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 108px;
+  grid-template-columns: minmax(0, 1fr) 0;
   align-items: center;
-  gap: 14px;
+  justify-items: center;
   min-width: 0;
-  padding: 8px 0;
+  padding: 8px 0 22px;
 }
 
 .portraitGlow {
@@ -317,7 +327,8 @@
 }
 
 .primaryPortrait,
-.secondaryPortrait {
+.secondaryPortrait,
+.journeyPortrait {
   position: relative;
   z-index: 1;
   min-width: 0;
@@ -329,21 +340,19 @@
 }
 
 .primaryPortrait {
-  aspect-ratio: 3 / 4.15;
+  width: min(100%, 390px);
+  aspect-ratio: 3 / 4;
   border-radius: 20px;
-}
-
-.primaryPortraitImage,
-.secondaryPortraitImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center top;
 }
 
 .primaryPortraitImage {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  background: #f0f1f5;
 }
 
 .portraitOverlay {
@@ -354,12 +363,12 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
-  padding: 30px 17px 17px;
-  color: #fff;
+  padding: 34px 18px 17px;
+  color: #ffffff;
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(13, 18, 35, 0.28) 24%,
+    rgba(13, 18, 35, 0.25) 24%,
     rgba(13, 18, 35, 0.88) 100%
   );
 }
@@ -374,6 +383,7 @@
 .portraitStatus > span {
   width: 6px;
   height: 6px;
+  flex: 0 0 auto;
   border-radius: 50%;
   background: #a7f3d0;
 }
@@ -381,54 +391,27 @@
 .portraitOverlay strong {
   font-size: 17px;
   font-weight: 800;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .portraitOverlay > span:last-child {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.82);
   font-size: 11px;
-}
-
-.secondaryPortrait {
-  align-self: center;
-  aspect-ratio: 3 / 4.3;
-  border-radius: 14px;
-  transform: translateY(26px);
-}
-
-.secondaryPortraitImage {
-  position: absolute;
-  inset: 0;
-}
-
-.secondaryPortraitLabel {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: 23px 7px 10px;
-  color: #fff;
-  background: linear-gradient(transparent, rgba(13, 18, 35, 0.82));
-  font-size: 7px;
-  font-weight: 800;
-  line-height: 1.6;
-  letter-spacing: 0.06em;
-  text-align: center;
 }
 
 .portraitNote {
   position: absolute;
   z-index: 2;
-  right: 2px;
-  bottom: -5px;
+  right: -4px;
+  bottom: -2px;
   display: flex;
   align-items: center;
   gap: 10px;
-  max-width: 260px;
+  width: min(100%, 280px);
   padding: 12px 15px;
   border: 1px solid var(--border);
   border-radius: 13px;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.97);
   box-shadow: 0 9px 25px rgba(24, 31, 55, 0.1);
 }
 
@@ -450,6 +433,7 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 
 .portraitNote strong {
@@ -464,7 +448,9 @@
   line-height: 1.5;
 }
 
-/* Intro band */
+/* =========================================================
+   PLATFORM INTRODUCTION BAND
+   ========================================================= */
 
 .introBand {
   display: grid;
@@ -475,7 +461,7 @@
   padding: 34px clamp(22px, 3.5vw, 46px);
   border: 1px solid #e4e1ff;
   border-radius: 18px;
-  background: linear-gradient(115deg, #f0eeff, #fff 80%);
+  background: linear-gradient(115deg, #f0eeff, #ffffff 80%);
 }
 
 .bandEyebrow,
@@ -504,7 +490,9 @@
   line-height: 1.95;
 }
 
-/* Content sections */
+/* =========================================================
+   CONTENT SECTION FRAMEWORK
+   ========================================================= */
 
 .contentSection {
   min-width: 0;
@@ -584,13 +572,85 @@
   overflow-wrap: anywhere;
 }
 
-/* Journey callout */
+/* =========================================================
+   JOURNEY SECTION
+   Second photo appears below the introduction while scrolling.
+   ========================================================= */
+
+.journeyLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(230px, 0.75fr);
+  align-items: start;
+  gap: clamp(24px, 4vw, 46px);
+}
+
+.journeyCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.journeyPortrait {
+  width: 100%;
+  max-width: 370px;
+  justify-self: center;
+  aspect-ratio: 3 / 4;
+  border-radius: 18px;
+  background: #f0f1f5;
+}
+
+.journeyPortraitImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  background: #f0f1f5;
+}
+
+.journeyPortrait figcaption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 32px 17px 16px;
+  color: #ffffff;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(13, 18, 35, 0.86)
+  );
+}
+
+.journeyPortrait figcaption span:first-child {
+  color: #e5e1ff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1.7;
+}
+
+.journeyPortrait figcaption strong {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.journeyPortrait figcaption span:last-child {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+}
+
+/* Journey quote */
 
 .journeyCallout {
   display: flex;
   align-items: flex-start;
   gap: 17px;
-  margin-top: 27px;
   padding: 23px;
   border: 1px solid #e5e2ff;
   border-radius: 13px;
@@ -627,7 +687,9 @@
   letter-spacing: 0.11em;
 }
 
-/* Platform pillars */
+/* =========================================================
+   PLATFORM PILLARS
+   ========================================================= */
 
 .pillarGrid {
   display: grid;
@@ -640,7 +702,7 @@
   padding: 23px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: linear-gradient(145deg, #fff, #fafbff);
+  background: linear-gradient(145deg, #ffffff, #fafbff);
   transition:
     border-color 160ms ease,
     transform 160ms ease,
@@ -693,7 +755,9 @@
   line-height: 1.8;
 }
 
-/* Mission and vision */
+/* =========================================================
+   MISSION AND VISION
+   ========================================================= */
 
 .missionGrid {
   display: grid;
@@ -710,12 +774,12 @@
 
 .missionCard {
   border: 1px solid #e4e0ff;
-  background: linear-gradient(145deg, #f7f5ff, #fff);
+  background: linear-gradient(145deg, #f7f5ff, #ffffff);
 }
 
 .visionCard {
   border: 1px solid var(--border);
-  background: linear-gradient(145deg, #f7f9fc, #fff);
+  background: linear-gradient(145deg, #f7f9fc, #ffffff);
 }
 
 .missionCard h3,
@@ -736,7 +800,9 @@
   line-height: 1.95;
 }
 
-/* Engineering principles */
+/* =========================================================
+   ENGINEERING PRINCIPLES
+   ========================================================= */
 
 .principlesList {
   display: flex;
@@ -783,7 +849,9 @@
   line-height: 1.9;
 }
 
-/* Closing call to action */
+/* =========================================================
+   CLOSING CALL TO ACTION
+   ========================================================= */
 
 .closingSection {
   display: grid;
@@ -800,7 +868,7 @@
       rgba(89, 75, 232, 0.1),
       transparent 42%
     ),
-    linear-gradient(110deg, #fff, #f8f7ff);
+    linear-gradient(110deg, #ffffff, #f8f7ff);
 }
 
 .closingBrand {
@@ -836,7 +904,9 @@
   white-space: nowrap;
 }
 
-/* Footer */
+/* =========================================================
+   FOOTER
+   ========================================================= */
 
 .footer {
   margin-top: 26px;
@@ -918,7 +988,9 @@
   line-height: 1.8;
 }
 
-/* Keyboard accessibility */
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
 
 .page button:focus-visible,
 .page a:focus-visible {
@@ -931,7 +1003,9 @@
   background: rgba(89, 75, 232, 0.18);
 }
 
-/* Tablet */
+/* =========================================================
+   TABLET
+   ========================================================= */
 
 @media (max-width: 1050px) {
   .container {
@@ -940,19 +1014,18 @@
   }
 
   .hero {
-    grid-template-columns: minmax(0, 1fr) minmax(230px, 0.72fr);
-    gap: 28px;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.72fr);
+    gap: 26px;
     padding: 32px;
   }
 
-  .portraitArea {
-    grid-template-columns: minmax(0, 1fr) 78px;
-    gap: 10px;
+  .primaryPortrait {
+    width: min(100%, 320px);
   }
 
   .portraitNote {
-    right: 0;
-    max-width: 235px;
+    right: -3px;
+    max-width: 245px;
   }
 
   .pillarGrid {
@@ -961,6 +1034,11 @@
 
   .pillarCard {
     padding: 18px;
+  }
+
+  .journeyLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 0.7fr);
+    gap: 24px;
   }
 
   .closingSection {
@@ -978,7 +1056,9 @@
   }
 }
 
-/* Compact workspace widths */
+/* =========================================================
+   COMPACT WORKSPACE WIDTHS
+   ========================================================= */
 
 @media (max-width: 760px) {
   .container {
@@ -997,22 +1077,17 @@
 
   .portraitArea {
     width: min(100%, 470px);
-    grid-template-columns: minmax(0, 1fr) 105px;
-    gap: 15px;
     margin: 0 auto;
+    padding-bottom: 23px;
   }
 
   .primaryPortrait {
-    max-height: 560px;
-  }
-
-  .secondaryPortrait {
-    transform: translateY(20px);
+    width: min(100%, 360px);
   }
 
   .portraitNote {
     right: 0;
-    bottom: -8px;
+    bottom: -1px;
   }
 
   .introBand {
@@ -1024,6 +1099,15 @@
   .proseGrid {
     grid-template-columns: minmax(0, 1fr);
     gap: 15px;
+  }
+
+  .journeyLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .journeyPortrait {
+    width: min(100%, 350px);
   }
 
   .pillarGrid {
@@ -1047,7 +1131,9 @@
   }
 }
 
-/* Mobile */
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
 @media (max-width: 520px) {
   .container {
@@ -1145,18 +1231,18 @@
   }
 
   .portraitArea {
-    grid-template-columns: minmax(0, 1fr) 82px;
-    gap: 10px;
-    padding-bottom: 15px;
+    width: 100%;
+    padding: 0 0 22px;
   }
 
   .primaryPortrait {
+    width: min(100%, 330px);
     border-radius: 15px;
   }
 
   .portraitOverlay {
     gap: 5px;
-    padding: 25px 10px 12px;
+    padding: 28px 13px 12px;
   }
 
   .portraitOverlay strong {
@@ -1171,19 +1257,10 @@
     font-size: 7px;
   }
 
-  .secondaryPortrait {
-    border-radius: 11px;
-    transform: translateY(13px);
-  }
-
-  .secondaryPortraitLabel {
-    font-size: 6px;
-  }
-
   .portraitNote {
-    right: -2px;
-    bottom: -5px;
-    max-width: 205px;
+    right: 0;
+    bottom: -1px;
+    width: min(100%, 255px);
     gap: 8px;
     padding: 9px 10px;
   }
@@ -1254,9 +1331,34 @@
     line-height: 1.9;
   }
 
+  .journeyLayout {
+    gap: 23px;
+  }
+
+  .journeyPortrait {
+    width: min(100%, 320px);
+    border-radius: 15px;
+  }
+
+  .journeyPortrait figcaption {
+    gap: 5px;
+    padding: 28px 13px 13px;
+  }
+
+  .journeyPortrait figcaption strong {
+    font-size: 14px;
+  }
+
+  .journeyPortrait figcaption span:first-child {
+    font-size: 7px;
+  }
+
+  .journeyPortrait figcaption span:last-child {
+    font-size: 10px;
+  }
+
   .journeyCallout {
     gap: 10px;
-    margin-top: 20px;
     padding: 17px;
   }
 
@@ -1362,7 +1464,9 @@
   }
 }
 
-/* Very small phones */
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
 
 @media (max-width: 360px) {
   .container {
@@ -1377,13 +1481,13 @@
     font-size: 34px;
   }
 
-  .portraitArea {
-    grid-template-columns: minmax(0, 1fr) 69px;
-    gap: 8px;
+  .primaryPortrait,
+  .journeyPortrait {
+    border-radius: 12px;
   }
 
   .portraitNote {
-    max-width: 190px;
+    max-width: 220px;
   }
 
   .contentSection {
@@ -1403,7 +1507,9 @@
   }
 }
 
-/* Reduced motion */
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
   .page *,
@@ -1423,11 +1529,13 @@
   }
 }
 
-/* Print */
+/* =========================================================
+   PRINT
+   ========================================================= */
 
 @media print {
   .page {
-    background: #fff;
+    background: #ffffff;
   }
 
   .headerActions,
@@ -1442,7 +1550,8 @@
   .closingSection,
   .pillarCard,
   .missionCard,
-  .visionCard {
+  .visionCard,
+  .journeyPortrait {
     break-inside: avoid;
     box-shadow: none;
   }

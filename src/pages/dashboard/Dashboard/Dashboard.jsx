@@ -90,7 +90,7 @@ const platformPillars = [
 // Verify the filenames against GitHub before committing.
 const founderImages = {
   primary: "/public/file_0000000013f4820c92343cfd05dbf6a0.png",
-  secondary: "/",
+  secondary: "/public/file_00000000f7d482078bc5932a7e7aa50a.png",
 };
 
 function SectionHeading({ number, eyebrow, title, subtitle, id }) {

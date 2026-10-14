@@ -89,8 +89,8 @@ const platformPillars = [
 // These paths use the uploaded images already stored in the public directory.
 // Verify the filenames against GitHub before committing.
 const founderImages = {
-  primary: "/file_00000000f7d48207bc5932a7e7aa50a.png",
-  secondary: "/file_0000000013f4820c92343cfd05dbf6a0.png",
+  primary: "/public/file_0000000013f4820c92343cfd05dbf6a0.png",
+  secondary: "/",
 };
 
 function SectionHeading({ number, eyebrow, title, subtitle, id }) {

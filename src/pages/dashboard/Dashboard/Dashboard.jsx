@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../../layouts/DashboardLayout/DashboardLayout.jsx";
 import styles from "./Dashboard.module.css";
@@ -7,48 +6,55 @@ const founder = {
   name: "Rehman Saifi",
   role: "Founder & Independent AI Systems Builder",
   platform: "ZyrionOS",
+
   introduction:
-    "I am an independent AI systems builder focused on the intersection of artificial intelligence, software engineering, and intelligent automation. My goal is to turn ambitious technical ideas into practical systems that solve real operational problems. Through ZyrionOS, I am developing a unified environment designed to bring AI agents, structured workflows, software development, and operational control into one coordinated platform.",
+    "I am an independent AI systems builder focused on artificial intelligence, software engineering, and intelligent automation. My work is driven by a practical goal: transforming ambitious technical ideas into structured, useful, and reliable digital systems. Through ZyrionOS, I am developing a unified AI workspace intended to coordinate specialized AI capabilities, organize development workflows, and improve visibility into digital operations.",
+
   story:
-    "My journey into AI systems development began with a curiosity about how technology can do more than perform isolated tasks. I became interested in how multiple capabilities could work together, how complex workflows could be organized, and how a single interface could provide visibility into the entire process. That interest became the foundation for ZyrionOS—a long-term engineering project that I am building and improving through practical implementation, experimentation, testing, and continuous refinement.",
+    "My journey into AI systems development began with curiosity about how technology could move beyond isolated tools and become part of a more coordinated environment. I became interested in how complex tasks could be divided into manageable stages, how specialized AI capabilities could work together, and how a central workspace could make execution easier to understand. That direction became the foundation for ZyrionOS, an ongoing engineering project that I continue to develop through practical implementation, testing, learning, and refinement.",
+
   approach:
-    "I approach development as a process of breaking complex goals into smaller, testable components. Architecture, integration, reliability, security, and clear operational feedback are important parts of that process. Rather than treating AI as a standalone chatbot, I am exploring how specialized capabilities can be coordinated through defined workflows while keeping execution understandable and important decisions under human oversight.",
+    "My approach to engineering is based on structured problem-solving, incremental implementation, and continuous improvement. I focus on understanding requirements, organizing components, integrating services carefully, and investigating errors rather than treating development as a collection of disconnected features. Reliability, security, maintainability, clear system feedback, and appropriate human oversight are important considerations throughout this process.",
+
   mission:
     "To develop a unified AI-powered operating environment that helps organize digital work, coordinate specialized AI capabilities, and make complex workflows easier to manage through a centralized interface.",
+
   vision:
-    "To progressively build a dependable platform where AI-assisted research, software development, automation, content workflows, and business operations can be coordinated with clear execution status, reliable integrations, and meaningful human control.",
+    "To progressively build a dependable platform where AI-assisted research, software development, automation, content workflows, and business operations can be coordinated through structured processes, meaningful execution visibility, and appropriate human control.",
+
   principles: [
     {
       number: "01",
       title: "Intelligent Coordination",
       description:
-        "Organize specialized AI capabilities into structured workflows with clear responsibilities, defined inputs, and understandable outputs.",
+        "Organize specialized AI capabilities into structured workflows with defined responsibilities, inputs, and outputs.",
     },
     {
       number: "02",
       title: "Engineering Discipline",
       description:
-        "Build incrementally, validate changes, investigate failures, and improve the system through testing and measurable technical progress.",
+        "Build incrementally, validate changes, investigate failures, and improve the system through testing and careful technical evaluation.",
     },
     {
       number: "03",
       title: "Security & Reliability",
       description:
-        "Treat access control, secure configuration, error handling, and dependable execution as essential engineering considerations.",
+        "Prioritize secure configuration, access control, resilient integrations, error handling, and dependable execution.",
     },
     {
       number: "04",
       title: "Human Oversight",
       description:
-        "Keep system activity visible and preserve appropriate human control over important actions, decisions, and operational changes.",
+        "Keep relevant system activity visible and preserve appropriate human control over important actions and operational decisions.",
     },
     {
       number: "05",
       title: "Continuous Improvement",
       description:
-        "Evolve the platform through practical implementation, feedback, architectural refinement, and careful prioritization.",
+        "Evolve the platform through implementation, feedback, architectural refinement, and evidence-based prioritization.",
     },
   ],
+
   focusAreas: [
     "AI Agent Orchestration",
     "Software Engineering",
@@ -80,12 +86,33 @@ const platformPillars = [
   },
 ];
 
+// These paths use the uploaded images already stored in the public directory.
+// Verify the filenames against GitHub before committing.
+const founderImages = {
+  primary: "/file_00000000f7d48207bc5932a7e7aa50a.png",
+  secondary: "/file_0000000013f4820c92343cfd05dbf6a0.png",
+};
+
+function SectionHeading({ number, eyebrow, title, subtitle, id }) {
+  return (
+    <div className={styles.sectionHeading}>
+      <span className={styles.sectionIndex}>{number}</span>
+
+      <div>
+        <p className={styles.sectionEyebrow}>{eyebrow}</p>
+        <h2 id={id} className={styles.sectionTitle}>
+          {title}
+        </h2>
+        {subtitle ? (
+          <p className={styles.sectionSubtitle}>{subtitle}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard() {
   const navigate = useNavigate();
-
-  const handleNewProject = () => {
-    navigate("/workspace");
-  };
 
   const handleOpenWorkspace = () => {
     navigate("/workspace");
@@ -110,14 +137,12 @@ function Dashboard() {
             </div>
 
             <div className={styles.headerActions}>
-              <span className={styles.identityLabel}>
-                Founder profile
-              </span>
+              <span className={styles.identityLabel}>Founder profile</span>
 
               <button
                 type="button"
                 className={styles.newProjectButton}
-                onClick={handleNewProject}
+                onClick={handleOpenWorkspace}
               >
                 <span aria-hidden="true">+</span>
                 New Project
@@ -125,6 +150,7 @@ function Dashboard() {
             </div>
           </header>
 
+          {/* HERO: first photograph beside the founder introduction */}
           <section
             className={styles.hero}
             aria-labelledby="founder-heading"
@@ -178,10 +204,11 @@ function Dashboard() {
 
               <figure className={styles.primaryPortrait}>
                 <img
-                  src="/founder-primary.png"
-                  alt="Rehman Saifi, founder of ZyrionOS"
+                  src={founderImages.primary}
+                  alt="Founder of ZyrionOS"
                   className={styles.primaryPortraitImage}
                   fetchPriority="high"
+                  decoding="async"
                 />
 
                 <figcaption className={styles.portraitOverlay}>
@@ -194,28 +221,19 @@ function Dashboard() {
                 </figcaption>
               </figure>
 
-              <figure className={styles.secondaryPortrait}>
-                <img
-                  src="/founder-secondary.png"
-                  alt="Rehman Saifi in an outdoor portrait"
-                  className={styles.secondaryPortraitImage}
-                  loading="lazy"
-                />
-                <figcaption className={styles.secondaryPortraitLabel}>
-                  THE PERSON BEHIND THE PLATFORM
-                </figcaption>
-              </figure>
-
               <div className={styles.portraitNote}>
                 <span className={styles.portraitNoteMark}>Z</span>
                 <div>
                   <strong>Founder-led development</strong>
-                  <span>Built through continuous learning and engineering</span>
+                  <span>
+                    Learning, building, and improving through engineering
+                  </span>
                 </div>
               </div>
             </div>
           </section>
 
+          {/* Platform introduction */}
           <section className={styles.introBand} aria-label="Platform summary">
             <div>
               <span className={styles.bandEyebrow}>THE BIG PICTURE</span>
@@ -228,31 +246,24 @@ function Dashboard() {
 
             <p>
               ZyrionOS is an evolving platform project focused on connecting
-              AI capabilities, development workflows, and operational control
-              through a unified workspace.
+              AI capabilities, software development workflows, and
+              operational control through a unified workspace.
             </p>
           </section>
 
+          {/* About the founder */}
           <section
             id="about"
             className={styles.contentSection}
             aria-labelledby="about-heading"
           >
-            <div className={styles.sectionHeading}>
-              <span className={styles.sectionIndex}>01</span>
-
-              <div>
-                <p className={styles.sectionEyebrow}>
-                  THE PERSON BEHIND THE PLATFORM
-                </p>
-                <h2 id="about-heading" className={styles.sectionTitle}>
-                  About the Founder
-                </h2>
-                <p className={styles.sectionSubtitle}>
-                  The motivation, thinking, and direction behind the work.
-                </p>
-              </div>
-            </div>
+            <SectionHeading
+              number="01"
+              eyebrow="THE PERSON BEHIND THE PLATFORM"
+              title="About the Founder"
+              subtitle="The motivation, thinking, and direction behind the work."
+              id="about-heading"
+            />
 
             <div className={styles.proseGrid}>
               <p className={styles.bodyText}>{founder.introduction}</p>
@@ -260,65 +271,77 @@ function Dashboard() {
             </div>
           </section>
 
+          {/* Journey: second photograph appears lower on the page */}
           <section
+            id="journey"
             className={styles.contentSection}
             aria-labelledby="journey-heading"
           >
-            <div className={styles.sectionHeading}>
-              <span className={styles.sectionIndex}>02</span>
+            <SectionHeading
+              number="02"
+              eyebrow="THE STORY SO FAR"
+              title="The Journey Behind ZyrionOS"
+              subtitle="From curiosity about AI to building a coordinated platform."
+              id="journey-heading"
+            />
 
-              <div>
-                <p className={styles.sectionEyebrow}>THE STORY SO FAR</p>
-                <h2 id="journey-heading" className={styles.sectionTitle}>
-                  The Journey Behind ZyrionOS
-                </h2>
-                <p className={styles.sectionSubtitle}>
-                  From curiosity about AI to building a coordinated platform.
-                </p>
+            <div className={styles.journeyLayout}>
+              <div className={styles.journeyCopy}>
+                <p className={styles.bodyText}>{founder.story}</p>
+
+                <div className={styles.journeyCallout}>
+                  <span className={styles.calloutMark} aria-hidden="true">
+                    “
+                  </span>
+                  <div>
+                    <p>
+                      The objective is not simply to add more tools. It is
+                      to make complex digital work more organized,
+                      observable, and manageable through thoughtful system
+                      design.
+                    </p>
+                    <span>THE ENGINEERING PERSPECTIVE</span>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <p className={styles.bodyText}>{founder.story}</p>
-
-            <div className={styles.journeyCallout}>
-              <span className={styles.calloutMark} aria-hidden="true">
-                “
-              </span>
-              <div>
-                <p>
-                  The objective is not simply to add more tools. It is to make
-                  complex digital work more organized, observable, and
-                  manageable through thoughtful system design.
-                </p>
-                <span>THE ENGINEERING PERSPECTIVE</span>
-              </div>
+              <figure className={styles.journeyPortrait}>
+                <img
+                  src={founderImages.secondary}
+                  alt="Founder of ZyrionOS in an outdoor portrait"
+                  className={styles.journeyPortraitImage}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <figcaption>
+                  <span>THE PERSON BEHIND THE PLATFORM</span>
+                  <strong>{founder.name}</strong>
+                  <span>Founder · {founder.platform}</span>
+                </figcaption>
+              </figure>
             </div>
           </section>
 
+          {/* Platform capabilities */}
           <section
+            id="platform"
             className={styles.contentSection}
             aria-labelledby="platform-heading"
           >
-            <div className={styles.sectionHeading}>
-              <span className={styles.sectionIndex}>03</span>
-
-              <div>
-                <p className={styles.sectionEyebrow}>
-                  THE PLATFORM IN DEVELOPMENT
-                </p>
-                <h2 id="platform-heading" className={styles.sectionTitle}>
-                  What ZyrionOS Is Being Built For
-                </h2>
-                <p className={styles.sectionSubtitle}>
-                  Core product directions and architectural priorities.
-                </p>
-              </div>
-            </div>
+            <SectionHeading
+              number="03"
+              eyebrow="THE PLATFORM IN DEVELOPMENT"
+              title="What ZyrionOS Is Being Built For"
+              subtitle="Core product directions and architectural priorities."
+              id="platform-heading"
+            />
 
             <div className={styles.pillarGrid}>
               {platformPillars.map((pillar) => (
                 <article className={styles.pillarCard} key={pillar.number}>
-                  <span className={styles.pillarNumber}>{pillar.number}</span>
+                  <span className={styles.pillarNumber}>
+                    {pillar.number}
+                  </span>
                   <h3>{pillar.title}</h3>
                   <p>{pillar.description}</p>
                 </article>
@@ -332,23 +355,18 @@ function Dashboard() {
             </p>
           </section>
 
+          {/* Mission and vision */}
           <section
             className={styles.contentSection}
             aria-labelledby="mission-heading"
           >
-            <div className={styles.sectionHeading}>
-              <span className={styles.sectionIndex}>04</span>
-
-              <div>
-                <p className={styles.sectionEyebrow}>WHY ZYRIONOS EXISTS</p>
-                <h2 id="mission-heading" className={styles.sectionTitle}>
-                  Mission & Vision
-                </h2>
-                <p className={styles.sectionSubtitle}>
-                  A clear purpose today and a direction for tomorrow.
-                </p>
-              </div>
-            </div>
+            <SectionHeading
+              number="04"
+              eyebrow="WHY ZYRIONOS EXISTS"
+              title="Mission & Vision"
+              subtitle="A clear purpose today and a direction for tomorrow."
+              id="mission-heading"
+            />
 
             <div className={styles.missionGrid}>
               <article className={styles.missionCard}>
@@ -365,28 +383,18 @@ function Dashboard() {
             </div>
           </section>
 
+          {/* Engineering principles */}
           <section
             className={styles.contentSection}
             aria-labelledby="principles-heading"
           >
-            <div className={styles.sectionHeading}>
-              <span className={styles.sectionIndex}>05</span>
-
-              <div>
-                <p className={styles.sectionEyebrow}>
-                  HOW THE WORK IS APPROACHED
-                </p>
-                <h2
-                  id="principles-heading"
-                  className={styles.sectionTitle}
-                >
-                  Engineering Principles
-                </h2>
-                <p className={styles.sectionSubtitle}>
-                  The standards that guide platform development.
-                </p>
-              </div>
-            </div>
+            <SectionHeading
+              number="05"
+              eyebrow="HOW THE WORK IS APPROACHED"
+              title="Engineering Principles"
+              subtitle="The standards that guide platform development."
+              id="principles-heading"
+            />
 
             <div className={styles.principlesList}>
               {founder.principles.map((principle) => (
@@ -407,6 +415,7 @@ function Dashboard() {
             </div>
           </section>
 
+          {/* Closing action */}
           <section
             className={styles.closingSection}
             aria-labelledby="closing-heading"
@@ -439,6 +448,7 @@ function Dashboard() {
             </button>
           </section>
 
+          {/* Footer links are placeholders until official details are set */}
           <footer className={styles.footer}>
             <div className={styles.footerBrand}>
               <span className={styles.footerMark}>Z</span>
@@ -450,15 +460,18 @@ function Dashboard() {
 
             <nav className={styles.footerLinks} aria-label="Platform links">
               <a href="#about">About</a>
-              <a href="#platform-heading">Platform</a>
-              <span title="Official platform email will be added next">
+              <a href="#platform">Platform</a>
+              <a href="#journey">Founder Journey</a>
+              <span title="Official Gmail address will be configured next">
                 Gmail
               </span>
-              <span title="Contact details will be added next">Contact</span>
-              <span title="Terms and Conditions page will be added next">
+              <span title="Official contact details will be configured next">
+                Contact
+              </span>
+              <span title="Terms and Conditions page will be configured next">
                 Terms & Conditions
               </span>
-              <span title="Privacy Policy page will be added next">
+              <span title="Privacy Policy page will be configured next">
                 Privacy Policy
               </span>
             </nav>

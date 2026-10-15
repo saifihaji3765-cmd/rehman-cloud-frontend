@@ -372,7 +372,7 @@ function getErrorMessage(error, fallback) {
    SIDEBAR
 ========================================================= */
 
-function Sidebar() {
+function Sidebar({ onCollapsedChange }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -463,7 +463,11 @@ function Sidebar() {
     }
   }, []);
 
-  /* =======================================================
+ useEffect(() => {
+  onCollapsedChange?.(collapsed);
+}, [collapsed, onCollapsedChange]);
+   
+   /* =======================================================
      PERSIST SIDEBAR STATE
   ======================================================= */
 

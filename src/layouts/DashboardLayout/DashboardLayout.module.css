@@ -1,558 +1,472 @@
 /* =========================================================
-   ZYRIONOS
-   ENTERPRISE APPLICATION SHELL
+ZYRIONOS — ENTERPRISE APPLICATION SHELL
 
-   File:
-   src/layouts/DashboardLayout/DashboardLayout.module.css
+File:
+src/layouts/DashboardLayout/DashboardLayout.module.css
 
-   RESPONSIBILITIES
-   ---------------------------------------------------------
-   - Application frame
-   - Sidebar region
-   - Main application region
-   - Topbar
-   - Workspace context
-   - Main content scrolling
-   - Responsive shell
-   - Accessibility
-   ========================================================= */
+Scope:
 
+- Application frame
+- Sidebar width coordination
+- Main application region
+- Topbar and workspace context
+- Content scrolling
+- Responsive behaviour
+- Accessibility
 
-/* =========================================================
-   01. SHELL TOKENS
+Page-specific styles and business logic are unchanged.
 ========================================================= */
 
+/* =========================================================
+
+1. SHELL TOKENS
+   ========================================================= */
+
 :global(:root) {
-  --zy-shell-sidebar-width: 272px;
+--zy-shell-sidebar-width: 240px;
+--zy-shell-sidebar-collapsed-width: 64px;
 
-  --zy-shell-topbar-height: 64px;
+--zy-shell-topbar-height: 64px;
+--zy-shell-context-height: 40px;
 
-  --zy-shell-context-height: 40px;
+--zy-shell-bg: var(--zy-bg-950, #060914);
+--zy-shell-main: var(--zy-bg-950, #060914);
+--zy-shell-surface: var(--zy-surface-1, #0D1322);
+--zy-shell-surface-raised: var(--zy-surface-2, #11182A);
 
-  --zy-shell-bg:
-    var(--zy-bg-950, #060914);
+--zy-shell-border: var(--zy-border, #1B2438);
+--zy-shell-border-strong: var(--zy-border-strong, #27324A);
 
-  --zy-shell-main:
-    var(--zy-bg-950, #060914);
+--zy-shell-text: var(--zy-text-primary, #F4F7FF);
+--zy-shell-text-secondary: var(--zy-text-secondary, #A8B1C7);
+--zy-shell-text-muted: var(--zy-text-muted, #6F7890);
 
-  --zy-shell-surface:
-    var(--zy-surface-1, #0d1322);
+--zy-shell-brand: var(--zy-brand, #6C63FF);
+--zy-shell-brand-bright: var(--zy-brand-bright, #8179FF);
 
-  --zy-shell-surface-raised:
-    var(--zy-surface-2, #11182a);
-
-  --zy-shell-border:
-    var(--zy-border, #1b2438);
-
-  --zy-shell-border-strong:
-    var(--zy-border-strong, #27324a);
-
-  --zy-shell-text:
-    var(--zy-text-primary, #f4f7ff);
-
-  --zy-shell-text-secondary:
-    var(--zy-text-secondary, #a8b1c7);
-
-  --zy-shell-text-muted:
-    var(--zy-text-muted, #6f7890);
-
-  --zy-shell-brand:
-    var(--zy-brand, #6c63ff);
-
-  --zy-shell-brand-bright:
-    var(--zy-brand-bright, #8179ff);
-
-  --zy-shell-transition:
-    var(--zy-transition-standard, 180ms ease);
+--zy-shell-transition: var(--zy-transition-standard, 180ms ease);
 }
 
-
 /* =========================================================
-   02. ROOT LAYOUT
+02. ROOT LAYOUT
 ========================================================= */
 
 .layout {
-  position: relative;
+position: relative;
+width: 100%;
+min-width: 0;
+min-height: 100vh;
+min-height: 100dvh;
 
-  width: 100%;
-  min-width: 0;
+background: var(--zy-shell-bg);
+color: var(--zy-shell-text);
 
-  min-height: 100vh;
-  min-height: 100dvh;
+isolation: isolate;
+overflow: hidden;
 
-  color: var(--zy-shell-text);
-  background: var(--zy-shell-bg);
-
-  isolation: isolate;
-
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
 }
-
-.layout,
-.layout *,
-.layout *::before,
-.layout *::after {
-  box-sizing: border-box;
-}
-
 
 /* =========================================================
-   03. APPLICATION ATMOSPHERE
+03. APPLICATION ATMOSPHERE
 ========================================================= */
 
 .layout::before {
-  content: "";
+content: "";
+position: fixed;
+inset: 0;
+z-index: -1;
 
-  position: fixed;
-  inset: 0;
+pointer-events: none;
 
-  z-index: -1;
-
-  pointer-events: none;
-
-  background:
-    radial-gradient(
-      circle at 78% -12%,
-      rgba(108, 99, 255, 0.075),
-      transparent 30%
-    );
+background: radial-gradient(
+circle at 78% -12%,
+rgba(108, 99, 255, 0.075),
+transparent 30%
+);
 }
 
-
 /* =========================================================
-   04. ACCESSIBILITY — SKIP LINK
+04. ACCESSIBILITY — SKIP LINK
 ========================================================= */
 
 .skipLink {
-  position: fixed;
+position: fixed;
+top: 12px;
+left: 12px;
+z-index: 1000;
 
-  top: 12px;
-  left: 12px;
+display: inline-flex;
+align-items: center;
+justify-content: center;
 
-  z-index: 1000;
+min-height: 40px;
+padding: 0 14px;
 
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+border: 1px solid var(--zy-shell-brand);
+border-radius: var(--zy-radius-sm, 8px);
 
-  min-height: 40px;
-  padding: 0 14px;
+background: var(--zy-shell-brand);
+color: #fff;
 
-  border: 1px solid var(--zy-shell-brand);
-  border-radius: var(--zy-radius-sm, 8px);
+font-size: 13px;
+font-weight: 700;
+line-height: 1;
+text-decoration: none;
 
-  color: #ffffff;
-  background: var(--zy-shell-brand);
-
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-
-  text-decoration: none;
-
-  transform: translateY(-150%);
-
-  transition:
-    transform var(--zy-shell-transition);
+transform: translateY(-150%);
+transition: transform var(--zy-shell-transition);
 }
 
 .skipLink:focus {
-  transform: translateY(0);
+transform: translateY(0);
+outline: none;
 
-  outline: none;
-
-  box-shadow:
-    0 0 0 3px rgba(108, 99, 255, 0.24);
+box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.24);
 }
 
-
 /* =========================================================
-   05. APPLICATION SHELL
+05. APPLICATION SHELL
 ========================================================= */
 
 .appShell {
-  display: flex;
-  align-items: stretch;
+display: flex;
+align-items: stretch;
 
-  width: 100%;
-  min-width: 0;
+width: 100%;
+min-width: 0;
 
-  height: 100vh;
-  height: 100dvh;
+height: 100vh;
+height: 100dvh;
 
-  min-height: 0;
+min-height: 100vh;
+min-height: 100dvh;
+
+overflow: hidden;
 }
 
-
 /* =========================================================
-   06. SIDEBAR REGION
+06. SIDEBAR REGION — EXPANDED
 ========================================================= */
 
 .sidebarSlot {
-  position: relative;
+position: relative;
 
-  flex:
-    0 0 var(--zy-shell-sidebar-width);
+flex: 0 0 var(--zy-shell-sidebar-width);
 
-  width:
-    var(--zy-shell-sidebar-width);
+width: var(--zy-shell-sidebar-width);
+min-width: var(--zy-shell-sidebar-width);
 
-  min-width: 0;
+height: 100%;
+min-height: 0;
 
-  height: 100%;
-  min-height: 0;
+z-index: 50;
 
-  z-index: 50;
-
-  overflow: visible;
+transition:
+width var(--zy-shell-transition),
+min-width var(--zy-shell-transition),
+flex-basis var(--zy-shell-transition);
 }
-
-
-/* Sidebar component fills the allocated shell region. */
-
-.sidebarSlot > * {
-  width: 100%;
-  min-width: 0;
-
-  height: 100%;
-  min-height: 0;
-}
-
 
 /* =========================================================
-   07. MAIN APPLICATION AREA
+07. SIDEBAR REGION — COLLAPSED
+
+DashboardLayout receives the state from Sidebar.jsx.
+This keeps the parent slot and sidebar width synchronized.
+========================================================= */
+
+.layout[data-sidebar-collapsed="true"] .sidebarSlot {
+flex-basis: var(--zy-shell-sidebar-collapsed-width);
+width: var(--zy-shell-sidebar-collapsed-width);
+min-width: var(--zy-shell-sidebar-collapsed-width);
+}
+
+/* Sidebar owns its internal navigation UI. */
+
+.sidebarSlot > * {
+display: block;
+width: 100%;
+min-width: 0;
+height: 100%;
+}
+
+/* =========================================================
+08. MAIN APPLICATION AREA
 ========================================================= */
 
 .mainArea {
-  position: relative;
+position: relative;
 
-  display: flex;
-  flex: 1 1 0%;
+display: flex;
+flex: 1 1 0;
+flex-direction: column;
 
-  flex-direction: column;
+width: 0;
+min-width: 0;
+min-height: 0;
+height: 100%;
 
-  /*
-   * Important:
-   * flex-basis 0% lets the main area use the remaining
-   * width after the sidebar allocation.
-   */
+background: linear-gradient(
+180deg,
+rgba(6, 9, 20, 0.96),
+rgba(6, 9, 20, 1)
+);
 
-  width: 0;
-  min-width: 0;
-  min-height: 0;
-
-  height: 100%;
-
-  overflow: hidden;
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(6, 9, 20, 0.96),
-      rgba(6, 9, 20, 1)
-    );
+overflow: hidden;
 }
 
-
 /* =========================================================
-   08. MAIN AREA TOP ACCENT
+09. MAIN AREA TOP ACCENT
 ========================================================= */
 
 .mainArea::before {
-  content: "";
+content: "";
 
-  position: absolute;
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
 
-  top: 0;
-  left: 0;
-  right: 0;
+height: 1px;
 
-  height: 1px;
+background: linear-gradient(
+90deg,
+rgba(108, 99, 255, 0.42),
+rgba(108, 99, 255, 0.08),
+transparent
+);
 
-  background:
-    linear-gradient(
-      90deg,
-      rgba(108, 99, 255, 0.42),
-      rgba(108, 99, 255, 0.08),
-      transparent
-    );
-
-  pointer-events: none;
-
-  z-index: 20;
+pointer-events: none;
+z-index: 20;
 }
 
-
 /* =========================================================
-   09. TOPBAR REGION
+10. TOPBAR REGION
 ========================================================= */
 
 .topbar {
-  position: relative;
+position: relative;
 
-  flex:
-    0 0 var(--zy-shell-topbar-height);
+flex: 0 0 var(--zy-shell-topbar-height);
 
-  width: 100%;
-  min-width: 0;
+width: 100%;
+min-width: 0;
+height: var(--zy-shell-topbar-height);
 
-  height: var(--zy-shell-topbar-height);
-
-  z-index: 40;
-
-  isolation: isolate;
+z-index: 40;
+isolation: isolate;
 }
-
-
-/* Topbar owns its internal presentation. */
 
 .topbar > * {
-  width: 100%;
-  min-width: 0;
+width: 100%;
+min-width: 0;
 }
 
-
 /* =========================================================
-   10. WORKSPACE CONTEXT BAR
+11. WORKSPACE CONTEXT BAR
 ========================================================= */
 
 .workspaceBar {
-  position: relative;
+position: relative;
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+display: flex;
+flex: 0 0 var(--zy-shell-context-height);
+align-items: center;
+justify-content: space-between;
 
-  gap: 20px;
+gap: 20px;
 
-  flex:
-    0 0 var(--zy-shell-context-height);
+width: 100%;
+min-width: 0;
+height: var(--zy-shell-context-height);
 
-  width: 100%;
-  min-width: 0;
+padding: 0 20px;
 
-  height: var(--zy-shell-context-height);
+background: rgba(9, 14, 27, 0.88);
 
-  padding: 0 24px;
+border-top: 1px solid rgba(148, 163, 184, 0.045);
+border-bottom: 1px solid var(--zy-shell-border);
 
-  background: rgba(9, 14, 27, 0.88);
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
 
-  border-top:
-    1px solid rgba(148, 163, 184, 0.045);
-
-  border-bottom:
-    1px solid var(--zy-shell-border);
-
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  z-index: 30;
+z-index: 30;
 }
 
-
 /* =========================================================
-   11. WORKSPACE IDENTITY
+12. WORKSPACE IDENTITY
 ========================================================= */
 
 .workspaceIdentity {
-  display: flex;
-  align-items: center;
+display: flex;
+align-items: center;
+gap: 9px;
 
-  gap: 9px;
+min-width: 0;
 
-  min-width: 0;
+color: var(--zy-shell-text-secondary);
 
-  color: var(--zy-shell-text-secondary);
-
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-
-  letter-spacing: 0.01em;
+font-size: 12px;
+font-weight: 600;
+line-height: 1;
+letter-spacing: 0.01em;
 }
 
-
 /* =========================================================
-   12. WORKSPACE STATUS
+13. WORKSPACE STATUS
 ========================================================= */
 
 .statusDot {
-  flex: 0 0 7px;
+flex: 0 0 7px;
 
-  width: 7px;
-  height: 7px;
+width: 7px;
+height: 7px;
 
-  border-radius: 50%;
+border-radius: 50%;
 
-  background: var(--zy-success, #20c77a);
+background: var(--zy-success, #20C77A);
 
-  box-shadow:
-    0 0 0 3px rgba(32, 199, 122, 0.09),
-    0 0 12px rgba(32, 199, 122, 0.28);
+box-shadow:
+0 0 0 3px rgba(32, 199, 122, 0.09),
+0 0 12px rgba(32, 199, 122, 0.28);
 }
 
-
 /* =========================================================
-   13. WORKSPACE NAME
+14. WORKSPACE NAME
 ========================================================= */
 
 .workspaceName {
-  min-width: 0;
+min-width: 0;
+overflow: hidden;
 
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+text-overflow: ellipsis;
+white-space: nowrap;
 }
 
-
 /* =========================================================
-   14. WORKSPACE META
+15. WORKSPACE META
 ========================================================= */
 
 .workspaceMeta {
-  display: flex;
-  align-items: center;
+display: flex;
+align-items: center;
+gap: 8px;
 
-  gap: 8px;
+min-width: 0;
 
-  min-width: 0;
+color: var(--zy-shell-text-muted);
 
-  color: var(--zy-shell-text-muted);
+font-size: 11px;
+font-weight: 500;
+line-height: 1;
 
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1;
-
-  white-space: nowrap;
+white-space: nowrap;
 }
-
-
-/* =========================================================
-   15. WORKSPACE SEPARATOR
-========================================================= */
 
 .separator {
-  color: rgba(148, 163, 184, 0.28);
+color: rgba(148, 163, 184, 0.28);
 }
 
-
 /* =========================================================
-   16. MAIN CONTENT
-========================================================= */
+16. MAIN CONTENT
+
+Critical layout fix:
+
+- flex-basis: 0 lets the content use remaining space.
+- min-width: 0 prevents intrinsic-width overflow.
+- content width is no longer restricted by a fixed sidebar.
+  ========================================================= */
 
 .content {
-  position: relative;
+position: relative;
 
-  flex: 1 1 0%;
+flex: 1 1 0;
 
-  width: 100%;
-  min-width: 0;
-  min-height: 0;
+width: 100%;
+min-width: 0;
+min-height: 0;
 
-  padding: 24px 28px 44px;
+padding: 24px 24px 40px;
 
-  overflow-x: hidden;
-  overflow-y: auto;
+overflow-x: hidden;
+overflow-y: auto;
 
-  overscroll-behavior: contain;
+overscroll-behavior: contain;
 
-  scroll-behavior: smooth;
+scroll-behavior: smooth;
 
-  scrollbar-width: thin;
-
-  scrollbar-color:
-    rgba(148, 163, 184, 0.18)
-    transparent;
+scrollbar-width: thin;
+scrollbar-color: rgba(148, 163, 184, 0.18) transparent;
 }
 
-
 /* =========================================================
-   17. CONTENT INNER
+17. CONTENT INNER
 ========================================================= */
 
 .contentInner {
-  /*
-   * Fix:
-   * Do not add another fixed-width container at the shell
-   * level. Allow the page to use the width available after
-   * the sidebar and topbar have been laid out.
-   *
-   * Page-level containers can still define their own
-   * maximum width where appropriate.
-   */
+width: 100%;
+min-width: 0;
+max-width: 1600px;
 
-  display: block;
-
-  width: 100%;
-  min-width: 0;
-
-  max-width: none;
-
-  margin: 0;
+margin: 0 auto;
 }
 
-
 /* =========================================================
-   18. CONTENT CHILD SAFETY
+18. CONTENT CHILD SAFETY
 ========================================================= */
 
 .contentInner > * {
-  min-width: 0;
-  max-width: 100%;
+min-width: 0;
+max-width: 100%;
 }
 
-
 /* =========================================================
-   19. CONTENT SCROLLBAR
+19. CONTENT SCROLLBAR
 ========================================================= */
 
 .content::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+width: 8px;
+height: 8px;
 }
 
 .content::-webkit-scrollbar-track {
-  background: transparent;
+background: transparent;
 }
 
 .content::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.18);
+border: 2px solid transparent;
+border-radius: 999px;
 
-  border: 2px solid transparent;
-  border-radius: 999px;
-
-  background-clip: padding-box;
+background: rgba(148, 163, 184, 0.18);
+background-clip: padding-box;
 }
 
 .content::-webkit-scrollbar-thumb:hover {
-  background: rgba(129, 121, 255, 0.38);
+border: 2px solid transparent;
 
-  border: 2px solid transparent;
-
-  background-clip: padding-box;
+background: rgba(129, 121, 255, 0.38);
+background-clip: padding-box;
 }
 
-
 /* =========================================================
-   20. GLOBAL INTERACTION SAFETY
+20. GLOBAL INTERACTION SAFETY
 ========================================================= */
 
 .layout :global(a),
 .layout :global(button) {
-  -webkit-tap-highlight-color: transparent;
+-webkit-tap-highlight-color: transparent;
 }
 
 .layout :global(button),
 .layout :global(input),
 .layout :global(textarea),
 .layout :global(select) {
-  font: inherit;
+font: inherit;
 }
 
-
 /* =========================================================
-   21. FOCUS ACCESSIBILITY
+21. FOCUS ACCESSIBILITY
 ========================================================= */
 
 .layout :global(button:focus-visible),
@@ -561,334 +475,308 @@
 .layout :global(textarea:focus-visible),
 .layout :global(select:focus-visible),
 .layout :global([tabindex]:focus-visible) {
-  outline: 2px solid var(--zy-shell-brand-bright);
-
-  outline-offset: 3px;
+outline: 2px solid var(--zy-shell-brand-bright);
+outline-offset: 2px;
 }
 
-
 /* =========================================================
-   22. TEXT SELECTION
+22. TEXT SELECTION
 ========================================================= */
 
 .layout ::selection {
-  color: #ffffff;
-  background: rgba(108, 99, 255, 0.30);
+color: #fff;
+background: rgba(108, 99, 255, 0.30);
 }
 
-
 /* =========================================================
-   23. TABLET — <= 1200px
+23. TABLET — <= 1200px
 ========================================================= */
 
-@media (max-width: 1200px) {
-  :global(:root) {
-    --zy-shell-sidebar-width: 248px;
-  }
-
-  .content {
-    padding: 22px 22px 36px;
-  }
-
-  .workspaceBar {
-    padding-left: 20px;
-    padding-right: 20px;
-  }
+@media (max-width: 1200px) and (min-width: 769px) {
+:global(:root) {
+--zy-shell-sidebar-width: 224px;
 }
 
+.content {
+padding: 22px 20px 36px;
+}
+
+.workspaceBar {
+padding-right: 18px;
+padding-left: 18px;
+}
+}
 
 /* =========================================================
-   24. SMALL TABLET — <= 960px
+24. SMALL TABLET — <= 960px
 ========================================================= */
 
-@media (max-width: 960px) {
-  :global(:root) {
-    --zy-shell-sidebar-width: 220px;
-  }
-
-  .content {
-    padding: 20px 18px 32px;
-  }
-
-  .workspaceMeta {
-    display: none;
-  }
+@media (max-width: 960px) and (min-width: 769px) {
+:global(:root) {
+--zy-shell-sidebar-width: 210px;
 }
 
+.content {
+padding: 20px 16px 32px;
+}
+
+.workspaceMeta {
+display: none;
+}
+}
 
 /* =========================================================
-   25. MOBILE SHELL — <= 768px
+25. MOBILE SHELL — <= 768px
+
+Sidebar.jsx uses a fixed drawer on mobile.
+The desktop sidebar slot must therefore take no width.
 ========================================================= */
 
 @media (max-width: 768px) {
-  .layout {
-    min-height: 100dvh;
-
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-
-  .appShell {
-    display: flex;
-    flex-direction: column;
-
-    width: 100%;
-
-    height: auto;
-    min-height: 100dvh;
-  }
-
-
-  /* Mobile sidebar region */
-
-  .sidebarSlot {
-    flex: 0 0 auto;
-
-    width: 100%;
-    min-width: 0;
-
-    height: auto;
-    min-height: 0;
-
-    z-index: 50;
-  }
-
-  .sidebarSlot > * {
-    width: 100%;
-
-    height: auto;
-    min-height: 0;
-  }
-
-
-  /* Mobile main area */
-
-  .mainArea {
-    flex: 1 1 auto;
-
-    width: 100%;
-
-    height: auto;
-    min-height: 0;
-
-    overflow: visible;
-  }
-
-
-  /* Mobile topbar */
-
-  .topbar {
-    position: sticky;
-    top: 0;
-
-    flex: 0 0 auto;
-
-    height: auto;
-    min-height: var(--zy-shell-topbar-height);
-
-    z-index: 80;
-  }
-
-
-  /* Mobile workspace context */
-
-  .workspaceBar {
-    flex: 0 0 auto;
-
-    min-height: 38px;
-    height: auto;
-
-    padding: 8px 16px;
-  }
-
-
-  /* Mobile page content */
-
-  .content {
-    flex: 1 1 auto;
-
-    width: 100%;
-
-    min-height: 0;
-
-    padding: 20px 16px 32px;
-
-    overflow: visible;
-
-    overscroll-behavior: auto;
-
-    scroll-behavior: auto;
-  }
-
-  .contentInner {
-    width: 100%;
-    max-width: none;
-  }
-
-  .layout::before {
-    position: absolute;
-
-    background:
-      radial-gradient(
-        circle at 80% 0%,
-        rgba(108, 99, 255, 0.06),
-        transparent 35%
-      );
-  }
+.layout {
+min-height: 100dvh;
+overflow-x: hidden;
+overflow-y: auto;
 }
 
+.appShell {
+display: flex;
+flex-direction: column;
+
+width: 100%;
+height: auto;
+min-height: 100dvh;
+
+overflow: visible;
+
+}
+
+.sidebarSlot,
+.layout[data-sidebar-collapsed="true"] .sidebarSlot {
+flex: 0 0 0;
+width: 0;
+min-width: 0;
+height: 0;
+min-height: 0;
+overflow: visible;
+}
+
+.sidebarSlot > * {
+width: auto;
+height: auto;
+}
+
+.mainArea {
+flex: 1 1 auto;
+
+width: 100%;
+height: auto;
+min-height: 0;
+
+overflow: visible;
+
+}
+
+.topbar {
+flex: 0 0 auto;
+
+height: auto;
+min-height: var(--zy-shell-topbar-height);
+
+position: sticky;
+top: 0;
+z-index: 80;
+
+}
+
+.workspaceBar {
+flex: 0 0 auto;
+
+min-height: 38px;
+height: auto;
+
+padding: 8px 16px;
+
+}
+
+.content {
+flex: 1 1 auto;
+
+width: 100%;
+min-height: 0;
+
+padding: 20px 16px 32px;
+
+overflow: visible;
+overscroll-behavior: auto;
+scroll-behavior: auto;
+
+}
+
+.contentInner {
+width: 100%;
+max-width: none;
+}
+
+.layout::before {
+position: absolute;
+
+background: radial-gradient(
+  circle at 80% 0%,
+  rgba(108, 99, 255, 0.06),
+  transparent 35%
+);
+
+}
+}
 
 /* =========================================================
-   26. LARGE PHONE — <= 600px
+26. LARGE PHONE — <= 600px
 ========================================================= */
 
 @media (max-width: 600px) {
-  .workspaceIdentity {
-    font-size: 11px;
-  }
-
-  .workspaceBar {
-    padding: 8px 14px;
-  }
-
-  .content {
-    padding: 18px 14px 28px;
-  }
+.workspaceIdentity {
+font-size: 11px;
 }
 
+.workspaceBar {
+padding: 8px 14px;
+}
+
+.content {
+padding: 18px 14px 28px;
+}
+}
 
 /* =========================================================
-   27. SMALL PHONE — <= 480px
+27. SMALL PHONE — <= 480px
 ========================================================= */
 
 @media (max-width: 480px) {
-  .workspaceBar {
-    padding: 7px 12px;
-  }
-
-  .workspaceMeta {
-    display: none;
-  }
-
-  .content {
-    padding: 16px 12px 26px;
-  }
+.workspaceBar {
+padding: 7px 12px;
 }
 
+.workspaceMeta {
+display: none;
+}
+
+.content {
+padding: 16px 12px 26px;
+}
+}
 
 /* =========================================================
-   28. VERY SMALL PHONE — <= 360px
+28. VERY SMALL PHONE — <= 360px
 ========================================================= */
 
 @media (max-width: 360px) {
-  .content {
-    padding: 14px 10px 22px;
-  }
-
-  .workspaceName {
-    max-width: 180px;
-  }
+.content {
+padding: 14px 10px 22px;
 }
 
+.workspaceName {
+max-width: 180px;
+}
+}
 
 /* =========================================================
-   29. SAFE AREA SUPPORT
+29. SAFE AREA SUPPORT
 ========================================================= */
 
 @supports (padding: env(safe-area-inset-bottom)) {
-  .content {
-    padding-bottom:
-      calc(44px + env(safe-area-inset-bottom));
-  }
-
-  @media (max-width: 768px) {
-    .content {
-      padding-bottom:
-        calc(32px + env(safe-area-inset-bottom));
-    }
-  }
+.content {
+padding-bottom: calc(
+40px + env(safe-area-inset-bottom)
+);
 }
 
+@media (max-width: 768px) {
+.content {
+padding-bottom: calc(
+32px + env(safe-area-inset-bottom)
+);
+}
+}
+}
 
 /* =========================================================
-   30. REDUCED MOTION
+30. REDUCED MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-  .skipLink,
-  .content {
-    scroll-behavior: auto;
-    transition: none;
-  }
-
-  .statusDot {
-    box-shadow:
-      0 0 0 3px rgba(32, 199, 122, 0.09);
-  }
+.sidebarSlot,
+.skipLink,
+.content {
+scroll-behavior: auto;
+transition: none;
 }
 
+.statusDot {
+box-shadow: 0 0 0 3px rgba(32, 199, 122, 0.09);
+}
+}
 
 /* =========================================================
-   31. FORCED COLORS
+31. FORCED COLORS
 ========================================================= */
 
 @media (forced-colors: active) {
-  .sidebarSlot,
-  .workspaceBar {
-    border-color: CanvasText;
-  }
-
-  .statusDot {
-    background: Highlight;
-    box-shadow: none;
-  }
-
-  .skipLink {
-    border: 1px solid CanvasText;
-  }
+.sidebarSlot,
+.workspaceBar {
+border-color: CanvasText;
 }
 
+.statusDot {
+background: Highlight;
+box-shadow: none;
+}
+
+.skipLink {
+border: 1px solid CanvasText;
+}
+}
 
 /* =========================================================
-   32. LARGE DESKTOP — >= 1440px
+32. LARGE DESKTOP — >= 1440px
 ========================================================= */
 
 @media (min-width: 1440px) {
-  .content {
-    padding: 28px 32px 48px;
-  }
-
-  .workspaceBar {
-    padding-left: 28px;
-    padding-right: 28px;
-  }
+.content {
+padding: 28px 32px 48px;
 }
 
+.workspaceBar {
+padding-right: 24px;
+padding-left: 24px;
+}
+}
 
 /* =========================================================
-   33. ULTRA-WIDE — >= 1920px
+33. ULTRA-WIDE — >= 1920px
 ========================================================= */
 
 @media (min-width: 1920px) {
-  .content {
-    padding-left: 40px;
-    padding-right: 40px;
-  }
+.content {
+padding-right: 40px;
+padding-left: 40px;
 }
 
+.contentInner {
+max-width: 1720px;
+}
+}
 
 /* =========================================================
-   34. VERY LARGE ENTERPRISE DISPLAY — >= 2560px
+34. VERY LARGE ENTERPRISE DISPLAY — >= 2560px
 ========================================================= */
 
 @media (min-width: 2560px) {
-  .content {
-    padding-left: 48px;
-    padding-right: 48px;
-  }
+.contentInner {
+max-width: 1840px;
+}
 }
 
-
 /* =========================================================
-   END OF ENTERPRISE APPLICATION SHELL
+END OF ENTERPRISE APPLICATION SHELL
 ========================================================= */

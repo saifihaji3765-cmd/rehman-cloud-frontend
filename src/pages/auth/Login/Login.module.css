@@ -1682,3 +1682,68 @@
     transform: rotate(360deg);
   }
 }
+
+
+/* =========================================================
+   LOGIN PAGE LAYOUT FIX
+   ========================================================= */
+
+.page {
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow-x: hidden;
+}
+
+.authFrame {
+  flex: 1 0 auto;
+  align-items: stretch;
+  min-height: 600px;
+}
+
+.productPanel,
+.loginPanel {
+  min-width: 0;
+}
+
+.productContent {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.loginContainer {
+  width: 100%;
+  max-width: 430px;
+  margin: auto;
+}
+
+.pageFooter {
+  flex-shrink: 0;
+}
+
+/* Tablet and mobile layout */
+@media (max-width: 820px) {
+  .authFrame {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+
+  .productContent {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .loginContainer {
+    max-width: 470px;
+  }
+}
+
+/* Mobile screens */
+@media (max-width: 560px) {
+  .authFrame {
+    min-height: 0;
+  }
+
+  .loginContainer {
+    width: 100%;
+  }
+}

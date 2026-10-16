@@ -1758,3 +1758,117 @@
     background: Highlight;
   }
 }
+
+
+/* =========================================================
+   ZYRIONOS REGISTER — LAYOUT & EMPTY-SPACE FIX
+   Targets only:
+   1. Presentation panel balance
+   2. Unnecessary empty space below the workspace
+   ========================================================= */
+
+/* Let the page use the available viewport height. */
+.page {
+  min-height: 100vh;
+  min-height: 100svh;
+  height: auto;
+}
+
+/* Allow the workspace to occupy available vertical space. */
+.workspace {
+  flex: 1 0 auto;
+  align-items: stretch;
+  margin-top: clamp(18px, 2.5vh, 30px);
+  margin-bottom: 20px;
+}
+
+/* Balance the presentation content inside the left panel. */
+.presentation {
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.presentationContent {
+  width: 100%;
+  max-width: 600px;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+/* Keep the form vertically balanced with the presentation. */
+.formPanel {
+  align-items: center;
+  justify-content: center;
+}
+
+.formCard {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+/* Keep the footer at the bottom when the viewport has extra height. */
+.pageFooter {
+  margin-top: auto;
+  padding-top: 0;
+  padding-bottom: 20px;
+}
+
+/* Tablet and mobile: preserve natural content height.
+   Never force the stacked panels into a fixed height. */
+@media (max-width: 820px) {
+  .workspace {
+    flex: 0 0 auto;
+    margin-top: 18px;
+    margin-bottom: 18px;
+  }
+
+  .presentationContent {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .formPanel {
+    align-items: initial;
+  }
+
+  .formCard {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .pageFooter {
+    margin-top: 0;
+    padding-bottom: 18px;
+  }
+}
+
+/* Short desktop screens: prevent oversized vertical spacing. */
+@media (min-width: 821px) and (max-height: 850px) {
+  .workspace {
+    margin-top: 16px;
+    margin-bottom: 14px;
+  }
+
+  .presentation {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .presentationContent {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .presentationFooter {
+    padding-top: 16px;
+  }
+
+  .formPanel {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .pageFooter {
+    padding-bottom: 12px;
+  }
+}

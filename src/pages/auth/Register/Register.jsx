@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import AuthLayout from "../../../layouts/AuthLayout/AuthLayout.jsx";
 import styles from "./Register.module.css";
 import {
-  loginUser,
+  register,
+  getCurrentUser,
   loginWithGoogle,
   loginWithGitHub,
   saveAuth,
@@ -32,6 +33,12 @@ function Icon({ name, size = 18 }) {
       <>
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <path d="m4 7 8 6 8-6" />
+      </>
+    ),
+    user: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
       </>
     ),
     lock: (
@@ -129,100 +136,189 @@ function BrandMark() {
   );
 }
 
-function Login() {
+function Register() {
   const navigate = useNavigate();
   const { setUser, setAuthenticated } = useAuth();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState("");
   const [error, setError] = useState("");
 
-  async function handleLogin(event) {
-    event.preventDefault();
+  const passwordChecks = useMemo(
+    () => ({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      number: /\d/.test(password),
+      special: /[^A-Za-z0-9]/.test(password),
+    }),
+    [password]
+  );
 
-    if (loading || oauthLoading) return;
+  const strengthScore = Object.values(passwordChecks).filter(Boolean).length;
 
-    setError("");
+  const strengthLabel = useMemo(() => {
+    if (!password) return "";
+    if (strengthScore <= 1) return "Weak";
+    if (strengthScore <= 2) return "Fair";
+    if (strengthScore === 3) return "Good";
+    return "Strong";
+  }, [password, strengthScore]);
 
-    const cleanEmail = email.trim().toLowerCase();
+  const passwordsMatch =
+    confirmPassword.length > 0 && password === confirmPassword;
 
-    if (!cleanEmail) {
-      setError("Please enter your email address.");
-      return;
+  const busy = loading || Boolean(oauthLoading);
+
+  function validateForm() {
+    if (!name.trim()) {
+      return "Please enter your full name.";
+    }
+
+    if (name.trim().length < 2) {
+      return "Your name must contain at least 2 characters.";
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return "Please enter your email address.";
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return "Please enter a valid email address.";
     }
 
     if (!password) {
-      setError("Please enter your password.");
+      return "Please create a password.";
+    }
+
+    if (password.length < 8) {
+      return "Your password must contain at least 8 characters.";
+    }
+
+    if (!confirmPassword) {
+      return "Please confirm your password.";
+    }
+
+    if (password !== confirmPassword) {
+      return "Your passwords do not match.";
+    }
+
+    if (!acceptedTerms) {
+      return "Please accept the Terms of Service and Privacy Policy.";
+    }
+
+    return "";
+  }
+
+  async function handleRegister(event) {
+    event.preventDefault();
+
+    if (busy) return;
+
+    setError("");
+
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     try {
       setLoading(true);
 
-      const response = await loginUser({
-        email: cleanEmail,
+      const response = await register({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
 
-      const data = response?.data ?? response;
+      const responseData = response?.data ?? response;
 
-      if (!data?.success) {
-        throw new Error(data?.message || "Unable to sign in.");
-      }
-
-      if (!data?.user) {
+      if (responseData?.success === false) {
         throw new Error(
-          "Authentication succeeded, but your account could not be loaded."
+          responseData?.message || "Unable to create your account."
         );
       }
 
-      saveAuth(data.user, data.token);
-      setUser(data.user);
-      setAuthenticated(true);
+      let user =
+        responseData?.user ||
+        responseData?.data?.user ||
+        null;
 
+      /*
+       * Registration may create a session immediately, or the backend
+       * may require the current-session endpoint to return the user.
+       */
+      if (!user) {
+        try {
+          const session = await getCurrentUser();
+          const sessionData = session?.data ?? session;
+
+          user =
+            sessionData?.user ||
+            sessionData?.data?.user ||
+            null;
+        } catch {
+          user = null;
+        }
+      }
+
+      if (!user) {
+        /*
+         * Do not mark the client as authenticated without a user profile.
+         * Some backends require a separate sign-in after registration.
+         */
+        setError(
+          "Your account may have been created, but we could not establish your session. Please sign in to continue."
+        );
+        return;
+      }
+
+      saveAuth(user);
+      setUser(user);
+      setAuthenticated(true);
       navigate("/dashboard", { replace: true });
-    } catch (loginError) {
+    } catch (registrationError) {
       setError(
-        loginError?.response?.data?.message ||
-          loginError?.message ||
-          "Unable to sign in. Please check your credentials and try again."
+        registrationError?.response?.data?.message ||
+          registrationError?.message ||
+          "Unable to create your account. Please try again."
       );
     } finally {
       setLoading(false);
     }
   }
 
-  function handleGoogleLogin() {
-    if (loading || oauthLoading) return;
-
+  function handleGoogleRegister() {
+    if (busy) return;
     setError("");
     setOauthLoading("google");
     loginWithGoogle();
   }
 
-  function handleGitHubLogin() {
-    if (loading || oauthLoading) return;
-
+  function handleGitHubRegister() {
+    if (busy) return;
     setError("");
     setOauthLoading("github");
     loginWithGitHub();
   }
 
-  const busy = loading || Boolean(oauthLoading);
-
   return (
     <AuthLayout>
       <main className={styles.page}>
-        <div className={styles.background} aria-hidden="true" />
+        <div className={styles.ambient} aria-hidden="true" />
 
         <header className={styles.topbar}>
           <Link to="/" className={styles.brand} aria-label={`${APP_NAME} home`}>
             <BrandMark />
-            <span className={styles.brandText}>
+            <span className={styles.brandCopy}>
               <strong>{APP_NAME}</strong>
               <small>AI Cloud Operating System</small>
             </span>
@@ -233,36 +329,34 @@ function Login() {
               <Icon name="shield" size={15} />
               <span>Secure workspace</span>
             </span>
-
-            <Link to="/register" className={styles.signupButton}>
-              <Icon name="userPlus" size={16} />
-              <span>Create account</span>
-              <Icon name="arrow" size={14} />
+            <span className={styles.topbarPrompt}>Already have an account?</span>
+            <Link to="/login" className={styles.topbarLink}>
+              Sign in <Icon name="arrow" size={14} />
             </Link>
           </div>
         </header>
 
-        <div className={styles.authFrame}>
+        <div className={styles.workspace}>
           <section
-            className={styles.productPanel}
-            aria-labelledby="product-title"
+            className={styles.presentation}
+            aria-labelledby="register-hero-title"
           >
-            <div className={styles.productContent}>
-              <div className={styles.productEyebrow}>
+            <div className={styles.presentationContent}>
+              <div className={styles.overline}>
                 <span className={styles.liveDot} />
                 AI-POWERED DEVELOPMENT WORKSPACE
               </div>
 
-              <h1 id="product-title" className={styles.heroTitle}>
+              <h1 id="register-hero-title" className={styles.heroTitle}>
                 Build smarter.
                 <br />
                 <span>Ship with clarity.</span>
               </h1>
 
               <p className={styles.heroDescription}>
-                From the first idea to deployment, bring AI-assisted
-                development, code analysis and project operations
-                together in one connected workspace.
+                Bring AI-assisted development, code analysis and project
+                operations together in one connected workspace — from your
+                first idea to deployment.
               </p>
 
               <div className={styles.sectionHeading}>
@@ -270,87 +364,82 @@ function Login() {
                 <span className={styles.sectionRule} />
               </div>
 
-              <div className={styles.capabilityGrid}>
-                <article className={styles.capabilityCard}>
+              <div className={styles.capabilities}>
+                <article className={styles.capability}>
                   <span className={styles.capabilityIcon}>
-                    <Icon name="spark" size={19} />
+                    <Icon name="spark" size={18} />
                   </span>
                   <div>
-                    <h3>AI code generation</h3>
+                    <h3>AI-assisted development</h3>
                     <p>Turn project requirements into code and files.</p>
                   </div>
                 </article>
 
-                <article className={styles.capabilityCard}>
+                <article className={styles.capability}>
                   <span className={styles.capabilityIcon}>
-                    <Icon name="layers" size={19} />
+                    <Icon name="layers" size={18} />
                   </span>
                   <div>
                     <h3>Code intelligence</h3>
-                    <p>Understand structure and investigate issues.</p>
+                    <p>Understand project structure and investigate issues.</p>
                   </div>
                 </article>
 
-                <article className={styles.capabilityCard}>
+                <article className={styles.capability}>
                   <span className={styles.capabilityIcon}>
-                    <Icon name="network" size={19} />
+                    <Icon name="network" size={18} />
                   </span>
                   <div>
-                    <h3>Debug and improve</h3>
+                    <h3>Review and debugging</h3>
                     <p>Support code review and debugging workflows.</p>
                   </div>
                 </article>
 
-                <article className={styles.capabilityCard}>
+                <article className={styles.capability}>
                   <span className={styles.capabilityIcon}>
-                    <Icon name="cloud" size={19} />
+                    <Icon name="cloud" size={18} />
                   </span>
                   <div>
-                    <h3>Build and deploy</h3>
-                    <p>Keep deployment status and project operations connected.</p>
+                    <h3>Build and deployment</h3>
+                    <p>Keep deployments and project operations connected.</p>
                   </div>
                 </article>
               </div>
 
-              <section
-                className={styles.performancePanel}
-                aria-labelledby="workflow-title"
-              >
-                <div className={styles.performanceHeader}>
-                  <span className={styles.performanceIcon}>
+              <section className={styles.workflow} aria-labelledby="workflow-title">
+                <div className={styles.workflowHeader}>
+                  <span className={styles.workflowIcon}>
                     <Icon name="layers" size={18} />
                   </span>
-
-                  <div>
-                    <h2 id="workflow-title">A connected workflow</h2>
-                    <p>From idea to a reviewed deployment</p>
+                  <div className={styles.workflowHeading}>
+                    <span className={styles.sectionEyebrow}>A CONNECTED PROCESS</span>
+                    <h2 id="workflow-title">From idea to deployment</h2>
                   </div>
-
-                  <span className={styles.workflowBadge}>OVERVIEW</span>
+                  <span className={styles.workflowLabel}>WORKFLOW</span>
                 </div>
 
-                <div className={styles.workflowSteps}>
+                <div className={styles.steps}>
                   {[
                     ["01", "Plan"],
                     ["02", "Build"],
                     ["03", "Review"],
                     ["04", "Deploy"],
                   ].map(([number, label]) => (
-                    <div className={styles.workflowStep} key={number}>
-                      <span className={styles.workflowNumber}>{number}</span>
-                      <span className={styles.workflowLabel}>{label}</span>
+                    <div className={styles.step} key={number}>
+                      <span className={styles.stepNumber}>{number}</span>
+                      <span className={styles.stepName}>{label}</span>
                     </div>
                   ))}
                 </div>
 
-                <p className={styles.performanceNote}>
+                <p className={styles.workflowNote}>
                   Keep your development process organized with connected
                   tools for building, reviewing and operating projects.
                 </p>
               </section>
 
-              <div className={styles.productPrinciple}>
-                <span className={styles.principleIcon}>
+              <div className={styles.trustNote}>
+                <span className={styles.trustIcon}>
                   <Icon name="shield" size={17} />
                 </span>
                 <div>
@@ -363,34 +452,34 @@ function Login() {
               </div>
             </div>
 
-            <footer className={styles.productFooter}>
+            <footer className={styles.presentationFooter}>
               <span>AI-assisted development</span>
-              <span className={styles.footerSeparator}>/</span>
               <span>Project operations</span>
-              <span className={styles.footerSeparator}>/</span>
               <span>Cloud workflows</span>
             </footer>
           </section>
 
           <section
-            className={styles.loginPanel}
-            aria-labelledby="login-title"
+            className={styles.formPanel}
+            aria-labelledby="register-title"
           >
-            <div className={styles.loginContainer}>
-              <div className={styles.loginTopline}>
-                <span className={styles.loginBrandMark}>
-                  <Icon name="spark" size={20} />
+            <div className={styles.formCard}>
+              <div className={styles.formTop}>
+                <span className={styles.formIcon}>
+                  <Icon name="userPlus" size={21} />
                 </span>
-                <span className={styles.accountBadge}>ACCOUNT ACCESS</span>
+                <span className={styles.stepPill}>
+                  <span className={styles.stepPillDot} />
+                  FREE ACCOUNT SETUP
+                </span>
               </div>
 
-              <div className={styles.loginHeader}>
-                <span className={styles.eyebrow}>WELCOME BACK</span>
-                <h2 id="login-title" className={styles.title}>
-                  Sign in to {APP_NAME}
-                </h2>
-                <p className={styles.subtitle}>
-                  Access your workspace and continue where you left off.
+              <div className={styles.formHeading}>
+                <span className={styles.sectionEyebrow}>GET STARTED</span>
+                <h2 id="register-title">Create your account</h2>
+                <p>
+                  Set up your {APP_NAME} account to access your development
+                  workspace.
                 </p>
               </div>
 
@@ -401,22 +490,38 @@ function Login() {
                 </div>
               )}
 
-              <form className={styles.form} onSubmit={handleLogin}>
+              <form className={styles.form} onSubmit={handleRegister} noValidate>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="login-email">
-                    Work email
-                  </label>
-
+                  <label htmlFor="register-name">Full name</label>
                   <div className={styles.inputShell}>
                     <span className={styles.inputIcon}>
-                      <Icon name="mail" size={18} />
+                      <Icon name="user" size={17} />
                     </span>
                     <input
-                      id="login-email"
-                      className={styles.input}
+                      id="register-name"
+                      type="text"
+                      name="name"
+                      autoComplete="name"
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      disabled={busy}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label htmlFor="register-email">Work email</label>
+                  <div className={styles.inputShell}>
+                    <span className={styles.inputIcon}>
+                      <Icon name="mail" size={17} />
+                    </span>
+                    <input
+                      id="register-email"
                       type="email"
                       name="email"
-                      autoComplete="username"
+                      autoComplete="email"
                       inputMode="email"
                       placeholder="you@example.com"
                       value={email}
@@ -429,59 +534,145 @@ function Login() {
 
                 <div className={styles.field}>
                   <div className={styles.labelRow}>
-                    <label className={styles.label} htmlFor="login-password">
-                      Password
-                    </label>
-
-                    <Link to="/forgot-password" className={styles.forgotLink}>
-                      Forgot password?
-                    </Link>
+                    <label htmlFor="register-password">Password</label>
+                    {password && (
+                      <span
+                        className={`${styles.strength} ${
+                          styles[strengthLabel.toLowerCase()]
+                        }`}
+                      >
+                        {strengthLabel}
+                      </span>
+                    )}
                   </div>
 
                   <div className={styles.inputShell}>
                     <span className={styles.inputIcon}>
-                      <Icon name="lock" size={18} />
+                      <Icon name="lock" size={17} />
                     </span>
-
                     <input
-                      id="login-password"
-                      className={styles.inputWithAction}
+                      id="register-password"
                       type={showPassword ? "text" : "password"}
                       name="password"
-                      autoComplete="current-password"
-                      placeholder="Enter your password"
+                      autoComplete="new-password"
+                      placeholder="Create a password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       disabled={busy}
                       required
+                      minLength={8}
+                      aria-describedby="password-hints"
                     />
-
                     <button
                       type="button"
-                      className={styles.passwordToggle}
+                      className={styles.eyeButton}
                       onClick={() => setShowPassword((value) => !value)}
                       disabled={busy}
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                       aria-pressed={showPassword}
                     >
                       <Icon name={showPassword ? "eyeOff" : "eye"} size={18} />
                     </button>
                   </div>
+
+                  <div className={styles.passwordHints} id="password-hints">
+                    <span className={passwordChecks.length ? styles.hintPassed : ""}>
+                      <Icon name="check" size={12} /> 8+ characters
+                    </span>
+                    <span className={passwordChecks.uppercase ? styles.hintPassed : ""}>
+                      <Icon name="check" size={12} /> Uppercase
+                    </span>
+                    <span className={passwordChecks.number ? styles.hintPassed : ""}>
+                      <Icon name="check" size={12} /> Number
+                    </span>
+                    <span className={passwordChecks.special ? styles.hintPassed : ""}>
+                      <Icon name="check" size={12} /> Symbol
+                    </span>
+                  </div>
                 </div>
 
-                <label className={styles.remember}>
+                <div className={styles.field}>
+                  <label htmlFor="register-confirm-password">
+                    Confirm password
+                  </label>
+                  <div
+                    className={`${styles.inputShell} ${
+                      passwordsMatch ? styles.inputSuccess : ""
+                    }`}
+                  >
+                    <span className={styles.inputIcon}>
+                      <Icon name="lock" size={17} />
+                    </span>
+                    <input
+                      id="register-confirm-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      autoComplete="new-password"
+                      placeholder="Re-enter your password"
+                      value={confirmPassword}
+                      onChange={(event) =>
+                        setConfirmPassword(event.target.value)
+                      }
+                      disabled={busy}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className={styles.eyeButton}
+                      onClick={() =>
+                        setShowConfirmPassword((value) => !value)
+                      }
+                      disabled={busy}
+                      aria-label={
+                        showConfirmPassword
+                          ? "Hide confirmation password"
+                          : "Show confirmation password"
+                      }
+                      aria-pressed={showConfirmPassword}
+                    >
+                      <Icon
+                        name={showConfirmPassword ? "eyeOff" : "eye"}
+                        size={18}
+                      />
+                    </button>
+                  </div>
+
+                  {confirmPassword && (
+                    <span
+                      className={
+                        passwordsMatch
+                          ? styles.matchSuccess
+                          : styles.matchError
+                      }
+                    >
+                      <Icon
+                        name={passwordsMatch ? "check" : "lock"}
+                        size={13}
+                      />
+                      {passwordsMatch
+                        ? "Passwords match"
+                        : "Passwords do not match"}
+                    </span>
+                  )}
+                </div>
+
+                <label className={styles.terms}>
                   <input
                     type="checkbox"
-                    checked={rememberMe}
-                    onChange={(event) => setRememberMe(event.target.checked)}
+                    checked={acceptedTerms}
+                    onChange={(event) =>
+                      setAcceptedTerms(event.target.checked)
+                    }
                     disabled={busy}
+                    required
                   />
-                  <span className={styles.checkbox}>
+                  <span className={styles.customCheckbox}>
                     <Icon name="check" size={12} />
                   </span>
-                  <span>Keep me signed in</span>
+                  <span className={styles.termsText}>
+                    I agree to the <Link to="/terms" className={styles.inlineLink}>Terms of Service</Link>
+                    {" "}and <Link to="/privacy" className={styles.inlineLink}>Privacy Policy</Link>.
+                  </span>
                 </label>
 
                 <button
@@ -492,11 +683,11 @@ function Login() {
                   {loading ? (
                     <>
                       <span className={styles.spinner} />
-                      Signing in…
+                      Creating your account…
                     </>
                   ) : (
                     <>
-                      Sign in to workspace
+                      Create account
                       <Icon name="arrow" size={17} />
                     </>
                   )}
@@ -505,7 +696,7 @@ function Login() {
 
               <div className={styles.divider}>
                 <span />
-                <small>OR CONTINUE WITH</small>
+                <small>OR SIGN UP WITH</small>
                 <span />
               </div>
 
@@ -513,13 +704,13 @@ function Login() {
                 <button
                   type="button"
                   className={styles.oauthButton}
-                  onClick={handleGoogleLogin}
+                  onClick={handleGoogleRegister}
                   disabled={busy}
                 >
                   {oauthLoading === "google" ? (
                     <span className={styles.oauthSpinner} />
                   ) : (
-                    <Icon name="google" size={19} />
+                    <Icon name="google" size={18} />
                   )}
                   <span>Google</span>
                 </button>
@@ -527,38 +718,31 @@ function Login() {
                 <button
                   type="button"
                   className={styles.oauthButton}
-                  onClick={handleGitHubLogin}
+                  onClick={handleGitHubRegister}
                   disabled={busy}
                 >
                   {oauthLoading === "github" ? (
                     <span className={styles.oauthSpinner} />
                   ) : (
-                    <Icon name="github" size={19} />
+                    <Icon name="github" size={18} />
                   )}
                   <span>GitHub</span>
                 </button>
               </div>
 
-              <p className={styles.registerPrompt}>
-                New to {APP_NAME}?
-                <Link to="/register" className={styles.registerLink}>
-                  Create an account
-                  <Icon name="arrow" size={14} />
+              <p className={styles.signinPrompt}>
+                Already have an account?
+                <Link to="/login" className={styles.signinLink}>
+                  Sign in <Icon name="arrow" size={13} />
                 </Link>
               </p>
 
-              <div className={styles.securityNotice}>
+              <div className={styles.securityNote}>
                 <Icon name="shield" size={15} />
                 <span>
-                  Sign-in is handled by the {APP_NAME} authentication service.
+                  Your session is managed securely by the {APP_NAME} authentication service.
                 </span>
               </div>
-
-              <p className={styles.legalText}>
-                By signing in, you agree to our{" "}
-                <Link to="/terms">Terms</Link> and{" "}
-                <Link to="/privacy">Privacy Policy</Link>.
-              </p>
             </div>
           </section>
         </div>
@@ -577,4 +761,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Register;

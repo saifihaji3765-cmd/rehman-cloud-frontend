@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import AuthLayout from "../../../layouts/AuthLayout/AuthLayout.jsx";
-import styles from "./Login.module.css";
+import styles from "./Register.module.css";
 import {
   loginUser,
   loginWithGoogle,

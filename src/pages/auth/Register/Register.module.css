@@ -1,62 +1,97 @@
 
 /* =========================================================
    ZYRIONOS — PREMIUM REGISTRATION EXPERIENCE
-   Self-contained layout. Does not depend on AuthLayout.
+   Responsive light UI | CSS Modules | No external dependency
 ========================================================= */
 
 .page {
-  --bg: #f6f7fb;
+  --ink: #191b2a;
+  --text: #303448;
+  --secondary: #626b7e;
+  --muted: #81899a;
+  --border: #e7e9f0;
+  --accent: #5b4bdc;
+  --accent-hover: #4938c6;
+  --accent-soft: #f4f2ff;
+  --success: #16865b;
+  --danger: #bd3342;
   --surface: #ffffff;
-  --ink: #171a2b;
-  --muted: #6e7388;
-  --soft: #969bad;
-  --border: #e7e8f0;
-  --purple: #6254dc;
-  --purple-light: #f0edff;
-  --green: #15956b;
-  --danger: #c43e52;
+  --background: #f8f9fc;
 
   position: relative;
   isolation: isolate;
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
   min-height: 100vh;
-  min-height: 100dvh;
-  overflow: clip;
+  min-height: 100svh;
+  margin: 0;
   color: var(--ink);
   background:
-    radial-gradient(ellipse at 5% 0%, #eeebff 0%, transparent 35%),
-    var(--bg);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
+    radial-gradient(
+      ellipse at 5% 0%,
+      rgba(91, 75, 220, 0.075),
+      transparent 34%
+    ),
+    var(--background);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
+.page,
 .page *,
 .page *::before,
 .page *::after {
   box-sizing: border-box;
 }
 
+.page button,
+.page input {
+  font: inherit;
+}
+
+.page button,
 .page a {
   -webkit-tap-highlight-color: transparent;
+}
+
+.page a {
+  color: inherit;
+}
+
+.page button:disabled {
+  cursor: not-allowed;
 }
 
 .ambient {
   position: absolute;
   z-index: -1;
-  top: 120px;
-  right: -150px;
-  width: 420px;
-  height: 420px;
+  top: 100px;
+  right: -160px;
+  width: 430px;
+  height: 430px;
   pointer-events: none;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(108, 92, 231, 0.09), transparent 70%);
-  filter: blur(18px);
+  background: radial-gradient(
+    circle,
+    rgba(108, 92, 231, 0.09),
+    transparent 70%
+  );
+  filter: blur(20px);
 }
 
-/* Header */
+/* =========================================================
+   HEADER
+========================================================= */
 
 .topbar {
   position: relative;
@@ -64,14 +99,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 20px;
   width: 100%;
-  min-height: 78px;
-  padding: 15px clamp(22px, 5vw, 76px);
-  border-bottom: 1px solid rgba(224, 225, 236, 0.9);
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  min-height: 76px;
+  padding: 13px clamp(20px, 5vw, 76px);
+  border-bottom: 1px solid #eceef3;
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .brand {
@@ -85,71 +118,88 @@
 
 .brandMark {
   display: grid;
-  grid-template-columns: repeat(2, 7px);
-  grid-template-rows: repeat(2, 7px);
+  grid-template-columns: repeat(2, 8px);
+  grid-template-rows: repeat(2, 8px);
   align-content: center;
   justify-content: center;
-  gap: 3px;
-  width: 39px;
-  height: 39px;
-  flex: 0 0 39px;
-  border: 1px solid #e0dcff;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 1px solid #ded9ff;
   border-radius: 12px;
-  background: linear-gradient(145deg, #f5f2ff, #eae5ff);
+  background: #f3f1ff;
 }
 
 .brandMark span {
-  border-radius: 2px;
-  background: var(--purple);
+  border-radius: 3px;
+  background: var(--accent);
 }
 
 .brandMark span:nth-child(2) {
-  opacity: 0.7;
+  opacity: 0.82;
 }
 
 .brandMark span:nth-child(3) {
-  opacity: 0.55;
+  opacity: 0.65;
 }
 
 .brandMark span:nth-child(4) {
-  opacity: 0.85;
+  opacity: 0.48;
 }
 
 .brandCopy {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 3px;
+  line-height: 1.2;
 }
 
 .brandCopy strong {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.45px;
 }
 
 .brandCopy small {
   color: var(--muted);
   font-size: 10px;
+  font-weight: 550;
 }
 
 .topbarRight {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 13px;
-  color: var(--muted);
-  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--secondary);
+  font-size: 11px;
 }
 
 .secureBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 11px;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  color: #287c5f;
   border: 1px solid #dceee6;
   border-radius: 999px;
-  color: #287c5f;
-  background: #f5fbf7;
+  background: #f7fcf9;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.secureBadge svg {
+  flex: 0 0 auto;
+}
+
+.topbarPrompt {
+  color: #777f90;
   white-space: nowrap;
 }
 
@@ -158,66 +208,78 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  color: var(--purple);
-  font-weight: 700;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 750;
   text-decoration: none;
+  white-space: nowrap;
+  transition: color 160ms ease;
+}
+
+.topbarLink {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #e2ddff;
+  border-radius: 9px;
+  background: #f8f7ff;
+  font-size: 12px;
 }
 
 .topbarLink:hover,
 .signinLink:hover,
 .inlineLink:hover {
-  color: #4031ba;
+  color: var(--accent-hover);
 }
 
-.topbarLink:focus-visible,
-.signinLink:focus-visible,
-.inlineLink:focus-visible,
-.brand:focus-visible,
-.pageFooter a:focus-visible {
-  outline: 3px solid rgba(98, 84, 220, 0.3);
-  outline-offset: 4px;
-  border-radius: 4px;
+.topbarLink:hover {
+  border-color: #cfc7ff;
+  background: #f2efff;
 }
 
-/* Main workspace */
+/* =========================================================
+   MAIN WORKSPACE
+========================================================= */
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.04fr) minmax(430px, 0.96fr);
-  width: min(100% - 64px, 1440px);
-  min-height: 0;
-  flex: 1;
-  align-self: center;
-  margin: 32px auto;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+  align-items: stretch;
+  width: min(1320px, calc(100% - 64px));
+  min-width: 0;
+  margin: clamp(24px, 4vh, 42px) auto 30px;
   overflow: hidden;
-  border: 1px solid #e5e6ef;
+  border: 1px solid #e6e8ef;
   border-radius: 22px;
   background: var(--surface);
   box-shadow:
-    0 24px 80px rgba(34, 34, 75, 0.07),
-    0 3px 10px rgba(34, 34, 75, 0.025);
+    0 22px 65px rgba(28, 32, 58, 0.07),
+    0 3px 12px rgba(28, 32, 58, 0.025);
 }
 
-/* Product presentation */
+/* =========================================================
+   LEFT PRESENTATION PANEL
+========================================================= */
 
 .presentation {
-  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   min-width: 0;
-  padding: clamp(30px, 4vw, 58px);
-  overflow: hidden;
+  padding: clamp(30px, 4vw, 54px);
   border-right: 1px solid var(--border);
   background:
-    radial-gradient(ellipse at 0% 0%, rgba(108, 92, 231, 0.09), transparent 48%),
-    linear-gradient(150deg, #faf9ff 0%, #f6f7fc 100%);
+    radial-gradient(
+      ellipse at 10% 0%,
+      rgba(224, 220, 255, 0.6),
+      transparent 43%
+    ),
+    linear-gradient(145deg, #fcfcff 0%, #f7f8fc 100%);
 }
 
 .presentationContent {
   width: 100%;
-  max-width: 610px;
+  max-width: 620px;
+  min-width: 0;
   margin: auto 0;
 }
 
@@ -225,52 +287,71 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 9px;
-  margin-bottom: 25px;
-  color: #6756c8;
+  gap: 10px;
+  margin-bottom: 22px;
+  color: #594bc5;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.09em;
-  line-height: 1.5;
+  letter-spacing: 0.075em;
+  line-height: 1.6;
 }
 
 .liveDot {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
   border-radius: 50%;
-  background: #26a67c;
-  box-shadow: 0 0 0 4px rgba(38, 166, 124, 0.1);
+  background: #179566;
+  box-shadow: 0 0 0 4px rgba(23, 149, 102, 0.11);
 }
 
 .heroTitle {
   margin: 0;
-  color: #191b2c;
-  font-size: clamp(35px, 4vw, 60px);
-  font-weight: 800;
-  line-height: 1.07;
-  letter-spacing: -0.06em;
+  color: #181a27;
+  font-size: clamp(36px, 4vw, 56px);
+  font-weight: 820;
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+  overflow-wrap: anywhere;
 }
 
-.heroTitle span {
-  color: var(--purple);
+.heroTitle > span {
+  color: var(--accent);
 }
 
 .heroDescription {
-  max-width: 510px;
-  margin: 21px 0 0;
-  color: #676d82;
-  font-size: 14px;
+  max-width: 550px;
+  margin: 18px 0 26px;
+  color: var(--secondary);
+  font-size: 13px;
   line-height: 1.85;
 }
 
-/* Capability descriptions */
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 13px;
+  color: #737b8d;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.sectionRule {
+  height: 1px;
+  flex: 1;
+  background: #e3e5ed;
+}
+
+/* =========================================================
+   CAPABILITY CARDS
+========================================================= */
 
 .capabilities {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 32px;
+  gap: 11px;
 }
 
 .capability {
@@ -278,90 +359,121 @@
   align-items: flex-start;
   gap: 11px;
   min-width: 0;
-  min-height: 98px;
-  padding: 16px 13px;
-  border: 1px solid #e5e5f0;
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.78);
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  min-height: 94px;
+  padding: 14px 12px;
+  border: 1px solid #e7e8f0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .capability:hover {
-  border-color: #d5cffb;
-  box-shadow: 0 5px 18px rgba(75, 61, 157, 0.05);
+  transform: translateY(-1px);
+  border-color: #d4cef8;
+  box-shadow: 0 5px 17px rgba(43, 36, 98, 0.06);
 }
 
 .capabilityIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  border: 1px solid #e5e0ff;
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  color: var(--accent);
+  border: 1px solid #e4dfff;
   border-radius: 10px;
-  color: var(--purple);
-  background: #f4f1ff;
+  background: #f5f3ff;
+}
+
+.capability > div {
+  min-width: 0;
 }
 
 .capability h3 {
-  margin: 2px 0 6px;
-  color: #25273a;
+  margin: 1px 0 5px;
+  color: #242637;
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 760;
   line-height: 1.5;
 }
 
 .capability p {
   margin: 0;
-  color: #777c90;
+  color: #6b7384;
   font-size: 10px;
-  line-height: 1.65;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
-/* Workflow panel */
+/* =========================================================
+   WORKFLOW PANEL
+========================================================= */
 
 .workflow {
-  margin-top: 16px;
-  padding: 20px;
-  border: 1px solid #e3e4ef;
-  border-radius: 15px;
-  background: rgba(255, 255, 255, 0.86);
+  margin-top: 19px;
+  padding: 16px;
+  border: 1px solid #e5e1fa;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .workflowHeader {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workflowIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 37px;
+  height: 37px;
+  flex: 0 0 37px;
+  color: var(--accent);
+  border: 1px solid #e2dcff;
+  border-radius: 10px;
+  background: #f5f3ff;
+}
+
+.workflowHeading {
+  flex: 1;
+  min-width: 0;
 }
 
 .sectionEyebrow {
   display: block;
-  margin-bottom: 7px;
+  margin-bottom: 5px;
   color: #7565ca;
   font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   line-height: 1.5;
 }
 
-.workflowHeader h2 {
+.workflowHeading h2 {
   margin: 0;
-  color: #24263a;
-  font-size: 15px;
-  font-weight: 750;
-  letter-spacing: -0.35px;
+  color: #26263a;
+  font-size: 13px;
+  font-weight: 780;
+  line-height: 1.45;
 }
 
 .workflowLabel {
-  padding: 6px 8px;
-  border: 1px solid #ece8ff;
+  align-self: flex-start;
+  padding: 5px 7px;
+  color: #6557bd;
+  border: 1px solid #e5e0ff;
   border-radius: 6px;
-  color: #7565ca;
-  background: #f8f6ff;
+  background: #f7f5ff;
   font-size: 8px;
   font-weight: 800;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
@@ -369,7 +481,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 19px;
 }
 
 .step {
@@ -377,7 +489,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -387,7 +499,7 @@
   left: 37px;
   right: -5px;
   height: 1px;
-  background: #e2dfef;
+  background: #dcd8f4;
   content: "";
 }
 
@@ -397,78 +509,86 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid #e4e0fb;
+  width: 31px;
+  height: 31px;
+  color: #5a4bc7;
+  border: 1px solid #ded9ff;
   border-radius: 9px;
-  color: #6c5cd7;
-  background: #f4f1ff;
+  background: #f5f3ff;
   font-size: 9px;
   font-weight: 800;
 }
 
 .stepName {
-  color: #50556c;
+  color: #545c6d;
   font-size: 10px;
   font-weight: 650;
 }
 
 .workflowNote {
-  margin: 17px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid #eeedf4;
-  color: #7a7e90;
+  margin: 14px 0 0;
+  padding-top: 12px;
+  color: #747b8c;
+  border-top: 1px solid #eeedf5;
   font-size: 10px;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
-/* Trust note */
+/* =========================================================
+   TRUST NOTE
+========================================================= */
 
 .trustNote {
   display: flex;
   align-items: flex-start;
   gap: 11px;
   margin-top: 16px;
-  padding: 15px;
-  border: 1px solid #e9e6f8;
+  padding: 13px;
+  border: 1px solid #e6e2fa;
   border-radius: 12px;
-  background: rgba(248, 247, 255, 0.85);
+  background: #f8f7ff;
 }
 
 .trustIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 31px;
-  height: 31px;
-  flex: 0 0 31px;
-  border: 1px solid #e4dffb;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  color: var(--accent);
+  border: 1px solid #e4dfff;
   border-radius: 9px;
-  color: #6d5cce;
   background: #fff;
+}
+
+.trustNote > div {
+  min-width: 0;
 }
 
 .trustNote strong {
   display: block;
-  margin: 1px 0 5px;
-  color: #36374b;
+  margin: 1px 0 4px;
+  color: #34334b;
   font-size: 11px;
+  font-weight: 760;
 }
 
 .trustNote p {
   margin: 0;
-  color: #777b8f;
+  color: #72798b;
   font-size: 10px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .presentationFooter {
   display: flex;
   flex-wrap: wrap;
-  gap: 9px 17px;
-  margin-top: 30px;
-  color: #898da0;
+  gap: 8px 10px;
+  padding-top: 24px;
+  color: #747c8b;
   font-size: 9px;
+  font-weight: 600;
 }
 
 .presentationFooter span + span::before {
@@ -481,20 +601,23 @@
   content: "";
 }
 
-/* Form panel */
+/* =========================================================
+   RIGHT FORM PANEL
+========================================================= */
 
 .formPanel {
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 0;
-  padding: clamp(28px, 4vw, 62px);
+  padding: clamp(30px, 4vw, 52px);
   background: #fff;
 }
 
 .formCard {
   width: 100%;
-  max-width: 440px;
+  max-width: 410px;
+  min-width: 0;
   margin: auto;
 }
 
@@ -503,7 +626,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 27px;
+  margin-bottom: 23px;
 }
 
 .formIcon {
@@ -512,55 +635,77 @@
   justify-content: center;
   width: 43px;
   height: 43px;
-  border: 1px solid #e4dfff;
+  flex: 0 0 43px;
+  color: var(--accent);
+  border: 1px solid #e1dcff;
   border-radius: 13px;
-  color: #6d5cdb;
-  background: linear-gradient(145deg, #f6f3ff, #eeebff);
+  background: #f5f3ff;
 }
 
 .stepPill {
-  padding: 7px 10px;
-  border: 1px solid #e9e7f3;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  color: #6557bd;
+  border: 1px solid #e5e0ff;
   border-radius: 7px;
-  color: #85879a;
-  background: #fafaff;
+  background: #f8f6ff;
   font-size: 8px;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.055em;
+  white-space: nowrap;
+}
+
+.stepPillDot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--success);
 }
 
 .formHeading {
-  margin-bottom: 24px;
+  margin-bottom: 23px;
+}
+
+.formHeading .sectionEyebrow {
+  margin-bottom: 8px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
 }
 
 .formHeading h2 {
   margin: 0;
-  color: #202235;
-  font-size: clamp(25px, 2.3vw, 33px);
+  color: #191b27;
+  font-size: clamp(25px, 2.5vw, 32px);
   font-weight: 800;
   line-height: 1.2;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
 }
 
 .formHeading p {
   margin: 9px 0 0;
-  color: #7b8092;
+  color: #7a8292;
   font-size: 12px;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
-/* Error message */
+/* =========================================================
+   ERROR MESSAGE
+========================================================= */
 
 .error {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-bottom: 18px;
-  padding: 12px 13px;
-  border: 1px solid #f1d2d7;
+  margin-bottom: 17px;
+  padding: 12px;
+  color: #a42c39;
+  border: 1px solid #f2cfd3;
   border-radius: 10px;
-  color: #a93248;
-  background: #fff6f7;
+  background: #fff6f6;
   font-size: 11px;
   line-height: 1.65;
   overflow-wrap: anywhere;
@@ -571,126 +716,147 @@
   margin-top: 1px;
 }
 
-/* Form fields */
+.error > span {
+  min-width: 0;
+}
+
+/* =========================================================
+   FORM FIELDS
+========================================================= */
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 17px;
+  gap: 15px;
+  width: 100%;
+  min-width: 0;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
 }
 
 .field > label,
 .labelRow > label {
-  color: #45495d;
+  color: #34394a;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .labelRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .inputShell {
   display: flex;
   align-items: center;
+  gap: 10px;
   width: 100%;
   min-width: 0;
-  min-height: 49px;
-  gap: 11px;
-  padding: 0 13px;
-  border: 1px solid #dfe1eb;
+  min-height: 48px;
+  padding: 0 12px;
+  color: #7c8495;
+  border: 1px solid #dce0e9;
   border-radius: 10px;
-  color: #969bad;
   background: #fff;
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.inputShell:hover {
+  border-color: #c1c6d3;
+}
+
+.inputShell:focus-within {
+  border-color: #8c7ee9;
+  background: #fdfcff;
+  box-shadow: 0 0 0 3px rgba(91, 75, 220, 0.1);
 }
 
 .inputShell > svg {
   flex: 0 0 auto;
 }
 
-.inputShell:focus-within {
-  border-color: #9285ee;
-  background: #fdfcff;
-  box-shadow: 0 0 0 3px rgba(98, 84, 220, 0.09);
+.inputShell input {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  padding: 0;
+  color: #202331;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.inputShell input::placeholder {
+  color: #989eac;
+  opacity: 1;
+}
+
+.inputShell input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .inputSuccess {
   border-color: #80c9ac;
 }
 
-.inputShell input {
-  width: 100%;
-  min-width: 0;
-  height: 47px;
-  padding: 0;
-  border: 0;
-  outline: none;
-  color: #292c40;
-  background: transparent;
-  font: inherit;
-  font-size: 12px;
+.inputSuccess:focus-within {
+  border-color: #56b48e;
+  box-shadow: 0 0 0 3px rgba(22, 134, 91, 0.09);
 }
 
-.inputShell input::placeholder {
-  color: #a2a6b6;
-  opacity: 1;
-}
-
-.inputShell input:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
+/* Password visibility */
 
 .eyeButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 33px;
-  height: 33px;
-  flex: 0 0 33px;
-  margin-right: -7px;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  margin-right: -5px;
   padding: 0;
+  color: #747c8d;
   border: 0;
   border-radius: 8px;
-  color: #85899d;
   background: transparent;
   cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
 }
 
 .eyeButton:hover:not(:disabled) {
-  color: var(--purple);
+  color: var(--accent);
   background: #f4f2ff;
 }
 
-.eyeButton:focus-visible,
-.primaryButton:focus-visible,
-.oauthButton:focus-visible {
-  outline: 3px solid rgba(98, 84, 220, 0.25);
-  outline-offset: 3px;
-}
-
 .eyeButton:disabled {
-  cursor: not-allowed;
   opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* Password guidance */
+/* =========================================================
+   PASSWORD STRENGTH AND VALIDATION
+========================================================= */
 
 .strength {
   font-size: 10px;
   font-weight: 750;
+  white-space: nowrap;
 }
 
 .weak,
@@ -705,14 +871,14 @@
 .strong,
 .matchSuccess,
 .hintPassed {
-  color: var(--green);
+  color: var(--success);
 }
 
 .passwordHints {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 15px;
-  color: #9296a8;
+  gap: 7px 13px;
+  color: #9298a7;
   font-size: 9px;
   line-height: 1.5;
 }
@@ -737,24 +903,28 @@
   font-weight: 650;
 }
 
-/* Terms */
+/* =========================================================
+   TERMS AND PRIVACY CHECKBOX
+========================================================= */
 
 .terms {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 9px;
   margin-top: 1px;
-  color: #757a8e;
+  color: #707789;
   font-size: 10px;
-  line-height: 1.7;
+  line-height: 1.75;
   cursor: pointer;
+  user-select: none;
 }
 
 .terms input {
   position: absolute;
   width: 1px;
   height: 1px;
+  overflow: hidden;
   opacity: 0;
 }
 
@@ -766,31 +936,40 @@
   height: 17px;
   flex: 0 0 17px;
   margin-top: 2px;
-  border: 1px solid #d7d9e5;
-  border-radius: 5px;
   color: transparent;
+  border: 1px solid #c9ced9;
+  border-radius: 4px;
   background: #fff;
-  transition: background 150ms ease, border-color 150ms ease;
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease;
 }
 
 .terms input:checked + .customCheckbox {
-  border-color: var(--purple);
   color: #fff;
-  background: var(--purple);
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .terms input:focus-visible + .customCheckbox {
-  outline: 3px solid rgba(98, 84, 220, 0.25);
-  outline-offset: 2px;
+  outline: 2px solid rgba(91, 75, 220, 0.35);
+  outline-offset: 3px;
+}
+
+.termsText {
+  min-width: 0;
 }
 
 .inlineLink {
-  color: var(--purple);
-  font-weight: 650;
+  color: var(--accent);
+  font-weight: 700;
   text-decoration: none;
 }
 
-/* Primary action */
+/* =========================================================
+   PRIMARY ACTION
+========================================================= */
 
 .primaryButton {
   display: flex;
@@ -798,25 +977,29 @@
   justify-content: center;
   gap: 10px;
   width: 100%;
-  min-height: 51px;
+  min-height: 49px;
   margin-top: 2px;
-  padding: 12px 17px;
-  border: 1px solid #6254dc;
-  border-radius: 10px;
+  padding: 11px 17px;
   color: #fff;
-  background: linear-gradient(110deg, #6556df, #7868ec);
-  box-shadow: 0 7px 18px rgba(98, 84, 220, 0.17);
-  font: inherit;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent);
+  box-shadow: 0 5px 14px rgba(91, 75, 220, 0.16);
   font-size: 12px;
   font-weight: 750;
   cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .primaryButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  filter: brightness(1.035);
-  box-shadow: 0 10px 24px rgba(98, 84, 220, 0.23);
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
+  box-shadow: 0 8px 20px rgba(91, 75, 220, 0.2);
 }
 
 .primaryButton:active:not(:disabled) {
@@ -824,47 +1007,63 @@
 }
 
 .primaryButton:disabled {
-  cursor: not-allowed;
   opacity: 0.65;
+  cursor: not-allowed;
   box-shadow: none;
 }
 
-.spinner {
+.primaryButton svg {
+  flex: 0 0 auto;
+}
+
+/* =========================================================
+   LOADING INDICATORS
+========================================================= */
+
+.spinner,
+.oauthSpinner {
   display: inline-block;
-  width: 15px;
-  height: 15px;
-  flex: 0 0 15px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
   border: 2px solid rgba(255, 255, 255, 0.45);
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin 700ms linear infinite;
 }
 
-/* Social sign-up */
+.oauthSpinner {
+  border-color: #e4e0ff;
+  border-top-color: var(--accent);
+}
+
+/* =========================================================
+   SOCIAL AUTHENTICATION
+========================================================= */
 
 .divider {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  margin: 24px 0 17px;
-  color: #9a9daf;
+  gap: 11px;
+  margin: 22px 0 16px;
+  color: #858c9b;
   font-size: 8px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
 }
 
-.divider span:first-child,
-.divider span:last-child {
+.divider > span:first-child,
+.divider > span:last-child {
   height: 1px;
-  background: #e9e9f1;
+  background: #e9ebf0;
 }
 
 .oauthGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 11px;
+  gap: 10px;
 }
 
 .oauthButton {
@@ -874,34 +1073,43 @@
   gap: 9px;
   min-width: 0;
   min-height: 46px;
-  padding: 10px;
-  border: 1px solid #e0e2ec;
+  padding: 9px 10px;
+  color: #282b39;
+  border: 1px solid #dfe2e9;
   border-radius: 10px;
-  color: #45495d;
   background: #fff;
-  font: inherit;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.oauthButton svg,
+.oauthButton .oauthSpinner {
+  flex: 0 0 auto;
 }
 
 .oauthButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: #c9c2f7;
-  background: #faf9ff;
+  border-color: #c6c9d5;
+  background: #f9f9fd;
+}
+
+.oauthButton:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .oauthButton:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
-  opacity: 0.55;
 }
 
-.oauthButton svg {
-  flex: 0 0 auto;
-}
-
-/* Sign-in and security */
+/* =========================================================
+   SIGN-IN PROMPT AND SECURITY
+========================================================= */
 
 .signinPrompt {
   display: flex;
@@ -909,10 +1117,10 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 7px;
-  margin-top: 23px;
-  color: #85899b;
+  margin: 22px 0 0;
+  color: #72798a;
   font-size: 10px;
-  line-height: 1.6;
+  line-height: 1.7;
   text-align: center;
 }
 
@@ -925,10 +1133,10 @@
   align-items: flex-start;
   justify-content: center;
   gap: 7px;
-  margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px solid #efeff5;
-  color: #969aab;
+  margin-top: 19px;
+  padding-top: 16px;
+  color: #858c9b;
+  border-top: 1px solid #eceef3;
   font-size: 9px;
   line-height: 1.7;
   text-align: center;
@@ -937,75 +1145,110 @@
 .securityNote svg {
   flex: 0 0 auto;
   margin-top: 1px;
-  color: #369b78;
+  color: #6a786c;
 }
 
-/* Page footer */
+/* =========================================================
+   PAGE FOOTER
+========================================================= */
 
 .pageFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  width: min(100% - 64px, 1440px);
+  gap: 12px 20px;
+  width: min(1320px, calc(100% - 64px));
   margin: 0 auto;
   padding: 0 0 24px;
-  color: #8b8fa1;
+  color: #7c8492;
   font-size: 10px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
-.pageFooter div {
+.footerLinks {
   display: flex;
+  align-items: center;
   gap: 19px;
 }
 
 .pageFooter a {
-  color: inherit;
+  color: #697283;
   text-decoration: none;
+  transition: color 160ms ease;
 }
 
 .pageFooter a:hover {
-  color: var(--purple);
+  color: var(--accent);
 }
 
-/* Responsive desktop / tablet */
+/* =========================================================
+   FOCUS AND KEYBOARD ACCESSIBILITY
+========================================================= */
+
+.brand:focus-visible,
+.topbarLink:focus-visible,
+.signinLink:focus-visible,
+.inlineLink:focus-visible,
+.pageFooter a:focus-visible,
+.eyeButton:focus-visible,
+.primaryButton:focus-visible,
+.oauthButton:focus-visible {
+  outline: 2px solid rgba(91, 75, 220, 0.7);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   LARGE DESKTOPS
+========================================================= */
 
 @media (min-width: 1600px) {
   .workspace {
-    width: min(100% - 96px, 1480px);
+    width: min(1440px, calc(100% - 96px));
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
     margin-top: 38px;
     margin-bottom: 38px;
   }
 
   .presentation {
-    padding: 64px;
+    padding: 60px;
   }
 
   .formPanel {
-    padding: 64px;
+    padding: 56px;
+  }
+
+  .formCard {
+    max-width: 430px;
   }
 }
 
+/* =========================================================
+   LAPTOPS AND SMALL DESKTOPS
+========================================================= */
+
 @media (max-width: 1100px) {
   .workspace {
-    width: calc(100% - 36px);
-    grid-template-columns: minmax(0, 1fr) minmax(370px, 0.95fr);
-    margin-top: 20px;
-    margin-bottom: 20px;
+    width: calc(100% - 40px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.96fr);
+    margin-top: 24px;
+    margin-bottom: 24px;
   }
 
   .presentation {
-    padding: 34px 27px;
+    padding: 30px;
   }
 
   .formPanel {
-    padding: 32px 26px;
+    padding: 30px 26px;
   }
 
   .heroTitle {
-    font-size: clamp(34px, 4vw, 46px);
+    font-size: clamp(34px, 4.2vw, 46px);
+  }
+
+  .heroDescription {
+    font-size: 12px;
   }
 
   .capabilities {
@@ -1013,58 +1256,58 @@
   }
 
   .capability {
-    padding: 12px 10px;
-  }
-}
-
-/* Mobile: single column, natural document height */
-
-@media (max-width: 760px) {
-  .page {
-    overflow: visible;
-    overflow: clip;
+    gap: 9px;
+    padding: 11px 9px;
   }
 
-  .topbar {
-    min-height: 66px;
-    padding: 12px 18px;
+  .capabilityIcon {
+    width: 31px;
+    height: 31px;
+    flex-basis: 31px;
   }
 
-  .brandMark {
-    width: 35px;
-    height: 35px;
-    flex-basis: 35px;
+  .capability h3 {
+    font-size: 10px;
   }
 
-  .brandCopy strong {
-    font-size: 14px;
-  }
-
-  .brandCopy small {
+  .capability p {
     font-size: 9px;
   }
 
-  .topbarRight {
-    gap: 10px;
+  .workflow {
+    padding: 13px;
   }
 
-  .secureBadge,
-  .topbarPrompt {
-    display: none;
+  .workflowHeading h2 {
+    font-size: 12px;
+  }
+
+  .pageFooter {
+    width: calc(100% - 40px);
+  }
+}
+
+/* =========================================================
+   TABLETS — STACKED PANELS
+========================================================= */
+
+@media (max-width: 820px) {
+  .topbar {
+    min-height: 70px;
+    padding: 12px 22px;
   }
 
   .workspace {
     display: flex;
     flex-direction: column;
-    width: min(100% - 24px, 500px);
-    margin: 18px auto 24px;
-    overflow: visible;
-    border-radius: 17px;
+    width: min(620px, calc(100% - 32px));
+    margin-top: 22px;
+    margin-bottom: 24px;
+    border-radius: 18px;
   }
 
   .presentation {
-    display: block;
-    padding: 24px 21px;
+    padding: 30px;
     border-right: 0;
     border-bottom: 1px solid var(--border);
   }
@@ -1073,62 +1316,274 @@
     max-width: none;
   }
 
-  .overline {
-    margin-bottom: 16px;
-    font-size: 9px;
-  }
-
   .heroTitle {
-    font-size: clamp(32px, 7vw, 43px);
+    font-size: clamp(38px, 6vw, 49px);
   }
 
   .heroDescription {
-    margin-top: 13px;
-    font-size: 12px;
-    line-height: 1.75;
+    max-width: 560px;
+    font-size: 13px;
   }
 
   .capabilities {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 20px;
+    gap: 11px;
   }
 
   .capability {
-    min-height: 92px;
-    padding: 11px;
+    min-height: 90px;
+    padding: 13px 11px;
+  }
+
+  .capability h3 {
+    font-size: 11px;
+  }
+
+  .capability p {
+    font-size: 10px;
+  }
+
+  .workflow {
+    margin-top: 17px;
+    padding: 16px;
+  }
+
+  .trustNote {
+    margin-top: 14px;
+  }
+
+  .presentationFooter {
+    padding-top: 21px;
+  }
+
+  .formPanel {
+    display: block;
+    padding: 35px 32px;
+  }
+
+  .formCard {
+    max-width: 470px;
+    margin: 0 auto;
+  }
+
+  .formHeading h2 {
+    font-size: 31px;
+  }
+
+  .form {
+    gap: 16px;
+  }
+
+  .pageFooter {
+    width: calc(100% - 32px);
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 560px) {
+  .topbar {
+    min-height: 64px;
+    gap: 8px;
+    padding: 10px 13px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brandMark {
+    width: 35px;
+    height: 35px;
+    flex-basis: 35px;
+    border-radius: 10px;
+  }
+
+  .brandCopy strong {
+    font-size: 14px;
+  }
+
+  .brandCopy small {
+    font-size: 8px;
+  }
+
+  .topbarRight {
+    flex-wrap: nowrap;
+    gap: 7px;
+  }
+
+  .secureBadge,
+  .topbarPrompt {
+    display: none;
+  }
+
+  .topbarLink {
+    min-height: 35px;
+    gap: 5px;
+    padding: 0 9px;
+    font-size: 10px;
+  }
+
+  .workspace {
+    width: calc(100% - 22px);
+    margin: 14px auto 21px;
+    border-radius: 15px;
+  }
+
+  .presentation {
+    padding: 25px 19px 22px;
+  }
+
+  .overline {
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+  }
+
+  .heroTitle {
+    font-size: clamp(32px, 8vw, 42px);
+    line-height: 1.09;
+    letter-spacing: -0.045em;
+  }
+
+  .heroDescription {
+    margin: 14px 0 21px;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .sectionHeading {
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 8px;
+  }
+
+  .capabilities {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .capability {
+    min-height: 0;
+    gap: 11px;
+    padding: 12px;
+    border-radius: 11px;
   }
 
   .capabilityIcon {
+    width: 33px;
+    height: 33px;
+    flex-basis: 33px;
+  }
+
+  .capability h3 {
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+
+  .capability p {
+    font-size: 10px;
+    line-height: 1.65;
+  }
+
+  .workflow {
+    margin-top: 15px;
+    padding: 13px;
+    border-radius: 12px;
+  }
+
+  .workflowHeader {
+    gap: 9px;
+  }
+
+  .workflowIcon {
+    width: 33px;
+    height: 33px;
+    flex-basis: 33px;
+  }
+
+  .workflowHeading h2 {
+    font-size: 11px;
+  }
+
+  .sectionEyebrow {
+    font-size: 8px;
+  }
+
+  .workflowLabel {
+    padding: 4px 5px;
+    font-size: 7px;
+  }
+
+  .steps {
+    gap: 5px;
+    margin-top: 17px;
+  }
+
+  .step {
+    gap: 6px;
+  }
+
+  .step:not(:last-child)::after {
+    top: 14px;
+    left: 33px;
+    right: -3px;
+  }
+
+  .stepNumber {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 9px;
+  }
+
+  .stepName {
+    font-size: 9px;
+  }
+
+  .workflowNote {
+    margin-top: 12px;
+    padding-top: 10px;
+    font-size: 9px;
+  }
+
+  .trustNote {
+    gap: 9px;
+    margin-top: 12px;
+    padding: 11px;
+  }
+
+  .trustIcon {
     width: 29px;
     height: 29px;
     flex-basis: 29px;
   }
 
-  .capability h3 {
+  .trustNote strong {
     font-size: 10px;
   }
 
-  .capability p {
+  .trustNote p {
     font-size: 9px;
   }
 
-  .workflow {
-    margin-top: 12px;
-    padding: 15px;
-  }
-
-  .trustNote {
-    margin-top: 12px;
-  }
-
   .presentationFooter {
-    margin-top: 20px;
+    gap: 7px 8px;
+    padding-top: 19px;
     font-size: 8px;
   }
 
+  .presentationFooter span + span::before {
+    margin-right: 7px;
+  }
+
+  /* Registration form */
+
   .formPanel {
-    display: block;
-    padding: 27px 21px 25px;
+    padding: 27px 20px 25px;
   }
 
   .formCard {
@@ -1136,94 +1591,224 @@
   }
 
   .formTop {
-    margin-bottom: 20px;
+    margin-bottom: 21px;
+  }
+
+  .formIcon {
+    width: 39px;
+    height: 39px;
+    flex-basis: 39px;
+    border-radius: 11px;
+  }
+
+  .formHeading {
+    margin-bottom: 21px;
   }
 
   .formHeading h2 {
-    font-size: 27px;
+    font-size: clamp(25px, 6.5vw, 30px);
   }
 
-  .pageFooter {
-    width: calc(100% - 36px);
-    padding-bottom: 20px;
-  }
-}
-
-@media (max-width: 420px) {
-  .topbar {
-    padding-right: 13px;
-    padding-left: 13px;
-  }
-
-  .topbarLink {
+  .formHeading p {
+    margin-top: 8px;
     font-size: 11px;
-  }
-
-  .workspace {
-    width: calc(100% - 16px);
-    margin-top: 10px;
-  }
-
-  .presentation {
-    padding: 22px 16px;
-  }
-
-  .heroTitle {
-    font-size: 32px;
-  }
-
-  .heroDescription {
-    font-size: 11px;
-  }
-
-  .capabilities {
-    grid-template-columns: 1fr;
-  }
-
-  .capability {
-    min-height: 0;
-    padding: 13px;
-  }
-
-  .capability h3 {
-    font-size: 11px;
-  }
-
-  .capability p {
-    font-size: 10px;
-  }
-
-  .workflow {
-    padding: 13px;
-  }
-
-  .step:not(:last-child)::after {
-    left: 32px;
-    right: -5px;
-  }
-
-  .stepName {
-    font-size: 9px;
-  }
-
-  .formPanel {
-    padding: 24px 16px;
-  }
-
-  .formHeading h2 {
-    font-size: 25px;
   }
 
   .form {
     gap: 15px;
   }
 
+  .field {
+    gap: 7px;
+  }
+
+  .field > label,
+  .labelRow > label {
+    font-size: 11px;
+  }
+
+  .inputShell {
+    min-height: 47px;
+    gap: 9px;
+    padding: 0 11px;
+    border-radius: 9px;
+  }
+
+  .inputShell input {
+    height: 45px;
+    font-size: 12px;
+  }
+
+  .eyeButton {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+
+  .passwordHints {
+    gap: 6px 10px;
+    font-size: 8px;
+  }
+
+  .terms {
+    gap: 8px;
+    font-size: 10px;
+  }
+
+  .primaryButton {
+    min-height: 48px;
+    padding: 10px 13px;
+    font-size: 11px;
+  }
+
+  .divider {
+    gap: 8px;
+    margin: 21px 0 14px;
+    font-size: 7px;
+    letter-spacing: 0.06em;
+  }
+
   .oauthGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .oauthButton {
-    min-height: 45px;
+    min-height: 44px;
+    gap: 7px;
+    padding: 8px 6px;
+    font-size: 10px;
+  }
+
+  .signinPrompt {
+    gap: 6px;
+    margin-top: 20px;
+    font-size: 10px;
+  }
+
+  .securityNote {
+    gap: 6px;
+    margin-top: 17px;
+    padding-top: 14px;
+    font-size: 9px;
+  }
+
+  .pageFooter {
+    width: calc(100% - 28px);
+    gap: 9px;
+    margin-bottom: 0;
+    padding-bottom: 18px;
+    font-size: 9px;
+  }
+
+  .footerLinks {
+    gap: 15px;
+  }
+}
+
+/* =========================================================
+   VERY NARROW DEVICES
+========================================================= */
+
+@media (max-width: 370px) {
+  .topbar {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+
+  .brand {
+    gap: 7px;
+  }
+
+  .brandMark {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+
+  .brandCopy strong {
+    font-size: 12px;
+  }
+
+  .brandCopy small {
+    display: none;
+  }
+
+  .topbarLink {
+    min-height: 33px;
+    gap: 4px;
+    padding: 0 7px;
+    font-size: 9px;
+  }
+
+  .topbarLink svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .workspace {
+    width: calc(100% - 16px);
+    margin-top: 10px;
+    border-radius: 13px;
+  }
+
+  .presentation {
+    padding: 21px 14px 19px;
+  }
+
+  .heroTitle {
+    font-size: 30px;
+  }
+
+  .heroDescription {
+    font-size: 11px;
+  }
+
+  .workflow {
+    padding: 11px;
+  }
+
+  .workflowLabel {
+    display: none;
+  }
+
+  .step:not(:last-child)::after {
+    left: 30px;
+    right: -3px;
+  }
+
+  .stepName {
+    font-size: 8px;
+  }
+
+  .formPanel {
+    padding: 23px 13px;
+  }
+
+  .formHeading h2 {
+    font-size: 24px;
+  }
+
+  .labelRow {
+    gap: 6px;
+  }
+
+  .strength {
+    font-size: 9px;
+  }
+
+  .passwordHints {
+    gap: 6px;
+  }
+
+  .divider {
+    gap: 6px;
+    font-size: 7px;
+  }
+
+  .oauthButton {
+    gap: 5px;
+    font-size: 9px;
   }
 
   .pageFooter {
@@ -1232,44 +1817,9 @@
   }
 }
 
-@media (max-width: 340px) {
-  .brandCopy small {
-    display: none;
-  }
-
-  .topbarLink {
-    font-size: 10px;
-  }
-
-  .presentation {
-    padding-right: 13px;
-    padding-left: 13px;
-  }
-
-  .formPanel {
-    padding-right: 13px;
-    padding-left: 13px;
-  }
-
-  .heroTitle {
-    font-size: 29px;
-  }
-
-  .steps {
-    gap: 5px;
-  }
-
-  .divider {
-    gap: 7px;
-    font-size: 7px;
-  }
-
-  .passwordHints {
-    gap: 6px;
-  }
-}
-
-/* Accessibility */
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
 
 @keyframes spin {
   to {
@@ -1288,13 +1838,29 @@
   }
 }
 
+/* =========================================================
+   HIGH CONTRAST / FORCED COLORS
+========================================================= */
+
 @media (forced-colors: active) {
+  .brandMark,
   .capability,
   .workflow,
   .trustNote,
   .inputShell,
   .oauthButton,
-  .primaryButton {
+  .primaryButton,
+  .customCheckbox {
     border: 1px solid CanvasText;
+  }
+
+  .liveDot,
+  .stepPillDot {
+    background: Highlight;
+  }
+
+  .terms input:checked + .customCheckbox {
+    color: HighlightText;
+    background: Highlight;
   }
 }

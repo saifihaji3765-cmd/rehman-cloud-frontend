@@ -4153,3 +4153,849 @@
     scroll-behavior: auto !important;
   }
 }
+
+
+/* =========================================================
+   ZYRIONOS — PREMIUM WORKSPACE UI
+   Add at the END of Workspace.module.css
+   Existing backend logic remains unchanged.
+   ========================================================= */
+
+.workspace {
+  --z-bg: #f4f6fb;
+  --z-white: #ffffff;
+  --z-border: #e5e7ef;
+  --z-border-strong: #d6dae6;
+  --z-text: #172033;
+  --z-text-2: #344054;
+  --z-muted: #667085;
+  --z-faint: #8b95a7;
+  --z-primary: #5855db;
+  --z-primary-dark: #4643c3;
+  --z-primary-soft: #f0efff;
+  --z-success: #159957;
+
+  color: var(--z-text);
+  background: var(--z-bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+.workspace button,
+.workspace select,
+.workspace textarea {
+  font-family: inherit;
+}
+
+.workspace button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workspace button:focus-visible,
+.workspace select:focus-visible,
+.workspace textarea:focus-visible,
+.workspace a:focus-visible {
+  outline: 2px solid var(--z-primary);
+  outline-offset: 2px;
+}
+
+/* Desktop polish */
+
+.workspaceHeader {
+  background: #fff;
+  border-bottom-color: var(--z-border);
+}
+
+.projectMark {
+  border-radius: 12px;
+}
+
+.headerButton,
+.previewTopButton,
+.deployButton {
+  min-height: 38px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.headerButton,
+.previewTopButton {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.deployButton {
+  font-weight: 750;
+}
+
+.workspaceBody {
+  background: var(--z-bg);
+}
+
+.projectRail,
+.chatArea {
+  background: #fff;
+}
+
+.projectRail,
+.chatArea {
+  border-color: var(--z-border);
+}
+
+.previewShell,
+.codeSurface {
+  border-color: var(--z-border);
+  border-radius: 13px;
+  box-shadow: 0 3px 14px rgba(16, 24, 40, 0.045);
+}
+
+.previewHeader,
+.codeSurfaceHeader {
+  background: #fafbff;
+}
+
+.chatComposer {
+  border-color: var(--z-border-strong);
+  border-radius: 13px;
+}
+
+.chatComposer textarea {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.chatMessageBody p {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.projectItem,
+.newProjectCard,
+.quickPromptList button {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+/* Tablet */
+
+@media (min-width: 761px) and (max-width: 1150px) {
+  .workspaceHeader {
+    gap: 10px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .workspaceBody {
+    grid-template-columns:
+      190px
+      minmax(0, 1fr)
+      280px;
+  }
+
+  .chatArea {
+    flex-basis: 280px;
+  }
+
+  .workspaceTitle strong {
+    max-width: 220px;
+  }
+}
+
+/* Premium mobile workspace */
+
+@media (max-width: 760px) {
+  .workspace {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workspaceHeader {
+    flex: 0 0 58px;
+    min-height: 58px;
+    gap: 8px;
+    padding: 7px 10px;
+    background: #fff;
+  }
+
+  .brandBlock {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .projectMark {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 11px;
+    font-size: 16px;
+  }
+
+  .brandCopy {
+    min-width: 0;
+  }
+
+  .brandCopy span {
+    display: none;
+  }
+
+  .brandCopy strong {
+    max-width: 120px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .headerActions {
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+
+  .headerActions .headerButton {
+    width: auto;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  /* Do not replace every header action with ••• */
+  .headerActions .headerButton::before {
+    content: none;
+  }
+
+  .previewTopButton,
+  .headerActions .deployButton {
+    min-height: 36px;
+    padding: 0 9px;
+    border-radius: 9px;
+    font-size: 11px;
+  }
+
+  .mobileNav {
+    flex: 0 0 48px;
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 5px 7px;
+    background: #fff;
+    border-bottom: 1px solid var(--z-border);
+  }
+
+  .mobileNav button {
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 3px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    color: var(--z-muted);
+    background: transparent;
+    font-size: 11px;
+    font-weight: 750;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobileNavActive {
+    color: var(--z-primary) !important;
+    background: var(--z-primary-soft) !important;
+    border-color: #dedcff !important;
+  }
+
+  .workspaceBody {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: calc(100dvh - 106px);
+    min-height: 0;
+    overflow: hidden;
+    background: var(--z-bg);
+  }
+
+  /*
+   * Preserve the main workspace as the default view.
+   * Do not hide it based on a class that JSX may not set.
+   */
+  .mainWorkspace {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .projectRail,
+  .activityPanel {
+    display: none;
+  }
+
+  .projectRail.mobileVisible,
+  .activityPanel.mobileVisible {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border: 0;
+    background: #fff;
+  }
+
+  .workspaceToolbar {
+    flex: 0 0 auto;
+    min-height: 52px;
+    gap: 7px;
+    padding: 7px 9px;
+    background: #fff;
+    border-bottom: 1px solid var(--z-border);
+  }
+
+  .workspaceTitle {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .workspaceTitle span {
+    font-size: 10px;
+    letter-spacing: 0.09em;
+  }
+
+  .workspaceTitle strong {
+    max-width: 125px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .workspaceContext {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 110px;
+    gap: 4px;
+  }
+
+  .contextItem {
+    min-height: 34px;
+    border-radius: 9px;
+  }
+
+  .contextItem > span {
+    display: none;
+  }
+
+  .environmentSelect {
+    min-width: 55px;
+    max-width: 100px;
+    font-size: 12px;
+  }
+
+  .contextReady,
+  .contextPending,
+  .contextSyncing,
+  .contextDeployment,
+  .contextMuted {
+    display: none;
+  }
+
+  .toolbarActions {
+    flex: 0 0 auto;
+    gap: 4px;
+  }
+
+  .frameworkSelect,
+  .toolbarButton,
+  .toolbarActive {
+    min-height: 36px;
+    padding: 0 9px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+
+  .visualArea {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    padding: 7px;
+    overflow: hidden;
+  }
+
+  .previewShell,
+  .codeSurface {
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(16, 24, 40, 0.04);
+  }
+
+  .previewHeader {
+    flex: 0 0 44px;
+    gap: 6px;
+    padding: 0 9px;
+  }
+
+  .browserDots {
+    gap: 4px;
+  }
+
+  .browserDots i {
+    width: 7px;
+    height: 7px;
+  }
+
+  .previewProjectName {
+    max-width: 105px;
+    font-size: 11px;
+  }
+
+  .previewAddress {
+    display: none;
+  }
+
+  .previewReady,
+  .previewPending {
+    font-size: 10px;
+  }
+
+  .previewHeader button {
+    min-height: 32px;
+    padding: 0 8px;
+    border-radius: 8px;
+    font-size: 10px;
+  }
+
+  .previewEmpty {
+    width: calc(100% - 24px);
+    padding: 20px 12px;
+  }
+
+  .previewEmpty h2,
+  .previewUnavailable h2 {
+    font-size: 20px;
+    line-height: 1.3;
+  }
+
+  .previewEmpty p,
+  .previewUnavailable p {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .previewEmpty button,
+  .previewUnavailable button {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+
+  .codeSurfaceBody {
+    grid-template-columns: minmax(88px, 30%) minmax(0, 1fr);
+  }
+
+  .codeFileList {
+    padding: 6px;
+  }
+
+  .codeFile,
+  .codeFileActive {
+    min-height: 36px;
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  .codeEditor {
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.65;
+  }
+
+  /* AI chat panel */
+
+  .chatArea {
+    display: none;
+  }
+
+  .chatArea.mobileVisible {
+    position: absolute;
+    left: 7px;
+    right: 7px;
+    bottom: 7px;
+    z-index: 40;
+    width: auto;
+    height: min(62dvh, 540px);
+    min-height: 300px;
+    max-height: calc(100dvh - 125px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--z-border-strong);
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 16px 45px rgba(16, 24, 40, 0.16);
+  }
+
+  .chatHeader {
+    flex: 0 0 54px;
+    min-height: 54px;
+    padding: 9px 11px;
+  }
+
+  .chatHeader span {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .chatHeader strong {
+    font-size: 14px;
+  }
+
+  .chatHeaderStatus {
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .chatMessages {
+    padding: 10px;
+  }
+
+  .chatWelcome {
+    padding: 16px 9px;
+  }
+
+  .chatWelcome strong {
+    font-size: 17px;
+    line-height: 1.35;
+  }
+
+  .chatWelcome > span {
+    max-width: 290px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .chatQuickPrompts {
+    gap: 6px;
+    margin-top: 13px;
+  }
+
+  .chatQuickPrompts button {
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 11px;
+  }
+
+  .chatMessageAvatar {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+    border-radius: 9px;
+    font-size: 10px;
+  }
+
+  .chatMessageBody {
+    max-width: 88%;
+    padding: 9px 11px;
+    border-radius: 11px;
+  }
+
+  .chatMessageMeta strong {
+    font-size: 11px;
+  }
+
+  .chatMessageMeta small {
+    font-size: 10px;
+  }
+
+  .chatMessageBody p {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .chatFilesButton {
+    min-height: 34px;
+    font-size: 11px;
+  }
+
+  .chatComposer {
+    flex: 0 0 auto;
+    margin: 7px;
+    border-radius: 12px;
+  }
+
+  .chatComposerTop {
+    min-height: 36px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .chatComposerTop strong {
+    font-size: 11px;
+  }
+
+  .chatComposerTop small {
+    font-size: 10px;
+  }
+
+  .chatComposer textarea {
+    min-height: 66px;
+    max-height: 115px;
+    padding: 10px;
+    font-size: 14px;
+    line-height: 1.55;
+    resize: vertical;
+  }
+
+  .chatComposerBottom {
+    min-height: 45px;
+    gap: 6px;
+    padding: 5px 7px;
+  }
+
+  .chatActions {
+    gap: 5px;
+  }
+
+  .reviewButton,
+  .buildButton {
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: 9px;
+    font-size: 11px;
+  }
+
+  /* Activity content */
+
+  .activityPanelHeader {
+    flex-basis: 56px;
+    padding: 9px 12px;
+  }
+
+  .activityPanelHeader span:first-child {
+    font-size: 10px;
+  }
+
+  .activityPanelHeader strong {
+    font-size: 14px;
+  }
+
+  .activityRunning,
+  .activityReady {
+    font-size: 10px;
+  }
+
+  .activityPanelBody {
+    padding: 10px;
+  }
+
+  .currentOperation,
+  .activityListCard,
+  .projectStats {
+    padding: 12px;
+    border-radius: 11px;
+  }
+
+  .currentOperation > span,
+  .activityListHeader > span {
+    font-size: 10px;
+  }
+
+  .currentOperation > strong {
+    font-size: 14px;
+  }
+
+  .currentOperation > p,
+  .activityEmpty {
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .backendStatusGrid span {
+    padding: 7px;
+    font-size: 10px;
+  }
+
+  .activityItem p {
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .activityItem small,
+  .projectStats span {
+    font-size: 10px;
+  }
+
+  .projectStats strong {
+    font-size: 12px;
+  }
+
+  /* Alerts and drawers */
+
+  .alertError,
+  .alertSuccess,
+  .alertInfo {
+    margin: 7px 7px 0;
+    padding: 9px 10px;
+    gap: 8px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+
+  .drawerHeader {
+    flex-basis: 60px;
+    padding: 10px 12px;
+  }
+
+  .drawerHeader span {
+    font-size: 10px;
+  }
+
+  .drawerHeader strong {
+    font-size: 15px;
+  }
+
+  .drawerHeader button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .drawerProject strong {
+    font-size: 12px;
+  }
+
+  .drawerProject small {
+    font-size: 11px;
+  }
+
+  .drawerFile,
+  .drawerFileActive {
+    min-height: 42px;
+    padding: 8px;
+  }
+
+  .drawerFile strong,
+  .drawerFileActive strong {
+    font-size: 12px;
+  }
+
+  .drawerFooter button {
+    min-height: 40px;
+    font-size: 12px;
+  }
+
+  .previewOverlayHeader {
+    flex-basis: 58px;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .previewOverlayHeader span {
+    font-size: 10px;
+  }
+
+  .previewOverlayHeader strong {
+    max-width: 175px;
+    font-size: 13px;
+  }
+
+  .previewExternalButton,
+  .previewCloseButton {
+    min-height: 36px;
+    padding: 0 9px;
+    border-radius: 9px;
+    font-size: 11px;
+  }
+
+  .previewOverlayBody {
+    padding: 5px;
+  }
+}
+
+/* Compact phones */
+
+@media (max-width: 420px) {
+  .brandCopy strong {
+    max-width: 100px;
+  }
+
+  .headerActions {
+    gap: 3px;
+  }
+
+  .headerActions .headerButton {
+    min-width: 32px;
+    padding: 0 5px;
+  }
+
+  .previewTopButton,
+  .headerActions .deployButton {
+    padding: 0 6px;
+    font-size: 10px;
+  }
+
+  .mobileNav {
+    gap: 3px;
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+
+  .mobileNav button {
+    font-size: 10px;
+  }
+
+  .workspaceTitle strong {
+    max-width: 95px;
+  }
+
+  .workspaceContext {
+    max-width: 82px;
+  }
+
+  .environmentSelect {
+    max-width: 72px;
+    min-width: 52px;
+  }
+
+  .toolbarActions .frameworkSelect {
+    display: none;
+  }
+
+  .chatArea.mobileVisible {
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    height: min(64dvh, 480px);
+  }
+
+  .chatMessageBody {
+    max-width: 85%;
+  }
+
+  .previewEmpty,
+  .previewUnavailable {
+    padding: 18px 10px;
+  }
+
+  .previewEmpty h2,
+  .previewUnavailable h2 {
+    font-size: 18px;
+  }
+}
+
+/* Respect reduced-motion preferences */
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace *,
+  .workspace *::before,
+  .workspace *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

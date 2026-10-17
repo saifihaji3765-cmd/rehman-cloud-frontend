@@ -3208,7 +3208,7 @@ function Workspace() {
               onClick={() => setError("")}
               aria-label="Close error"
             >
-              ×
+              脳
             </button>
           </div>
         )}
@@ -3221,7 +3221,7 @@ function Workspace() {
             className={styles.alertSuccess}
             role="status"
           >
-            <span>✓</span>
+            <span>鉁�</span>
 
             <p>{notice}</p>
 
@@ -3230,7 +3230,7 @@ function Workspace() {
               onClick={() => setNotice("")}
               aria-label="Close notice"
             >
-              ×
+              脳
             </button>
           </div>
         )}
@@ -3260,7 +3260,7 @@ function Workspace() {
               }
               aria-label="Close preview error"
             >
-              ×
+              脳
             </button>
           </div>
         )}
@@ -3268,30 +3268,41 @@ function Workspace() {
 
         {/* MOBILE NAV */}
 
-        <nav className={styles.mobileNav}>
+        <nav
+          className={styles.mobileNav}
+          aria-label="Workspace navigation"
+        >
           {[
             ["projects", "Projects"],
-            ["workspace", "Workspace"],
-            ["ai", "AI"],
+            ["workspace", "Preview"],
+            ["ai", "AI Assistant"],
             ["activity", "Activity"],
-          ].map(
-            ([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                className={
-                  mobilePanel === key
-                    ? styles.mobileNavActive
-                    : ""
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className={
+                mobilePanel === key
+                  ? styles.mobileNavActive
+                  : ""
+              }
+              aria-current={
+                mobilePanel === key ? "page" : undefined
+              }
+              onClick={() => {
+                setFilesDrawerOpen(false);
+                setActivityDrawerOpen(false);
+
+                if (key === "workspace") {
+                  setActiveView("preview");
                 }
-                onClick={() =>
-                  setMobilePanel(key)
-                }
-              >
-                {label}
-              </button>
-            )
-          )}
+
+                setMobilePanel(key);
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </nav>
 
 
@@ -3342,7 +3353,7 @@ function Workspace() {
                 </small>
               </div>
 
-              <b>→</b>
+              <b>鈫�</b>
             </button>
 
             <div className={styles.quickPromptList}>
@@ -3459,7 +3470,7 @@ function Workspace() {
                             }
 
                             {files.length > 0
-                              ? ` · ${files.length} files`
+                              ? ` 路 ${files.length} files`
                               : ""}
                           </small>
                         </span>
@@ -3910,7 +3921,7 @@ function Workspace() {
                                 filePath
                               }
                             >
-                              <span>•</span>
+                              <span>鈥�</span>
                               {filePath}
                             </button>
                           );
@@ -4127,7 +4138,7 @@ function Workspace() {
                 }
               >
                 <div>
-                  <span>✓</span>
+                  <span>鉁�</span>
 
                   <strong>
                     {selectedProject
@@ -4216,7 +4227,7 @@ function Workspace() {
                       ? "Apply Change"
                       : "Build App"}
 
-                    <span>→</span>
+                    <span>鈫�</span>
                   </button>
                 </div>
               </div>
@@ -4524,7 +4535,7 @@ function Workspace() {
                   }
                   aria-label="Close files"
                 >
-                  ×
+                  脳
                 </button>
               </div>
 
@@ -4541,7 +4552,7 @@ function Workspace() {
                   {
                     generatedFiles.length
                   }{" "}
-                  files · {framework}
+                  files 路 {framework}
                 </small>
               </div>
 
@@ -4591,7 +4602,7 @@ function Workspace() {
                             )
                           }
                         >
-                          <span>•</span>
+                          <span>鈥�</span>
 
                           <strong
                             title={
@@ -4669,7 +4680,7 @@ function Workspace() {
                   }
                   aria-label="Close activity"
                 >
-                  ×
+                  脳
                 </button>
               </div>
 

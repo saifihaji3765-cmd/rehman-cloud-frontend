@@ -3464,3 +3464,692 @@
     opacity: 1;
   }
 }
+
+/* =========================================================
+   ZYRIONOS WORKSPACE — RESPONSIVE MOBILE OVERRIDES
+   Add this section at the END of Workspace.module.css
+   ========================================================= */
+
+.workspace {
+  min-width: 0;
+  max-width: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+.workspace button,
+.workspace select,
+.workspace textarea {
+  touch-action: manipulation;
+}
+
+.workspace button:focus-visible,
+.workspace select:focus-visible,
+.workspace textarea:focus-visible,
+.workspace a:focus-visible {
+  outline: 2px solid var(--z-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .workspace {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workspaceHeader {
+    flex: 0 0 56px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+  }
+
+  .brandBlock {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .projectMark {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+  }
+
+  .brandCopy span {
+    display: none;
+  }
+
+  .brandCopy strong {
+    max-width: 150px;
+    font-size: 12px;
+  }
+
+  .headerActions {
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+
+  .headerActions .headerButton {
+    width: auto;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .headerActions .headerButton::before {
+    content: none;
+  }
+
+  .previewTopButton,
+  .headerActions .deployButton {
+    min-height: 36px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .mobileNav {
+    flex: 0 0 46px;
+    min-height: 46px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--z-border);
+    background: var(--z-white);
+  }
+
+  .mobileNav button {
+    min-width: 0;
+    min-height: 34px;
+    padding: 0 3px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--z-muted);
+    background: transparent;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 750;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  .mobileNavActive {
+    border-color: #dfe1ff !important;
+    color: var(--z-primary) !important;
+    background: var(--z-primary-soft) !important;
+  }
+
+  .workspaceBody {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: calc(100dvh - 102px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .mainWorkspace {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /*
+   * Keep the main workspace visible by default.
+   * Only hide it when the JSX explicitly marks another
+   * mobile panel as active.
+   */
+  .mainWorkspace:not(.mobileVisible) {
+    display: flex;
+  }
+
+  .projectRail,
+  .activityPanel {
+    display: none;
+  }
+
+  .projectRail.mobileVisible,
+  .activityPanel.mobileVisible {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 0;
+    background: var(--z-white);
+  }
+
+  .chatArea {
+    display: none;
+  }
+
+  .chatArea.mobileVisible {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    z-index: 40;
+    width: auto;
+    height: min(58dvh, 520px);
+    min-height: 300px;
+    max-height: calc(100dvh - 120px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--z-border-strong);
+    border-radius: 14px;
+    background: var(--z-white);
+    box-shadow: var(--z-shadow-lg);
+  }
+
+  .workspaceToolbar {
+    flex: 0 0 auto;
+    min-height: 48px;
+    gap: 6px;
+    padding: 7px 9px;
+  }
+
+  .workspaceTitle {
+    min-width: 0;
+  }
+
+  .workspaceTitle span {
+    font-size: 10px;
+  }
+
+  .workspaceTitle strong {
+    max-width: 140px;
+    font-size: 12px;
+  }
+
+  .workspaceContext {
+    min-width: 0;
+    max-width: 125px;
+    gap: 4px;
+  }
+
+  .contextItem {
+    min-height: 30px;
+  }
+
+  .contextItem > span {
+    display: none;
+  }
+
+  .environmentSelect {
+    max-width: 95px;
+    min-width: 60px;
+    font-size: 11px;
+  }
+
+  .contextReady,
+  .contextPending,
+  .contextSyncing,
+  .contextDeployment,
+  .contextMuted {
+    display: none;
+  }
+
+  .toolbarActions {
+    flex: 0 0 auto;
+    gap: 4px;
+  }
+
+  .frameworkSelect,
+  .toolbarButton,
+  .toolbarActive {
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .visualArea {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    padding: 6px;
+    overflow: hidden;
+  }
+
+  .previewShell,
+  .codeSurface {
+    border-radius: 10px;
+  }
+
+  .previewHeader {
+    flex: 0 0 40px;
+    gap: 6px;
+    padding: 0 8px;
+  }
+
+  .previewAddress {
+    display: none;
+  }
+
+  .previewProjectName {
+    max-width: 110px;
+    font-size: 11px;
+  }
+
+  .previewReady,
+  .previewPending {
+    font-size: 10px;
+  }
+
+  .previewHeader button {
+    min-height: 30px;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+
+  .previewEmpty {
+    width: calc(100% - 24px);
+    padding: 18px 12px;
+  }
+
+  .previewEmpty h2 {
+    font-size: 20px;
+  }
+
+  .previewEmpty p {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .previewEmpty button {
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 12px;
+  }
+
+  .codeSurfaceBody {
+    grid-template-columns: minmax(90px, 30%) minmax(0, 1fr);
+  }
+
+  .codeFileList {
+    padding: 5px;
+  }
+
+  .codeFile,
+  .codeFileActive {
+    min-height: 36px;
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  .codeEditor {
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .chatHeader {
+    flex: 0 0 48px;
+    min-height: 48px;
+    padding: 8px 10px;
+  }
+
+  .chatHeader span {
+    font-size: 10px;
+  }
+
+  .chatHeader strong {
+    font-size: 13px;
+  }
+
+  .chatHeaderStatus {
+    font-size: 11px;
+  }
+
+  .chatMessages {
+    padding: 9px;
+  }
+
+  .chatWelcome {
+    padding: 12px 8px;
+  }
+
+  .chatWelcome strong {
+    font-size: 16px;
+  }
+
+  .chatWelcome > span {
+    font-size: 12px;
+  }
+
+  .chatQuickPrompts {
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .chatQuickPrompts button {
+    min-height: 32px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .chatMessageAvatar {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+    font-size: 10px;
+  }
+
+  .chatMessageBody {
+    max-width: 88%;
+    padding: 9px 10px;
+  }
+
+  .chatMessageMeta strong {
+    font-size: 11px;
+  }
+
+  .chatMessageMeta small {
+    font-size: 10px;
+  }
+
+  .chatMessageBody p {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .chatFilesButton {
+    min-height: 32px;
+    font-size: 11px;
+  }
+
+  .chatComposer {
+    margin: 7px;
+    border-radius: 10px;
+  }
+
+  .chatComposerTop {
+    min-height: 34px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .chatComposerTop strong {
+    font-size: 11px;
+  }
+
+  .chatComposerTop small {
+    font-size: 10px;
+  }
+
+  .chatComposer textarea {
+    min-height: 68px;
+    max-height: 120px;
+    padding: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .chatComposerBottom {
+    min-height: 44px;
+    gap: 6px;
+    padding: 5px 7px;
+  }
+
+  .chatActions {
+    gap: 5px;
+  }
+
+  .reviewButton,
+  .buildButton {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .activityPanelHeader {
+    flex-basis: 54px;
+    padding: 8px 12px;
+  }
+
+  .activityPanelHeader span:first-child {
+    font-size: 10px;
+  }
+
+  .activityPanelHeader strong {
+    font-size: 14px;
+  }
+
+  .activityRunning,
+  .activityReady {
+    font-size: 10px;
+  }
+
+  .activityPanelBody {
+    padding: 10px;
+  }
+
+  .currentOperation,
+  .activityListCard,
+  .projectStats {
+    padding: 12px;
+  }
+
+  .currentOperation > span,
+  .activityListHeader > span {
+    font-size: 10px;
+  }
+
+  .currentOperation > strong {
+    font-size: 14px;
+  }
+
+  .currentOperation > p,
+  .activityEmpty {
+    font-size: 12px;
+  }
+
+  .backendStatusGrid span {
+    padding: 7px;
+    font-size: 10px;
+  }
+
+  .activityItem p {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .activityItem small {
+    font-size: 10px;
+  }
+
+  .projectStats span {
+    font-size: 10px;
+  }
+
+  .projectStats strong {
+    font-size: 12px;
+  }
+
+  .alertError,
+  .alertSuccess,
+  .alertInfo {
+    margin: 7px 7px 0;
+    gap: 8px;
+    padding: 9px;
+    font-size: 12px;
+  }
+
+  .drawerHeader {
+    flex-basis: 60px;
+    padding: 10px 12px;
+  }
+
+  .drawerHeader span {
+    font-size: 10px;
+  }
+
+  .drawerHeader strong {
+    font-size: 15px;
+  }
+
+  .drawerHeader button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .drawerProject strong {
+    font-size: 12px;
+  }
+
+  .drawerProject small {
+    font-size: 11px;
+  }
+
+  .drawerFile,
+  .drawerFileActive {
+    min-height: 42px;
+    padding: 8px;
+  }
+
+  .drawerFile strong,
+  .drawerFileActive strong {
+    font-size: 12px;
+  }
+
+  .drawerEmpty {
+    font-size: 12px;
+  }
+
+  .drawerFooter button {
+    height: 40px;
+    font-size: 12px;
+  }
+
+  .previewOverlayHeader {
+    flex: 0 0 56px;
+    gap: 8px;
+    padding: 7px 10px;
+  }
+
+  .previewOverlayHeader span {
+    font-size: 10px;
+  }
+
+  .previewOverlayHeader strong {
+    max-width: 180px;
+    font-size: 13px;
+  }
+
+  .previewExternalButton,
+  .previewCloseButton {
+    min-height: 36px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .previewOverlayBody {
+    padding: 5px;
+  }
+
+  .previewUnavailable {
+    padding: 20px 12px;
+  }
+
+  .previewUnavailable h2 {
+    font-size: 20px;
+  }
+
+  .previewUnavailable p {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .previewUnavailable button {
+    min-height: 38px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brandCopy strong {
+    max-width: 105px;
+  }
+
+  .headerActions {
+    gap: 4px;
+  }
+
+  .headerActions .headerButton {
+    min-width: 32px;
+    padding: 0 5px;
+  }
+
+  .previewTopButton,
+  .headerActions .deployButton {
+    padding: 0 6px;
+    font-size: 10px;
+  }
+
+  .mobileNav {
+    gap: 3px;
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+
+  .mobileNav button {
+    font-size: 10px;
+  }
+
+  .workspaceTitle strong {
+    max-width: 100px;
+  }
+
+  .workspaceContext {
+    max-width: 85px;
+  }
+
+  .environmentSelect {
+    max-width: 75px;
+    min-width: 55px;
+  }
+
+  .toolbarActions .frameworkSelect {
+    display: none;
+  }
+
+  .chatArea.mobileVisible {
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    height: min(60dvh, 460px);
+  }
+
+  .chatMessageBody {
+    max-width: 85%;
+  }
+
+  .previewEmpty h2,
+  .previewUnavailable h2 {
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace *,
+  .workspace *::before,
+  .workspace *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
